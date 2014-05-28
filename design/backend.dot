@@ -1,0 +1,74 @@
+digraph backend {
+    node [color=Blue, shape=box, style=rounded, fontsize=19];
+    splines=true;
+    ranksep=1.3;
+    labelloc="t";
+
+    title [color=red, label="Backend Message Flow" shape="tripleoctagon", fontsize="30", style=bold];
+    external_smtp [label="EXTERNAL SMTP SERVER"];
+
+    notes [color=grey, shape="note", fontsize="18", label= 
+<<I><BR ALIGN="LEFT"/><B>Note:</B> For clarity this graph shows as if every message<BR ALIGN="LEFT"/>
+were processed individually and the data structures passed by value, but<BR ALIGN="LEFT"/>
+probably to optimize function call and cache locality the messages would be<BR ALIGN="LEFT"/>
+processed on batches and the data structures/objects included in lists.<BR ALIGN="LEFT"/>
+These list would then be passed by reference and modified in place by the<BR ALIGN="LEFT"/>
+receiving methods. <BR ALIGN="LEFT"/></I>>
+]
+
+    note_paralell [color=grey, shape="note", fontsize="18", label=
+<<I><BR ALIGN="LEFT"/><B>Paralellism:</B> From the message decoder down, this should be<BR ALIGN="LEFT"/>
+easily paralellizable: the retriever would get batches of messages from the local SMTP server,<BR ALIGN="LEFT"/>
+would save them to a single temporal file on disk or a text blob on a DB, and would pass the path or the ID to a <BR ALIGN="LEFT"/> 
+message decoder, that could be on the same thread, on another thread, on another process or even a worker <BR ALIGN="LEFT"/> 
+on a different machine with access to the message (local file or DB record). From there, any processing of the  <BR ALIGN="LEFT"/> 
+message batches should not cause any conflict with the other concurrent message processors.<BR ALIGN="LEFT"/></I>>
+]
+
+    
+    note_batches_ram [color=grey, shape="note", fontsize="18", label=
+
+<<I><BR ALIGN="LEFT"/><B>Message batches and RAM:</B> the message batches that the retriever creates should be<BR ALIGN="LEFT"/>
+limited in size to a configurable fraction of the total RAM in the machine, to avoid filling the machine RAM<BR ALIGN="LEFT"/>
+when processing huge emails with attachments. The number of paralell message processors should also <BR ALIGN="LEFT"/>
+be considered. For example, on a 600MB RAM machine, if we configure the system to don't take more <BR ALIGN="LEFT"/>
+than 20% (120MB) or memory for the message processing, then the size of every message batch shouldn't<BR ALIGN="LEFT"/>
+be greater than (120/number of workers), so for 4 workers the message batches should not exceeed 30MB <BR ALIGN="LEFT"/>
+(except for cases where a single message would be bigger than that).<BR ALIGN="LEFT"/>
+<BR ALIGN="LEFT"/></I>>
+]
+
+    internal_smtp [label="INTERNAL SMTP\n(Postfix, etc)\nDont rewrite the wheel and get security bugs and shit"];
+    retriever [label="1. RETRIEVER\nGet the messages from the SMTP server"];
+    decoder [label="2. DECODER\nDecode MIME message and attachments\nSave attachments on disk\nCreate the MessageObject"];
+    tagger[label="3. TAGGER\nAdd user or internal tags based on msg properties"]
+    conversation_finders [label="3.1 CONVERSATION FINDER\nFind if the message belongs to a conversation\nAdd the internal conversation tag"];
+    spamfilter [label="3.2 SPAMFILTER\nDoesn't delete, just tag as spam"];
+    filter_checker [label="3.3 USER FILTER CHECKER\nAdd/remove tags based on user rules before storage\n(inbox, unread, archived, spam, deleted, Mike, etc)"];
+    storer [label="4. STORER\nStores, index, and notifies"];
+    contact_storer [label="4.1 CONTACT STORER\nAdd new contacts to MongoDB\nReturn Ids to add to MessageObject"];
+    search_indexer [label="4.2 SEARCH INDEXER\nSphinx, Solr or similar\nIndex the MessageObject contents for fast searches"];
+    mongodb [label="MONGODB"];
+    notifier [label="4.3 NOTIFIER\nPush for Android/iOS/etc\nReverse AJAX for FrontEnd?"]
+    phone_device [label="PHONE"];
+    frontend [label="FRONTEND"];
+
+    // Edges
+    title -> notes [style=invis];
+    note_paralell -> note_batches_ram  [style=invis];
+    external_smtp -> internal_smtp [label=" SMTP\l"];
+    internal_smtp -> retriever [label=" SMTP\l"];
+    retriever -> decoder [label=" to processes or workers: local temp file or DB blob\l to local thread/s: a pointer\l"];
+    decoder -> tagger [label=" in:MessageObject\l"];
+    tagger -> conversation_finders [dir="both", label=" in:MessageObject \l out:conversation_tag\l"];
+    contact_storer -> mongodb [label=" in:ContactDoc\l out:contact_ids\l", dir="both"];
+    tagger -> filter_checker [dir="both", label=" in:MessageObject\l out:tagadd_list, tagremove_list\l"];
+    tagger -> spamfilter [dir="both", label=" in:MessageObject\l out:isSpam\l"];
+    tagger -> storer[label=" in:MessageObject\l"];
+    storer-> contact_storer [label=" in:contact list\l out:contact_ids\l" dir="both"];
+    storer-> mongodb [label=" in:MessageDoc\l out:message_id\l", dir="both"];
+    storer-> search_indexer [label=" in:MessageDoc, message_id\l"];
+    storer-> notifier [label=" in:label counts\l"];
+    notifier -> phone_device [label=" PUSH\l"];
+    notifier -> frontend [label=" Reverse AJAX?\l"];
+}
