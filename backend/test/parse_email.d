@@ -8,10 +8,12 @@ import std.string;
 import std.ascii;
 import std.array;
 
+import lib.dictionarylist;
 import arsd.email;
 
 // XXX Clase para excepciones de parseo
 // XXX const, immutable y toda esa mierda
+// Hash de cabecera: indice para acceso sin recorer todo
 
 
 class MIMEPart
@@ -29,10 +31,12 @@ struct Header
 
 class ProtoEmail
 {
+    // I want to keep the insertion order unchanged, so no dict
     Header[] headers;
     // idx of these fields in the Header[] array, the properties to
     // read them will return the text
-    private int m_to, m_from, m_cc, m_bcc, m_date, m_subject;
+    private int m_to, m_from, m_cc, m_bcc, m_date, m_subject, m_content_type, 
+                m_content_disposition, m_content_transfer_encoding;
     MIMEPart[] parts;
     dchar[] content; // for non multipart mails
 
@@ -53,6 +57,9 @@ class ProtoEmail
     @property string Bcc()     { return m_bcc != -1 ?     strip(headers[m_bcc].value)     : ""; }
     @property string Date()    { return m_date != -1 ?    strip(headers[m_date].value)    : ""; }
     @property string Subject() { return m_subject != -1 ? strip(headers[m_subject].value) : ""; }
+    @property string ContentType() { return m_content_type != -1 ? strip(headers[m_content_type].value) : ""; }
+    @property string ContentDisposition() { return m_content_disposition != -1 ? strip(headers[m_content_disposition].value) : ""; }
+    @property string ContentTransferEncoding() { return m_content_transfer_encoding != -1 ? strip(headers[m_content_transfer_encoding].value) : ""; }
 
     @property string To(string to)
     {
@@ -113,6 +120,36 @@ class ProtoEmail
         else 
             headers[m_subject].value = subject;
         return subject;
+    }
+    @property string ContentType(string content_type)
+    {
+        content_type = strip(content_type);
+        content_type = " " ~ content_type;
+        if (m_content_type == -1)
+            headers ~= Header("Subject", content_type);
+        else 
+            headers[m_content_type].value = content_type;
+        return content_type;
+    }
+    @property string ContentDisposition(string content_disposition)
+    {
+        content_disposition = strip(content_disposition);
+        content_disposition = " " ~ content_disposition;
+        if (m_content_disposition -1)
+            headers ~= Header("Subject", content_disposition);
+        else 
+            headers[m_content_disposition].value = content_disposition;
+        return content_disposition;
+    }
+    @property string ContentTransferEncoding(string content_transfer_encoding)
+    {
+        content_transfer_encoding = strip(content_transfer_encoding);
+        content_transfer_encoding = " " ~ content_transfer_encoding;
+        if (m_content_transfer_encoding == -1)
+            headers ~= Header("Subject", content_transfer_encoding);
+        else 
+            headers[m_content_transfer_encoding].value = content_transfer_encoding;
+        return content_transfer_encoding;
     }
 
     void parseEmail(File email_file) 
@@ -192,6 +229,8 @@ class ProtoEmail
                 case "subject":
                     m_subject = idx;
                     break;
+                case "content-type":
+                    m_content_type = idx;
                 default:
             }
         }
@@ -285,5 +324,8 @@ unittest
             }
             ++idx;
         }
+        writeln(e.name);
+        writeln(email.ContentType);
+        writeln;
     }
 }
