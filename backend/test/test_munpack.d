@@ -48,7 +48,7 @@ void main() {
             if (email_file.isOpen) {
                 email_file.flush();
                 email_file.close();
-                run_munpack(email_file.name);
+                //run_munpack(email_file.name);
             }
 
             email_file = File(buildPath(single_mails_dir, to!string(++mailindex)), "w");
