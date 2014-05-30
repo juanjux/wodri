@@ -7,13 +7,10 @@
 */
 module lib.dictionarylist;
 
+import lib.array : removeFromArrayIdx;
 import lib.string : icmp2;
 import std.exception : enforce;
 
-/*
- * Version of Vibe.d dictionarylist that doesnt depend on the event loop. Changes:
- * remove() and removeAll() removed
- */
 
 /**
 	Behaves similar to string[string] but the insertion order is not changed
@@ -42,6 +39,43 @@ struct DictionaryList(Value, bool case_sensitive = true) {
 	/** The number of fields present in the map.
 	*/
 	@property size_t length() const { return m_fieldCount + m_extendedFields.length; }
+
+	/** Removes the first field that matches the given key.
+	*/
+	void remove(string key)
+	{
+		auto keysum = computeCheckSumI(key);
+		auto idx = getIndex(m_fields[0 .. m_fieldCount], key, keysum);
+		if( idx >= 0 ){
+			auto slice = m_fields[0 .. m_fieldCount];
+			removeFromArrayIdx(slice, idx);
+			m_fieldCount--;
+		} else {
+			idx = getIndex(m_extendedFields, key, keysum);
+			enforce(idx >= 0);
+			removeFromArrayIdx(m_extendedFields, idx);
+		}
+	}
+
+	/** Removes all fields that matches the given key.
+	*/
+	void removeAll(string key)
+	{
+		auto keysum = computeCheckSumI(key);
+		for (size_t i = 0; i < m_fieldCount;) {
+			if (m_fields[i].keyCheckSum == keysum && matches(m_fields[i].key, key)) {
+				auto slice = m_fields[0 .. m_fieldCount];
+				removeFromArrayIdx(slice, i);
+				m_fieldCount--;
+			} else i++;
+		}
+
+		for (size_t i = 0; i < m_extendedFields.length;) {
+			if (m_fields[i].keyCheckSum == keysum && matches(m_fields[i].key, key))
+				removeFromArrayIdx(m_extendedFields, i);
+			else i++;
+		}
+	}
 
 	/** Adds a new field to the map.
 
@@ -204,13 +238,13 @@ unittest {
 	a["a"] = 3;
 	assert(a["a"] == 3);
 	assert(a.getAll("a") == [3, 2]);
-	//a.removeAll("a");
-	//assert(a.getAll("a").length == 0);
-	//assert(a.get("a", 4) == 4);
-	//a.addField("b", 2);
-	//a.addField("b", 1);
-	//a.remove("b");
-	//assert(a.getAll("b") == [1]);
+	a.removeAll("a");
+	assert(a.getAll("a").length == 0);
+	assert(a.get("a", 4) == 4);
+	a.addField("b", 2);
+	a.addField("b", 1);
+	a.remove("b");
+	assert(a.getAll("b") == [1]);
 
 	DictionaryList!(int, false) b;
 	b.addField("a", 1);
