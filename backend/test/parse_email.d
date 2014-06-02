@@ -101,7 +101,7 @@ class ProtoEmail
                 if (prevWasStart) 
                 { 
                     if (line[0] == ' ' || line[0] == '\t') 
-                        prevWasStart = false; // second line of multiline header
+                        if (prevWasStart) prevWasStart = false; // second line of multiline header
 
                     else 
                     {
@@ -134,6 +134,8 @@ class ProtoEmail
                         bodyHasParts = true;
                         bodyParentPart = new MIMEPart(content_type, content_disposition);  
                         currentPart = &bodyParentPart; // XXX bodyParentPart redundante?
+                        headerBuffer.clear();
+                        prevWasStart = false; // reuse these two for the parts headers
                     }
                 }
 
@@ -143,7 +145,6 @@ class ProtoEmail
                 // Read the rest of the body, we'll parse after the loop
                 if (bodyHasParts)
                 {
-                    // XXX poner la parte del inPartHeader antes de buscar boundaries
                     if (line.length > 2 && line[0..2] == "--")
                     {
                         if (line.length > 4 && line[$-4..$] == "--\r\n" && currentPart != null)
@@ -155,7 +156,10 @@ class ProtoEmail
                         {
                             // New subpart of the current part
                             MIMEPart newPart = new MIMEPart();
+                            writeln("XXX CURRENTPART NAME: ", (*currentPart).ctype.name);
                             newPart.parent = currentPart;
+                            writeln("XXX PONIENDO COMO PARENT AL ANTERIOR: ", (*currentPart).ctype.name);
+                            (*currentPart).subparts ~= newPart;
                             currentPart = &newPart;
                             inPartHeader = true;
                         }
@@ -172,21 +176,22 @@ class ProtoEmail
                         else if (line.length > 13 && lowline[0..13] == "content-type:")
                         {
                             parseContentHeader((*currentPart).ctype, strip(split(line, ":")[1]));
-                            writeln("ctype:", line);
-                            writeln((*currentPart).ctype);
+                            //writeln("ctype:", line);
+                            //writeln((*currentPart).ctype);
+                            writeln("NEW SUBPART [", (*currentPart).ctype.name, "] PARENT [", (*currentPart).parent.ctype.name, "]");
                         }
                         else if (line.length > 20 && lowline[0..20] == "content-disposition:")
                         {
                             parseContentHeader((*currentPart).disposition, strip(split(line, ":")[1]));
-                            writeln("cdisposition:", line);
-                            writeln((*currentPart).disposition);
+                            //writeln("cdisposition:", line);
+                            //writeln((*currentPart).disposition);
                         }
                         else if (line.length > 26 && lowline[0..26] == "content-transfer-encoding:")
                         {
                             (*currentPart).content_transfer_encoding = strip(split(line, ":")[1]);
-                            writeln("ctransfer: ", (*currentPart).content_transfer_encoding);
+                            //writeln("ctransfer: ", (*currentPart).content_transfer_encoding);
                         }
-                        else
+                        else 
                         {
                             // text/plain doesnt need headers, can start just after the boundary
                             inPartHeader = false;
@@ -206,7 +211,7 @@ class ProtoEmail
 
         if (bodyHasParts)
         {
-            // XXX
+            visitParts(bodyParentPart);
         }
         else // text/plain|html, just decode and set
         {
@@ -292,6 +297,16 @@ class ProtoEmail
                 write(name, ":", value);
         }
         return textheaders.data;
+    }
+
+    void visitParts(MIMEPart part)
+    {
+        writeln("XXX PARTE:");
+        writeln(part.ctype.name);
+        writeln(part.subparts);
+
+        foreach(MIMEPart subpart; part.subparts)
+            visitParts(subpart);
     }
 }
 
