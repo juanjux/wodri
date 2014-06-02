@@ -7,6 +7,7 @@ import std.conv;
 import std.string;
 import std.ascii;
 import std.array;
+import std.base64;
 
 // lib.dictionarylist is vibed.utils.dictionarylist modified so it doesnt need
 // vibed's event loop (with key deletions removed but we doesn't need it here)
@@ -16,17 +17,38 @@ import lib.dictionarylist;
 import lib.characterencodings;
 
 // XXX Clase para excepciones de parseo
+// XXX ContentInfo.type deberia ser un enum?
 // XXX const, immutable y toda esa mierda
 // XXX mandar los fixes a Adam Druppe
 
 
-// XXX class o struct?
 class MIMEPart
 {
+    MIMEPart* parent = null;
     MIMEPart[] subparts;
-    string type;
-    wchar[] content; 
+    ContentData ctype;
+    ContentData disposition;
+    string content_transfer_encoding;
+    Appender!string content; 
+
+    this()
+    {
+        content = appender!string();
+    }
+
+    this(ref ContentData content_type, ref ContentData content_disposition)
+    {
+        ctype = content_type;
+        disposition = content_disposition;
+    }
 }
+
+struct ContentData
+{
+    string name;
+    string[string] fields;
+}
+
 
 class ProtoEmail
 {
@@ -49,8 +71,19 @@ class ProtoEmail
     {
         string line;
         bool inBody = false;
+        bool firstBodyLine = true;
         bool prevWasStart = false;
+        bool bodyHasParts = false;
+        bool inPartHeader = false;
         auto headerBuffer = appender!string();
+        auto bodyBuffer = appender!string();
+        ContentData content_type;
+        ContentData content_disposition;
+        string content_transfer_encoding;
+        MIMEPart bodyParentPart;
+        // XXX probar con referencias
+        MIMEPart* currentPart = null;
+
         headerBuffer.reserve(16000);
 
         uint count = 0;
@@ -91,21 +124,102 @@ class ProtoEmail
                 }
                 headerBuffer.put(line);
 
-                if (line == "\r\n") inBody = true; // Body separator
+                if (line == "\r\n") // Body
+                {
+                    inBody = true; 
+                    content_transfer_encoding = getHeadersContentInfo(content_type, content_disposition);
+                    
+                    if (content_type.name != "text/plain" && content_type.name != "text/html")
+                    {
+                        bodyHasParts = true;
+                        bodyParentPart = new MIMEPart(content_type, content_disposition);  
+                        currentPart = &bodyParentPart; // XXX bodyParentPart redundante?
+                    }
+                }
 
             }
             else // Body
             { 
-            }
+                // Read the rest of the body, we'll parse after the loop
+                if (bodyHasParts)
+                {
+                    // XXX poner la parte del inPartHeader antes de buscar boundaries
+                    if (line.length > 2 && line[0..2] == "--")
+                    {
+                        if (line.length > 4 && line[$-4..$] == "--\r\n" && currentPart != null)
+                        {
+                            // Boundary end, new currentPart is the current part parent
+                           currentPart = (*currentPart).parent;
+                        }
+                        else if (currentPart != null)                        
+                        {
+                            // New subpart of the current part
+                            MIMEPart newPart = new MIMEPart();
+                            newPart.parent = currentPart;
+                            currentPart = &newPart;
+                            inPartHeader = true;
+                        }
+                        
+                    }
+                    else if (inPartHeader) 
+                    {
+                        // Part headers parsing (first lines after boundary until \r\n)
+                        auto lowline = toLower(line);
 
-            if ("Content-Type" !in headers) 
-            {
-                writeln(email_file.name);
-                writeln("NO TIENE CONTENT TYPE");
+                        if (line.length == 2 && line == "\r\n")
+                            inPartHeader = false;
+
+                        else if (line.length > 13 && lowline[0..13] == "content-type:")
+                        {
+                            parseContentHeader((*currentPart).ctype, strip(split(line, ":")[1]));
+                            writeln("ctype:", line);
+                            writeln((*currentPart).ctype);
+                        }
+                        else if (line.length > 20 && lowline[0..20] == "content-disposition:")
+                        {
+                            parseContentHeader((*currentPart).disposition, strip(split(line, ":")[1]));
+                            writeln("cdisposition:", line);
+                            writeln((*currentPart).disposition);
+                        }
+                        else if (line.length > 26 && lowline[0..26] == "content-transfer-encoding:")
+                        {
+                            (*currentPart).content_transfer_encoding = strip(split(line, ":")[1]);
+                            writeln("ctransfer: ", (*currentPart).content_transfer_encoding);
+                        }
+                        else
+                        {
+                            // text/plain doesnt need headers, can start just after the boundary
+                            inPartHeader = false;
+                        }
+                        
+                    }
+                    else // in part body (not header, not boundary)
+                    {
+                        // Add non-boundary, non-part-header line to the part content
+                        if (currentPart != null)
+                            (*currentPart).content.put(line);
+                    }
+                }
+                bodyBuffer.put(line);
             }
+        }
+
+        if (bodyHasParts)
+        {
+            // XXX
+        }
+        else // text/plain|html, just decode and set
+        {
+            string body_;
+            if (content_transfer_encoding == "quoted-printable")
+                body_ = convertToUtf8Lossy(decodeQuotedPrintable(bodyBuffer.data), 
+                                           content_type.fields["charset"]);
+            else if (content_transfer_encoding == "base64")
+                body_ = convertToUtf8Lossy(Base64.decode(removechars(bodyBuffer.data, "\r\n")), content_type.fields["charset"]);
             else
-                writeln("TIENE CONTENT TYPE: ", headers["Content-Type"]);
+                body_ = bodyBuffer.data;
 
+            write(body_); // XXX
         }
     }
 
@@ -118,13 +232,49 @@ class ProtoEmail
     
         string name  = raw[0..idxSeparator];
         string value = raw[idxSeparator+1..$];
-        headers.addField(name, decodeHeaderValue(value));
+        headers.addField(name, decodeEncodedWord(value));
     }
 
 
-    string decodeHeaderValue(string origValue)
+    private void parseContentHeader(ref ContentData content_data, string header_text)
     {
-        return decodeEncodedWord(origValue);
+        if (header_text.length == 0) return;
+
+        auto value_tokens = split(strip(header_text), ";");
+
+        if (value_tokens.length == 0) // ???
+        { 
+            content_data.name= "";
+            return;
+        }
+        
+        content_data.name = strip(removechars(value_tokens[0], "\""));
+        if (value_tokens.length > 1)
+        {
+            foreach(string param; value_tokens[1..$]) 
+            {
+                param = strip(removechars(param, "\""));
+                auto eqIndex = indexOf(param, "=");
+                if (eqIndex == -1) 
+                    continue;
+
+                content_data.fields[param[0..eqIndex]] = param[eqIndex+1..$];
+            }
+        }
+    }
+
+
+    // content-type and content-disposition by ref, returns content-transfer-encoding
+    private string getHeadersContentInfo(ref ContentData ct_type, ref ContentData ct_disp)
+    {
+        string ct_transfer_encoding;
+        parseContentHeader(ct_type, headers.get("Content-Type", ""));
+        parseContentHeader(ct_disp, headers.get("Content-Disposition", ""));
+
+        if ("Content-Transfer-Encoding" in headers)
+            ct_transfer_encoding = strip(removechars(headers["Content-Transfer-Encoding"], "\""));
+
+        return ct_transfer_encoding;
     }
 
 
@@ -149,9 +299,13 @@ class ProtoEmail
 void main()
 {
 
+    writeln("XXX 1");
     auto email_file = File("emails/with_attachments/single_mails/5614", "r");
+    writeln("XXX 0");
     auto email = new ProtoEmail(email_file);
+    writeln("XXX -1");
     email.print_headers();
+    writeln("XXX -2");
     // Imprimir From, To, Cc, Bcc, Data, Subject
     writeln("\n\nCommon headers:");
     writeln("To: ", email.headers.get("To", ""));
@@ -172,6 +326,7 @@ unittest
 
     foreach (DirEntry e; dirEntries(repodir, SpanMode.shallow))
     {
+        writeln(e.name);
         //if (indexOf(e.name, "7038") == -1) continue;
         auto email = new ProtoEmail(File(e.name));
         string headers_str = email.print_headers(true);
