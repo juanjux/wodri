@@ -28,6 +28,7 @@ class MIMEPart
     ContentData ctype;
     ContentData disposition;
     string content_transfer_encoding;
+    string content_id;
     string textContent;
 
     this()
@@ -39,7 +40,7 @@ class MIMEPart
     {
         ctype = content_type;
         disposition = content_disposition;
-        content_transfer_encoding = ct_transfer_encoding;
+        content_transfer_encoding = toLower(ct_transfer_encoding);
     }
 }
 
@@ -48,6 +49,16 @@ struct ContentData
     string name;
     string[string] fields;
 }
+
+
+struct Attachment
+{
+    string realPath;
+    string cType;
+    string filename;
+    uint size;
+}
+
 
 class ProtoEmail
 {
@@ -125,6 +136,36 @@ class ProtoEmail
     }
 
 
+    // XXX mover a lib/characterencodings
+    immutable(ubyte)[] decodeBase64Lossy(string input)
+    {
+        string nolineinput = removechars(input, "\r\n");
+        immutable(ubyte)[] ret;
+
+        try {
+            auto rem = nolineinput.length % 4;
+            if (rem)
+            {
+                auto padAppender = appender!string();
+                padAppender.put(nolineinput);
+                for (int i; i<(4-rem); i++) padAppender.put("=");
+                nolineinput = padAppender.data;
+            }
+            ret = Base64.decode(nolineinput);
+
+        } catch (AssertError e) {
+
+            // When the former method fails this usually works (and vice versa) :-/
+            ubyte[] bytetext;
+            foreach (string line; split(text, "\r\n")) 
+                bytetext ~= Base64.decode(line);
+
+            ret = bytetext.idup;
+        }
+        return ret;
+    }
+
+
     void setTextPart(MIMEPart part, string text)
     {
         string newtext;
@@ -135,31 +176,8 @@ class ProtoEmail
             newtext = convertToUtf8Lossy(decodeQuotedPrintable(text), part.ctype.fields["charset"]);
 
         else if (part.content_transfer_encoding == "base64")
-        {
-            //newtext = convertToUtf8Lossy(Base64.decode(removechars(text, "\r\n")), part.ctype.fields["charset"]);
-            string nolinetext = removechars(text, "\r\n");
-            try
-            {
-                auto rem = nolinetext.length % 4;
-                if (rem)
-                {
-                    auto padAppender = appender!string();
-                    padAppender.put(nolinetext);
-                    for (int i; i<(4-rem); i++) padAppender.put("=");
-                    nolinetext = padAppender.data;
-                }
-                
-                newtext = convertToUtf8Lossy(Base64.decode(nolinetext), part.ctype.fields["charset"]);
-            } catch (AssertError e) 
-            {
-                // When the former method fails this usually works (and vice versa) :-/
-                ubyte[] bytetext;
-                foreach (string line; split(text, "\r\n")) 
-                    bytetext ~= Base64.decode(line);
-                newtext = convertToUtf8Lossy(bytetext.idup, part.ctype.fields["charset"]);
-            }
+            newtext = convertToUtf8Lossy(decodeBase64Lossy(text), part.ctype.fields["charset"]);
 
-        }
         else
             newtext = text;
 
@@ -230,16 +248,16 @@ class ProtoEmail
                 return; // correct?
 
             MIMEPart thisPart = new MIMEPart();
-            int contentStart = parsePartHeaders(thisPart, lines[startIndex..endIndex]);
+            int contentStart = startIndex + parsePartHeaders(thisPart, lines[startIndex..endIndex]);
             parent.subparts ~= thisPart;
             thisPart.parent = parent;
 
             if (thisPart.ctype.name.length > 9 && thisPart.ctype.name[0..9] == "multipart")
                 parseParts(lines[startIndex..endIndex], thisPart.ctype.fields["boundary"], thisPart);
 
-            if (thisPart.ctype.name == "text/plain" || thisPart.ctype.name == "text/html")
+            if (among(thisPart.ctype.name, "text/plain", "text/html"))
             {
-                setTextPart(thisPart, join(lines[startIndex+contentStart..endIndex], "\r\n"));
+                setTextPart(thisPart, join(lines[contentStart..endIndex], "\r\n"));
                 debug
                 {
                     writeln("========= DESPUES PARSEPARTS, CONTENT: ======", thisPart.ctype.name);
@@ -247,11 +265,32 @@ class ProtoEmail
                     writeln("=============================================");
                 }
             }
+            else if (among(thisPart.disposition.name, "attachment", "inline"))
+            {
+                // Ojo, no siempre es base64, por ejemplo los message/rfc822 suelen
+                // tener disposition=attachment pero sin encoding (ejemplo 36004) XXX probar con ese
 
-            // XXX thisPart.disposition.name == "attachment" || "inline":
-            // 1. sacar el contenido, decodificarlo
-            // 2. guardar en emails/attachments con un nombre unico
-            // 3. poner como contenido <<ruta>> (o nada)
+                // 1. sacar el contenido, decodificarlo si es base64 (sino, se deja tal cual)
+                // 2. guardar en emails/attachments con un nombre unico
+                // 3. guardar la ruta
+                // XXX poner que el transfer_encoding siempre se asigne con toLower y regenerar tests
+                immutable(ubyte)[] att_content;
+                if (thisPart.content_transfer_encoding == "base64")
+                {
+
+                    // XXX seguir aqui
+                    att_content = decodeBase64Lossy(join(lines[contentStart..endIndex])); 
+                    //auto f = File("/home/juanjux/prueba.png", "w");
+                    //f.rawWrite(att_content);
+                    //f.close();
+                }
+                else
+                    att_content = cast(immutable(ubyte)[]) join(lines[contentStart..endIndex]);
+                debug
+                {
+                    writeln("XXX ADJUNTO!");
+                }
+            }
 
             startIndex = endIndex+1;
             ++globalIndex;
@@ -311,14 +350,15 @@ class ProtoEmail
 
             string name = toLower(strip(text[0..idxSeparator]));
             string value = text[idxSeparator+1..$];
-            string ct_transfer_encoding;
 
             if (name == "content-type")
                 parseContentHeader(part.ctype, value);
             else if (name == "content-disposition")
                 parseContentHeader(part.disposition, value);
             else if (name == "content-transfer-encoding") 
-                part.content_transfer_encoding = strip(removechars(value, "\""));
+                part.content_transfer_encoding = toLower(strip(removechars(value, "\"")));
+            else if (name == "content-id")
+                part.content_id = strip(removechars(value, "\""));
         }
 
         if (strip(lines[0]).length == 0) 
@@ -362,7 +402,7 @@ class ProtoEmail
         parseContentHeader(part.disposition, this.headers.get("Content-Disposition", ""));
 
         if ("Content-Transfer-Encoding" in this.headers)
-            part.content_transfer_encoding = strip(removechars(this.headers["Content-Transfer-Encoding"], "\""));
+            part.content_transfer_encoding = toLower(strip(removechars(this.headers["Content-Transfer-Encoding"], "\"")));
 
         if (!part.ctype.name.startsWith("multipart") && "charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
@@ -391,8 +431,11 @@ class ProtoEmail
         debug
         {
             writeln("===========");
-            writeln("Name: ", part.ctype.name);
-            writeln("Fields: ", part.ctype.fields);
+            writeln("CType Name: ", part.ctype.name);
+            writeln("CType Fields: ", part.ctype.fields);
+            writeln("CDisposition Name: ", part.disposition.name);
+            writeln("CDisposition Fields: ", part.disposition.fields);
+            writeln("CID: ", part.content_id);
             writeln("Subparts: ", part.subparts.length);
             writeln("===========");
         }
@@ -474,7 +517,7 @@ void main()
     version(unittest) 
         State state = State.Disabled;
     else
-        State state = State.GenerateTestData;
+        State state = State.Normal;
 
     string mailsDir = "emails/single_emails";
 
@@ -486,11 +529,13 @@ void main()
             // 22668 => multipart base64
             // 1973  => text/plain UTF-8 quoted-printable
             // 10000 => text/plain UTF-8 7bit
+            // 36004 => mixed, alternative: plain us-ascii&html quoted-printable, adjunto message/rfc822
             // 40000 => multipart/alternative ISO8859-1 quoted-printable
+            // 40398 => muchos adjuntos png referenciados en el html
             // 50000 => multipart/alternative, text/plain sin encoding 7 bit y fuera de parte, text/html ISO8859-1 base64
             // 60000 => multipart/alternative Windows-1252 quoted-printable
             // 80000 => multipart/alternative ISO8859-1 quoted-printable
-            auto filenumber = 22668;
+            auto filenumber = 40398;
             auto email_file = File(format("%s/%d", mailsDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
             auto email = new ProtoEmail(email_file);
         break;
