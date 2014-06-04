@@ -47,6 +47,7 @@ module lib.characterencodings;
 
 import std.base64;
 import std.string;
+import std.stdio;
 import std.array;
 import std.conv;
 
@@ -54,8 +55,8 @@ import std.conv;
 string convertToUtf8Lossy(immutable(ubyte)[] data, string dataCharacterEncoding) {
 	try {
 		auto ret = convertToUtf8(data, dataCharacterEncoding);
-		import std.utf;
-		validate(ret);
+		//import std.utf;
+		//validate(ret);
 		return ret;
 	} catch(Exception e) {
 		string ret;

@@ -27,8 +27,8 @@ void main() {
         chdir(orig_dir);
     }
 
-    auto mbox_file = "emails/with_attachments/conadjuntos.mbox";
-    auto single_mails_dir = "emails/with_attachments/single_mails";
+    auto mbox_file = "emails/todo_gmail.mbox";
+    auto single_mails_dir = "emails/single_emails";
 
     assert(exists(mbox_file));
     assert(mbox_file.isFile);
