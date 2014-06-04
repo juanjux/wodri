@@ -38,6 +38,7 @@ class MIMEPart
 
     this(ref ContentData content_type, ref ContentData content_disposition, string ct_transfer_encoding)
     {
+        this();
         ctype = content_type;
         disposition = content_disposition;
         content_transfer_encoding = toLower(ct_transfer_encoding);
@@ -51,6 +52,7 @@ struct ContentData
 }
 
 
+// XXX Mirar otros campos
 struct Attachment
 {
     string realPath;
@@ -62,11 +64,11 @@ struct Attachment
 
 class ProtoEmail
 {
-    // XXX faltan attachments (list de structs attachments)
     DictionaryList!(string, false) headers;
     MIMEPart rootPart;
     string textBody;
     string htmlBody;
+    Attachment[] attachments;
 
     this()
     {
@@ -95,23 +97,24 @@ class ProtoEmail
             line = email_file.readln();
 
             if (count == 1 && line.startsWith("From "))
+                // mbox start indicator, ignore
                 continue;
 
             if (!inBody) // Header
             { 
                 if (!among(line[0], ' ', '\t'))
                 { 
-                    // New header, add the current (previous) header buffer to the object and clear it
+                    // New header, register the current header buffer and clear it
                     addHeader(headerBuffer.data);
                     headerBuffer.clear();
                 }
-                // else: indented lines of multiline headers just get added to the headerBuffer
+                // else: indented lines of multiline headers dont register it ey
                 headerBuffer.put(line);
 
                 if (line == "\r\n") // Body
                 {
                     inBody = true; 
-                    getBodyHeadersContentInfo(this.rootPart);
+                    getRootContentInfo(this.rootPart);
                     
                     if (this.rootPart.ctype.name.startsWith("multipart"))
                     {
@@ -124,15 +127,16 @@ class ProtoEmail
                 bodyBuffer.put(line);
         }
 
+        // XXX es probable que este if no sea necesario, simplemente llamamos
+        // a parseParts con el rootPart
+        // XXX reusar el mismo buffer, no hace falta bodyBuffer y headerBuffer
         if (bodyHasParts)
         {
-            parseParts(split(bodyBuffer.data, "\r\n"), this.rootPart.ctype.fields["boundary"], this.rootPart);
+            parseParts(split(bodyBuffer.data, "\r\n"), this.rootPart);
             visitParts(this.rootPart);
         }
         else // text/plain||html, just decode and set
-        {
             setTextPart(this.rootPart, bodyBuffer.data);
-        }
     }
 
 
@@ -206,10 +210,10 @@ class ProtoEmail
     }
     
 
-    void parseParts(string[] lines, string boundary, ref MIMEPart parent)
+    void parseParts(string[] lines, ref MIMEPart parent)
     {
         int startIndex = -1;
-        string boundaryPart = format("--%s", boundary);
+        string boundaryPart = format("--%s", parent.ctype.fields["boundary"]);
         string boundaryEnd  = format("%s--", boundaryPart); 
 
         // Find the starting boundary
@@ -253,7 +257,7 @@ class ProtoEmail
             thisPart.parent = parent;
 
             if (thisPart.ctype.name.length > 9 && thisPart.ctype.name[0..9] == "multipart")
-                parseParts(lines[startIndex..endIndex], thisPart.ctype.fields["boundary"], thisPart);
+                parseParts(lines[startIndex..endIndex], thisPart);
 
             if (among(thisPart.ctype.name, "text/plain", "text/html"))
             {
@@ -297,6 +301,7 @@ class ProtoEmail
         }
     }
 
+
     void addHeader(string raw) 
     {
         auto idxSeparator = indexOf(raw, ":");
@@ -309,7 +314,7 @@ class ProtoEmail
     }
 
 
-    private void parseContentHeader(ref ContentData content_data, string header_text)
+    void parseContentHeader(ref ContentData content_data, string header_text)
     {
         if (header_text.length == 0) return;
 
@@ -336,7 +341,7 @@ class ProtoEmail
     }
 
 
-    // Return: the start of the real content without headers
+    // Returns the start index of the real content after the part headers
     int parsePartHeaders(ref MIMEPart part, string[] lines)
     {
         void addPartHeader(string text)
@@ -395,7 +400,7 @@ class ProtoEmail
     }
 
 
-    void getBodyHeadersContentInfo(ref MIMEPart part)
+    void getRootContentInfo(ref MIMEPart part)
     {
         string ct_transfer_encoding;
         parseContentHeader(part.ctype, this.headers.get("Content-Type", ""));
@@ -450,7 +455,7 @@ class ProtoEmail
 // ############### TESTING CODE ###########################
 
 
-// ponerle version unittest, debug
+// XXX ponerle version unittest, debug
 DirEntry[] getSortedEmailFilesList(string mailsDir)
 {
     DirEntry[] emailFiles;
@@ -466,7 +471,8 @@ DirEntry[] getSortedEmailFilesList(string mailsDir)
     return emailFiles;
 }
 
-// version debug, unittest
+
+// XXX version debug, unittest
 void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)
 {
     string parentStr;
@@ -511,7 +517,6 @@ void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)
 
 void main()
 {
-
     enum State {Disabled, Normal, GenerateTestData}
 
     version(unittest) 
