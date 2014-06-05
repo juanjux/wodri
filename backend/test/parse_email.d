@@ -1,7 +1,7 @@
 #!/usr/bin/env rdmd 
 
 import std.stdio;
-import std.file: dirEntries, DirEntry, SpanMode, isDir, exists, mkdir;
+import std.file: dirEntries, DirEntry, SpanMode, isDir, exists, mkdir, getSize;
 import std.path;
 import std.conv;
 import std.algorithm;
@@ -9,16 +9,17 @@ import std.string;
 import std.ascii;
 import std.array;
 import std.base64;
-import core.exception;
+import std.random;
+import std.datetime;
+
 
 // lib.dictionarylist is vibed.utils.dictionarylist modified so it doesnt need
 // vibed's event loop 
 import lib.dictionarylist; import lib.characterencodings;
 
 // XXX Clase para excepciones de parseo
-// Capturer AssertError en los encode de Base64
 // XXX ContentInfo.type deberia ser un enum?
-// XXX const, immutable y toda esa mierda
+// XXX const, immutable, pure, nothrow, safe, in, out, etc
 // XXX mandar los fixes a Adam Druppe
 
 class MIMEPart
@@ -30,20 +31,9 @@ class MIMEPart
     string content_transfer_encoding;
     string content_id;
     string textContent;
-
-    this()
-    {
-    }
-
-
-    this(ref ContentData content_type, ref ContentData content_disposition, string ct_transfer_encoding)
-    {
-        this();
-        ctype = content_type;
-        disposition = content_disposition;
-        content_transfer_encoding = toLower(ct_transfer_encoding);
-    }
+    Attachment attachment;
 }
+
 
 struct ContentData
 {
@@ -58,37 +48,40 @@ struct Attachment
     string realPath;
     string cType;
     string filename;
-    uint size;
+    string content_id;
+    ulong size;
 }
 
 
 class ProtoEmail
-{
+{ 
+    string attachDir;
+    string rawMailDir;
+    bool copyRaw;
+
     DictionaryList!(string, false) headers;
     MIMEPart rootPart;
+
     string textBody;
     string htmlBody;
+    string rawMailPath;
     Attachment[] attachments;
 
-    this()
+    this(string rawMailDir, string attachDir, bool copyRaw=true)
     {
+        this.attachDir = attachDir;
+        this.rawMailDir = rawMailDir;
         this.rootPart = new MIMEPart();
-    }
-
-    this(File emailf)
-    {
-        this();
-        parseEmail(emailf);
+        this.copyRaw = copyRaw;
     }
 
 
-    void parseEmail(File email_file) 
+    void loadFromFile(File email_file) 
     {
         string line;
         bool inBody = false;
         bool bodyHasParts = false;
-        auto headerBuffer = appender!string();
-        auto bodyBuffer = appender!string();
+        auto textBuffer = appender!string();
 
         uint count = 0;
         while (!email_file.eof()) 
@@ -105,110 +98,48 @@ class ProtoEmail
                 if (!among(line[0], ' ', '\t'))
                 { 
                     // New header, register the current header buffer and clear it
-                    addHeader(headerBuffer.data);
-                    headerBuffer.clear();
+                    addHeader(textBuffer.data);
+                    textBuffer.clear();
                 }
                 // else: indented lines of multiline headers dont register it ey
-                headerBuffer.put(line);
+                textBuffer.put(line);
 
                 if (line == "\r\n") // Body
                 {
                     inBody = true; 
                     getRootContentInfo(this.rootPart);
+                    textBuffer.clear();
                     
                     if (this.rootPart.ctype.name.startsWith("multipart"))
-                    {
                         bodyHasParts = true;
-                        headerBuffer.clear();
-                    }
+
                 }
             }
             else // Body
-                bodyBuffer.put(line);
+                textBuffer.put(line);
         }
 
-        // XXX es probable que este if no sea necesario, simplemente llamamos
-        // a parseParts con el rootPart
-        // XXX reusar el mismo buffer, no hace falta bodyBuffer y headerBuffer
         if (bodyHasParts)
         {
-            parseParts(split(bodyBuffer.data, "\r\n"), this.rootPart);
+            parseParts(split(textBuffer.data, "\r\n"), this.rootPart);
             visitParts(this.rootPart);
         }
         else // text/plain||html, just decode and set
-            setTextPart(this.rootPart, bodyBuffer.data);
+            setTextPart(this.rootPart, textBuffer.data);
     }
 
 
-    // XXX mover a lib/characterencodings
-    immutable(ubyte)[] decodeBase64Lossy(string input)
+    void addHeader(string raw) 
     {
-        string nolineinput = removechars(input, "\r\n");
-        immutable(ubyte)[] ret;
-
-        try {
-            auto rem = nolineinput.length % 4;
-            if (rem)
-            {
-                auto padAppender = appender!string();
-                padAppender.put(nolineinput);
-                for (int i; i<(4-rem); i++) padAppender.put("=");
-                nolineinput = padAppender.data;
-            }
-            ret = Base64.decode(nolineinput);
-
-        } catch (AssertError e) {
-
-            // When the former method fails this usually works (and vice versa) :-/
-            ubyte[] bytetext;
-            foreach (string line; split(text, "\r\n")) 
-                bytetext ~= Base64.decode(line);
-
-            ret = bytetext.idup;
-        }
-        return ret;
-    }
-
-
-    void setTextPart(MIMEPart part, string text)
-    {
-        string newtext;
-        if ("charset" !in part.ctype.fields)
-            part.ctype.fields["charset"] = "latin1";
-
-        if (part.content_transfer_encoding == "quoted-printable")
-            newtext = convertToUtf8Lossy(decodeQuotedPrintable(text), part.ctype.fields["charset"]);
-
-        else if (part.content_transfer_encoding == "base64")
-            newtext = convertToUtf8Lossy(decodeBase64Lossy(text), part.ctype.fields["charset"]);
-
-        else
-            newtext = text;
-
-        part.textContent = newtext;
-
-        if (part.ctype.name == "text/html")
-            this.htmlBody = newtext;
-        else
-            this.textBody = newtext;
-
-        debug
-        {
-            if (this.htmlBody.length) 
-            {
-                writeln("===EMAIL OBJECT HTMLBODY===");
-                write(this.htmlBody); 
-                writeln("===ENDHTMLBODY===");
-            }
-            if (this.textBody.length)
-            {
-                writeln("===EMAIL OBJECT TEXTBODY==="); 
-                write(this.textBody); writeln;
-                writeln("===ENDTEXTBODY===");
-            }
-        }
-    }
+        auto idxSeparator = indexOf(raw, ":");
+        if (idxSeparator == -1 || (idxSeparator+1 > raw.length)) 
+            return; // Not header, probably mbox indicator or broken header
     
+        string name  = raw[0..idxSeparator];
+        string value = raw[idxSeparator+1..$];
+        this.headers.addField(name, decodeEncodedWord(value));
+    }
+
 
     void parseParts(string[] lines, ref MIMEPart parent)
     {
@@ -271,29 +202,7 @@ class ProtoEmail
             }
             else if (among(thisPart.disposition.name, "attachment", "inline"))
             {
-                // Ojo, no siempre es base64, por ejemplo los message/rfc822 suelen
-                // tener disposition=attachment pero sin encoding (ejemplo 36004) XXX probar con ese
-
-                // 1. sacar el contenido, decodificarlo si es base64 (sino, se deja tal cual)
-                // 2. guardar en emails/attachments con un nombre unico
-                // 3. guardar la ruta
-                // XXX poner que el transfer_encoding siempre se asigne con toLower y regenerar tests
-                immutable(ubyte)[] att_content;
-                if (thisPart.content_transfer_encoding == "base64")
-                {
-
-                    // XXX seguir aqui
-                    att_content = decodeBase64Lossy(join(lines[contentStart..endIndex])); 
-                    //auto f = File("/home/juanjux/prueba.png", "w");
-                    //f.rawWrite(att_content);
-                    //f.close();
-                }
-                else
-                    att_content = cast(immutable(ubyte)[]) join(lines[contentStart..endIndex]);
-                debug
-                {
-                    writeln("XXX ADJUNTO!");
-                }
+                setAttachmentPart(thisPart, lines[contentStart..endIndex]);
             }
 
             startIndex = endIndex+1;
@@ -302,15 +211,82 @@ class ProtoEmail
     }
 
 
-    void addHeader(string raw) 
+    void setTextPart(MIMEPart part, string text)
     {
-        auto idxSeparator = indexOf(raw, ":");
-        if (idxSeparator == -1 || (idxSeparator+1 > raw.length)) 
-            return; // Not header, probably mbox indicator or broken header
-    
-        string name  = raw[0..idxSeparator];
-        string value = raw[idxSeparator+1..$];
-        this.headers.addField(name, decodeEncodedWord(value));
+        string newtext;
+        if ("charset" !in part.ctype.fields)
+            part.ctype.fields["charset"] = "latin1";
+
+        if (part.content_transfer_encoding == "quoted-printable")
+            newtext = convertToUtf8Lossy(decodeQuotedPrintable(text), part.ctype.fields["charset"]);
+
+        else if (part.content_transfer_encoding == "base64")
+            newtext = convertToUtf8Lossy(decodeBase64Stubborn(text), part.ctype.fields["charset"]);
+
+        else
+            newtext = text;
+
+        part.textContent = newtext;
+
+        if (part.ctype.name == "text/html")
+            this.htmlBody = newtext;
+        else
+            this.textBody = newtext;
+
+        debug
+        {
+            if (this.htmlBody.length) 
+            {
+                writeln("===EMAIL OBJECT HTMLBODY===");
+                write(this.htmlBody); 
+                writeln("===ENDHTMLBODY===");
+            }
+            if (this.textBody.length)
+            {
+                writeln("===EMAIL OBJECT TEXTBODY==="); 
+                write(this.textBody); writeln;
+                writeln("===ENDTEXTBODY===");
+            }
+        }
+    }
+ 
+
+    // XXX mirar valor/referencia para content y part
+    void setAttachmentPart(MIMEPart part, string[] lines)
+    {
+        immutable(ubyte)[] att_content;
+
+        if (part.content_transfer_encoding == "base64")
+            att_content = decodeBase64Stubborn(join(lines)); 
+        else // binary, 7bit, 8bit, no need to decode... I think
+            att_content = cast(immutable(ubyte)[]) join(lines, "\r\n");
+
+        string attachFileName;
+        string origFileName = part.disposition.fields.get("filename", "");
+
+        do {
+            attachFileName = format("%d_%d%s", stdTimeToUnixTime(Clock.currStdTime), uniform(0, 100000), extension(origFileName));
+        } while(attachFileName.exists);
+
+        string attachFullPath = buildPath(this.attachDir, attachFileName);
+        auto f = File(attachFullPath, "w");
+        f.rawWrite(att_content);
+        f.close();
+
+        Attachment att;
+        att.realPath = buildPath(this.attachDir, attachFileName);
+        att.cType = part.ctype.name;
+        att.filename = origFileName;
+        att.size = att.realPath.getSize;
+        att.content_id = part.content_id;
+
+        part.attachment = att;
+        this.attachments ~= att;
+
+        debug
+        {
+            writeln("Attachment detected: ", att);
+        }
     }
 
 
@@ -356,14 +332,22 @@ class ProtoEmail
             string name = toLower(strip(text[0..idxSeparator]));
             string value = text[idxSeparator+1..$];
 
-            if (name == "content-type")
-                parseContentHeader(part.ctype, value);
-            else if (name == "content-disposition")
-                parseContentHeader(part.disposition, value);
-            else if (name == "content-transfer-encoding") 
-                part.content_transfer_encoding = toLower(strip(removechars(value, "\"")));
-            else if (name == "content-id")
-                part.content_id = strip(removechars(value, "\""));
+            switch(name)
+            {
+                case "content-type":
+                    parseContentHeader(part.ctype, value);
+                    break;
+                case "content-disposition":
+                    parseContentHeader(part.disposition, value);
+                    break;
+                case "content-transfer-encoding":
+                    part.content_transfer_encoding = toLower(strip(removechars(value, "\"")));
+                    break;
+                case "content-id":
+                    part.content_id = strip(removechars(value, "\""));
+                    break;
+                default:
+            }
         }
 
         if (strip(lines[0]).length == 0) 
@@ -374,26 +358,26 @@ class ProtoEmail
         }
 
 
-        auto headerBuffer = appender!string();
+        auto textBuffer = appender!string();
         int idx;
         foreach (string line; lines)
         {
             if (!line.length) // end of headers
             {
-                if (headerBuffer.data.length)
+                if (textBuffer.data.length)
                 {
-                    addPartHeader(headerBuffer.data);
-                    headerBuffer.clear();
+                    addPartHeader(textBuffer.data);
+                    textBuffer.clear();
                 }
                 break;
             }
 
-            if (headerBuffer.data.length && !among(line[0], ' ', '\t'))
+            if (textBuffer.data.length && !among(line[0], ' ', '\t'))
             {
-                addPartHeader(headerBuffer.data);
-                headerBuffer.clear();
+                addPartHeader(textBuffer.data);
+                textBuffer.clear();
             }
-            headerBuffer.put(line);
+            textBuffer.put(line);
             ++idx;
         }
         return idx;
@@ -524,13 +508,16 @@ void main()
     else
         State state = State.Normal;
 
-    string mailsDir = "emails/single_emails";
+    string webmailMainDir = "/home/juanjux/webmail";
+    string origMailsDir = buildPath(webmailMainDir, "backend/test/emails/single_emails");
+    string rawMailDir  = buildPath(webmailMainDir, "backend/test/rawmails");
+    string attachDir   = buildPath(webmailMainDir, "backend/test/attachments");
 
     switch(state)
     {
         case State.Normal:
-            // Specific tests
 
+            // Specific tests
             // 22668 => multipart base64
             // 1973  => text/plain UTF-8 quoted-printable
             // 10000 => text/plain UTF-8 7bit
@@ -541,8 +528,9 @@ void main()
             // 60000 => multipart/alternative Windows-1252 quoted-printable
             // 80000 => multipart/alternative ISO8859-1 quoted-printable
             auto filenumber = 40398;
-            auto email_file = File(format("%s/%d", mailsDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
-            auto email = new ProtoEmail(email_file);
+            auto email_file = File(format("%s/%d", origMailsDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
+            auto email = new ProtoEmail(rawMailDir, attachDir);
+            email.loadFromFile(email_file);
         break;
 
         case State.GenerateTestData:
@@ -550,7 +538,7 @@ void main()
             // with a description of every mime part (ctype, charset, transfer-encoding, disposition, length, etc) 
             // and their contents. This will be used in the unittest for comparing the email parsing output with
             // these. Obviously, it's very important to regenerate these files only with Good and Tested versions :)
-            auto sortedFiles = getSortedEmailFilesList(mailsDir);
+            auto sortedFiles = getSortedEmailFilesList(origMailsDir);
             foreach(DirEntry e; sortedFiles)
             {
                 // parsear email e.name
@@ -565,11 +553,13 @@ void main()
                 if (!testDir.exists) 
                     mkdir(testDir);
 
-                auto attachDir = buildPath(testDir, "attachments");
-                if (!attachDir.exists) 
-                    mkdir(attachDir);
+                auto testAttachDir = buildPath(testDir, "attachments");
+                if (!testAttachDir.exists) 
+                    mkdir(testAttachDir);
 
-                auto email = new ProtoEmail(File(e.name));
+                auto email = new ProtoEmail(rawMailDir, attachDir);
+                email.loadFromFile(File(e.name));
+
                 auto ap = appender!string;
                 createPartInfoText(email.rootPart, ap, 0);
                 auto testFile = buildPath(testDir, "mime_info.txt");
@@ -589,18 +579,24 @@ unittest
     /* For every mail in the testing-mails repo, parse the email, print the headers
      * and compare line by line with the (decoded) original */
     writeln("Starting unittest");
-    string mailsDir = "emails/single_emails/";
+
+    string webmailMainDir = "/home/juanjux/webmail";
+    string origMailDir = buildPath(webmailMainDir, "backend/test/emails/single_emails");
+    string rawMailDir  = buildPath(webmailMainDir, "backend/test/rawmails");
+    string attachDir   = buildPath(webmailMainDir, "backend/test/attachments");
 
     // Dont these these mails 
     int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0];
 
 
-    foreach (DirEntry e; getSortedEmailFilesList(mailsDir))
+    foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
     {
         writeln(e.name, "...");
         if (baseName(e.name) in brokenMails) continue;
 
-        auto email = new ProtoEmail(File(e.name));
+        auto email = new ProtoEmail(rawMailDir, attachDir);
+        email.loadFromFile(File(e.name));
+
         string headers_str = email.print_headers(true);
         auto header_lines = split(headers_str, "\r\n");
         auto orig_file = File(e.name);

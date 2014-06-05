@@ -2,7 +2,7 @@
 // https://github.com/adamdruppe/arsd
 // Boost License 1.0
 // Some modifications from Juanjo Alvarez (inserted the encodeDecodedWord here that originally
-// was in email.d)
+// was in email.d, added the decodeBase64Stubborn)
 
 // helper program is in ~me/encodings.d to make more tables from wikipedia
 
@@ -47,9 +47,39 @@ module lib.characterencodings;
 
 import std.base64;
 import std.string;
-import std.stdio;
+debug import std.stdio;
 import std.array;
 import std.conv;
+import core.exception;
+
+immutable(ubyte)[] decodeBase64Stubborn(string input)
+{
+    string nolineinput = removechars(input, "\r\n");
+    immutable(ubyte)[] ret;
+
+    try {
+        auto rem = nolineinput.length % 4;
+        if (rem)
+        {
+            auto padAppender = appender!string();
+            padAppender.put(nolineinput);
+            for (int i; i<(4-rem); i++) padAppender.put("=");
+            nolineinput = padAppender.data;
+        }
+        ret = Base64.decode(nolineinput);
+
+    } catch (AssertError e) {
+
+        // When the former method fails this usually works (and vice versa) :-/
+        ubyte[] bytetext;
+        foreach (string line; split(text, "\r\n")) 
+            bytetext ~= Base64.decode(line);
+
+        ret = bytetext.idup;
+    }
+    return ret;
+}
+
 
 /// Like convertToUtf8, but if the encoding is unknown, it just strips all chars > 127 and calls it done instead of throwing
 string convertToUtf8Lossy(immutable(ubyte)[] data, string dataCharacterEncoding) {
