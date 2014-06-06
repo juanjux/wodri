@@ -1,7 +1,7 @@
 #!/usr/bin/env rdmd 
 
 import std.stdio;
-import std.file: dirEntries, DirEntry, SpanMode, isDir, exists, mkdir, getSize;
+import std.file: dirEntries, DirEntry, SpanMode, isDir, exists, mkdir, getSize, copy;
 import std.path;
 import std.conv;
 import std.algorithm;
@@ -11,12 +11,14 @@ import std.array;
 import std.base64;
 import std.random;
 import std.datetime;
+import std.process;
 
 
 // lib.dictionarylist is vibed.utils.dictionarylist modified so it doesnt need
 // vibed's event loop 
 import lib.dictionarylist; import lib.characterencodings;
 
+// XXX FIXME: Ver que pasa con los adjuntos que fallan y porque los decodifica distinto, probar cosas
 // XXX Clase para excepciones de parseo
 // XXX ContentInfo.type deberia ser un enum?
 // XXX const, immutable, pure, nothrow, safe, in, out, etc
@@ -50,6 +52,7 @@ struct Attachment
     string filename;
     string content_id;
     ulong size;
+    version(unittest) string original_encoded_content;
 }
 
 
@@ -57,7 +60,6 @@ class ProtoEmail
 { 
     string attachDir;
     string rawMailDir;
-    bool copyRaw;
 
     DictionaryList!(string, false) headers;
     MIMEPart rootPart;
@@ -66,17 +68,17 @@ class ProtoEmail
     string htmlBody;
     string rawMailPath;
     Attachment[] attachments;
+    bool[string] tags; // XXX usar set?
 
-    this(string rawMailDir, string attachDir, bool copyRaw=true)
+    this(string rawMailDir, string attachDir)
     {
         this.attachDir = attachDir;
         this.rawMailDir = rawMailDir;
         this.rootPart = new MIMEPart();
-        this.copyRaw = copyRaw;
     }
 
 
-    void loadFromFile(File email_file) 
+    void loadFromFile(File email_file, bool copyRaw=true) 
     {
         string line;
         bool inBody = false;
@@ -264,6 +266,9 @@ class ProtoEmail
         string attachFileName;
         string origFileName = part.disposition.fields.get("filename", "");
 
+        if (!origFileName.length) // wild shot, but sometimes it is like that
+            origFileName = part.ctype.fields.get("name", "");
+
         do {
             attachFileName = format("%d_%d%s", stdTimeToUnixTime(Clock.currStdTime), uniform(0, 100000), extension(origFileName));
         } while(attachFileName.exists);
@@ -279,6 +284,7 @@ class ProtoEmail
         att.filename = origFileName;
         att.size = att.realPath.getSize;
         att.content_id = part.content_id;
+        version(unittest) att.original_encoded_content = lines;
 
         part.attachment = att;
         this.attachments ~= att;
@@ -530,7 +536,7 @@ void main()
             auto filenumber = 40398;
             auto email_file = File(format("%s/%d", origMailsDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
             auto email = new ProtoEmail(rawMailDir, attachDir);
-            email.loadFromFile(email_file);
+            email.loadFromFile(email_file, true);
         break;
 
         case State.GenerateTestData:
@@ -558,7 +564,7 @@ void main()
                     mkdir(testAttachDir);
 
                 auto email = new ProtoEmail(rawMailDir, attachDir);
-                email.loadFromFile(File(e.name));
+                email.loadFromFile(File(e.name), true);
 
                 auto ap = appender!string;
                 createPartInfoText(email.rootPart, ap, 0);
@@ -576,23 +582,39 @@ void main()
 
 unittest
 {
+    // startunittest
+
     /* For every mail in the testing-mails repo, parse the email, print the headers
      * and compare line by line with the (decoded) original */
+    // Note: you need the "base64" binary and the unix "rm" command to run these tests
+
     writeln("Starting unittest");
 
     string webmailMainDir = "/home/juanjux/webmail";
-    string origMailDir = buildPath(webmailMainDir, "backend/test/emails/single_emails");
-    string rawMailDir  = buildPath(webmailMainDir, "backend/test/rawmails");
-    string attachDir   = buildPath(webmailMainDir, "backend/test/attachments");
+    string backendTestDir = buildPath(webmailMainDir, "backend", "test");
+    string origMailDir = buildPath(backendTestDir, "emails", "single_emails");
+    string rawMailDir  = buildPath(backendTestDir, "rawmails");
+    string attachDir   = buildPath(backendTestDir, "attachments");
+    string munpackDir  = buildPath(backendTestDir, "munpack_test");
 
-    // Dont these these mails 
-    int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0];
+    // Dont these these mails (or munpack decoding \r as \n for some reason)
+    int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0, // broken mails, no newline after headers or parts, etc
+                               //"6988":0, "26876": 0, "36004":0, "37674":0, "38511":0, // munpack unpack these files with some different value
+                               //"41399":0, "41400":0
+                               ];
 
-
+    // Not broken, but for putting mails that need to be skipped for some reaso
+    //int[string] skipMails  = ["41051":0, "41112":0];
+    int[string] skipMails;
+    
     foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
     {
+        //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
+        //if (to!int(e.name.baseName) < 36959) continue; // For testing from some mail forward
+
         writeln(e.name, "...");
-        if (baseName(e.name) in brokenMails) continue;
+        if (baseName(e.name) in brokenMails || baseName(e.name) in skipMails)
+            continue;
 
         auto email = new ProtoEmail(rawMailDir, attachDir);
         email.loadFromFile(File(e.name));
@@ -602,7 +624,8 @@ unittest
         auto orig_file = File(e.name);
         // Consume the first line (with the mbox From)
         orig_file.readln();
-        
+     
+        // TEST: HEADERS
         int idx = 0;
         while(!orig_file.eof())
         {
@@ -626,6 +649,8 @@ unittest
         }
         writeln("\t\t...headers ok!");
 
+        // TEST: Body parts
+        /*
         auto testFilePath = buildPath(format("%s_t", e.name), "mime_info.txt");
         auto f = File(testFilePath, "r");
         auto ap1 = appender!string();
@@ -652,5 +677,101 @@ unittest
             writeln("----------------------------------------------------");
             assert(0);
         }
+
+        // TEST: Attachments
+        if (!munpackDir.exists)
+            mkdir(munpackDir);
+
+        std.process.system(format("rm %s/*", munpackDir));
+        // Copy the original file to munpack_temp
+        auto munpack_dest = buildPath(munpackDir, baseName(e.name));
+        copy(e.name, munpack_dest);
+        std.process.system(format("munpack -q -C %s %s > /dev/null 2>&1", munpackDir, munpack_dest));
+
+        uint[string] filename_trans;  
+
+        // munpack change lot of special chars for "X"
+        string munpack_translate(string name)
+        {
+            dchar[dchar] transTable = ['{': 'X', '}': 'X', '[': 'X', ']': 'X', ' ': 'X', '(': 'X', ')': 'X',
+                                       '¿': 'X', '?': 'X'];
+            return translate(name, transTable).replace("\t", "XXX");
+        }
+
+        // munpack adds a ".1", ".2" to files with the same name, so we do the same
+        foreach(uint idxatt, Attachment att; email.attachments)
+        {
+            uint idxname = 0;
+            string newname;
+            string separator = ".";
+            writeln("XXX att_filename: |", att.filename, "|");
+            while (true)
+            {
+                if (att.filename.length == 0)
+                {
+                    att.filename = "part";
+                    separator = "";
+                }
+
+                if (idxname > 0)
+                    newname = munpack_translate(format("%s%s%d", att.filename, separator, idxname));
+                else
+                    newname = munpack_translate(att.filename);
+
+                if (newname !in filename_trans)
+                {
+                    filename_trans[newname] = idxatt;
+                    break;
+                }
+                ++idxname;
+            }
+        }
+
+        foreach(string munpack_name, uint att_index; filename_trans)
+        {
+            writeln("XXX munpack_name: |", munpack_name, "|");
+            auto attachment = email.attachments[att_index];
+            auto munpack_file = File(buildPath(munpackDir, munpack_name));
+            auto our_file = File(attachment.realPath);
+
+            auto buf_munpack = new ubyte[1024*1024*4]; // 4MB
+            auto buf_ourfile = new ubyte[1024*1024*4];
+
+            while (!munpack_file.eof)
+            {
+                auto bufread1 = munpack_file.rawRead(buf_munpack);
+                auto bufread2 = our_file.rawRead(buf_ourfile);
+
+                ulong idx1 = 0;
+                ulong idx2 = 0;
+
+                while(idx1 < bufread1.length && idx2 < bufread2.length)
+                {
+                    //write("MUNPACK: ", bufread1[idx1], "\n");
+                    //write("WE     : ", bufread2[idx2], "\n");
+
+                    if (bufread1[idx1] != bufread2[idx2])
+                    {
+                        if (bufread1[idx1] == 10 && bufread2[idx2] == 13)
+                            ++idx2; // sometimes munpack changes \n for \r\n on text files 
+                        else 
+                        {
+                            writeln("Different attachments!");
+                            writeln("Our decoded attachment: ", our_file.name);
+                            writeln("Munpack-decoded attachment: ", munpack_file.name);
+                            assert(0);
+                        }
+                    }
+                    ++idx1;
+                    ++idx2;
+                }
+            }
+        }
+            writeln("\t...attachments ok!");
+        */
+        // clean the files
+        foreach(Attachment att; email.attachments)
+            std.file.remove(att.realPath);
+
     }
 }

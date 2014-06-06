@@ -94,14 +94,10 @@ Create an instance of ProtoMail (the object used before storing into MongoDB).
 \end_layout
 
 \begin_layout Itemize
-Extract the parts using munpack (or similar program or library), including
- text parts.
- 
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-The text parts go to ProtoMail.txt and ProtoMail.html
+Extract the email body parts.
+ For Content-Type: multipart/* use munpack.
+ For text/plain or text/html just parse the body (be careful with the charset!);
+ the text parts go to ProtoMail.txt and/or ProtoMail.html 
 \end_layout
 
 \begin_layout Itemize
@@ -123,6 +119,14 @@ Create a modified RAW text with the attachments replaced by the {filesystem_path
 \begin_layout Itemize
 Save some headers (From, To, Cc, Bcc, Date, Subject, Message-ID, References,
  In-Reply-To) to a struct and save the struct in ProtoMail.Headers.
+ (link for header and body parsing: 
+\begin_inset CommandInset href
+LatexCommand href
+target "http://badjava.com/sites/default/files/article_files/mail.php.txt"
+
+\end_inset
+
+).
 \end_layout
 
 \begin_layout Itemize
@@ -130,11 +134,10 @@ Add the ProtoMail to a list
 \end_layout
 
 \begin_layout Itemize
-Create a tagger thread with a reference to the ProtoMail object and process
- the next message.
+Create a tagger thread with a reference to the ProtoMail object or list
+ of objects and process the next message.
 \end_layout
 
-\end_deeper
 \begin_layout Section*
 Tagger
 \end_layout
@@ -461,12 +464,24 @@ Create a new tag name with an optional description and color in the POST
  data.
 \end_layout
 
+\begin_layout Standard
+XXX delete tag
+\end_layout
+
 \begin_layout Subsection*
 get: /conversation/id
 \end_layout
 
 \begin_layout Standard
 Get a Conversation with the specified id.
+\end_layout
+
+\begin_layout Standard
+XXX delete: conversation
+\end_layout
+
+\begin_layout Standard
+XXX post: conversation tags
 \end_layout
 
 \begin_layout Subsection*
@@ -507,6 +522,14 @@ post: /message/id/forward
 
 \begin_layout Standard
 Forward the message
+\end_layout
+
+\begin_layout Standard
+XXX post: message tag /message/tag/name
+\end_layout
+
+\begin_layout Standard
+XXX delete: message tag /message/tag/name
 \end_layout
 
 \begin_layout Subsection*

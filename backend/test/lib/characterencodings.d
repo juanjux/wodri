@@ -47,17 +47,17 @@ module lib.characterencodings;
 
 import std.base64;
 import std.string;
-debug import std.stdio;
+import std.stdio;
 import std.array;
 import std.conv;
 import core.exception;
 
 immutable(ubyte)[] decodeBase64Stubborn(string input)
 {
-    string nolineinput = removechars(input, "\r\n");
     immutable(ubyte)[] ret;
 
     try {
+        string nolineinput = removechars(input, "\r\n");
         auto rem = nolineinput.length % 4;
         if (rem)
         {
@@ -68,11 +68,11 @@ immutable(ubyte)[] decodeBase64Stubborn(string input)
         }
         ret = Base64.decode(nolineinput);
 
-    } catch (AssertError e) {
 
+    } catch (AssertError e) {
         // When the former method fails this usually works (and vice versa) :-/
         ubyte[] bytetext;
-        foreach (string line; split(text, "\r\n")) 
+        foreach (string line; split(input, "\r\n")) 
             bytetext ~= Base64.decode(line);
 
         ret = bytetext.idup;
