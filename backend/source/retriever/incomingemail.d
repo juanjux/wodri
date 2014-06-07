@@ -616,6 +616,7 @@ unittest
 
     else version(singletest)
     {
+
         // Specific tests
         // 22668 => multipart base64
         // 1973  => text/plain UTF-8 quoted-printable
@@ -632,6 +633,7 @@ unittest
         email.loadFromFile(email_file, true);
         
         email.visitParts(email.rootPart);
+        //email.visitParts(email.rootPart;
         foreach(MIMEPart part; email.textualParts)
             writeln(part.ctype.name, ":", part.toHash());
 
@@ -765,7 +767,7 @@ unittest
                 }
             }
             writeln("\t...attachments ok!");
-
+        
             // clean the attachment files
             foreach(Attachment att; email.attachments)
                 std.file.remove(att.realPath);
@@ -774,6 +776,5 @@ unittest
 
     // Clean the attachment and rawMail dirs
     system(format("rm -f %s/*", attachDir));
-    system(format("rm -f %s/*", rawMailDir));
 
 }
