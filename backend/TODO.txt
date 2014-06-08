@@ -1,0 +1,11 @@
+- Create the main retriever executable:
+  - It will be run by postfix and the email will be given by stardart input
+  - It should determine if the domain and recipient is in the To:, Cc: or Bcc: adresses and return -1 if not
+  - An IncomingEmail object is created from the email text and the original email and attachments are
+    saved to their storages.
+  - The tagger process should start: check the SpamAssassin header, check the internal rules and
+    check the user rules (a UserFilter class should be created) and tags will be added or removed to the
+    IncomingEmail object.
+  - Get a ConversationID for the email. If none exists, create a new one and set it to the IncomingEmail instance.
+  - Store the object into MongoDB, get an id.
+  - Create a temporal document with all the text parts and subject decoded, run the search indexer over it, delete it.
