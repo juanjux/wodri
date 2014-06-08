@@ -16,9 +16,10 @@ import std.process;
 
 // lib.dictionarylist is vibed.utils.dictionarylist modified so it doesnt need
 // vibed's event loop 
-import lib.dictionarylist; import lib.characterencodings;
+import lib.dictionarylist; 
+import lib.characterencodings;
 
-// XXX Clase para excepciones de parseo
+// XXX Clase para excepciones de parseo 
 // XXX const, immutable, pure, nothrow, safe, in, out, etc
 // XXX mandar los fixes a Adam Druppe
 
@@ -62,9 +63,9 @@ class IncomingEmail
     string attachDir;
     string rawMailDir;
 
-    DictionaryList!(string, false) headers;
-    MIMEPart rootPart;
-    MIMEPart[] textualParts; // shortcut to the textual (text or html) parts in display order
+    DictionaryList!(string, false) headers; 
+    MIMEPart rootPart; 
+    MIMEPart[] textualParts; // shortcut to the textual (text or html) parts in display
 
     string rawMailPath;
     Attachment[] attachments;
@@ -72,9 +73,9 @@ class IncomingEmail
 
     this(string rawMailDir, string attachDir)
     {
-        this.attachDir = attachDir;
+        this.attachDir  = attachDir;
         this.rawMailDir = rawMailDir;
-        this.rootPart = new MIMEPart();
+        this.rootPart   = new MIMEPart();
     }
 
 
@@ -84,12 +85,13 @@ class IncomingEmail
         this.loadFromFile(f);
     }
 
+
     void loadFromFile(File email_file, bool copyRaw=true) 
     {
         string line;
-        bool inBody = false;
+        bool inBody       = false;
         bool bodyHasParts = false;
-        auto textBuffer = appender!string();
+        auto textBuffer   = appender!string();
 
         uint count = 0;
         while (!email_file.eof()) 
@@ -128,9 +130,7 @@ class IncomingEmail
         }
 
         if (bodyHasParts)
-        {
             parseParts(split(textBuffer.data, "\r\n"), this.rootPart);
-        }
         else // text/plain||html, just decode and set
             setTextPart(this.rootPart, textBuffer.data);
 
@@ -178,7 +178,7 @@ class IncomingEmail
         }
 
         int endIndex;
-        bool finished = false;
+        bool finished   = false;
         int globalIndex = startIndex;
 
         while (!finished && (globalIndex <= lines.length))
@@ -203,9 +203,9 @@ class IncomingEmail
                 return; // correct?
 
             MIMEPart thisPart = new MIMEPart();
-            int contentStart = startIndex + parsePartHeaders(thisPart, lines[startIndex..endIndex]);
-            parent.subparts ~= thisPart;
-            thisPart.parent = parent;
+            int contentStart  = startIndex + parsePartHeaders(thisPart, lines[startIndex..endIndex]);
+            parent.subparts  ~= thisPart;
+            thisPart.parent   = parent;
 
             if (thisPart.ctype.name.length > 9 && thisPart.ctype.name[0..9] == "multipart")
                 parseParts(lines[startIndex..endIndex], thisPart);
@@ -221,9 +221,7 @@ class IncomingEmail
                 }
             }
             else if (among(thisPart.disposition.name, "attachment", "inline"))
-            {
                 setAttachmentPart(thisPart, lines[contentStart..endIndex]);
-            }
 
             startIndex = endIndex+1;
             ++globalIndex;
@@ -247,7 +245,7 @@ class IncomingEmail
             newtext = text;
 
         part.textContent = newtext;
-        textualParts ~= part;
+        textualParts    ~= part;
 
         debug
         {
@@ -290,10 +288,10 @@ class IncomingEmail
         f.close();
 
         Attachment att;
-        att.realPath = buildPath(this.attachDir, attachFileName);
-        att.cType = part.ctype.name;
-        att.filename = origFileName;
-        att.size = att.realPath.getSize;
+        att.realPath   = buildPath(this.attachDir, attachFileName);
+        att.cType      = part.ctype.name;
+        att.filename   = origFileName;
+        att.size       = att.realPath.getSize;
         att.content_id = part.content_id;
         version(unittest) 
         {
@@ -301,7 +299,7 @@ class IncomingEmail
             att.original_encoded_content = join(lines);
         }
 
-        part.attachment = att;
+        part.attachment   = att;
         this.attachments ~= att;
 
         debug writeln("Attachment detected: ", att);
@@ -310,7 +308,8 @@ class IncomingEmail
 
     void parseContentHeader(ref ContentData content_data, string header_text)
     {
-        if (header_text.length == 0) return;
+        if (header_text.length == 0) 
+            return;
 
         auto value_tokens = split(strip(header_text), ";");
         if (value_tokens.length == 0) // ???
@@ -324,7 +323,7 @@ class IncomingEmail
         {
             foreach(string param; value_tokens[1..$]) 
             {
-                param = strip(removechars(param, "\""));
+                param        = strip(removechars(param, "\""));
                 auto eqIndex = indexOf(param, "=");
                 if (eqIndex == -1) 
                     continue;
@@ -347,7 +346,7 @@ class IncomingEmail
                 // something like "----------"
                 return;
 
-            string name = toLower(strip(text[0..idxSeparator]));
+            string name  = toLower(strip(text[0..idxSeparator]));
             string value = text[idxSeparator+1..$];
 
             switch(name)
@@ -405,8 +404,8 @@ class IncomingEmail
     void getRootContentInfo(MIMEPart part)
     {
         string ct_transfer_encoding;
-        parseContentHeader(part.ctype, this.headers.get("Content-Type", ""));
-        parseContentHeader(part.disposition, this.headers.get("Content-Disposition", ""));
+        parseContentHeader(part.ctype       , this.headers.get("Content-Type"        , ""));
+        parseContentHeader(part.disposition , this.headers.get("Content-Disposition" , ""));
 
         if ("Content-Transfer-Encoding" in this.headers)
             part.content_transfer_encoding = toLower(strip(removechars(this.headers["Content-Transfer-Encoding"], "\"")));
@@ -438,13 +437,13 @@ class IncomingEmail
         void visitParts(MIMEPart part)
         {
             writeln("===========");
-            writeln("CType Name: ", part.ctype.name);
-            writeln("CType Fields: ", part.ctype.fields);
-            writeln("CDisposition Name: ", part.disposition.name);
-            writeln("CDisposition Fields: ", part.disposition.fields);
-            writeln("CID: ", part.content_id);
-            writeln("Subparts: ", part.subparts.length);
-            writeln("Object hash: ", part.toHash());
+            writeln("CType Name: "          , part.ctype.name);
+            writeln("CType Fields: "        , part.ctype.fields);
+            writeln("CDisposition Name: "   , part.disposition.name);
+            writeln("CDisposition Fields: " , part.disposition.fields);
+            writeln("CID: "                 , part.content_id);
+            writeln("Subparts: "            , part.subparts.length);
+            writeln("Object hash: "         , part.toHash());
             writeln("===========");
 
             foreach(MIMEPart subpart; part.subparts)
@@ -498,25 +497,28 @@ unittest
         string parentStr;
 
         ap.put(format("==#== PART ==#==\n"));
+
         if (part.parent !is null) 
             ap.put(format("Son of: %s\n", part.parent.ctype.name));
         else 
             ap.put("Root part\n");
             
         ap.put(format("Level: %d\n", level));
-
         ap.put(format("Content-Type: %s\n", part.ctype.name));
         ap.put("\tfields: \n");
+
         if ("charset" in part.ctype.fields)        
             ap.put(format("\t\tcharset: %s\n", part.ctype.fields["charset"]));
         if ("boundary" in part.ctype.fields)       
             ap.put(format("\t\tboundary: %s\n", part.ctype.fields["boundary"]));
+
         if (part.disposition.name.length)
         {
             ap.put(format("Content-Disposition: %s\n", part.disposition.name));
             if ("filename" in part.disposition.fields)
                 ap.put(format("\t\tfilename: %s\n", part.disposition.fields["filename"]));
         }
+
         if (part.content_transfer_encoding.length) 
             ap.put(format("Content-Transfer-Encoding: %s\n", part.content_transfer_encoding));
 
@@ -540,10 +542,10 @@ unittest
 
     string webmailMainDir = "/home/juanjux/webmail";
     string backendTestDir = buildPath(webmailMainDir, "backend", "test");
-    string origMailDir = buildPath(backendTestDir, "emails", "single_emails");
-    string rawMailDir  = buildPath(backendTestDir, "rawmails");
-    string attachDir   = buildPath(backendTestDir, "attachments");
-    string base64Dir  = buildPath(backendTestDir, "base64_test");
+    string origMailDir    = buildPath(backendTestDir, "emails", "single_emails");
+    string rawMailDir     = buildPath(backendTestDir, "rawmails");
+    string attachDir      = buildPath(backendTestDir, "attachments");
+    string base64Dir      = buildPath(backendTestDir, "base64_test");
 
     version(createtestmails)
     {
@@ -629,7 +631,7 @@ unittest
         // 80000 => multipart/alternative ISO8859-1 quoted-printable
         auto filenumber = 40398;
         auto email_file = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
-        auto email = new IncomingEmail(rawMailDir, attachDir);
+        auto email      = new IncomingEmail(rawMailDir, attachDir);
         email.loadFromFile(email_file, true);
         
         email.visitParts(email.rootPart);
@@ -654,7 +656,7 @@ unittest
         foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
         {
             //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
-            if (to!int(e.name.baseName) < 32000) continue; // For testing from some mail forward
+            //if (to!int(e.name.baseName) < 32000) continue; // For testing from some mail forward
 
             writeln(e.name, "...");
             if (baseName(e.name) in brokenMails || baseName(e.name) in skipMails)
@@ -664,9 +666,10 @@ unittest
             email.loadFromFile(File(e.name));
 
             string headers_str = email.print_headers(true);
-            auto header_lines = split(headers_str, "\r\n");
-            auto orig_file = File(e.name);
-            // Consume the first line (with the mbox From)
+            auto header_lines  = split(headers_str, "\r\n");
+            auto orig_file     = File(e.name);
+
+            // Consume the first line (with the mbox From) // XXX esto no sera asi con Maildir, supongo
             orig_file.readln();
          
             // TEST: HEADERS
@@ -695,9 +698,9 @@ unittest
 
             // TEST: Body parts
             auto testFilePath = buildPath(format("%s_t", e.name), "mime_info.txt");
-            auto f = File(testFilePath, "r");
-            auto ap1 = appender!string();
-            auto ap2 = appender!string();
+            auto f            = File(testFilePath, "r");
+            auto ap1          = appender!string();
+            auto ap2          = appender!string();
 
             while(!f.eof)
                 ap1.put(f.readln());
@@ -708,15 +711,15 @@ unittest
                 writeln("\t\t...MIME parts ok!");
             else
             {
-                writeln("Body parts different");
-                writeln("Parsed email: ");
-                writeln("----------------------------------------------------");
-                write(ap1.data);
-                writeln("----------------------------------------------------");
-                writeln("Text from testfile: ");
-                writeln("----------------------------------------------------");
-                write(ap2.data);
-                writeln("----------------------------------------------------");
+                writeln("Body parts different"                                 );
+                writeln("Parsed email: "                                       );
+                writeln("----------------------------------------------------" );
+                write(ap1.data                                                 );
+                writeln("----------------------------------------------------" );
+                writeln("Text from testfile: "                                 );
+                writeln("----------------------------------------------------" );
+                write(ap2.data                                                 );
+                writeln("----------------------------------------------------" );
                 assert(0);
             }
 
@@ -736,15 +739,15 @@ unittest
                 system(format("rm -f %s/*", base64Dir));
 
                 auto fname_encoded = buildPath(base64Dir, "encoded.txt");
-                auto encoded_f = File(fname_encoded, "w");
+                auto encoded_f     = File(fname_encoded, "w");
                 encoded_f.write(att.original_encoded_content);
                 encoded_f.flush(); encoded_f.close();
 
                 auto fname_decoded = buildPath(base64Dir, "decoded");
-                auto base64_cmd = format("base64 -d %s > %s", fname_encoded, fname_decoded);
+                auto base64_cmd    = format("base64 -d %s > %s", fname_encoded, fname_decoded);
                 assert(system(base64_cmd) == 0);
                 auto decoded_file = File(fname_decoded);
-                auto our_file = File(buildPath(att.realPath));
+                auto our_file     = File(buildPath(att.realPath));
 
                 while (!decoded_file.eof)
                 {
@@ -757,8 +760,8 @@ unittest
                         if (bufread1[idx1] != bufread2[idx2])
                         {
                             writeln("Different attachments!");
-                            writeln("Our decoded attachment: ", our_file.name);
-                            writeln("Base64 command decoded attachment: ", decoded_file.name);
+                            writeln("Our decoded attachment: "            , our_file.name);
+                            writeln("Base64 command decoded attachment: " , decoded_file.name);
                             assert(0);
                         }
                         ++idx1;
@@ -776,5 +779,4 @@ unittest
 
     // Clean the attachment and rawMail dirs
     system(format("rm -f %s/*", attachDir));
-
 }
