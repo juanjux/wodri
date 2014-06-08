@@ -1,0 +1,61 @@
+- 
+- Install DMD from DigitalMars (Ubuntu package)
+- Edit (as root) the /etc/hosts file and put 127.0.0.1 host.example.com (or whatever the host is)
+- sudo apt-get install postfix => set as "Internet Site" an input your domain.
+- Edit (as root) /etc/postfix/main.fx and put the retriver's path in the mailbox_command option.
+
+    #mailbox_command = procmail -a "$EXTENSION"
+    mailbox_command = /home/juanjux/webmail/backend/test/fake_mailbox_command
+
+    smtpd_recipient_restrictions =
+        permit_mynetworks,
+        permit_sasl_authenticated,
+        reject_unauth_destination,
+        reject_invalid_hostname,
+        reject_unauth_pipelining,
+        reject_non_fqdn_sender,
+        reject_unknown_sender_domain,
+        reject_non_fqdn_recipient,
+        reject_unknown_recipient_domain,
+        check_client_access hash:$config_directory/access_client,
+        check_sender_access hash:$config_directory/access_sender
+        permit
+
+- sudo apt-get install spamassassin razor pyzor
+- Edit (as root)/etc/mail/spamassassin/local.cf and edit/add:
+
+    add_header spam SetSpamTag score=_SCORE_
+    required_score 3.0
+    report_safe 0
+    use_razor2 1
+    use_pyzor 1
+
+- Run "pyzor discover" in the shell.
+- Run as root:
+
+      group add spamd
+      useradd -g spamd -s /bin/false -d /var/log/spamassassin spamd
+      mkdir /var/log/spamassassin
+      chown spamd:spamd /var/log/spamassassin
+
+- Edit /etc/default/spamassassin and change or add:
+      ENABLED=1
+      CRON=1
+      SAHOME="/var/log/spamassassin/"
+      OPTIONS="--create-prefs --max-children 2 --username spamd -H ${SAHOME} -s ${SAHOME}spamd.log"
+
+- Edit /etc/postfix/master.cf, find the line "smtp inet n - - - - smtpd" for:
+      smtp      inet  n       -       -       -       -       smtpd -o content_filter=spamassassin
+
+- Edit /etc/postfix/master.cf add at the end:
+      spamassassin unix -     n       n       -       -       pipe
+            user=spamd argv=/usr/bin/spamc -f -e  
+                    /usr/sbin/sendmail -oi -f ${sender} ${recipient}
+
+  TODO XXX
+
+- Eliminar todos los procesos de Postfix que sean innecesarios
+- Ver que más opciones de configuración tiene Postfix que puedan interesar (seguridad, etc)
+- Pensar tests involucrando Postfix y el retriever
+- Ver que hay que hacer para que gmail y otros acepten los emails salientes, SPK? DKIM?
+- Comprobar que spamd se sigue ejecutando después de un reinicio
