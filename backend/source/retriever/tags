@@ -1,0 +1,302 @@
+!_TAG_FILE_FORMAT	2
+!_TAG_FILE_SORTED	1
+!_TAG_FILE_AUTHOR	Brian Schott
+!_TAG_PROGRAM_URL	https://github.com/Hackerpilot/Dscanner/
+AllocAppender	/home/juanjux/webmail/backend/source/lib/array.d	40;"	s
+AppenderResetMode	/home/juanjux/webmail/backend/source/lib/array.d	34;"	g
+ArraySet	/home/juanjux/webmail/backend/source/lib/array.d	407;"	s
+Attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	46;"	s
+ContentData	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	39;"	s
+DictionaryList	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	30;"	s
+Field	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	32;"	s	struct:DictionaryList
+FixedAppender	/home/juanjux/webmail/backend/source/lib/array.d	140;"	s
+FixedRingBuffer	/home/juanjux/webmail/backend/source/lib/array.d	197;"	s
+ISO_8859_1	/home/juanjux/webmail/backend/source/lib/characterencodings.d	373;"	v
+ISO_8859_10	/home/juanjux/webmail/backend/source/lib/characterencodings.d	500;"	v
+ISO_8859_11	/home/juanjux/webmail/backend/source/lib/characterencodings.d	514;"	v
+ISO_8859_13	/home/juanjux/webmail/backend/source/lib/characterencodings.d	528;"	v
+ISO_8859_14	/home/juanjux/webmail/backend/source/lib/characterencodings.d	542;"	v
+ISO_8859_15	/home/juanjux/webmail/backend/source/lib/characterencodings.d	556;"	v
+ISO_8859_16	/home/juanjux/webmail/backend/source/lib/characterencodings.d	570;"	v
+ISO_8859_2	/home/juanjux/webmail/backend/source/lib/characterencodings.d	387;"	v
+ISO_8859_3	/home/juanjux/webmail/backend/source/lib/characterencodings.d	401;"	v
+ISO_8859_4	/home/juanjux/webmail/backend/source/lib/characterencodings.d	415;"	v
+ISO_8859_5	/home/juanjux/webmail/backend/source/lib/characterencodings.d	429;"	v
+ISO_8859_6	/home/juanjux/webmail/backend/source/lib/characterencodings.d	443;"	v
+ISO_8859_7	/home/juanjux/webmail/backend/source/lib/characterencodings.d	457;"	v
+ISO_8859_8	/home/juanjux/webmail/backend/source/lib/characterencodings.d	471;"	v
+ISO_8859_9	/home/juanjux/webmail/backend/source/lib/characterencodings.d	486;"	v
+IncomingEmail	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	61;"	c
+KOI8_R	/home/juanjux/webmail/backend/source/lib/characterencodings.d	590;"	v
+KOI8_R_Lower	/home/juanjux/webmail/backend/source/lib/characterencodings.d	584;"	v
+MIMEPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	26;"	c
+Range	/home/juanjux/webmail/backend/source/lib/array.d	349;"	s	struct:FixedRingBuffer
+Test	/home/juanjux/webmail/backend/source/lib/string.d	167;"	s
+TestClass	/home/juanjux/webmail/backend/source/retriever/test.d	11;"	c
+Windows_1251	/home/juanjux/webmail/backend/source/lib/characterencodings.d	610;"	v
+Windows_1251_Lower	/home/juanjux/webmail/backend/source/lib/characterencodings.d	604;"	v
+Windows_1252	/home/juanjux/webmail/backend/source/lib/characterencodings.d	364;"	v
+a	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	233;"	v
+a	/home/juanjux/webmail/backend/source/retriever/test.d	13;"	v	class:TestClass
+ac	/home/juanjux/webmail/backend/source/lib/string.d	200;"	v	function:icmp2
+acp	/home/juanjux/webmail/backend/source/lib/string.d	210;"	v	function:icmp2
+addField	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	86;"	f	arity:2	struct:DictionaryList
+addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	154;"	f	arity:1	class:IncomingEmail
+addPartHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	343;"	f	arity:1	function:parsePartHeaders
+allOf	/home/juanjux/webmail/backend/source/lib/string.d	63;"	f	arity:2
+anyOf	/home/juanjux/webmail/backend/source/lib/string.d	91;"	f	arity:2
+att	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	294;"	v	function:setAttachmentPart
+att_content	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	268;"	v	function:setAttachmentPart
+attachDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	551;"	v
+attachDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	63;"	v	class:IncomingEmail
+attachFileName	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	279;"	v	function:setAttachmentPart
+attachFullPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	289;"	v	function:setAttachmentPart
+attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	35;"	v	class:MIMEPart
+attachments	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	71;"	v	class:IncomingEmail
+b	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	249;"	v
+b	/home/juanjux/webmail/backend/source/retriever/test.d	14;"	v	class:TestClass
+back	/home/juanjux/webmail/backend/source/lib/array.d	236;"	f	arity:0	struct:FixedRingBuffer
+backendTestDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	548;"	v
+base64Dir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	552;"	v
+bc	/home/juanjux/webmail/backend/source/lib/string.d	201;"	v	function:icmp2
+bcp	/home/juanjux/webmail/backend/source/lib/string.d	211;"	v	function:icmp2
+bodyHasParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	93;"	v	function:loadFromFile
+boundaryEnd	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	170;"	v	function:parseParts
+boundaryPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	169;"	v	function:parseParts
+brokenMails	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	651;"	v
+buf	/home/juanjux/webmail/backend/source/lib/array.d	109;"	v	function:put
+buf	/home/juanjux/webmail/backend/source/lib/array.d	121;"	v	function:put
+buf	/home/juanjux/webmail/backend/source/lib/array.d	162;"	v	function:put
+buf	/home/juanjux/webmail/backend/source/lib/array.d	174;"	v	function:put
+buf	/home/juanjux/webmail/backend/source/lib/array.d	381;"	v
+bytetext	/home/juanjux/webmail/backend/source/lib/characterencodings.d	74;"	v	function:decodeBase64Stubborn
+cType	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	49;"	v	struct:Attachment
+capacity	/home/juanjux/webmail/backend/source/lib/array.d	217;"	f	arity:0	struct:FixedRingBuffer
+capacity	/home/juanjux/webmail/backend/source/lib/array.d	220;"	f	arity:1	struct:FixedRingBuffer
+ch	/home/juanjux/webmail/backend/source/lib/string.d	36;"	v	function:sanitizeUTF8
+charset	/home/juanjux/webmail/backend/source/lib/characterencodings.d	260;"	v	function:decodeEncodedWord
+chunk1	/home/juanjux/webmail/backend/source/lib/array.d	244;"	v	function:put
+chunk1	/home/juanjux/webmail/backend/source/lib/array.d	296;"	v	function:read
+chunk2	/home/juanjux/webmail/backend/source/lib/array.d	245;"	v	function:put
+chunk2	/home/juanjux/webmail/backend/source/lib/array.d	297;"	v	function:read
+classPass1	/home/juanjux/webmail/backend/source/retriever/test.d	23;"	f	arity:1
+classPass2	/home/juanjux/webmail/backend/source/retriever/test.d	29;"	f	arity:1
+clear	/home/juanjux/webmail/backend/source/lib/array.d	147;"	f	arity:0	struct:FixedAppender
+close	/home/juanjux/webmail/backend/source/lib/string.d	145;"	v	function:matchBracket
+computeCheckSumI	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	223;"	f	arity:1	struct:DictionaryList
+contains	/home/juanjux/webmail/backend/source/lib/array.d	434;"	f	arity:1	struct:ArraySet
+contentStart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	208;"	v	function:parseParts
+content_id	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	33;"	v	class:MIMEPart
+content_id	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	51;"	v	struct:Attachment
+content_transfer_encoding	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	32;"	v	class:MIMEPart
+convertToUtf8	/home/juanjux/webmail/backend/source/lib/characterencodings.d	101;"	f	arity:2
+convertToUtf8Lossy	/home/juanjux/webmail/backend/source/lib/characterencodings.d	85;"	f	arity:2
+count	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	96;"	v	function:loadFromFile
+createPartInfoText	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	498;"	f	arity:3
+csum	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	225;"	v	function:computeCheckSumI
+ct_transfer_encoding	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	409;"	v	function:getRootContentInfo
+ctype	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	30;"	v	class:MIMEPart
+data	/home/juanjux/webmail/backend/source/lib/array.d	187;"	f	arity:0	struct:FixedAppender
+data	/home/juanjux/webmail/backend/source/lib/array.d	55;"	f	arity:0	struct:AllocAppender
+decodeBase64Stubborn	/home/juanjux/webmail/backend/source/lib/characterencodings.d	55;"	f	arity:1
+decodeEncodedWord	/home/juanjux/webmail/backend/source/lib/characterencodings.d	246;"	f	arity:1
+decodeImpl	/home/juanjux/webmail/backend/source/lib/characterencodings.d	212;"	f	arity:4
+decodeQuotedPrintable	/home/juanjux/webmail/backend/source/lib/characterencodings.d	310;"	f	arity:1
+decodedText	/home/juanjux/webmail/backend/source/lib/characterencodings.d	294;"	v	function:decodeEncodedWord
+destFilePath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	143;"	v	function:loadFromFile
+disposition	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	31;"	v	class:MIMEPart
+dst	/home/juanjux/webmail/backend/source/lib/array.d	396;"	v
+dst	/home/juanjux/webmail/backend/source/lib/string.d	40;"	v	function:sanitizeUTF8
+dup	/home/juanjux/webmail/backend/source/lib/array.d	414;"	f	arity:0	struct:ArraySet
+dup	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	197;"	f	arity:0	struct:DictionaryList
+dyn	/home/juanjux/webmail/backend/source/retriever/test.d	122;"	v	function:main
+dynamicArray1	/home/juanjux/webmail/backend/source/retriever/test.d	49;"	f	arity:1
+emailFiles	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	484;"	v	function:getSortedEmailFilesList
+email_file	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	567;"	v
+empty	/home/juanjux/webmail/backend/source/lib/array.d	209;"	f	arity:0	struct:FixedRingBuffer
+empty	/home/juanjux/webmail/backend/source/lib/array.d	363;"	f	arity:0	struct:Range
+encodedText	/home/juanjux/webmail/backend/source/lib/characterencodings.d	262;"	v	function:decodeEncodedWord
+encoding	/home/juanjux/webmail/backend/source/lib/characterencodings.d	261;"	v	function:decodeEncodedWord
+endIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	182;"	v	function:parseParts
+fields	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	42;"	v	struct:ContentData
+filename	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	50;"	v	struct:Attachment
+finished	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	183;"	v	function:parseParts
+formatAlloc	/home/juanjux/webmail/backend/source/lib/string.d	180;"	f	arity:3
+freeData	/home/juanjux/webmail/backend/source/lib/array.d	36;"	e	enum:AppenderResetMode
+freeSpace	/home/juanjux/webmail/backend/source/lib/array.d	215;"	f	arity:0	struct:FixedRingBuffer
+front	/home/juanjux/webmail/backend/source/lib/array.d	234;"	f	arity:0	struct:FixedRingBuffer
+front	/home/juanjux/webmail/backend/source/lib/array.d	365;"	f	arity:0	struct:Range
+full	/home/juanjux/webmail/backend/source/lib/array.d	211;"	f	arity:0	struct:FixedRingBuffer
+get	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	98;"	f	arity:2	struct:DictionaryList
+getAll	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	108;"	f	arity:1	struct:DictionaryList
+getAll	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	116;"	f	arity:2	struct:DictionaryList
+getIndex	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	206;"	f	arity:3	struct:DictionaryList
+getRootContentInfo	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	407;"	f	arity:1	class:IncomingEmail
+getSortedEmailFilesList	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	482;"	f	arity:1
+globalIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	184;"	v	function:parseParts
+grow	/home/juanjux/webmail/backend/source/lib/array.d	128;"	f	arity:1	struct:AllocAppender
+headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	66;"	v	class:IncomingEmail
+headers_str	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	672;"	v
+hexByte	/home/juanjux/webmail/backend/source/lib/characterencodings.d	314;"	v	function:decodeQuotedPrintable
+i	/home/juanjux/webmail/backend/source/lib/characterencodings.d	66;"	v	function:decodeBase64Stubborn
+i	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	65;"	v	function:removeAll
+i	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	73;"	v	function:removeAll
+i	/home/juanjux/webmail/backend/source/lib/string.d	190;"	v	function:icmp2
+i	/home/juanjux/webmail/backend/source/lib/string.d	34;"	v	function:sanitizeUTF8
+icmp2	/home/juanjux/webmail/backend/source/lib/string.d	188;"	f	arity:2
+idx	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	382;"	v	function:parsePartHeaders
+idx	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	679;"	v
+idx1	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	759;"	v
+idx2	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	759;"	v
+inBody	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	92;"	v	function:loadFromFile
+indexOfAny	/home/juanjux/webmail/backend/source/lib/string.d	123;"	f	arity:2
+indexOfCT	/home/juanjux/webmail/backend/source/lib/string.d	71;"	f	arity:3
+insert	/home/juanjux/webmail/backend/source/lib/array.d	441;"	f	arity:1	struct:ArraySet
+intFileComp	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	488;"	f	arity:2	function:getSortedEmailFilesList
+j	/home/juanjux/webmail/backend/source/lib/string.d	190;"	v	function:icmp2
+kcopy	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	169;"	v	function:opApply
+kcopy	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	174;"	v	function:opApply
+keepData	/home/juanjux/webmail/backend/source/lib/array.d	35;"	e	enum:AppenderResetMode
+key	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	32;"	v	struct:Field
+keyCheckSum	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	32;"	v	struct:Field
+keysum	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	118;"	v	function:getAll
+keysum	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	152;"	v	function:opBinaryRight
+length	/home/juanjux/webmail/backend/source/lib/array.d	213;"	f	arity:0	struct:FixedRingBuffer
+length	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	41;"	f	arity:0	struct:DictionaryList
+level	/home/juanjux/webmail/backend/source/lib/string.d	155;"	v	function:matchBracket
+line	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	570;"	v
+line	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	91;"	v	function:loadFromFile
+loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	82;"	f	arity:2	class:IncomingEmail
+loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	89;"	f	arity:2	class:IncomingEmail
+m_alloc	/home/juanjux/webmail/backend/source/lib/array.d	45;"	v	struct:AllocAppender
+m_buffer	/home/juanjux/webmail/backend/source/lib/array.d	199;"	v	struct:FixedRingBuffer
+m_buffer	/home/juanjux/webmail/backend/source/lib/array.d	200;"	v	struct:FixedRingBuffer
+m_buffer	/home/juanjux/webmail/backend/source/lib/array.d	351;"	v	struct:Range
+m_data	/home/juanjux/webmail/backend/source/lib/array.d	143;"	v	struct:FixedAppender
+m_data	/home/juanjux/webmail/backend/source/lib/array.d	43;"	v	struct:AllocAppender
+m_entries	/home/juanjux/webmail/backend/source/lib/array.d	411;"	v	struct:ArraySet
+m_extendedFields	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	35;"	v	struct:DictionaryList
+m_fieldCount	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	34;"	v	struct:DictionaryList
+m_fields	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	33;"	v	struct:DictionaryList
+m_fill	/home/juanjux/webmail/backend/source/lib/array.d	144;"	v	struct:FixedAppender
+m_fill	/home/juanjux/webmail/backend/source/lib/array.d	202;"	v	struct:FixedRingBuffer
+m_length	/home/juanjux/webmail/backend/source/lib/array.d	353;"	v	struct:Range
+m_remaining	/home/juanjux/webmail/backend/source/lib/array.d	44;"	v	struct:AllocAppender
+m_start	/home/juanjux/webmail/backend/source/lib/array.d	201;"	v	struct:FixedRingBuffer
+m_start	/home/juanjux/webmail/backend/source/lib/array.d	352;"	v	struct:Range
+m_staticEntries	/home/juanjux/webmail/backend/source/lib/array.d	410;"	v	struct:ArraySet
+mailindex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	566;"	v
+main	/home/juanjux/webmail/backend/source/retriever/test.d	58;"	f	arity:0
+matchBracket	/home/juanjux/webmail/backend/source/lib/string.d	141;"	f	arity:2
+matches	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	215;"	f	arity:2	struct:DictionaryList
+min_len	/home/juanjux/webmail/backend/source/lib/string.d	193;"	v	function:icmp2
+mod	/home/juanjux/webmail/backend/source/lib/array.d	336;"	f	arity:1	struct:FixedRingBuffer
+n	/home/juanjux/webmail/backend/source/lib/array.d	72;"	v	function:reserve
+name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	160;"	v	function:addHeader
+name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	352;"	v	function:addPartHeader
+name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	41;"	v	struct:ContentData
+nelems	/home/juanjux/webmail/backend/source/lib/array.d	66;"	v	function:reserve
+newtext	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	238;"	v	function:setTextPart
+nolineinput	/home/juanjux/webmail/backend/source/lib/characterencodings.d	60;"	v	function:decodeBase64Stubborn
+opApply	/home/juanjux/webmail/backend/source/lib/array.d	306;"	f	arity:1	struct:FixedRingBuffer
+opApply	/home/juanjux/webmail/backend/source/lib/array.d	421;"	f	arity:1	struct:ArraySet
+opApply	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	166;"	f	arity:1	struct:DictionaryList
+opApply	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	182;"	f	arity:1	struct:DictionaryList
+opBinaryRight	/home/juanjux/webmail/backend/source/lib/array.d	419;"	f	arity:1	struct:ArraySet
+opBinaryRight	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	151;"	f	arity:1	struct:DictionaryList
+opBinaryRight	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	160;"	f	arity:1	struct:DictionaryList
+opDollar	/home/juanjux/webmail/backend/source/lib/array.d	334;"	f	arity:0	struct:FixedRingBuffer
+opIndex	/home/juanjux/webmail/backend/source/lib/array.d	323;"	f	arity:1	struct:FixedRingBuffer
+opIndex	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	131;"	f	arity:1	struct:DictionaryList
+opIndexAssign	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	140;"	f	arity:2	struct:DictionaryList
+opSlice	/home/juanjux/webmail/backend/source/lib/array.d	325;"	f	arity:0	struct:FixedRingBuffer
+opSlice	/home/juanjux/webmail/backend/source/lib/array.d	327;"	f	arity:2	struct:FixedRingBuffer
+open	/home/juanjux/webmail/backend/source/lib/string.d	145;"	v	function:matchBracket
+origFileName	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	280;"	v	function:setAttachmentPart
+origMailDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	549;"	v
+orig_line	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	682;"	v
+originalData	/home/juanjux/webmail/backend/source/lib/characterencodings.d	248;"	v	function:decodeEncodedWord
+original_encoded_content	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	56;"	v	struct:Attachment
+parent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	28;"	v	class:MIMEPart
+parentStr	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	500;"	v	function:createPartInfoText
+parseContentHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	313;"	f	arity:2	class:IncomingEmail
+parsePartHeaders	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	341;"	f	arity:2	class:IncomingEmail
+parseParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	166;"	f	arity:2	class:IncomingEmail
+peek	/home/juanjux/webmail/backend/source/lib/array.d	285;"	f	arity:0	struct:FixedRingBuffer
+peekDst	/home/juanjux/webmail/backend/source/lib/array.d	286;"	f	arity:0	struct:FixedRingBuffer
+popBack	/home/juanjux/webmail/backend/source/lib/array.d	258;"	f	arity:0	struct:FixedRingBuffer
+popBackN	/home/juanjux/webmail/backend/source/lib/array.d	259;"	f	arity:1	struct:FixedRingBuffer
+popFront	/home/juanjux/webmail/backend/source/lib/array.d	255;"	f	arity:0	struct:FixedRingBuffer
+popFront	/home/juanjux/webmail/backend/source/lib/array.d	367;"	f	arity:0	struct:Range
+popFrontN	/home/juanjux/webmail/backend/source/lib/array.d	256;"	f	arity:1	struct:FixedRingBuffer
+print_headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	421;"	f	arity:1	class:IncomingEmail
+put	/home/juanjux/webmail/backend/source/lib/array.d	105;"	f	arity:1	struct:AllocAppender
+put	/home/juanjux/webmail/backend/source/lib/array.d	117;"	f	arity:1	struct:AllocAppender
+put	/home/juanjux/webmail/backend/source/lib/array.d	152;"	f	arity:1	struct:FixedAppender
+put	/home/juanjux/webmail/backend/source/lib/array.d	158;"	f	arity:1	struct:FixedAppender
+put	/home/juanjux/webmail/backend/source/lib/array.d	170;"	f	arity:1	struct:FixedAppender
+put	/home/juanjux/webmail/backend/source/lib/array.d	181;"	f	arity:1	struct:FixedAppender
+put	/home/juanjux/webmail/backend/source/lib/array.d	238;"	f	arity:1	struct:FixedRingBuffer
+put	/home/juanjux/webmail/backend/source/lib/array.d	239;"	f	arity:1	struct:FixedRingBuffer
+put	/home/juanjux/webmail/backend/source/lib/array.d	84;"	f	arity:1	struct:AllocAppender
+put	/home/juanjux/webmail/backend/source/lib/array.d	91;"	f	arity:1	struct:AllocAppender
+put	/home/juanjux/webmail/backend/source/lib/array.d	99;"	f	arity:1	struct:AllocAppender
+putN	/home/juanjux/webmail/backend/source/lib/array.d	253;"	f	arity:1	struct:FixedRingBuffer
+rawMailDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	550;"	v
+rawMailDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	64;"	v	class:IncomingEmail
+rawMailPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	70;"	v	class:IncomingEmail
+read	/home/juanjux/webmail/backend/source/lib/array.d	291;"	f	arity:1	struct:FixedRingBuffer
+realPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	48;"	v	struct:Attachment
+remove	/home/juanjux/webmail/backend/source/lib/array.d	457;"	f	arity:1	struct:ArraySet
+remove	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	45;"	f	arity:1	struct:DictionaryList
+removeAll	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	62;"	f	arity:1	struct:DictionaryList
+removeAt	/home/juanjux/webmail/backend/source/lib/array.d	261;"	f	arity:1	struct:FixedRingBuffer
+removeFromArray	/home/juanjux/webmail/backend/source/lib/array.d	18;"	f	arity:2
+removeFromArrayIdx	/home/juanjux/webmail/backend/source/lib/array.d	27;"	f	arity:2
+res	/home/juanjux/webmail/backend/source/lib/string.d	167;"	v	struct:Test
+reserve	/home/juanjux/webmail/backend/source/lib/array.d	64;"	f	arity:1	struct:AllocAppender
+reset	/home/juanjux/webmail/backend/source/lib/array.d	190;"	f	arity:0	struct:FixedAppender
+reset	/home/juanjux/webmail/backend/source/lib/array.d	57;"	f	arity:1	struct:AllocAppender
+ret	/home/juanjux/webmail/backend/source/lib/characterencodings.d	254;"	v	function:decodeEncodedWord
+ret	/home/juanjux/webmail/backend/source/lib/characterencodings.d	311;"	v	function:decodeQuotedPrintable
+ret	/home/juanjux/webmail/backend/source/lib/characterencodings.d	57;"	v	function:decodeBase64Stubborn
+ret	/home/juanjux/webmail/backend/source/lib/characterencodings.d	92;"	v	function:convertToUtf8Lossy
+ret	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	199;"	v	function:dup
+reuseData	/home/juanjux/webmail/backend/source/lib/array.d	37;"	e	enum:AppenderResetMode
+rootPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	67;"	v	class:IncomingEmail
+s_keyBuffer	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	36;"	v	struct:DictionaryList
+sanitizeUTF8	/home/juanjux/webmail/backend/source/lib/string.d	28;"	f	arity:1
+setAttachmentPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	266;"	f	arity:2	class:IncomingEmail
+setTextPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	236;"	f	arity:2	class:IncomingEmail
+size	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	52;"	v	struct:Attachment
+skipMails	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	658;"	v
+st	/home/juanjux/webmail/backend/source/retriever/test.d	115;"	v	function:main
+startIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	168;"	v	function:parseParts
+state	/home/juanjux/webmail/backend/source/lib/characterencodings.d	313;"	v	function:decodeQuotedPrintable
+staticArray1	/home/juanjux/webmail/backend/source/retriever/test.d	35;"	f	arity:1
+staticArray2	/home/juanjux/webmail/backend/source/retriever/test.d	42;"	f	arity:1
+str	/home/juanjux/webmail/backend/source/lib/string.d	167;"	v	struct:Test
+stripA	/home/juanjux/webmail/backend/source/lib/string.d	117;"	f	arity:1
+stripLeftA	/home/juanjux/webmail/backend/source/lib/string.d	101;"	f	arity:1
+stripRightA	/home/juanjux/webmail/backend/source/lib/string.d	109;"	f	arity:1
+stripUTF8Bom	/home/juanjux/webmail/backend/source/lib/string.d	52;"	f	arity:1
+subparts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	29;"	v	class:MIMEPart
+tags	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	72;"	v	class:IncomingEmail
+textContent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	34;"	v	class:MIMEPart
+textualParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	68;"	v	class:IncomingEmail
+this	/home/juanjux/webmail/backend/source/lib/array.d	206;"	f	arity:1	struct:FixedRingBuffer
+this	/home/juanjux/webmail/backend/source/lib/array.d	356;"	f	arity:3	struct:Range
+this	/home/juanjux/webmail/backend/source/lib/array.d	48;"	f	arity:1	struct:AllocAppender
+this	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	74;"	f	arity:2	class:IncomingEmail
+this	/home/juanjux/webmail/backend/source/retriever/test.d	16;"	f	arity:0	class:TestClass
+thisPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	207;"	v	function:parseParts
+tryToDetermineEncoding	/home/juanjux/webmail/backend/source/lib/characterencodings.d	176;"	f	arity:1
+utf8	/home/juanjux/webmail/backend/source/lib/characterencodings.d	223;"	v	function:decodeImpl
+value	/home/juanjux/webmail/backend/source/lib/characterencodings.d	335;"	v	function:decodeQuotedPrintable
+value	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	32;"	v	struct:Field
+value	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	161;"	v	function:addHeader
+value	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	353;"	v	function:addPartHeader
+visitParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	440;"	f	arity:1	class:IncomingEmail
+was_encoded	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	269;"	v	function:setAttachmentPart
+was_encoded	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	55;"	v	struct:Attachment
+webmailMainDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	547;"	v
