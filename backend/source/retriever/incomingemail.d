@@ -62,6 +62,7 @@ class IncomingEmail
 { 
     string attachDir;
     string rawMailDir;
+    string conversationId;
 
     DictionaryList!(string, false) headers; 
     MIMEPart rootPart; 
@@ -540,6 +541,7 @@ unittest
     // #unittest start here
     writeln("Starting unittest");
 
+    // FIXME: use the config to get the main dir
     string webmailMainDir = "/home/juanjux/webmail";
     string backendTestDir = buildPath(webmailMainDir, "backend", "test");
     string origMailDir    = buildPath(backendTestDir, "emails", "single_emails");

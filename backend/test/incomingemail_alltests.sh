@@ -1,1 +1,1 @@
-rdmd -I.. --main -unittest incomingemail.d                                                                        
+rdmd -I.. --main -unittest -I../source ../source/retriever/incomingemail.d                                                                        

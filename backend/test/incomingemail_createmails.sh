@@ -1,1 +1,1 @@
-rdmd -I.. --main -unittest -version=createtestmails incomingemail.d                                                                        
+rdmd -I.. --main -unittest -version=createtestmails -I../source incomingemail.d                                                                        
