@@ -13,7 +13,6 @@ import std.random;
 import std.datetime;
 import std.process;
 
-
 // lib.dictionarylist is vibed.utils.dictionarylist modified so it doesnt need
 // vibed's event loop 
 import lib.dictionarylist; 
@@ -22,6 +21,7 @@ import lib.characterencodings;
 // XXX Clase para excepciones de parseo 
 // XXX const, immutable, pure, nothrow, safe, in, out, etc
 // XXX mandar los fixes a Adam Druppe
+
 
 class MIMEPart // #mimepart
 {
@@ -60,8 +60,8 @@ struct Attachment // #attach
 
 class IncomingEmail
 { 
-    string attachDir;
-    string rawMailDir;
+    string attachmentStore;
+    string rawMailStore;
     string conversationId;
 
     DictionaryList!(string, false) headers; 
@@ -71,12 +71,22 @@ class IncomingEmail
     string rawMailPath;
     Attachment[] attachments;
     bool[string] tags; 
+    string lineSep = "\r\n";
+    debug File debugFile;
 
-    this(string rawMailDir, string attachDir)
+    this(string rawMailStore, string attachmentStore)
     {
-        this.attachDir  = attachDir;
-        this.rawMailDir = rawMailDir;
+        this.attachmentStore  = attachmentStore;
+        this.rawMailStore = rawMailStore;
         this.rootPart   = new MIMEPart();
+
+        // XXX mi ruta
+        debug debugFile = File("/home/juanjux/webmail/backend/source/retriever/inclog.txt", "a");
+    }
+
+    @property bool isValid()
+    {
+        return ("From" in this.headers && "To" in this.headers);
     }
 
 
@@ -92,13 +102,34 @@ class IncomingEmail
         string line;
         bool inBody       = false;
         bool bodyHasParts = false;
-        auto textBuffer   = appender!string();
+        bool inputIsStdInput = false;
+        auto partialBuffer   = appender!string();
+
+        // Used to store the content when the input is stdin or stderr
+        Appender!string mailText = null;
+        if (copyRaw && among(email_file, std.stdio.stdin, std.stdio.stderr))
+        {
+            inputIsStdInput = true;
+            mailText = appender!string();
+            // When receiving from stdin/stderr postfix converts the \r\n to \n
+            // FIXME: make this configurable... or autodetect?
+            version(Windows) lineSep = "\r\n";
+            else             lineSep = "\n";  
+        }
 
         uint count = 0;
         while (!email_file.eof()) 
         {
             ++count;
             line = email_file.readln();
+            
+            if (!line.length)
+                break;
+
+            if (inputIsStdInput)
+            {
+                mailText.put(line);
+            }
 
             if (count == 1 && line.startsWith("From "))
                 // mbox start indicator, ignore
@@ -109,17 +140,17 @@ class IncomingEmail
                 if (!among(line[0], ' ', '\t'))
                 { 
                     // New header, register the current header buffer and clear it
-                    addHeader(textBuffer.data);
-                    textBuffer.clear();
+                    addHeader(partialBuffer.data);
+                    partialBuffer.clear();
                 }
                 // else: indented lines of multiline headers dont register it ey
-                textBuffer.put(line);
+                partialBuffer.put(line);
 
-                if (line == "\r\n") // Body
+                if (line == this.lineSep) // Body
                 {
                     inBody = true; 
                     getRootContentInfo(this.rootPart);
-                    textBuffer.clear();
+                    partialBuffer.clear();
                     
                     if (this.rootPart.ctype.name.startsWith("multipart"))
                         bodyHasParts = true;
@@ -127,24 +158,31 @@ class IncomingEmail
                 }
             }
             else // Body
-                textBuffer.put(line);
+                partialBuffer.put(line);
         }
 
         if (bodyHasParts)
-            parseParts(split(textBuffer.data, "\r\n"), this.rootPart);
+            parseParts(split(partialBuffer.data, this.lineSep), this.rootPart);
         else // text/plain||html, just decode and set
-            setTextPart(this.rootPart, textBuffer.data);
+            setTextPart(this.rootPart, partialBuffer.data);
 
         // Finally, copy the email to rawMailPath and keep the route 
         // (the user of this class is responsible for deleting the original if needed)
-        if (copyRaw && this.rawMailDir.length)
+        if (copyRaw && this.rawMailStore.length)
         {
             string destFilePath;
             do {
-                destFilePath = buildPath(this.rawMailDir, format("%d_%d", stdTimeToUnixTime(Clock.currStdTime), uniform(0, 100000)));
+                destFilePath = buildPath(this.rawMailStore, format("%d_%d", stdTimeToUnixTime(Clock.currStdTime), uniform(0, 100000)));
             } while(destFilePath.exists);
-            
-            copy(email_file.name, destFilePath);
+         
+            if (email_file == std.stdio.stdin)
+            {
+                auto f = File(destFilePath, "w");
+                f.write(mailText.data);
+            }
+            else
+                copy(email_file.name, destFilePath);
+
             this.rawMailPath = destFilePath;
         }
     }
@@ -213,7 +251,7 @@ class IncomingEmail
 
             if (among(thisPart.ctype.name, "text/plain", "text/html"))
             {
-                setTextPart(thisPart, join(lines[contentStart..endIndex], "\r\n"));
+                setTextPart(thisPart, join(lines[contentStart..endIndex], this.lineSep));
                 debug
                 {
                     writeln("========= DESPUES PARSEPARTS, CONTENT: ======", thisPart.ctype.name);
@@ -271,7 +309,7 @@ class IncomingEmail
             version(unittest) was_encoded = true;
         }
         else // binary, 7bit, 8bit, no need to decode... I think
-            att_content = cast(immutable(ubyte)[]) join(lines, "\r\n");
+            att_content = cast(immutable(ubyte)[]) join(lines, this.lineSep);
 
         string attachFileName;
         string origFileName = part.disposition.fields.get("filename", "");
@@ -283,13 +321,13 @@ class IncomingEmail
             attachFileName = format("%d_%d%s", stdTimeToUnixTime(Clock.currStdTime), uniform(0, 100000), extension(origFileName));
         } while(attachFileName.exists);
 
-        string attachFullPath = buildPath(this.attachDir, attachFileName);
+        string attachFullPath = buildPath(this.attachmentStore, attachFileName);
         auto f = File(attachFullPath, "w");
         f.rawWrite(att_content);
         f.close();
 
         Attachment att;
-        att.realPath   = buildPath(this.attachDir, attachFileName);
+        att.realPath   = buildPath(this.attachmentStore, attachFileName);
         att.cType      = part.ctype.name;
         att.filename   = origFileName;
         att.size       = att.realPath.getSize;
@@ -376,26 +414,26 @@ class IncomingEmail
         }
 
 
-        auto textBuffer = appender!string();
+        auto partialBuffer = appender!string();
         int idx;
         foreach (string line; lines)
         {
             if (!line.length) // end of headers
             {
-                if (textBuffer.data.length)
+                if (partialBuffer.data.length)
                 {
-                    addPartHeader(textBuffer.data);
-                    textBuffer.clear();
+                    addPartHeader(partialBuffer.data);
+                    partialBuffer.clear();
                 }
                 break;
             }
 
-            if (textBuffer.data.length && !among(line[0], ' ', '\t'))
+            if (partialBuffer.data.length && !among(line[0], ' ', '\t'))
             {
-                addPartHeader(textBuffer.data);
-                textBuffer.clear();
+                addPartHeader(partialBuffer.data);
+                partialBuffer.clear();
             }
-            textBuffer.put(line);
+            partialBuffer.put(line);
             ++idx;
         }
         return idx;
@@ -541,12 +579,12 @@ unittest
     // #unittest start here
     writeln("Starting unittest");
 
-    // FIXME: use the config to get the main dir
+    // FIXME XXX: use the config to get the main dir
     string webmailMainDir = "/home/juanjux/webmail";
     string backendTestDir = buildPath(webmailMainDir, "backend", "test");
     string origMailDir    = buildPath(backendTestDir, "emails", "single_emails");
-    string rawMailDir     = buildPath(backendTestDir, "rawmails");
-    string attachDir      = buildPath(backendTestDir, "attachments");
+    string rawMailStore     = buildPath(backendTestDir, "rawmails");
+    string attachmentStore      = buildPath(backendTestDir, "attachments");
     string base64Dir      = buildPath(backendTestDir, "base64_test");
 
     version(createtestmails)
@@ -605,7 +643,7 @@ unittest
             if (!testAttachDir.exists) 
                 mkdir(testAttachDir);
 
-            auto email = new IncomingEmail(rawMailDir, attachDir);
+            auto email = new IncomingEmail(rawMailStore, attachmentStore);
             email.loadFromFile(File(e.name), true);
 
             auto ap = appender!string;
@@ -633,7 +671,7 @@ unittest
         // 80000 => multipart/alternative ISO8859-1 quoted-printable
         auto filenumber = 40398;
         auto email_file = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
-        auto email      = new IncomingEmail(rawMailDir, attachDir);
+        auto email      = new IncomingEmail(rawMailStore, attachmentStore);
         email.loadFromFile(email_file, true);
         
         email.visitParts(email.rootPart);
@@ -645,7 +683,6 @@ unittest
 
     else // normal huge test with all the emails in 
     {
-        // Dont these these mails (or munpack decoding \r as \n for some reason)
         int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0, // broken mails, no newline after headers or parts, etc
                                    //"6988":0, "26876": 0, "36004":0, "37674":0, "38511":0, // munpack unpack these files with some different value
                                    //"41399":0, "41400":0
@@ -664,11 +701,11 @@ unittest
             if (baseName(e.name) in brokenMails || baseName(e.name) in skipMails)
                 continue;
 
-            auto email = new IncomingEmail(rawMailDir, attachDir);
+            auto email = new IncomingEmail(rawMailStore, attachmentStore);
             email.loadFromFile(File(e.name));
 
             string headers_str = email.print_headers(true);
-            auto header_lines  = split(headers_str, "\r\n");
+            auto header_lines  = split(headers_str, email.lineSep);
             auto orig_file     = File(e.name);
 
             // Consume the first line (with the mbox From) // XXX esto no sera asi con Maildir, supongo
@@ -679,10 +716,10 @@ unittest
             while(!orig_file.eof())
             {
                 string orig_line = decodeEncodedWord(orig_file.readln());
-                if (orig_line == "\r\n") // Body start, stop comparing
+                if (orig_line == email.lineSep) // Body start, stop comparing
                     break;
 
-                auto header_line = header_lines[idx] ~ "\r\n";
+                auto header_line = header_lines[idx] ~ email.lineSep;
                 if (orig_line != header_line)
                 {
                     writeln("UNMATCHED HEADER IN FILE: ", e.name);
@@ -780,5 +817,5 @@ unittest
     }
 
     // Clean the attachment and rawMail dirs
-    system(format("rm -f %s/*", attachDir));
+    system(format("rm -f %s/*", attachmentStore));
 }
