@@ -59,18 +59,19 @@ immutable(ubyte)[] decodeBase64Stubborn(string input)
     try {
         string nolineinput = removechars(input, "\r\n");
         auto rem = nolineinput.length % 4;
-        if (rem)
+        if (rem) // padding
         {
             auto padAppender = appender!string();
             padAppender.put(nolineinput);
-            for (int i; i<(4-rem); i++) padAppender.put("=");
+
+            for (int i; i<(4-rem); i++) 
+                padAppender.put("=");
+
             nolineinput = padAppender.data;
         }
         ret = Base64.decode(nolineinput);
-
-
     } catch (AssertError e) {
-        // When the former method fails this usually works (and vice versa) :-/
+        // When the former method fails this works (and vice versa) :-/
         ubyte[] bytetext;
         foreach (string line; split(input, "\r\n")) 
             bytetext ~= Base64.decode(line);

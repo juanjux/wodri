@@ -6,7 +6,8 @@ import std.path;
 import incomingemail;
 
 // XXX Probar con inputs jodidos a ver que excepcion da
-// XXX Objeto config (mirar Scramjets)
+// XXX receiveDomains tiene que user un diccionario de dominios que contiene listas de usuarios
+// (incluyendo el usuario especial "*")
 
 struct Config
 {
@@ -16,13 +17,12 @@ struct Config
 }
 
 Config getConfig()
-// FIXME XXX: hacer objeto config
 {
-    string mainDir = "/home/juanjux/webmail";
+    string mainDir          = "/home/juanjux/webmail";
     Config config;
-    config.receiveDomains ~= "mooo.com";
-    config.rawMailStore = buildPath(mainDir, "backend", "test", "rawmails");
-    config.attachmentStore = buildPath(mainDir, "backend", "test", "attachments");
+    config.receiveDomains  ~= "mooo.com";
+    config.rawMailStore     = buildPath(mainDir, "backend", "test", "rawmails");
+    config.attachmentStore  = buildPath(mainDir, "backend", "test", "attachments");
     return config;
 }
 
