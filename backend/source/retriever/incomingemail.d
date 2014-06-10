@@ -268,7 +268,7 @@ final class IncomingEmail
                 startIndex = i+1;
                 break;
             }
-        }
+        } 
 
         int endIndex;
         bool finished   = false;
