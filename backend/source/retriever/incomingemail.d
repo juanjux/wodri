@@ -1,6 +1,7 @@
 #!/usr/bin/env rdmd 
 
 import std.stdio;
+import std.regex;
 import std.file;
 import std.path;
 import std.conv;
@@ -23,9 +24,20 @@ import lib.characterencodings;
 // XXX mandar los fixes a Adam Druppe
 // XXX en debug y/o unittest usar la config para obtener el directorio ppal
 
-debug string TEST_PATH_BASE = "/home/juanjux/webmail";
 
-class MIMEPart // #mimepart
+debug enum DEBUG_MARK = true;
+else  enum DEBUG_MARK = false;
+
+version(unittest) enum UNITTEST_MARK = true;
+else              enum UNITTEST_MARK = false;
+
+static if (DEBUG_MARK || UNITTEST_MARK)
+    string TEST_PATH_BASE = "/home/juanjux/webmail";
+
+auto EMAIL_REGEX = ctRegex!r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b";
+
+
+final class MIMEPart // #mimepart
 {
     MIMEPart parent = null;
     MIMEPart[] subparts;
@@ -59,14 +71,14 @@ struct Attachment // #attach
     }
 }
 
-
-class IncomingEmail
+// XXX parece mas lento, probar sin el final y con la implementacion anterior
+final class IncomingEmail
 { 
     string attachmentStore;
     string rawMailStore;
     string conversationId;
 
-    DictionaryList!(string, false) headers; 
+    DictionaryList!(string, false) headers; // Note: keys are case insensitive
     MIMEPart rootPart; 
     MIMEPart[] textualParts; // shortcut to the textual (text or html) parts in display
 
@@ -89,10 +101,11 @@ class IncomingEmail
     @property bool isValid()
     {
         // FIXME: Check the minimal valid headers and the values
-        return ("From" in this.headers      &&
-                "To"   in this.headers      &&
-                this.headers["From"].length &&
-                this.headers["To"].length);
+        return this.headers.get("From", "").length &&
+                 (this.headers.get("To", "").length           ||
+                  this.headers.get("Cc", "").length           ||
+                  this.headers.get("Delivered-To", "").length ||
+                  this.headers.get("Bcc", "").length);
     }
 
 
@@ -121,63 +134,65 @@ class IncomingEmail
         {
             inputIsStdInput = true;
             stdinLines = appender!string();
-            // When receiving from stdin/stderr Postfix converts the \r\n to \n
-            // FIXME: make this configurable... or autodetect?
             version(Windows) lineSep = "\r\n";
             else             lineSep = "\n";  
         }
-
+ 
+        // Header
         uint count = 0;
-        while (!email_file.eof()) 
+        while (!email_file.eof())
         {
             ++count;
             currentLine = email_file.readln();
-            
-            if (!currentLine.length) // Possible end of stdin/stderr
-                break;
 
-            if (inputIsStdInput)
-                stdinLines.put(currentLine);
-
-            // Ignore empty lines before the start
-            if (parseState == ParseState.NotStarted && !currentLine.strip.length)
-                continue;
-            
-            if (parseState == ParseState.NotStarted)
-                parseState = ParseState.InHeader;
+            if (!currentLine.length)
+                // Possible end of stdin/stderr input
+                break; 
 
             if (count == 1 && currentLine.startsWith("From "))
                 // mbox format indicator, ignore
                 continue;
 
-            if (parseState == ParseState.InHeader) 
-            { 
-                if (!among(currentLine[0], ' ', '\t'))
-                { 
-                    // Not indented so new header; add the buffer (with the
-                    // text of the previous lines) as new header
-                    addHeader(partialBuffer.data);
-                    partialBuffer.clear();
-                }
-                partialBuffer.put(currentLine);
+            if (inputIsStdInput)
+                stdinLines.put(currentLine);
 
-                if (currentLine == this.lineSep) // Body
-                {
-                    parseState = ParseState.InBody;
-                    getRootContentInfo(this.rootPart);
-                    partialBuffer.clear();
-                    bodyHasParts = this.rootPart.ctype.name.startsWith("multipart");
-                }
+            if (partialBuffer.data.length && !among(currentLine[0], ' ', '\t'))
+            {
+                // Not indendeted, so new header; add the buffer (with the text of
+                // the previous lines without the current line) as new header
+                addHeader(partialBuffer.data);
+                partialBuffer.clear();
             }
-            else // Body
-                partialBuffer.put(currentLine);
+            partialBuffer.put(currentLine);
+
+            if (currentLine == this.lineSep)
+            {
+                // Body mark found
+                getRootContentInfo(this.rootPart);
+                partialBuffer.clear();
+                break;
+            }
         }
 
-        if (bodyHasParts)
-            parseParts(split(partialBuffer.data, this.lineSep), this.rootPart);
-        else 
-            setTextPart(this.rootPart, partialBuffer.data);
+        // Body: read all into the buffer, the parsing is done outside the loop
+        while (!email_file.eof())
+        {
+            if (!currentLine.length)
+                break; 
 
+            currentLine = email_file.readln();
+
+            if (inputIsStdInput)
+                stdinLines.put(currentLine);
+
+            partialBuffer.put(currentLine);
+        }
+
+        if (this.rootPart.ctype.name.startsWith("multipart"))
+            parseParts(split(partialBuffer.data, this.lineSep), this.rootPart);
+        else
+            setTextPart(this.rootPart, partialBuffer.data);
+    
         // Finally, copy the email to rawMailPath 
         // (the user of the class is responsible for deleting the original)
         if (copyRaw && this.rawMailStore.length)
@@ -200,8 +215,34 @@ class IncomingEmail
         }
     }
 
+    string[] extractAddressesFromHeader(string header)
+    {
+        string[] ret;
+        foreach(c; match(this.headers.get(header, ""), EMAIL_REGEX))
+            ret ~= c.hit;
 
-    void addHeader(string raw) 
+        return ret;
+    }
+
+
+    string print_headers(bool as_string=false) 
+    {
+        auto textheaders = appender!string();
+        foreach(string name, string value; this.headers) 
+        {
+            if (as_string)
+            {
+                textheaders.put(name ~ ":");
+                textheaders.put(value);
+            }
+            else
+                write(name, ":", value);
+        }
+        return textheaders.data;
+    }
+
+
+    private void addHeader(string raw) 
     {
         auto idxSeparator = indexOf(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length)) 
@@ -213,7 +254,7 @@ class IncomingEmail
     }
 
 
-    void parseParts(string[] lines, MIMEPart parent)
+    private void parseParts(string[] lines, MIMEPart parent)
     {
         int startIndex = -1;
         string boundaryPart = format("--%s", parent.ctype.fields["boundary"]);
@@ -269,9 +310,9 @@ class IncomingEmail
                 setTextPart(thisPart, join(lines[contentStart..endIndex], this.lineSep));
                 debug
                 {
-                    //writeln("========= DESPUES PARSEPARTS, CONTENT: ======", thisPart.ctype.name);
-                    //write(thisPart.textContent); 
-                    //writeln("=============================================");
+                    writeln("========= DESPUES PARSEPARTS, CONTENT: ======", thisPart.ctype.name);
+                    write(thisPart.textContent); 
+                    writeln("=============================================");
                 }
             }
             else if (among(thisPart.disposition.name, "attachment", "inline"))
@@ -283,7 +324,7 @@ class IncomingEmail
     }
 
 
-    void setTextPart(MIMEPart part, string text)
+    private void setTextPart(MIMEPart part, string text)
     {
         string newtext;
         if ("charset" !in part.ctype.fields)
@@ -303,17 +344,17 @@ class IncomingEmail
 
         debug
         {
-            //if (part.textContent.length) 
-            //{
-                //writeln("===EMAIL OBJECT TEXTUAL PART===");
-                //write(part.textContent); 
-                //writeln("===END TEXTUAL PART===");
-            //}
+            if (part.textContent.length) 
+            {
+                writeln("===EMAIL OBJECT TEXTUAL PART===");
+                write(part.textContent); 
+                writeln("===END TEXTUAL PART===");
+            }
         }
     }
  
 
-    void setAttachmentPart(MIMEPart part, string[] lines)
+    private void setAttachmentPart(MIMEPart part, string[] lines)
     {
         immutable(ubyte)[] att_content;
         version(unittest) bool was_encoded = false;
@@ -359,7 +400,7 @@ class IncomingEmail
     }
 
 
-    void parseContentHeader(ref ContentData content_data, string header_text)
+    private void parseContentHeader(ref ContentData content_data, string header_text)
     {
         if (header_text.length == 0) 
             return;
@@ -388,7 +429,7 @@ class IncomingEmail
 
 
     // Returns the start index of the real content after the part headers
-    int parsePartHeaders(MIMEPart part, string[] lines)
+    private int parsePartHeaders(MIMEPart part, string[] lines)
     {
         void addPartHeader(string text)
         {
@@ -454,7 +495,7 @@ class IncomingEmail
     }
 
 
-    void getRootContentInfo(MIMEPart part)
+    private void getRootContentInfo(MIMEPart part)
     {
         string ct_transfer_encoding;
         parseContentHeader(part.ctype       , this.headers.get("Content-Type"        , ""));
@@ -465,23 +506,6 @@ class IncomingEmail
 
         if (!part.ctype.name.startsWith("multipart") && "charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
-    }
-
-
-    string print_headers(bool as_string=false) 
-    {
-        auto textheaders = appender!string();
-        foreach(string name, string value; this.headers) 
-        {
-            if (as_string)
-            {
-                textheaders.put(name ~ ":");
-                textheaders.put(value);
-            }
-            else
-                write(name, ":", value);
-        }
-        return textheaders.data;
     }
 
 
@@ -593,11 +617,11 @@ unittest
     // #unittest start here
     writeln("Starting unittest");
 
-    string backendTestDir = buildPath(TEST_PATH_BASE, "backend", "test");
-    string origMailDir    = buildPath(backendTestDir, "emails", "single_emails");
-    string rawMailStore     = buildPath(backendTestDir, "rawmails");
-    string attachmentStore      = buildPath(backendTestDir, "attachments");
-    string base64Dir      = buildPath(backendTestDir, "base64_test");
+    string backendTestDir  = buildPath(TEST_PATH_BASE, "backend", "test");
+    string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
+    string rawMailStore    = buildPath(backendTestDir, "rawmails");
+    string attachmentStore = buildPath(backendTestDir, "attachments");
+    string base64Dir       = buildPath(backendTestDir, "base64_test");
 
     version(createtestmails)
     {
@@ -703,6 +727,7 @@ unittest
         // Not broken, but for putting mails that need to be skipped for some reaso
         //int[string] skipMails  = ["41051":0, "41112":0];
         int[string] skipMails;
+        bool copyMail = true;
         
         foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
         {
@@ -714,7 +739,7 @@ unittest
                 continue;
 
             auto email = new IncomingEmail(rawMailStore, attachmentStore);
-            email.loadFromFile(File(e.name));
+            email.loadFromFile(File(e.name), copyMail);
 
             string headers_str = email.print_headers(true);
             auto header_lines  = split(headers_str, email.lineSep);
@@ -822,9 +847,11 @@ unittest
             }
             writeln("\t...attachments ok!");
         
-            // clean the attachment files
+            // clean the attachment files and the rawmail
             foreach(Attachment att; email.attachments)
                 std.file.remove(att.realPath);
+            if (copyMail)
+                std.file.remove(email.rawMailPath);
         }
     }
 

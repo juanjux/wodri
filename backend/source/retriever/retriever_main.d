@@ -1,51 +1,83 @@
 #!/usr/bin/env rdmd
 
 import std.stdio;
+import std.regex;
+import std.conv;
+import std.algorithm;
 import std.file;
+import std.array;
+import std.string;
 import std.path;
 import incomingemail;
 
-// XXX Probar con inputs jodidos a ver que excepcion da
-// XXX receiveDomains tiene que user un diccionario de dominios que contiene listas de usuarios
-// (incluyendo el usuario especial "*")
+// XXX Sistema de log
+// XXX loguear emails rechazados
+// XXX Clase de config
+// XXX Tipo de regla y comprobacion de reglas
+// XXX Almacenador en MongoDB
+// XXX Indexacion
 
 struct Config
 {
     string rawMailStore;
     string attachmentStore;
-    string[] receiveDomains;
+    string[][string] validDestinations;
 }
 
 Config getConfig()
 {
     string mainDir          = "/home/juanjux/webmail";
     Config config;
-    config.receiveDomains  ~= "mooo.com";
-    config.rawMailStore     = buildPath(mainDir, "backend", "test", "rawmails");
-    config.attachmentStore  = buildPath(mainDir, "backend", "test", "attachments");
+    config.validDestinations["mooo.com"]       = ["juanjux", "postmaster"];
+    config.validDestinations["fakedomain.com"] = ["fakeUser", "*"];
+    config.rawMailStore                        = buildPath(mainDir, "backend", "test", "rawmails");
+    config.attachmentStore                     = buildPath(mainDir, "backend", "test", "attachments");
     return config;
 }
+
+
+bool hasValidDestination(IncomingEmail email, string[][string] validDestinations)
+// Checks if there is at least one valid destination (user managed by us) 
+{
+    string[] addresses;
+
+    foreach(string header; ["To", "Cc", "Bcc", "Delivered-To"])
+        addresses ~= email.extractAddressesFromHeader(header);
+
+    string user, domain;
+    foreach(string addr; addresses)
+    {
+        auto addrtokens = addr.split("@");
+
+        if (addrtokens.length != 2)
+            continue;
+
+        user   = addrtokens[0];
+        domain = toLower(addrtokens[1]);
+
+        if (domain in validDestinations && find(validDestinations[domain], user).length)
+            return true;
+    }
+    return false;
+}
+
 
 int main()
 {
     auto f = File("/home/juanjux/webmail/backend/source/retriever/log.txt", "a");
     auto config = getConfig();
-    f.writeln("XXX 1");
     auto mail = new IncomingEmail(config.rawMailStore, config.attachmentStore);
-    f.writeln("XXX 2");
     mail.loadFromFile(std.stdio.stdin);
-    f.writeln("XXX 3");
-    if ("From:" in mail.headers) writeln("From: ", mail.headers["From:"]);
 
-    if (mail.isValid)
+    if (mail.isValid && hasValidDestination(mail, config.validDestinations))
     {
-        // XXX
-        // 1. Comprobar si en el To: va a un dominio admitido y a un usuario valido
-        // 2. Comprobar si tiene la marca de spam y aniadirle el tag
-        // 3. Ejecutar la comprobacion de reglas
-        f.writeln("XXX 4 isValid");
-        return 0;
+        if ("X-Spam-SetSpamTag" in mail.headers)
+            mail.tags["spam"] = true;
     }
-    f.writeln("XXX 5 is not valid");
-    return 1;
+    else
+    {
+        // XXX loguear el mensaje rechazado
+    }
+
+    return 0; // return != 0 == Postfix bound. Avoid
 }
