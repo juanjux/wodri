@@ -10,6 +10,17 @@ enum SizeRuleType
     SmallerThan
 }
 
+struct Match
+{
+    bool withAttachment = false;
+    bool withHtml       = false;
+    bool withSizeLimit  = false;
+    string[string]   headerMatches;
+    string[]         bodyMatches;
+    SizeRuleType     totalSizeType = SizeRuleType.GreaterThan;
+    ulong            totalSizeValue;
+}
+
 struct Action
 {
     bool noInbox      = false;
@@ -20,17 +31,6 @@ struct Action
     bool tagFavorite  = false;
     string[] tagsToAdd;
     string forwardTo;
-}
-
-struct Match
-{
-    bool withAttachment = false;
-    bool withHtml       = false;
-    bool withSizeLimit  = false;
-    string[string]   headerMatches;
-    string[]         bodyMatches;
-    SizeRuleType     totalSizeType = SizeRuleType.GreaterThan;
-    ulong            totalSizeValue;
 }
 
 class UserFilter
@@ -48,11 +48,11 @@ class UserFilter
     // XXX allow for regular expressions
     void apply(IncomingEmail email)
     {
-        if (isEmailMatch(email))
+        if (checkMatch(email))
             applyAction(email);
     }
 
-    bool isEmailMatch(IncomingEmail email)
+    bool checkMatch(IncomingEmail email)
     {   
         if (this.match.withAttachment && !email.attachments.length)
             return false;
