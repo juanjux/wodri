@@ -8,32 +8,20 @@ import std.file;
 import std.array;
 import std.string;
 import std.path;
-import incomingemail;
 
-// XXX Sistema de log
+import incomingemail;
+import config;
+import userrule;
+
+// ===TODO===
+// XXX Sistema de log (al log del sistema y MongoDB)
 // XXX loguear emails rechazados
-// XXX Clase de config
-// XXX Tipo de regla y comprobacion de reglas
+// XXX Clase de config y cargador de config desde MongoDB
+// XXX Cargador de userRules desde MongoDB;
+// XXX email.setTag y email.removeTag
+// XXX unittest en userrule.d con algunos emails de prueba sencillos fijos
 // XXX Almacenador en MongoDB
 // XXX Indexacion
-
-struct Config
-{
-    string rawMailStore;
-    string attachmentStore;
-    string[][string] validDestinations;
-}
-
-Config getConfig()
-{
-    string mainDir          = "/home/juanjux/webmail";
-    Config config;
-    config.validDestinations["mooo.com"]       = ["juanjux", "postmaster"];
-    config.validDestinations["fakedomain.com"] = ["fakeUser", "*"];
-    config.rawMailStore                        = buildPath(mainDir, "backend", "test", "rawmails");
-    config.attachmentStore                     = buildPath(mainDir, "backend", "test", "attachments");
-    return config;
-}
 
 
 bool hasValidDestination(IncomingEmail email, string[][string] validDestinations)

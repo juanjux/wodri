@@ -1,9 +1,9 @@
 #!/usr/bin/env rdmd 
 
 import std.stdio;
+import std.path;
 import std.regex;
 import std.file;
-import std.path;
 import std.conv;
 import std.algorithm;
 import std.string;
@@ -65,18 +65,15 @@ struct Attachment // #attach
     string content_id;
     ulong size;
     version(unittest) 
-    {
+    {  
         bool was_encoded = false;
         string original_encoded_content;
     }
 }
 
-// XXX parece mas lento, probar sin el final y con la implementacion anterior
-final class IncomingEmail
-{ 
-    string attachmentStore;
-    string rawMailStore;
-    string conversationId;
+
+final class IncomingEmail { string attachmentStore; string rawMailStore; string
+conversationId;
 
     DictionaryList!(string, false) headers; // Note: keys are case insensitive
     MIMEPart rootPart; 
@@ -86,16 +83,17 @@ final class IncomingEmail
     Attachment[] attachments;
     bool[string] tags; 
     string lineSep = "\r\n";
+    string[] doForwardTo;
     debug File debugFile;
 
     this(string rawMailStore, string attachmentStore)
     {
-        this.attachmentStore  = attachmentStore;
-        this.rawMailStore = rawMailStore;
-        this.rootPart   = new MIMEPart();
-
-        debug debugFile = File(buildPath(TEST_PATH_BASE, 
-                                         "backend/source/retriever/inclog.txt"), "a");
+        this.attachmentStore = attachmentStore;
+        this.rawMailStore    = rawMailStore;
+        this.rootPart        = new MIMEPart();
+        debug debugFile      = File(buildPath(TEST_PATH_BASE, 
+                                             "backend/source/retriever/inclog.txt"), 
+                                             "a");
     }
 
     @property bool isValid()
@@ -112,7 +110,7 @@ final class IncomingEmail
     void loadFromFile(string email_path, bool copyRaw=true)
     {
         auto f = File(email_path);
-        this.loadFromFile(f);
+            this.loadFromFile(f);
     }
 
 
@@ -138,7 +136,7 @@ final class IncomingEmail
             else             lineSep = "\n";  
         }
  
-        // Header
+        // === Header ===
         uint count = 0;
         while (!email_file.eof())
         {
@@ -158,8 +156,9 @@ final class IncomingEmail
 
             if (partialBuffer.data.length && !among(currentLine[0], ' ', '\t'))
             {
-                // Not indendeted, so new header; add the buffer (with the text of
-                // the previous lines without the current line) as new header
+                // Not indented, so this line starts a new header (or
+                // body): add the buffer (with the text of the previous
+                // lines without the current line) as new header
                 addHeader(partialBuffer.data);
                 partialBuffer.clear();
             }
@@ -174,7 +173,7 @@ final class IncomingEmail
             }
         }
 
-        // Body: read all into the buffer, the parsing is done outside the loop
+        // === Body=== (read all into the buffer, the parsing is done outside the loop)
         while (!email_file.eof())
         {
             if (!currentLine.length)
@@ -192,7 +191,7 @@ final class IncomingEmail
             parseParts(split(partialBuffer.data, this.lineSep), this.rootPart);
         else
             setTextPart(this.rootPart, partialBuffer.data);
-    
+
         // Finally, copy the email to rawMailPath 
         // (the user of the class is responsible for deleting the original)
         if (copyRaw && this.rawMailStore.length)
@@ -239,6 +238,19 @@ final class IncomingEmail
                 write(name, ":", value);
         }
         return textheaders.data;
+    }
+
+    ulong computeSize()
+    {
+        ulong totalSize;
+
+        foreach(MIMEPart textualPart; this.textualParts)
+            totalSize += textualPart.textContent.length;
+
+        foreach(Attachment attachment; this.attachments)
+            totalSize += attachment.size;
+
+        return totalSize;
     }
 
 

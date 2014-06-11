@@ -221,7 +221,7 @@ Comma	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	586;"	e	enum:Key
 CommandLine	/home/juanjux/webmail/backend/source/arsd/cgi.d	233;"	e	enum:RequestMethod
 Complex	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4926;"	e	enum:PolygonShape
 CompoundStatementRange	/home/juanjux/webmail/backend/source/arsd/script.d	2155;"	s
-Config	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	18;"	s
+Config	/home/juanjux/webmail/backend/source/retriever/config.d	3;"	s
 ConfigureNotify	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4280;"	e	enum:EventType
 ConfigureRequest	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4281;"	e	enum:EventType
 Connection	/home/juanjux/webmail/backend/source/arsd/netman.d	352;"	c
@@ -598,6 +598,7 @@ GraphicsExpose	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4271;"	
 Grave	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	410;"	e	enum:Key
 Grave	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	525;"	e	enum:Key
 GravityNotify	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4282;"	e	enum:EventType
+GreaterThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	3;"	e	enum:SizeRuleType
 GreyscaleLines	/home/juanjux/webmail/backend/source/arsd/png.d	934;"	s	function:convertToGreyscale
 H	/home/juanjux/webmail/backend/source/arsd/color.d	420;"	v	function:toHsl
 H	/home/juanjux/webmail/backend/source/arsd/sha.d	310;"	v	function:SHA256
@@ -719,8 +720,8 @@ ImageFormat	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3734;"	g
 ImageList_Add	/home/juanjux/webmail/backend/source/arsd/minigui.d	2412;"	f	arity:3
 ImageList_Create	/home/juanjux/webmail/backend/source/arsd/minigui.d	2411;"	f	arity:5
 ImageList_Destroy	/home/juanjux/webmail/backend/source/arsd/minigui.d	2413;"	f	arity:1
-InBody	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	123;"	e	enum:ParseState
-InHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	123;"	e	enum:ParseState
+InBody	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	120;"	e	enum:ParseState
+InHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	120;"	e	enum:ParseState
 IncomingEmail	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	75;"	c
 IndefiniteProgressBar	/home/juanjux/webmail/backend/source/arsd/minigui.d	1393;"	c
 IndexExpression	/home/juanjux/webmail/backend/source/arsd/script.d	913;"	c
@@ -969,7 +970,7 @@ Nonconvex	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4927;"	e	enu
 None	/home/juanjux/webmail/backend/source/arsd/minigui.d	2593;"	e	enum:GenericIcons
 None	/home/juanjux/webmail/backend/source/arsd/terminal.d	1931;"	e	enum:Button
 Normal	/home/juanjux/webmail/backend/source/arsd/script.d	418;"	e	enum:FlowControl
-NotStarted	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	123;"	e	enum:ParseState
+NotStarted	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	120;"	e	enum:ParseState
 NotificationConnection	/home/juanjux/webmail/backend/source/arsd/rtud.d	397;"	c
 NotifyAncestor	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3798;"	e	enum:NotifyDetail
 NotifyDetail	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3796;"	g
@@ -1130,7 +1131,7 @@ Pair	/home/juanjux/webmail/backend/source/arsd/oauth.d	561;"	s
 ParamCheckHelper	/home/juanjux/webmail/backend/source/arsd/web.d	2338;"	c
 Parameter	/home/juanjux/webmail/backend/source/arsd/web.d	810;"	s
 ParentheticalExpression	/home/juanjux/webmail/backend/source/arsd/script.d	1289;"	c
-ParseState	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	121;"	g	function:loadFromFile
+ParseState	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	118;"	g	function:loadFromFile
 Part	/home/juanjux/webmail/backend/source/arsd/minigui.d	1332;"	c	class:StatusBar
 Parts	/home/juanjux/webmail/backend/source/arsd/minigui.d	1283;"	s	class:StatusBar
 PassThrough	/home/juanjux/webmail/backend/source/arsd/rpc.d	209;"	T
@@ -1397,10 +1398,12 @@ SimpleWindow	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	1326;"	c
 Size	/home/juanjux/webmail/backend/source/arsd/color.d	1113;"	s
 SizeChangedEvent	/home/juanjux/webmail/backend/source/arsd/terminal.d	1945;"	s
 SizeChangedEvent	/home/juanjux/webmail/backend/source/arsd/terminal.d	1990;"	e	enum:Type
+SizeRuleType	/home/juanjux/webmail/backend/source/retriever/userrule.d	1;"	g
 Slash	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	473;"	e	enum:Key
 Slash	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	588;"	e	enum:Key
 SleepEx	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3470;"	f	arity:2
 SliceExpression	/home/juanjux/webmail/backend/source/arsd/script.d	938;"	c
+SmallerThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	4;"	e	enum:SizeRuleType
 Solid	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	833;"	e	enum:Style
 Sound	/home/juanjux/webmail/backend/source/arsd/audio.d	12;"	c
 Space	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	478;"	e	enum:Key
@@ -1562,8 +1565,11 @@ UriFeatures	/home/juanjux/webmail/backend/source/arsd/html.d	37;"	g
 UriParts	/home/juanjux/webmail/backend/source/arsd/http.d	63;"	s
 UriParts	/home/juanjux/webmail/backend/source/arsd/http2.d	99;"	s
 Url	/home/juanjux/webmail/backend/source/arsd/http2.d	157;"	s
+UserFilter	/home/juanjux/webmail/backend/source/retriever/userrule.d	29;"	c
 UserInterruptionEvent	/home/juanjux/webmail/backend/source/arsd/terminal.d	1953;"	s
 UserInterruptionEvent	/home/juanjux/webmail/backend/source/arsd/terminal.d	1991;"	e	enum:Type
+UserRuleAction	/home/juanjux/webmail/backend/source/retriever/userrule.d	7;"	s
+UserRuleMatch	/home/juanjux/webmail/backend/source/retriever/userrule.d	19;"	s
 UsingCustomWidgets	/home/juanjux/webmail/backend/source/arsd/minigui.d	125;"	v
 UsingCustomWidgets	/home/juanjux/webmail/backend/source/arsd/minigui.d	128;"	v
 UsingCustomWidgets	/home/juanjux/webmail/backend/source/arsd/minigui.d	133;"	v
@@ -1977,6 +1983,9 @@ acp	/home/juanjux/webmail/backend/source/retriever/lib/string.d	210;"	v	function
 act	/home/juanjux/webmail/backend/source/arsd/rtud.d	153;"	v	function:handleListenerGateway
 action	/home/juanjux/webmail/backend/source/arsd/minigui.d	1208;"	v	class:ToolButton
 action	/home/juanjux/webmail/backend/source/arsd/minigui.d	1622;"	v	class:MenuItem
+action	/home/juanjux/webmail/backend/source/retriever/userrule.d	32;"	v	class:UserFilter
+action1	/home/juanjux/webmail/backend/source/retriever/userrule.d	51;"	v	function:getUserFilters
+action2	/home/juanjux/webmail/backend/source/retriever/userrule.d	55;"	v	function:getUserFilters
 activate	/home/juanjux/webmail/backend/source/arsd/audio.d	86;"	f	arity:0	class:Audio
 activateHandlers	/home/juanjux/webmail/backend/source/arsd/eventloop.d	248;"	f	arity:0	struct:FileEventDispatcher
 active	/home/juanjux/webmail/backend/source/arsd/audio.d	178;"	v	class:Audio
@@ -2021,7 +2030,7 @@ addFile	/home/juanjux/webmail/backend/source/arsd/eventloop.d	307;"	f	arity:4	st
 addFileEventListeners	/home/juanjux/webmail/backend/source/arsd/eventloop.d	361;"	f	arity:1
 addFileToLoop	/home/juanjux/webmail/backend/source/arsd/eventloop.d	384;"	f	arity:2
 addFileToLoopImplementation	/home/juanjux/webmail/backend/source/arsd/eventloop.d	437;"	f	arity:2
-addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	217;"	f	arity:1	class:IncomingEmail
+addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	243;"	f	arity:1	class:IncomingEmail
 addImageDatastreamToPng	/home/juanjux/webmail/backend/source/arsd/png.d	574;"	f	arity:2
 addInput	/home/juanjux/webmail/backend/source/arsd/dom.d	3037;"	f	arity:3	class:Form
 addInt	/home/juanjux/webmail/backend/source/arsd/terminal.d	482;"	f	arity:2	function:doTermcap
@@ -2034,7 +2043,7 @@ addNew	/home/juanjux/webmail/backend/source/arsd/database.d	947;"	f	arity:0	clas
 addOnIdle	/home/juanjux/webmail/backend/source/arsd/eventloop.d	35;"	f	arity:1
 addOnLoad	/home/juanjux/webmail/backend/source/arsd/html.d	734;"	f	arity:1
 addOption	/home/juanjux/webmail/backend/source/arsd/minigui.d	31;"	f	arity:1	class:ComboboxBase
-addPartHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	406;"	f	arity:1	function:parsePartHeaders
+addPartHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	432;"	f	arity:1	function:parsePartHeaders
 addSibling	/home/juanjux/webmail/backend/source/arsd/dom.d	204;"	f	arity:3	template:DomConvenienceFunctions
 addSibling	/home/juanjux/webmail/backend/source/arsd/dom.d	218;"	f	arity:1	template:DomConvenienceFunctions
 addString	/home/juanjux/webmail/backend/source/arsd/terminal.d	475;"	f	arity:1	function:doTermcap
@@ -2056,7 +2065,7 @@ addr	/home/juanjux/webmail/backend/source/arsd/netman.d	144;"	v	function:listen
 addr	/home/juanjux/webmail/backend/source/arsd/netman.d	270;"	v	function:proceed
 addr	/home/juanjux/webmail/backend/source/arsd/netman.d	498;"	v	class:Connection
 addr	/home/juanjux/webmail/backend/source/arsd/rtud.d	108;"	v	function:openNetworkFd
-addresses	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	40;"	v	function:hasValidDestination
+addresses	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	28;"	v	function:hasValidDestination
 adjustmentForNextLine	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	908;"	f	arity:0	class:Image
 advance	/home/juanjux/webmail/backend/source/arsd/script.d	200;"	f	arity:1	class:TokenStream
 advance	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1479;"	v	function:stbtt_BakeFontBitmap
@@ -2167,17 +2176,17 @@ assignment	/home/juanjux/webmail/backend/source/arsd/querygenerator.d	372;"	e	en
 atStartOfLine	/home/juanjux/webmail/backend/source/arsd/http2.d	350;"	v	struct:HeaderReadingState
 atom	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3052;"	v	function:createWindow
 atom	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4499;"	v	struct:XPropertyEvent
-att	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	357;"	v	function:setAttachmentPart
-att_content	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	331;"	v	function:setAttachmentPart
-attachFileName	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	342;"	v	function:setAttachmentPart
-attachFullPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	352;"	v	function:setAttachmentPart
+att	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	383;"	v	function:setAttachmentPart
+att_content	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	357;"	v	function:setAttachmentPart
+attachFileName	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	368;"	v	function:setAttachmentPart
+attachFullPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	378;"	v	function:setAttachmentPart
 attachedToWindow	/home/juanjux/webmail/backend/source/arsd/minigui.d	1684;"	f	arity:1	class:MouseActivatedWidget
 attachedToWindow	/home/juanjux/webmail/backend/source/arsd/minigui.d	624;"	f	arity:1	class:Widget
 attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	49;"	v	class:MIMEPart
-attachmentStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	622;"	v
-attachmentStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	77;"	v	class:IncomingEmail
-attachmentStore	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	21;"	v	struct:Config
-attachments	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	86;"	v	class:IncomingEmail
+attachmentStore	/home/juanjux/webmail/backend/source/retriever/config.d	6;"	v	struct:Config
+attachmentStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	621;"	v
+attachmentStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	75;"	v	class:IncomingEmail
+attachments	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	83;"	v	class:IncomingEmail
 attempt	/home/juanjux/webmail/backend/source/arsd/html.d	766;"	f	arity:1	function:opDispatch
 attrName	/home/juanjux/webmail/backend/source/arsd/dom.d	4271;"	v	function:readElement
 attrValue	/home/juanjux/webmail/backend/source/arsd/dom.d	4272;"	v	function:readElement
@@ -2252,7 +2261,7 @@ back	/home/juanjux/webmail/backend/source/lib/array.d	236;"	f	arity:0	struct:Fix
 back	/home/juanjux/webmail/backend/source/retriever/lib/array.d	236;"	f	arity:0	struct:FixedRingBuffer
 backFilesForLoop	/home/juanjux/webmail/backend/source/arsd/eventloop.d	399;"	v
 backMessages	/home/juanjux/webmail/backend/source/arsd/rtud.d	431;"	v	function:handleMessage
-backendTestDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	619;"	v
+backendTestDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	618;"	v
 backgroundIsNotTransparent	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2582;"	v	template:NativeScreenPainterImplementation
 background_pixel	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4101;"	v	struct:XSetWindowAttributes
 background_pixmap	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4100;"	v	struct:XSetWindowAttributes
@@ -2264,7 +2273,7 @@ backing_store	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4835;"	v
 badParameter	/home/juanjux/webmail/backend/source/arsd/web.d	2483;"	f	arity:1
 bar	/home/juanjux/webmail/backend/source/arsd/querygenerator.d	281;"	v	struct:Test
 base	/home/juanjux/webmail/backend/source/arsd/web.d	1254;"	v	function:run
-base64Dir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	623;"	v
+base64Dir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	622;"	v
 base64UrlDecode	/home/juanjux/webmail/backend/source/arsd/cgi.d	2859;"	f	arity:1
 base64UrlDecode	/home/juanjux/webmail/backend/source/arsd/oauth.d	647;"	f	arity:1
 baseString	/home/juanjux/webmail/backend/source/arsd/oauth.d	589;"	v	function:getSignatureBaseString
@@ -2355,7 +2364,8 @@ bodyBytesSent	/home/juanjux/webmail/backend/source/arsd/http.d	474;"	v
 bodyBytesSent	/home/juanjux/webmail/backend/source/arsd/http2.d	570;"	v	class:HttpRequest
 bodyData	/home/juanjux/webmail/backend/source/arsd/http.d	564;"	v
 bodyData	/home/juanjux/webmail/backend/source/arsd/http2.d	669;"	v	struct:HttpRequestParameters
-bodyHasParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	128;"	v	function:loadFromFile
+bodyHasParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	125;"	v	function:loadFromFile
+bodyMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	24;"	v	struct:UserRuleMatch
 bodyReadingState	/home/juanjux/webmail/backend/source/arsd/http2.d	365;"	v	class:HttpRequest
 boolean	/home/juanjux/webmail/backend/source/arsd/web.d	3629;"	f	arity:4	struct:TemplateFilters
 border_pixel	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4103;"	v	struct:XSetWindowAttributes
@@ -2365,8 +2375,8 @@ border_width	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4428;"	v	
 border_width	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4464;"	v	struct:XConfigureRequestEvent
 bottom_y	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1469;"	v	function:stbtt_BakeFontBitmap
 boundary	/home/juanjux/webmail/backend/source/arsd/cgi.d	706;"	v	struct:PostParserState
-boundaryEnd	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	233;"	v	function:parseParts
-boundaryPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	232;"	v	function:parseParts
+boundaryEnd	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	259;"	v	function:parseParts
+boundaryPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	258;"	v	function:parseParts
 box	/home/juanjux/webmail/backend/source/arsd/screen.d	1076;"	f	arity:3	class:Painter
 bpp	/home/juanjux/webmail/backend/source/arsd/png.d	1224;"	v	struct:ByRgbaScanline
 bpp	/home/juanjux/webmail/backend/source/arsd/screen.d	290;"	f	arity:0	class:Drawable
@@ -2377,7 +2387,7 @@ braceCount	/home/juanjux/webmail/backend/source/arsd/html.d	1311;"	v	function: t
 breakNext	/home/juanjux/webmail/backend/source/arsd/netman.d	528;"	v	function:run
 breakSignifier	/home/juanjux/webmail/backend/source/arsd/cgi.d	3293;"	v	class:ConnectionThread
 breakUp	/home/juanjux/webmail/backend/source/arsd/cgi.d	309;"	f	arity:1	function: this
-brokenMails	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	721;"	v
+brokenMails	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	720;"	v
 brush	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	1916;"	v	function:fillColor
 bubblingEventHandlers	/home/juanjux/webmail/backend/source/arsd/dom.d	801;"	v	class:Element
 bubblingEventHandlers	/home/juanjux/webmail/backend/source/arsd/minigui.d	2113;"	v	template:EventStuff
@@ -2788,7 +2798,7 @@ computeCheckSumI	/home/juanjux/webmail/backend/source/retriever/lib/dictionaryli
 computedStyle	/home/juanjux/webmail/backend/source/arsd/dom.d	1337;"	f	arity:0	class:Element
 condition	/home/juanjux/webmail/backend/source/arsd/script.d	1101;"	v	class:ForExpression
 condition	/home/juanjux/webmail/backend/source/arsd/script.d	1150;"	v	class:IfExpression
-config	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	28;"	v	function:getConfig
+config	/home/juanjux/webmail/backend/source/retriever/config.d	13;"	v	function:getConfig
 conn	/home/juanjux/webmail/backend/source/arsd/mssql.d	77;"	v	class:MsSql
 conn	/home/juanjux/webmail/backend/source/arsd/postgres.d	57;"	v	class:PostgreSql
 connect	/home/juanjux/webmail/backend/source/arsd/netman.d	94;"	f	arity:2	class:NetworkManager
@@ -2826,7 +2836,7 @@ contentInMemory	/home/juanjux/webmail/backend/source/arsd/cgi.d	781;"	v	struct:U
 contentLength	/home/juanjux/webmail/backend/source/arsd/cgi.d	1259;"	v	function: this
 contentLength	/home/juanjux/webmail/backend/source/arsd/httpd.d	67;"	v	class:HttpdConnection
 contentLengthRemaining	/home/juanjux/webmail/backend/source/arsd/http2.d	363;"	v	struct:BodyReadingState
-contentStart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	272;"	v	function:parseParts
+contentStart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	298;"	v	function:parseParts
 contentType	/home/juanjux/webmail/backend/source/arsd/cgi.d	1256;"	v	function: this
 contentType	/home/juanjux/webmail/backend/source/arsd/cgi.d	705;"	v	struct:PostParserState
 contentType	/home/juanjux/webmail/backend/source/arsd/cgi.d	748;"	v	struct:UploadedFile
@@ -2851,7 +2861,7 @@ control	/home/juanjux/webmail/backend/source/arsd/terminal.d	1960;"	e	enum:Modif
 control	/home/juanjux/webmail/backend/source/arsd/terminal.d	1976;"	e	enum:ModifierState
 controlDown	/home/juanjux/webmail/backend/source/arsd/engine.d	895;"	v	class:Engine
 convToString	/home/juanjux/webmail/backend/source/arsd/engine.d	30;"	f	arity:1
-conversationId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	79;"	v	class:IncomingEmail
+conversationId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	76;"	v	class:IncomingEmail
 convertToGreyscale	/home/juanjux/webmail/backend/source/arsd/png.d	931;"	f	arity:1
 convertToRgbaBytes	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2443;"	f	arity:1	template:NativeImageImplementation
 convertToRgbaBytes	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2948;"	f	arity:1	template:NativeImageImplementation
@@ -2885,6 +2895,7 @@ copy	/home/juanjux/webmail/backend/source/arsd/jsvar.d	1367;"	f	arity:0	class:Op
 copy	/home/juanjux/webmail/backend/source/arsd/jsvar.d	1424;"	f	arity:0	class:PrototypeObject
 copyBufferPosition	/home/juanjux/webmail/backend/source/arsd/eventloop.d	180;"	v	function:send
 copyCString	/home/juanjux/webmail/backend/source/arsd/postgres.d	154;"	f	arity:2
+copyMail	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	728;"	v
 copyPropertiesFrom	/home/juanjux/webmail/backend/source/arsd/jsvar.d	1434;"	f	arity:1	class:PrototypeObject
 count	/home/juanjux/webmail/backend/source/arsd/cgi.d	854;"	v	function:pieceHasNewContent
 count	/home/juanjux/webmail/backend/source/arsd/color.d	23;"	v	function:toInternal
@@ -2898,7 +2909,7 @@ count	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1603;"	v	function
 count	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	505;"	v	function:stbtt_FindGlyphIndex
 count	/home/juanjux/webmail/backend/source/arsd/web.d	1795;"	v	function:createAutomaticForm
 count	/home/juanjux/webmail/backend/source/arsd/web.d	3582;"	v	function:pluralHelper
-count	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	143;"	v	function:loadFromFile
+count	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	139;"	v	function:loadFromFile
 countRemaining	/home/juanjux/webmail/backend/source/arsd/eventloop.d	19;"	v	struct:TimerInfo
 cp	/home/juanjux/webmail/backend/source/arsd/jsvar.d	505;"	v	function:_copy
 cp	/home/juanjux/webmail/backend/source/arsd/jsvar.d	509;"	v	function:_copy
@@ -2930,7 +2941,7 @@ createImage	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	5596;"	f	a
 createImage	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	5719;"	f	arity:2	struct:Html5
 createNotificationConnection	/home/juanjux/webmail/backend/source/arsd/rtud.d	628;"	f	arity:0	class:RealTimeUpdateDaemon
 createOpenGlContext	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3084;"	f	arity:0	template:NativeSimpleWindowImplementation
-createPartInfoText	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	571;"	f	arity:3
+createPartInfoText	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	570;"	f	arity:3
 createQuery	/home/juanjux/webmail/backend/source/arsd/querygenerator.d	265;"	f	arity:2
 createQueryGenerator	/home/juanjux/webmail/backend/source/arsd/querygenerator.d	107;"	f	arity:1
 createTextNode	/home/juanjux/webmail/backend/source/arsd/dom.d	4509;"	f	arity:1	class:Document
@@ -2950,7 +2961,7 @@ cssUrl	/home/juanjux/webmail/backend/source/arsd/dom.d	5522;"	f	arity:1
 csum	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	225;"	v	function:computeCheckSumI
 csum	/home/juanjux/webmail/backend/source/retriever/lib/dictionarylist.d	225;"	v	function:computeCheckSumI
 csv	/home/juanjux/webmail/backend/source/arsd/web.d	2817;"	v	function:tableToCsv
-ct_transfer_encoding	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	472;"	v	function:getRootContentInfo
+ct_transfer_encoding	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	498;"	v	function:getRootContentInfo
 ctor	/home/juanjux/webmail/backend/source/arsd/script.d	1214;"	v	function:interpret
 ctrl	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	348;"	e	enum:ModifierState
 ctrl	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	361;"	e	enum:ModifierState
@@ -2995,7 +3006,7 @@ currentFunction	/home/juanjux/webmail/backend/source/arsd/web.d	225;"	v	struct:R
 currentIndex	/home/juanjux/webmail/backend/source/arsd/database.d	376;"	v	function:escapedVariants
 currentIndex	/home/juanjux/webmail/backend/source/arsd/dom.d	3972;"	v	function:readElement
 currentKilled	/home/juanjux/webmail/backend/source/arsd/dom.d	5721;"	f	arity:0	class:ElementStream
-currentLine	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	127;"	v	function:loadFromFile
+currentLine	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	124;"	v	function:loadFromFile
 currentName	/home/juanjux/webmail/backend/source/arsd/web.d	2025;"	v	function:parameterInfoImpl
 currentPen	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	1868;"	v	template:NativeScreenPainterImplementation
 currentPipe	/home/juanjux/webmail/backend/source/arsd/web.d	3721;"	v	function:htmlTemplateWithData
@@ -3115,7 +3126,7 @@ deNest	/home/juanjux/webmail/backend/source/arsd/html.d	1345;"	f	arity:1	class:C
 deactivate	/home/juanjux/webmail/backend/source/arsd/audio.d	92;"	f	arity:0	class:Audio
 deactivateHandlers	/home/juanjux/webmail/backend/source/arsd/eventloop.d	258;"	f	arity:0	struct:FileEventDispatcher
 deathRequested	/home/juanjux/webmail/backend/source/arsd/rtud.d	132;"	v
-debugFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	89;"	v	class:IncomingEmail
+debugFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	86;"	v	class:IncomingEmail
 dechunk	/home/juanjux/webmail/backend/source/arsd/cgi.d	3352;"	f	arity:1
 decimals	/home/juanjux/webmail/backend/source/arsd/mysql.d	625;"	v	struct:MYSQL_FIELD
 decl	/home/juanjux/webmail/backend/source/arsd/script.d	1054;"	v	class:ForeachExpression
@@ -3162,6 +3173,7 @@ define	/home/juanjux/webmail/backend/source/arsd/html.d	1681;"	f	arity:1	class:M
 definition	/home/juanjux/webmail/backend/source/arsd/html.d	1628;"	v	struct:Macro
 delay	/home/juanjux/webmail/backend/source/arsd/engine.d	377;"	v	function:waitOnNetwork
 delayAmount	/home/juanjux/webmail/backend/source/arsd/engine.d	404;"	v	function:waitOnNetwork
+deleteIt	/home/juanjux/webmail/backend/source/retriever/userrule.d	11;"	v	struct:UserRuleAction
 deleteMessage	/home/juanjux/webmail/backend/source/arsd/rtud.d	577;"	f	arity:1	class:RealTimeUpdateDaemon
 deleteMessage	/home/juanjux/webmail/backend/source/arsd/rtud.d	59;"	f	arity:1	class:UpdateStream
 denestCss	/home/juanjux/webmail/backend/source/arsd/html.d	1529;"	f	arity:1
@@ -3286,7 +3298,7 @@ doesItMatch	/home/juanjux/webmail/backend/source/arsd/dom.d	4379;"	f	arity:1	fun
 doesItMatch	/home/juanjux/webmail/backend/source/arsd/dom.d	4443;"	f	arity:1	function:getFirstElementByTagName
 doit	/home/juanjux/webmail/backend/source/arsd/color.d	1076;"	f	arity:2	function:floydSteinbergDither
 domain	/home/juanjux/webmail/backend/source/arsd/http2.d	767;"	v	struct:HttpCookie
-domain	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	45;"	v	function:hasValidDestination
+domain	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	33;"	v	function:hasValidDestination
 done	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2382;"	v	function:eventLoop
 done	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3101;"	v	function:eventLoop
 done	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3124;"	v	function:doXNextEvent
@@ -3427,8 +3439,8 @@ elementPostProcessors	/home/juanjux/webmail/backend/source/arsd/web.d	512;"	v	cl
 elements	/home/juanjux/webmail/backend/source/arsd/dom.d	480;"	v	struct:ElementCollection
 elements	/home/juanjux/webmail/backend/source/arsd/script.d	550;"	v	class:ArrayLiteralExpression
 elements	/home/juanjux/webmail/backend/source/arsd/script.d	559;"	v	class:ObjectLiteralExpression
-emailFiles	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	557;"	v	function:getSortedEmailFilesList
-email_file	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	638;"	v
+emailFiles	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	556;"	v	function:getSortedEmailFilesList
+email_file	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	637;"	v
 empty	/home/juanjux/webmail/backend/source/arsd/cgi.d	181;"	f	arity:0	struct:ByChunk
 empty	/home/juanjux/webmail/backend/source/arsd/cgi.d	3075;"	f	arity:0	class:BufferedInputRange
 empty	/home/juanjux/webmail/backend/source/arsd/cgi.d	3446;"	f	arity:0	class:ByChunkRange
@@ -3487,7 +3499,7 @@ end	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	517;"	v	function:st
 end2	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	534;"	v	function:stbtt_FindGlyphIndex
 endCount	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	520;"	v	function:stbtt_FindGlyphIndex
 endDrawingShapes	/home/juanjux/webmail/backend/source/arsd/screen.d	823;"	f	arity:0	class:Painter
-endIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	245;"	v	function:parseParts
+endIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	271;"	v	function:parseParts
 endPtsOfContours	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	664;"	v	function:stbtt_GetGlyphShape
 end_char	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	567;"	v	function:stbtt_FindGlyphIndex
 ending	/home/juanjux/webmail/backend/source/arsd/dom.d	4118;"	v	function:addTag
@@ -3602,7 +3614,7 @@ ext_data	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4821;"	v	stru
 ext_data	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4842;"	v	struct:Visual
 extendedMetadata	/home/juanjux/webmail/backend/source/arsd/sqlite.d	266;"	v	struct:Statement
 extension	/home/juanjux/webmail/backend/source/arsd/mysql.d	631;"	v	struct:MYSQL_FIELD
-extractAddressesFromHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	484;"	f	arity:1	class:IncomingEmail
+extractAddressesFromHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	216;"	f	arity:1	class:IncomingEmail
 extremify	/home/juanjux/webmail/backend/source/arsd/color.d	478;"	f	arity:2
 ey	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1013;"	v	struct:stbtt__active_edge
 f	/home/juanjux/webmail/backend/source/arsd/cgi.d	3471;"	v	function:byChunk
@@ -3698,7 +3710,7 @@ findNearestColor	/home/juanjux/webmail/backend/source/arsd/color.d	959;"	f	arity
 findSequenceInTermcap	/home/juanjux/webmail/backend/source/arsd/terminal.d	414;"	f	arity:1	struct:Terminal
 finish	/home/juanjux/webmail/backend/source/arsd/web.d	2403;"	f	arity:5	class:ParamCheckHelper
 finishRequest	/home/juanjux/webmail/backend/source/arsd/httpd.d	77;"	f	arity:0	class:HttpdConnection
-finished	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	246;"	v	function:parseParts
+finished	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	272;"	v	function:parseParts
 first	/home/juanjux/webmail/backend/source/arsd/dom.d	2775;"	v	function:updateQueryString
 first	/home/juanjux/webmail/backend/source/arsd/html.d	266;"	v	function:nl2br
 first	/home/juanjux/webmail/backend/source/arsd/http.d	202;"	v
@@ -3786,6 +3798,7 @@ formatAs	/home/juanjux/webmail/backend/source/arsd/web.d	2739;"	f	arity:5
 formatted	/home/juanjux/webmail/backend/source/arsd/web.d	2220;"	v	function:toJsonValue
 forms	/home/juanjux/webmail/backend/source/arsd/dom.d	4477;"	f	arity:0	class:Document
 forms	/home/juanjux/webmail/backend/source/arsd/html.d	32;"	e	enum:HtmlFeatures
+forwardTo	/home/juanjux/webmail/backend/source/retriever/userrule.d	16;"	v	struct:UserRuleAction
 found	/home/juanjux/webmail/backend/source/arsd/cgi.d	2440;"	v	function:listeningPort
 found	/home/juanjux/webmail/backend/source/arsd/cgi.d	2451;"	v	function:listeningHost
 found	/home/juanjux/webmail/backend/source/arsd/dom.d	2912;"	v	function:setValue
@@ -3941,7 +3954,7 @@ getChildPositionRelativeToParentOrigin	/home/juanjux/webmail/backend/source/arsd
 getChunk	/home/juanjux/webmail/backend/source/arsd/png.d	337;"	f	arity:1	struct:PNG
 getChunkNullable	/home/juanjux/webmail/backend/source/arsd/png.d	345;"	f	arity:1	struct:PNG
 getClipboardText	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	114;"	f	arity:2
-getConfig	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	25;"	f	arity:0
+getConfig	/home/juanjux/webmail/backend/source/retriever/config.d	10;"	f	arity:0
 getCookieArray	/home/juanjux/webmail/backend/source/arsd/cgi.d	1446;"	f	arity:0	class:Cgi
 getCreateTable	/home/juanjux/webmail/backend/source/arsd/database.d	1084;"	f	arity:2
 getCurrentCompleteUri	/home/juanjux/webmail/backend/source/arsd/cgi.d	1531;"	f	arity:0	class:Cgi
@@ -4013,7 +4026,7 @@ getPostableData	/home/juanjux/webmail/backend/source/arsd/dom.d	2995;"	f	arity:0
 getPrimarySelection	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	239;"	f	arity:2
 getPtrPair	/home/juanjux/webmail/backend/source/arsd/eventloop.d	631;"	f	arity:1
 getRgbaBytes	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	981;"	f	arity:1	class:Image
-getRootContentInfo	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	470;"	f	arity:1	class:IncomingEmail
+getRootContentInfo	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	496;"	f	arity:1	class:IncomingEmail
 getSQLError	/home/juanjux/webmail/backend/source/arsd/mssql.d	200;"	f	arity:2
 getScgiChunk	/home/juanjux/webmail/backend/source/arsd/cgi.d	2803;"	f	arity:0	function:doThreadScgiConnection
 getSelectionHandler	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2984;"	v	template:NativeSimpleWindowImplementation
@@ -4025,7 +4038,7 @@ getSiteLink	/home/juanjux/webmail/backend/source/arsd/web.d	195;"	f	arity:1
 getSize	/home/juanjux/webmail/backend/source/arsd/terminal.d	856;"	f	arity:0
 getSizeFromFile	/home/juanjux/webmail/backend/source/arsd/jpg.d	63;"	f	arity:1
 getSizeOverride	/home/juanjux/webmail/backend/source/arsd/terminal.d	299;"	v	struct:Terminal
-getSortedEmailFilesList	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	555;"	f	arity:1
+getSortedEmailFilesList	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	554;"	f	arity:1
 getSpecificityOfRule	/home/juanjux/webmail/backend/source/arsd/dom.d	5345;"	f	arity:1	class:CssStyle
 getStickX	/home/juanjux/webmail/backend/source/arsd/engine.d	696;"	f	arity:2	class:Engine
 getStickY	/home/juanjux/webmail/backend/source/arsd/engine.d	703;"	f	arity:2	class:Engine
@@ -4037,6 +4050,7 @@ getTermcapDatabase	/home/juanjux/webmail/backend/source/arsd/terminal.d	367;"	f	
 getTokenFromRequest	/home/juanjux/webmail/backend/source/arsd/oauth.d	502;"	f	arity:1
 getUnfilteredDatastream	/home/juanjux/webmail/backend/source/arsd/png.d	629;"	f	arity:1
 getUpdatesFromNativeObject	/home/juanjux/webmail/backend/source/arsd/jsvar.d	1336;"	f	arity:0	class:WrappedNativeObject
+getUserFilters	/home/juanjux/webmail/backend/source/retriever/userrule.d	43;"	f	arity:1
 getUtcTime	/home/juanjux/webmail/backend/source/arsd/cgi.d	3339;"	f	arity:0
 getValue	/home/juanjux/webmail/backend/source/arsd/dom.d	2721;"	f	arity:1	class:Link
 getValue	/home/juanjux/webmail/backend/source/arsd/dom.d	2956;"	f	arity:1	class:Form
@@ -4145,7 +4159,7 @@ glXWaitGL	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4800;"	f	ari
 glXWaitX	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4802;"	f	arity:0
 glbegin	/home/juanjux/webmail/backend/source/arsd/screen.d	837;"	v	class:Painter
 glc	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2987;"	v	template:NativeSimpleWindowImplementation
-globalIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	247;"	v	function:parseParts
+globalIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	273;"	v	function:parseParts
 globalTimer	/home/juanjux/webmail/backend/source/arsd/engine.d	69;"	v
 gluErrorString	/home/juanjux/webmail/backend/source/arsd/screen.d	55;"	f	arity:1
 gluErrorString	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	5761;"	f	arity:1
@@ -4250,7 +4264,7 @@ hasKey	/home/juanjux/webmail/backend/source/arsd/web.d	3229;"	f	arity:1	class:Se
 hasLayout	/home/juanjux/webmail/backend/source/arsd/dom.d	1367;"	v	class:Element
 hasMore	/home/juanjux/webmail/backend/source/arsd/dom.d	5964;"	f	arity:0	class:Utf8Stream
 hasMoreHelper	/home/juanjux/webmail/backend/source/arsd/dom.d	6030;"	v	class:Utf8Stream
-hasValidDestination	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	37;"	f	arity:2
+hasValidDestination	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	25;"	f	arity:2
 hasValueAnnotation	/home/juanjux/webmail/backend/source/arsd/web.d	4873;"	T
 hasValueAnnotation	/home/juanjux/webmail/backend/source/arsd/web.d	4881;"	v	template:hasValueAnnotation
 hash	/home/juanjux/webmail/backend/source/arsd/cgi.d	2218;"	f	arity:0	struct:Uri
@@ -4283,6 +4297,7 @@ header	/home/juanjux/webmail/backend/source/arsd/png.d	1348;"	v	struct:LazyPngFi
 header	/home/juanjux/webmail/backend/source/arsd/png.d	1636;"	v	function:writePngLazy
 header	/home/juanjux/webmail/backend/source/arsd/png.d	334;"	v	struct:PNG
 headerBuffer	/home/juanjux/webmail/backend/source/arsd/jpg.d	20;"	v	function: this
+headerMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	23;"	v	struct:UserRuleMatch
 headerNumber	/home/juanjux/webmail/backend/source/arsd/cgi.d	1269;"	v	function: this
 headerReadingState	/home/juanjux/webmail/backend/source/arsd/http2.d	353;"	v	class:HttpRequest
 headerScratch	/home/juanjux/webmail/backend/source/arsd/cgi.d	3678;"	v	function:send
@@ -4295,7 +4310,7 @@ headers	/home/juanjux/webmail/backend/source/arsd/http.d	658;"	v	class:HttpClien
 headers	/home/juanjux/webmail/backend/source/arsd/http2.d	666;"	v	struct:HttpRequestParameters
 headers	/home/juanjux/webmail/backend/source/arsd/http2.d	89;"	v	struct:HttpResponse
 headers	/home/juanjux/webmail/backend/source/arsd/httpd.d	65;"	v	class:HttpdConnection
-headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	81;"	v	class:IncomingEmail
+headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	78;"	v	class:IncomingEmail
 headersHash	/home/juanjux/webmail/backend/source/arsd/http2.d	90;"	v	struct:HttpResponse
 headers_str	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	742;"	v
 height	/home/juanjux/webmail/backend/source/arsd/bmp.d	272;"	v	function:writeBmp
@@ -4491,7 +4506,7 @@ idx	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2966;"	v	function:
 idx	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	5206;"	v	function:convertToRgbaBytes
 idx	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	5229;"	v	function:setFromRgbaBytes
 idx	/home/juanjux/webmail/backend/source/arsd/web.d	3623;"	v	function:stringArray
-idx	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	445;"	v	function:parsePartHeaders
+idx	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	471;"	v	function:parsePartHeaders
 idx	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	750;"	v
 idx1	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	830;"	v
 idx2	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	830;"	v
@@ -4567,7 +4582,7 @@ input	/home/juanjux/webmail/backend/source/arsd/dom.d	2030;"	v	function:addField
 input	/home/juanjux/webmail/backend/source/arsd/dom.d	2052;"	v	function:addField
 input	/home/juanjux/webmail/backend/source/arsd/web.d	1798;"	v	function:createAutomaticForm
 inputHandle	/home/juanjux/webmail/backend/source/arsd/terminal.d	1071;"	v
-inputIsStdInput	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	129;"	v	function:loadFromFile
+inputIsStdInput	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	126;"	v	function:loadFromFile
 inputPrefilter	/home/juanjux/webmail/backend/source/arsd/terminal.d	1317;"	v
 inputQueue	/home/juanjux/webmail/backend/source/arsd/terminal.d	1415;"	v
 ins	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	678;"	v	function:stbtt_GetGlyphShape
@@ -4590,7 +4605,7 @@ instance	/home/juanjux/webmail/backend/source/arsd/screen.d	217;"	v	class:FontEn
 instantiate	/home/juanjux/webmail/backend/source/arsd/web.d	749;"	v	struct:ReflectionInfo
 instantiation	/home/juanjux/webmail/backend/source/arsd/web.d	1721;"	v	function:fancyMainFunction
 instantiation	/home/juanjux/webmail/backend/source/arsd/web.d	747;"	v	struct:ReflectionInfo
-intFileComp	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	561;"	f	arity:2	function:getSortedEmailFilesList
+intFileComp	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	560;"	f	arity:2	function:getSortedEmailFilesList
 intFromHex	/home/juanjux/webmail/backend/source/arsd/dom.d	4643;"	f	arity:1
 intToString	/home/juanjux/webmail/backend/source/arsd/mangle.d	165;"	f	arity:2
 int_number	/home/juanjux/webmail/backend/source/arsd/script.d	159;"	e	enum:Type
@@ -4713,7 +4728,7 @@ isStruct	/home/juanjux/webmail/backend/source/arsd/web.d	844;"	v	template:isStru
 isStruct	/home/juanjux/webmail/backend/source/arsd/web.d	846;"	v	template:isStruct
 isStruct	/home/juanjux/webmail/backend/source/arsd/web.d	850;"	T
 isStruct	/home/juanjux/webmail/backend/source/arsd/web.d	851;"	v	template:isStruct
-isValid	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	101;"	f	arity:0	class:IncomingEmail
+isValid	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	98;"	f	arity:0	class:IncomingEmail
 isValidEventListener	/home/juanjux/webmail/backend/source/arsd/eventloop.d	28;"	T
 isValidEventListener	/home/juanjux/webmail/backend/source/arsd/eventloop.d	29;"	v	template:isValidEventListener
 isValidFileEventDispatcherHandler	/home/juanjux/webmail/backend/source/arsd/eventloop.d	213;"	T
@@ -4851,6 +4866,7 @@ label	/home/juanjux/webmail/backend/source/arsd/minigui.d	1594;"	v	class:Menu
 label	/home/juanjux/webmail/backend/source/arsd/minigui.d	1623;"	v	class:MenuItem
 label	/home/juanjux/webmail/backend/source/arsd/minigui.d	189;"	v	class:Action
 label	/home/juanjux/webmail/backend/source/arsd/minigui.d	1931;"	v	class:TextLabel
+labels	/home/juanjux/webmail/backend/source/retriever/userrule.d	15;"	v	struct:UserRuleAction
 lag	/home/juanjux/webmail/backend/source/arsd/engine.d	917;"	v	class:Engine
 lagAmount	/home/juanjux/webmail/backend/source/arsd/engine.d	403;"	v	function:waitOnNetwork
 language	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1611;"	v	function:stbtt__matchpair
@@ -4932,13 +4948,13 @@ limitSize	/home/juanjux/webmail/backend/source/arsd/web.d	3530;"	f	arity:4	struc
 limitStart	/home/juanjux/webmail/backend/source/arsd/database.d	186;"	v	class:SelectBuilder
 line	/home/juanjux/webmail/backend/source/arsd/dom.d	3674;"	v	function:getLineNumber
 line	/home/juanjux/webmail/backend/source/arsd/screen.d	1020;"	f	arity:3	class:Painter
-line	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	641;"	v
+line	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	640;"	v
 lineHeight	/home/juanjux/webmail/backend/source/arsd/minigui.d	769;"	v	class:Window
 lineNumber	/home/juanjux/webmail/backend/source/arsd/script.d	146;"	v	class:ScriptException
 lineNumber	/home/juanjux/webmail/backend/source/arsd/script.d	163;"	v	struct:ScriptToken
 lineNumber	/home/juanjux/webmail/backend/source/arsd/script.d	197;"	v	class:TokenStream
 linePoints	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	5355;"	v	function:drawLine
-lineSep	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	88;"	v	class:IncomingEmail
+lineSep	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	85;"	v	class:IncomingEmail
 line_gap	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	31;"	v	function:getStringSize
 line_gap	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	62;"	v	function:renderString
 linear	/home/juanjux/webmail/backend/source/arsd/terminal.d	271;"	e	enum:ConsoleOutputType
@@ -4966,8 +4982,8 @@ load	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	16;"	f	arity:1	str
 loadData	/home/juanjux/webmail/backend/source/arsd/web.d	3285;"	f	arity:1	class:Session
 loadDataFromJson	/home/juanjux/webmail/backend/source/arsd/web.d	3290;"	f	arity:1	class:Session
 loadFont	/home/juanjux/webmail/backend/source/arsd/screen.d	226;"	f	arity:3	class:FontEngine
-loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	112;"	f	arity:2	class:IncomingEmail
-loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	119;"	f	arity:2	class:IncomingEmail
+loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	109;"	f	arity:2	class:IncomingEmail
+loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	116;"	f	arity:2	class:IncomingEmail
 loadReadOnly	/home/juanjux/webmail/backend/source/arsd/web.d	2963;"	f	arity:3	class:Session
 loadSpecialSession	/home/juanjux/webmail/backend/source/arsd/web.d	3040;"	f	arity:1	class:Session
 loc	/home/juanjux/webmail/backend/source/arsd/cgi.d	3359;"	v	function:dechunk
@@ -5057,7 +5073,7 @@ m_staticEntries	/home/juanjux/webmail/backend/source/retriever/lib/array.d	410;"
 macros	/home/juanjux/webmail/backend/source/arsd/html.d	1631;"	v	class:MacroExpander
 magenta	/home/juanjux/webmail/backend/source/arsd/terminal.d	248;"	e	enum:Color
 magic	/home/juanjux/webmail/backend/source/arsd/terminal.d	1329;"	v	function:nextChar
-mailindex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	637;"	v
+mailindex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	636;"	v
 main	/home/juanjux/webmail/backend/source/arsd/cgi.d	2425;"	f	arity:1	template:CustomCgiMain
 main	/home/juanjux/webmail/backend/source/arsd/eventloop.d	762;"	f	arity:0
 main	/home/juanjux/webmail/backend/source/arsd/http2.d	776;"	f	arity:0
@@ -5067,10 +5083,10 @@ main	/home/juanjux/webmail/backend/source/arsd/rpc.d	50;"	f	arity:1
 main	/home/juanjux/webmail/backend/source/arsd/rtud.d	657;"	f	arity:0
 main	/home/juanjux/webmail/backend/source/arsd/sslsocket.d	64;"	f	arity:0
 main	/home/juanjux/webmail/backend/source/arsd/terminal.d	2064;"	f	arity:0
-main	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	63;"	f	arity:0
+main	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	51;"	f	arity:0
 main	/home/juanjux/webmail/backend/source/retriever/test.d	58;"	f	arity:0
 mainBody	/home/juanjux/webmail/backend/source/arsd/dom.d	4450;"	f	arity:0	class:Document
-mainDir	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	27;"	v	function:getConfig
+mainDir	/home/juanjux/webmail/backend/source/retriever/config.d	12;"	v	function:getConfig
 mainSitePath	/home/juanjux/webmail/backend/source/arsd/web.d	222;"	v	struct:RequestInfo
 maj	/home/juanjux/webmail/backend/source/arsd/sha.d	325;"	v	function:SHA256
 major_code	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4327;"	v	struct:XGraphicsExposeEvent
@@ -5129,8 +5145,12 @@ marginTop	/home/juanjux/webmail/backend/source/arsd/minigui.d	278;"	f	arity:0	te
 marginTop	/home/juanjux/webmail/backend/source/arsd/minigui.d	302;"	f	arity:0	template:LayoutInfo
 margins	/home/juanjux/webmail/backend/source/arsd/minigui.d	726;"	v	function:minHeight
 margins	/home/juanjux/webmail/backend/source/arsd/minigui.d	740;"	v	function:maxHeight
+markAsRead	/home/juanjux/webmail/backend/source/retriever/userrule.d	10;"	v	struct:UserRuleAction
 masked	/home/juanjux/webmail/backend/source/arsd/cgi.d	3662;"	v	struct:WebSocketMessage
 maskingKey	/home/juanjux/webmail/backend/source/arsd/cgi.d	3665;"	v	struct:WebSocketMessage
+match	/home/juanjux/webmail/backend/source/retriever/userrule.d	31;"	v	class:UserFilter
+match1	/home/juanjux/webmail/backend/source/retriever/userrule.d	45;"	v	function:getUserFilters
+match2	/home/juanjux/webmail/backend/source/retriever/userrule.d	60;"	v	function:getUserFilters
 matchBracket	/home/juanjux/webmail/backend/source/lib/string.d	141;"	f	arity:2
 matchBracket	/home/juanjux/webmail/backend/source/retriever/lib/string.d	141;"	f	arity:2
 matchElement	/home/juanjux/webmail/backend/source/arsd/dom.d	4830;"	f	arity:1	struct:SelectorPart
@@ -5413,8 +5433,8 @@ name	/home/juanjux/webmail/backend/source/arsd/web.d	773;"	v	struct:StructInfo
 name	/home/juanjux/webmail/backend/source/arsd/web.d	780;"	v	struct:StructMemberInfo
 name	/home/juanjux/webmail/backend/source/arsd/web.d	793;"	v	struct:FunctionInfo
 name	/home/juanjux/webmail/backend/source/arsd/web.d	811;"	v	struct:Parameter
-name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	223;"	v	function:addHeader
-name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	415;"	v	function:addPartHeader
+name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	249;"	v	function:addHeader
+name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	441;"	v	function:addPartHeader
 name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	55;"	v	struct:ContentData
 nameBuffer	/home/juanjux/webmail/backend/source/arsd/mangle.d	128;"	v	function:mangle
 nameBuffer	/home/juanjux/webmail/backend/source/arsd/mangle.d	210;"	v	function:mangleFunction
@@ -5441,6 +5461,7 @@ nelems	/home/juanjux/webmail/backend/source/retriever/lib/array.d	66;"	v	functio
 net	/home/juanjux/webmail/backend/source/arsd/engine.d	831;"	v	class:Engine
 net	/home/juanjux/webmail/backend/source/arsd/rtud.d	47;"	v	class:UpdateStream
 neverSend	/home/juanjux/webmail/backend/source/arsd/terminal.d	281;"	e	enum:ForceOption
+neverSpam	/home/juanjux/webmail/backend/source/retriever/userrule.d	12;"	v	struct:UserRuleAction
 newEnd	/home/juanjux/webmail/backend/source/arsd/netman.d	406;"	v	function:write
 newEvents	/home/juanjux/webmail/backend/source/arsd/terminal.d	1428;"	v	function:readNextEvents
 newHeight	/home/juanjux/webmail/backend/source/arsd/terminal.d	1949;"	v	struct:SizeChangedEvent
@@ -5451,7 +5472,7 @@ newWindow	/home/juanjux/webmail/backend/source/arsd/minigui.d	627;"	f	arity:1	cl
 new_	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4551;"	v	struct:XColormapEvent
 new_active	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1022;"	f	arity:4
 newsock	/home/juanjux/webmail/backend/source/arsd/engine.d	234;"	v	function:beginServing
-newtext	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	301;"	v	function:setTextPart
+newtext	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	327;"	v	function:setTextPart
 next	/home/juanjux/webmail/backend/source/arsd/script.d	217;"	v	class:TokenStream
 next	/home/juanjux/webmail/backend/source/arsd/sqlite.d	442;"	f	arity:2	struct:Statement
 next	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1014;"	v	struct:stbtt__active_edge
@@ -5473,6 +5494,7 @@ nm	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1648;"	v	function:st
 no	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	289;"	e	enum:OpenGlOptions
 no	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	293;"	e	enum:OpenGlOptions
 noCache	/home/juanjux/webmail/backend/source/arsd/cgi.d	1942;"	v	class:Cgi
+noInbox	/home/juanjux/webmail/backend/source/retriever/userrule.d	9;"	v	struct:UserRuleAction
 nodeType	/home/juanjux/webmail/backend/source/arsd/dom.d	1938;"	f	arity:0	class:Element
 nodeType	/home/juanjux/webmail/backend/source/arsd/dom.d	2473;"	f	arity:0	class:SpecialElement
 nodeType	/home/juanjux/webmail/backend/source/arsd/dom.d	2659;"	f	arity:0	class:TextNode
@@ -5745,8 +5767,8 @@ org_name	/home/juanjux/webmail/backend/source/arsd/mysql.d	609;"	v	struct:MYSQL_
 org_name_length	/home/juanjux/webmail/backend/source/arsd/mysql.d	618;"	v	struct:MYSQL_FIELD
 org_table	/home/juanjux/webmail/backend/source/arsd/mysql.d	611;"	v	struct:MYSQL_FIELD
 org_table_length	/home/juanjux/webmail/backend/source/arsd/mysql.d	620;"	v	struct:MYSQL_FIELD
-origFileName	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	343;"	v	function:setAttachmentPart
-origMailDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	620;"	v
+origFileName	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	369;"	v	function:setAttachmentPart
+origMailDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	619;"	v
 orig_line	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	753;"	v
 origcol	/home/juanjux/webmail/backend/source/arsd/sqlite.d	293;"	v	function:execute
 origin	/home/juanjux/webmail/backend/source/arsd/cgi.d	1210;"	v	function: this
@@ -5902,7 +5924,7 @@ parentDocument	/home/juanjux/webmail/backend/source/arsd/dom.d	791;"	v	class:Ele
 parentManager	/home/juanjux/webmail/backend/source/arsd/netman.d	355;"	v	class:Connection
 parentNode	/home/juanjux/webmail/backend/source/arsd/dom.d	794;"	v	class:Element
 parentObject	/home/juanjux/webmail/backend/source/arsd/web.d	789;"	v	struct:FunctionInfo
-parentStr	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	573;"	v	function:createPartInfoText
+parentStr	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	572;"	v	function:createPartInfoText
 parentWindow	/home/juanjux/webmail/backend/source/arsd/minigui.d	571;"	v	class:Widget
 parse	/home/juanjux/webmail/backend/source/arsd/dom.d	3636;"	f	arity:4	class:Document
 parseAddend	/home/juanjux/webmail/backend/source/arsd/script.d	1600;"	f	arity:1
@@ -5910,7 +5932,7 @@ parseAndMangleType	/home/juanjux/webmail/backend/source/arsd/mangle.d	227;"	f	ar
 parseArguments	/home/juanjux/webmail/backend/source/arsd/script.d	1538;"	f	arity:3
 parseAttributes	/home/juanjux/webmail/backend/source/arsd/dom.d	1312;"	f	arity:1	class:Element
 parseCompoundStatement	/home/juanjux/webmail/backend/source/arsd/script.d	2203;"	f	arity:3
-parseContentHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	375;"	f	arity:2	class:IncomingEmail
+parseContentHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	401;"	f	arity:2	class:IncomingEmail
 parseEntity	/home/juanjux/webmail/backend/source/arsd/dom.d	2175;"	f	arity:1
 parseError	/home/juanjux/webmail/backend/source/arsd/dom.d	3681;"	f	arity:1	function:parseStream
 parseExpression	/home/juanjux/webmail/backend/source/arsd/script.d	1667;"	f	arity:2
@@ -5921,8 +5943,8 @@ parseLastHeader	/home/juanjux/webmail/backend/source/arsd/http2.d	377;"	f	arity:
 parseMessages	/home/juanjux/webmail/backend/source/arsd/rtud.d	273;"	f	arity:2
 parseName	/home/juanjux/webmail/backend/source/arsd/mangle.d	150;"	f	arity:2
 parsePart	/home/juanjux/webmail/backend/source/arsd/script.d	1377;"	f	arity:1
-parsePartHeaders	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	404;"	f	arity:2	class:IncomingEmail
-parseParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	229;"	f	arity:2	class:IncomingEmail
+parsePartHeaders	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	430;"	f	arity:2	class:IncomingEmail
+parseParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	255;"	f	arity:2	class:IncomingEmail
 parseSawAspCode	/home/juanjux/webmail/backend/source/arsd/dom.d	3470;"	v	class:Document
 parseSawBangInstruction	/home/juanjux/webmail/backend/source/arsd/dom.d	3489;"	v	class:Document
 parseSawComment	/home/juanjux/webmail/backend/source/arsd/dom.d	3465;"	v	class:Document
@@ -5932,7 +5954,7 @@ parseScript	/home/juanjux/webmail/backend/source/arsd/script.d	2207;"	f	arity:1
 parseSelector	/home/juanjux/webmail/backend/source/arsd/dom.d	5066;"	f	arity:2
 parseSelectorString	/home/juanjux/webmail/backend/source/arsd/dom.d	5056;"	f	arity:2
 parseSignedRequest	/home/juanjux/webmail/backend/source/arsd/oauth.d	661;"	f	arity:2
-parseState	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	125;"	v	function:loadFromFile
+parseState	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	122;"	v	function:loadFromFile
 parseStatement	/home/juanjux/webmail/backend/source/arsd/script.d	2047;"	f	arity:2
 parseStream	/home/juanjux/webmail/backend/source/arsd/dom.d	3642;"	f	arity:3	class:Document
 parseStrict	/home/juanjux/webmail/backend/source/arsd/dom.d	3502;"	f	arity:1	class:Document
@@ -6154,7 +6176,7 @@ previousSpaceRemaining	/home/juanjux/webmail/backend/source/arsd/minigui.d	373;"
 primitive	/home/juanjux/webmail/backend/source/arsd/mangle.d	254;"	v	function:parseAndMangleType
 primitives	/home/juanjux/webmail/backend/source/arsd/mangle.d	5;"	v
 printDate	/home/juanjux/webmail/backend/source/arsd/cgi.d	2844;"	f	arity:1
-print_headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	494;"	f	arity:1	class:IncomingEmail
+print_headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	226;"	f	arity:1	class:IncomingEmail
 private1	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4647;"	v	struct:Display
 private10	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4667;"	v	struct:Display
 private11	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4671;"	v	struct:Display
@@ -6312,10 +6334,10 @@ rawData	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2856;"	v	templ
 rawData	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	5199;"	v	template:NativeImageImplementation
 rawDataOutput	/home/juanjux/webmail/backend/source/arsd/cgi.d	1928;"	v	class:Cgi
 rawDatastreamByChunk	/home/juanjux/webmail/backend/source/arsd/png.d	1159;"	f	arity:1	struct:LazyPngFile
-rawMailPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	85;"	v	class:IncomingEmail
-rawMailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	621;"	v
-rawMailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	78;"	v	class:IncomingEmail
-rawMailStore	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	20;"	v	struct:Config
+rawMailPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	82;"	v	class:IncomingEmail
+rawMailStore	/home/juanjux/webmail/backend/source/retriever/config.d	5;"	v	struct:Config
+rawMailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	620;"	v
+rawMailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	75;"	v	class:IncomingEmail
 rawRead	/home/juanjux/webmail/backend/source/arsd/cgi.d	199;"	f	arity:1	struct:stdin
 rawurlencode	/home/juanjux/webmail/backend/source/arsd/cgi.d	2293;"	f	arity:1
 rbearing	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3916;"	v	struct:XCharStruct
@@ -6675,7 +6697,7 @@ ret	/home/juanjux/webmail/backend/source/lib/characterencodings.d	312;"	v	functi
 ret	/home/juanjux/webmail/backend/source/lib/characterencodings.d	57;"	v	function:decodeBase64Stubborn
 ret	/home/juanjux/webmail/backend/source/lib/characterencodings.d	93;"	v	function:convertToUtf8Lossy
 ret	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	199;"	v	function:dup
-ret	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	486;"	v	function:extractAddressesFromHeader
+ret	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	218;"	v	function:extractAddressesFromHeader
 ret	/home/juanjux/webmail/backend/source/retriever/lib/characterencodings.d	255;"	v	function:decodeEncodedWord
 ret	/home/juanjux/webmail/backend/source/retriever/lib/characterencodings.d	312;"	v	function:decodeQuotedPrintable
 ret	/home/juanjux/webmail/backend/source/retriever/lib/characterencodings.d	57;"	v	function:decodeBase64Stubborn
@@ -6722,7 +6744,7 @@ root	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4015;"	v	struct:X
 root	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4032;"	v	struct:XCrossingEvent
 root	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4823;"	v	struct:Screen
 rootElement	/home/juanjux/webmail/backend/source/arsd/dom.d	4792;"	v	struct:SelectorPart
-rootPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	82;"	v	class:IncomingEmail
+rootPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	79;"	v	class:IncomingEmail
 root_depth	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4828;"	v	struct:Screen
 root_input_mask	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4837;"	v	struct:Screen
 root_visual	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4829;"	v	struct:Screen
@@ -6974,7 +6996,7 @@ set	/home/juanjux/webmail/backend/source/arsd/dom.d	593;"	f	arity:2	struct:Eleme
 set	/home/juanjux/webmail/backend/source/arsd/html.d	1695;"	f	arity:1	class:MacroExpander
 set	/home/juanjux/webmail/backend/source/arsd/web.d	3266;"	f	arity:2	class:Session
 setAsCurrentOpenGlContext	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	1380;"	f	arity:0	class:SimpleWindow
-setAttachmentPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	329;"	f	arity:2	class:IncomingEmail
+setAttachmentPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	355;"	f	arity:2	class:IncomingEmail
 setAttribute	/home/juanjux/webmail/backend/source/arsd/dom.d	1182;"	f	arity:2	class:Element
 setAttribute	/home/juanjux/webmail/backend/source/arsd/dom.d	4610;"	e	enum:DomMutationOperations
 setCache	/home/juanjux/webmail/backend/source/arsd/cgi.d	1516;"	f	arity:1	class:Cgi
@@ -7014,8 +7036,9 @@ setRgbaBytes	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	989;"	f	a
 setSaturation	/home/juanjux/webmail/backend/source/arsd/color.d	548;"	f	arity:2
 setSelection	/home/juanjux/webmail/backend/source/arsd/minigui.d	37;"	f	arity:1	class:ComboboxBase
 setSelectionHandler	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2983;"	v	template:NativeSimpleWindowImplementation
+setSpam	/home/juanjux/webmail/backend/source/retriever/userrule.d	13;"	v	struct:UserRuleAction
 setStepIncrement	/home/juanjux/webmail/backend/source/arsd/minigui.d	1438;"	f	arity:1	class:ProgressBar
-setTextPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	299;"	f	arity:2	class:IncomingEmail
+setTextPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	325;"	f	arity:2	class:IncomingEmail
 setTimeout	/home/juanjux/webmail/backend/source/arsd/eventloop.d	56;"	f	arity:3
 setTitle	/home/juanjux/webmail/backend/source/arsd/engine.d	663;"	f	arity:1	class:Engine
 setTitle	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2058;"	f	arity:1	template:NativeSimpleWindowImplementation
@@ -7082,7 +7105,7 @@ sizeInBytes	/home/juanjux/webmail/backend/source/arsd/png.d	1343;"	v	function:by
 sizeSignalHandler	/home/juanjux/webmail/backend/source/arsd/terminal.d	32;"	f	arity:1
 skip	/home/juanjux/webmail/backend/source/arsd/dom.d	4712;"	v	function:lexSelector
 skip	/home/juanjux/webmail/backend/source/arsd/web.d	2021;"	v	function:parameterInfoImpl
-skipMails	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	728;"	v
+skipMails	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	727;"	v
 skipMe	/home/juanjux/webmail/backend/source/arsd/mysql.d	213;"	v	function:insert
 skipNext	/home/juanjux/webmail/backend/source/arsd/script.d	239;"	v	class:TokenStream
 skipNext	/home/juanjux/webmail/backend/source/arsd/terminal.d	491;"	v	function:doTermcap
@@ -7173,7 +7196,7 @@ start	/home/juanjux/webmail/backend/source/arsd/http2.d	121;"	v	function: this
 start	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1288;"	v	function:stbtt_FlattenCurves
 start	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	517;"	v	function:stbtt_FindGlyphIndex
 start2	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	534;"	v	function:stbtt_FindGlyphIndex
-startIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	231;"	v	function:parseParts
+startIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	257;"	v	function:parseParts
 startOfInnerSlice	/home/juanjux/webmail/backend/source/arsd/html.d	1251;"	v	function: this
 startTransaction	/home/juanjux/webmail/backend/source/arsd/database.d	17;"	f	arity:0	class:Database
 startTransaction	/home/juanjux/webmail/backend/source/arsd/mssql.d	45;"	f	arity:0	class:MsSql
@@ -7283,7 +7306,7 @@ stbtt_tag	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	393;"	f	arity
 stbtt_tag4	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	392;"	f	arity:5
 stbtt_vertex	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	263;"	s
 stdin	/home/juanjux/webmail/backend/source/arsd/cgi.d	167;"	s
-stdinLines	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	130;"	v	function:loadFromFile
+stdinLines	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	127;"	v	function:loadFromFile
 stealChildren	/home/juanjux/webmail/backend/source/arsd/dom.d	1572;"	f	arity:2	class:Element
 step	/home/juanjux/webmail/backend/source/arsd/minigui.d	1428;"	v	class:ProgressBar
 step	/home/juanjux/webmail/backend/source/arsd/sqlite.d	396;"	f	arity:1	struct:Statement
@@ -7398,11 +7421,12 @@ tableNames	/home/juanjux/webmail/backend/source/arsd/database.d	543;"	v	function
 tableToCsv	/home/juanjux/webmail/backend/source/arsd/web.d	2816;"	f	arity:1
 table_length	/home/juanjux/webmail/backend/source/arsd/mysql.d	619;"	v	struct:MYSQL_FIELD
 tabledir	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	409;"	v	function:stbtt__find_table
+tagFavorite	/home/juanjux/webmail/backend/source/retriever/userrule.d	14;"	v	struct:UserRuleAction
 tagName	/home/juanjux/webmail/backend/source/arsd/dom.d	4075;"	v	function:readElement
 tagName	/home/juanjux/webmail/backend/source/arsd/dom.d	780;"	v	class:Element
 tagNameFilter	/home/juanjux/webmail/backend/source/arsd/dom.d	4773;"	v	struct:SelectorPart
 tags	/home/juanjux/webmail/backend/source/arsd/dom.d	5365;"	v	struct:
-tags	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	87;"	v	class:IncomingEmail
+tags	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	84;"	v	class:IncomingEmail
 tail	/home/juanjux/webmail/backend/source/arsd/terminal.d	1403;"	e	enum:InjectionPosition
 target	/home/juanjux/webmail/backend/source/arsd/dom.d	4626;"	v	struct:DomMutationEvent
 target	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	3156;"	v	function:doXNextEvent
@@ -7448,7 +7472,7 @@ textStream	/home/juanjux/webmail/backend/source/arsd/script.d	195;"	v	class:Toke
 textWidth	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2674;"	v	function:textSize
 textWidth	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2731;"	v	function:drawText
 textlen	/home/juanjux/webmail/backend/source/arsd/mssql.d	205;"	v	function:getSQLError
-textualParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	83;"	v	class:IncomingEmail
+textualParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	80;"	v	class:IncomingEmail
 texture	/home/juanjux/webmail/backend/source/arsd/screen.d	1246;"	v	function:SDL_GL_LoadTexture
 th	/home/juanjux/webmail/backend/source/arsd/dom.d	3088;"	f	arity:1	class:Table
 thing	/home/juanjux/webmail/backend/source/arsd/cgi.d	372;"	v	function: this
@@ -7712,16 +7736,17 @@ this	/home/juanjux/webmail/backend/source/arsd/web.d	721;"	f	arity:2	class:DataF
 this	/home/juanjux/webmail/backend/source/lib/array.d	206;"	f	arity:1	struct:FixedRingBuffer
 this	/home/juanjux/webmail/backend/source/lib/array.d	356;"	f	arity:3	struct:Range
 this	/home/juanjux/webmail/backend/source/lib/array.d	48;"	f	arity:1	struct:AllocAppender
-this	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	91;"	f	arity:2	class:IncomingEmail
+this	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	88;"	f	arity:2	class:IncomingEmail
 this	/home/juanjux/webmail/backend/source/retriever/lib/array.d	206;"	f	arity:1	struct:FixedRingBuffer
 this	/home/juanjux/webmail/backend/source/retriever/lib/array.d	356;"	f	arity:3	struct:Range
 this	/home/juanjux/webmail/backend/source/retriever/lib/array.d	48;"	f	arity:1	struct:AllocAppender
 this	/home/juanjux/webmail/backend/source/retriever/test.d	16;"	f	arity:0	class:TestClass
+this	/home/juanjux/webmail/backend/source/retriever/userrule.d	34;"	f	arity:2	class:UserFilter
 thisMargin	/home/juanjux/webmail/backend/source/arsd/minigui.d	360;"	v	function:recomputeChildLayout
 thisMargin	/home/juanjux/webmail/backend/source/arsd/minigui.d	407;"	v	function:recomputeChildLayout
 thisOnesData	/home/juanjux/webmail/backend/source/arsd/cgi.d	718;"	v	struct:PostParserState
 thisOnesHeaders	/home/juanjux/webmail/backend/source/arsd/cgi.d	717;"	v	struct:PostParserState
-thisPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	270;"	v	function:parseParts
+thisPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	296;"	v	function:parseParts
 throwAway	/home/juanjux/webmail/backend/source/arsd/terminal.d	1341;"	v	function:nextChar
 tid	/home/juanjux/webmail/backend/source/arsd/cgi.d	3119;"	v	class:ConnectionThread2
 tid	/home/juanjux/webmail/backend/source/arsd/dom.d	4689;"	v	function:idToken
@@ -7865,6 +7890,8 @@ tokensBuffer	/home/juanjux/webmail/backend/source/arsd/mangle.d	90;"	v	function:
 total	/home/juanjux/webmail/backend/source/arsd/html.d	248;"	v	function:paragraphsToP
 total	/home/juanjux/webmail/backend/source/arsd/screen.d	300;"	v
 totalLength	/home/juanjux/webmail/backend/source/arsd/rpc.d	218;"	v	function:serialize
+totalSizeType	/home/juanjux/webmail/backend/source/retriever/userrule.d	25;"	v	struct:UserRuleMatch
+totalSizeValue	/home/juanjux/webmail/backend/source/retriever/userrule.d	26;"	v	struct:UserRuleMatch
 tr	/home/juanjux/webmail/backend/source/arsd/web.d	3905;"	v	function:structToTable
 transform	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	1105;"	f	arity:1	struct:ScreenPainter
 translate	/home/juanjux/webmail/backend/source/arsd/screen.d	674;"	v	class:Painter
@@ -8016,7 +8043,7 @@ useHttp11	/home/juanjux/webmail/backend/source/arsd/http2.d	654;"	v	struct:HttpR
 useHttp11	/home/juanjux/webmail/backend/source/arsd/http2.d	693;"	v	class:HttpClient
 useHttps	/home/juanjux/webmail/backend/source/arsd/http.d	70;"	v	struct:UriParts
 useHttps	/home/juanjux/webmail/backend/source/arsd/http2.d	106;"	v	struct:UriParts
-user	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	45;"	v	function:hasValidDestination
+user	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	33;"	v	function:hasValidDestination
 userAgent	/home/juanjux/webmail/backend/source/arsd/cgi.d	1208;"	v	function: this
 userAgent	/home/juanjux/webmail/backend/source/arsd/cgi.d	1957;"	v	class:Cgi
 userAgent	/home/juanjux/webmail/backend/source/arsd/cgi.d	288;"	v	function: this
@@ -8073,7 +8100,7 @@ val	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	95;"	v	function:ren
 val	/home/juanjux/webmail/backend/source/arsd/web.d	2130;"	v	function:toJsonValue
 valThis	/home/juanjux/webmail/backend/source/arsd/html.d	435;"	v	function:translateValidation
 valid	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	1015;"	v	struct:stbtt__active_edge
-validDestinations	/home/juanjux/webmail/backend/source/retriever/retriever_main.d	22;"	v	struct:Config
+validDestinations	/home/juanjux/webmail/backend/source/retriever/config.d	7;"	v	struct:Config
 validator	/home/juanjux/webmail/backend/source/arsd/web.d	816;"	v	struct:Parameter
 valo	/home/juanjux/webmail/backend/source/arsd/database.d	660;"	v	function:makeJsonValue
 valo	/home/juanjux/webmail/backend/source/arsd/web.d	2187;"	v	function:toJsonValue
@@ -8100,8 +8127,8 @@ value	/home/juanjux/webmail/backend/source/arsd/web.d	2842;"	v	struct:WrapperRet
 value	/home/juanjux/webmail/backend/source/arsd/web.d	812;"	v	struct:Parameter
 value	/home/juanjux/webmail/backend/source/lib/characterencodings.d	336;"	v	function:decodeQuotedPrintable
 value	/home/juanjux/webmail/backend/source/lib/dictionarylist.d	32;"	v	struct:Field
-value	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	224;"	v	function:addHeader
-value	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	416;"	v	function:addPartHeader
+value	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	250;"	v	function:addHeader
+value	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	442;"	v	function:addPartHeader
 value	/home/juanjux/webmail/backend/source/retriever/lib/characterencodings.d	336;"	v	function:decodeQuotedPrintable
 value	/home/juanjux/webmail/backend/source/retriever/lib/dictionarylist.d	32;"	v	struct:Field
 value_mask	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4467;"	v	struct:XConfigureRequestEvent
@@ -8130,7 +8157,7 @@ video	/home/juanjux/webmail/backend/source/arsd/html.d	27;"	e	enum:HtmlFeatures
 view	/home/juanjux/webmail/backend/source/arsd/cgi.d	3091;"	v	class:BufferedInputRange
 view	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	5464;"	v	template:NativeSimpleWindowImplementation
 viewFunctions	/home/juanjux/webmail/backend/source/arsd/web.d	3842;"	v	class:TemplatedDocument
-visitParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	513;"	f	arity:1	class:IncomingEmail
+visitParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	512;"	f	arity:1	class:IncomingEmail
 visual	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4807;"	v	struct:XVisualInfo
 visualid	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4808;"	v	struct:XVisualInfo
 visualid	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	4843;"	v	struct:Visual
@@ -8161,7 +8188,7 @@ wantToQuit	/home/juanjux/webmail/backend/source/arsd/engine.d	857;"	v	class:Engi
 wasFCloseCalled	/home/juanjux/webmail/backend/source/arsd/cgi.d	2936;"	v	struct:FCGX_Stream
 wasPerfect	/home/juanjux/webmail/backend/source/arsd/color.d	939;"	v	function:quantize
 wasSpecial	/home/juanjux/webmail/backend/source/arsd/script.d	165;"	v	struct:ScriptToken
-was_encoded	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	332;"	v	function:setAttachmentPart
+was_encoded	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	358;"	v	function:setAttachmentPart
 was_encoded	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	69;"	v	struct:Attachment
 was_off	/home/juanjux/webmail/backend/source/arsd/stb_truetype.d	678;"	v	function:stbtt_GetGlyphShape
 wc	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	2073;"	v	function:createWindow
@@ -8280,6 +8307,8 @@ windows	/home/juanjux/webmail/backend/source/arsd/simpledisplay.d	365;"	e	enum:M
 windows	/home/juanjux/webmail/backend/source/arsd/terminal.d	1966;"	e	enum:ModifierState
 windows	/home/juanjux/webmail/backend/source/arsd/terminal.d	1979;"	e	enum:ModifierState
 winsize	/home/juanjux/webmail/backend/source/arsd/terminal.d	85;"	s
+withAttachment	/home/juanjux/webmail/backend/source/retriever/userrule.d	21;"	v	struct:UserRuleMatch
+withHtml	/home/juanjux/webmail/backend/source/retriever/userrule.d	22;"	v	struct:UserRuleMatch
 word	/home/juanjux/webmail/backend/source/arsd/database.d	1105;"	v	function:getCreateTable
 word	/home/juanjux/webmail/backend/source/arsd/english.d	24;"	v	function:numberToEnglish
 wordLength	/home/juanjux/webmail/backend/source/arsd/screen.d	948;"	f	arity:2	class:Painter
