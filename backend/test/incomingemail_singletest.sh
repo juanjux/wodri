@@ -14,7 +14,7 @@ dmd -main\
     -I/home/juanjux/.dub/packages/libevent-master/\
     -I$VIBEDIR\
     ../source/retriever/incomingemail.d\
-    ../source/lib/characterencodings.d\
+    ../source/retriever/characterencodings.d\
     $VIBEDIR/vibe/utils/dictionarylist.d\
     $VIBEDIR/vibe/utils/array.d\
     $VIBEDIR/vibe/utils/string.d\

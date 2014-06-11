@@ -1,4 +1,5 @@
 #!/usr/bin/env rdmd
+module retriever.retriever_main;
 
 import std.stdio;
 import std.regex;
@@ -8,20 +9,11 @@ import std.file;
 import std.array;
 import std.string;
 import std.path;
+import vibe.core.log;
 
-import incomingemail;
-import config;
-import userrule;
-
-// ===TODO===
-// XXX Sistema de log (al log del sistema y MongoDB)
-// XXX loguear emails rechazados
-// XXX Clase de config y cargador de config desde MongoDB
-// XXX Cargador de userRules desde MongoDB;
-// XXX email.setTag y email.removeTag
-// XXX unittest en userrule.d con algunos emails de prueba sencillos fijos
-// XXX Almacenador en MongoDB
-// XXX Indexacion
+import retriever.incomingemail;
+import retriever.config;
+import retriever.userrule;
 
 
 bool hasValidDestination(IncomingEmail email, string[][string] validDestinations)
@@ -52,19 +44,34 @@ bool hasValidDestination(IncomingEmail email, string[][string] validDestinations
 
 int main()
 {
-    auto f = File("/home/juanjux/webmail/backend/source/retriever/log.txt", "a");
     auto config = getConfig();
+    setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), LogLevel.trace);
+
     auto mail = new IncomingEmail(config.rawMailStore, config.attachmentStore);
     mail.loadFromFile(std.stdio.stdin);
+    bool isValid             = mail.isValid;
+    bool hasValidDestination = hasValidDestination(mail, config.validDestinations);
 
-    if (mail.isValid && hasValidDestination(mail, config.validDestinations))
+    if (isValid && hasValidDestination)
     {
         if ("X-Spam-SetSpamTag" in mail.headers)
             mail.tags["spam"] = true;
     }
     else
     {
-        // XXX loguear el mensaje rechazado
+        auto failedMailDir = buildPath(config.mainDir, "backend", "log", "failed_mails");
+        if (!failedMailDir.exists)
+            mkdir(failedMailDir);
+
+        auto failedMailPath = buildPath(failedMailDir, baseName(mail.rawMailPath));
+        copy(mail.rawMailPath, failedMailPath);
+        remove(mail.rawMailPath);
+        auto f = File(failedMailPath, "a");
+        f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", !isValid?"\nInvalid headers":"", 
+                  !hasValidDestination?"\nInvalid destination":"");
+
+        logDebug(format("Mesage denied from SMTP. ValidHeaders:%s SomeValidDestination:%s." ~
+                         "Message copy stored at %s", isValid, hasValidDestination, failedMailPath));
     }
 
     return 0; // return != 0 == Postfix bound. Avoid

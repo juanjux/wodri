@@ -1,8 +1,7 @@
-import incomingemail;
-import std.string;
+module retriever.userrule;
 
-// TODO
-// Tipo para excepciones
+import retriever.incomingemail;
+import std.string;
 
 enum SizeRuleType 
 {
@@ -45,7 +44,6 @@ class UserFilter
     }
 
     
-    // XXX allow for regular expressions
     void apply(IncomingEmail email)
     {
         if (checkMatch(email))
@@ -99,7 +97,6 @@ class UserFilter
         // email.tags == false actually mean to the rest of the retriever 
         // processes: "it doesnt have the tag and please dont add it after this point"
 
-        // XXX email.setTag(forced=true);
         if (this.action.noInbox)
             email.tags["inbox"] = false;
 

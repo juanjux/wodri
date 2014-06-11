@@ -1,5 +1,6 @@
 // This module is part of Adam Druppe's arsd  from:
 // https://github.com/adamdruppe/arsd
+
 // Boost License 1.0
 // Some modifications from Juanjo Alvarez (inserted the encodeDecodedWord here that originally
 // was in email.d, added the decodeBase64Stubborn)
@@ -43,7 +44,7 @@
 
 	This module currently makes no attempt to look at control characters.
 */
-module lib.characterencodings;
+module retriever.characterencodings;
 
 import std.base64;
 import std.string;

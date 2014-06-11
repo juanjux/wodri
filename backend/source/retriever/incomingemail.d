@@ -1,4 +1,5 @@
 #!/usr/bin/env rdmd 
+module retriever.incomingemail;
 
 import std.stdio;
 import std.path;
@@ -15,13 +16,7 @@ import std.datetime;
 import std.process;
 
 import vibe.utils.dictionarylist;
-import lib.characterencodings;
-
-// XXX Clase para excepciones de parseo 
-// XXX const, immutable, pure, nothrow, safe, in, out, etc
-// XXX mandar los fixes a Adam Druppe
-// XXX en debug y/o unittest usar la config para obtener el directorio ppal
-
+import retriever.characterencodings;
 
 debug enum DEBUG_MARK = true;
 else  enum DEBUG_MARK = false;
