@@ -14,9 +14,7 @@ import std.random;
 import std.datetime;
 import std.process;
 
-// lib.dictionarylist is vibed.utils.dictionarylist modified so it doesnt need
-// vibed's event loop 
-import lib.dictionarylist; 
+import vibe.utils.dictionarylist;
 import lib.characterencodings;
 
 // XXX Clase para excepciones de parseo 
@@ -564,7 +562,6 @@ unittest
  *      rdmd --main -singletest => run the code in the singletest version (usually with a 
  *      problematic email number hardcoded)
  */
-
     DirEntry[] getSortedEmailFilesList(string mailsDir)
     {
         DirEntry[] emailFiles;
