@@ -42,5 +42,5 @@ dmd -main\
     $VIBEDIR/vibe/textfilter/urlencode.d\
     $VIBEDIR/vibe/internal/meta/uda.d\
     $VIBEDIR/vibe/internal/meta/traits.d &&\
-    ./incomingemail
+    rm -f incomingemail.o && ./incomingemail 
 
