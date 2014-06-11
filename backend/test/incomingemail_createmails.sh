@@ -5,7 +5,6 @@ dmd -main\
     -dw\
     -m64\
     -inline\
-    -cov\
     -O\
     -unittest\
     -version=VibeLibeventDriver\
