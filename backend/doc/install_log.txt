@@ -1,57 +1,111 @@
-- 
-- Install DMD from DigitalMars (Ubuntu package)
-- Edit (as root) the /etc/hosts file and put 127.0.0.1 host.example.com (or whatever the host is)
-- sudo apt-get install postfix => set as "Internet Site" an input your domain.
-- Edit (as root) /etc/postfix/main.fx and put the retriver's path in the mailbox_command option.
+DMD & Vibed
+    - Install DMD from DigitalMars (Ubuntu package)
+    - Download dub
+    - dub init XXXvibed
+    - dub fetch libevent2
 
-    #mailbox_command = procmail -a "$EXTENSION"
-    mailbox_command = /home/juanjux/webmail/backend/test/fake_mailbox_command
+POSTFIX & SPAMASSASSIN:
+    - Edit (as root) the /etc/hosts file and put 127.0.0.1 host.example.com (or whatever the host is)
+    - sudo apt-get install postfix => set as "Internet Site" an input your domain.
+    - Edit (as root) /etc/postfix/main.fx and put the retriver's path in the mailbox_command option.
 
-    smtpd_recipient_restrictions =
-        permit_mynetworks,
-        permit_sasl_authenticated,
-        reject_unauth_destination,
-        reject_invalid_hostname,
-        reject_unauth_pipelining,
-        reject_non_fqdn_sender,
-        reject_unknown_sender_domain,
-        reject_non_fqdn_recipient,
-        reject_unknown_recipient_domain,
-        check_client_access hash:$config_directory/access_client,
-        check_sender_access hash:$config_directory/access_sender
-        permit
+        #mailbox_command = procmail -a "$EXTENSION"
+        mailbox_command = /home/juanjux/webmail/backend/test/fake_mailbox_command
 
-- sudo apt-get install spamassassin razor pyzor
-- Edit (as root)/etc/mail/spamassassin/local.cf and edit/add:
+        smtpd_recipient_restrictions =
+            permit_mynetworks,
+            permit_sasl_authenticated,
+            reject_unauth_destination,
+            reject_invalid_hostname,
+            reject_unauth_pipelining,
+            reject_non_fqdn_sender,
+            reject_unknown_sender_domain,
+            reject_non_fqdn_recipient,
+            reject_unknown_recipient_domain,
+            check_client_access hash:$config_directory/access_client,
+            check_sender_access hash:$config_directory/access_sender
+            permit
 
-    add_header spam SetSpamTag score=_SCORE_
-    required_score 3.0
-    report_safe 0
-    use_razor2 1
-    use_pyzor 1
+    - sudo apt-get install spamassassin razor pyzor
+    - Edit (as root)/etc/mail/spamassassin/local.cf and edit/add:
 
-- Run "pyzor discover" in the shell.
-- Run as root:
+        add_header spam SetSpamTag score=_SCORE_
+        required_score 3.0
+        report_safe 0
+        use_razor2 1
+        use_pyzor 1
 
-      group add spamd
-      useradd -g spamd -s /bin/false -d /var/log/spamassassin spamd
-      mkdir /var/log/spamassassin
-      chown spamd:spamd /var/log/spamassassin
+    - Run "pyzor discover" in the shell.
+    - Run as root:
 
-- Edit /etc/default/spamassassin and change or add:
-      ENABLED=1
-      CRON=1
-      SAHOME="/var/log/spamassassin/"
-      OPTIONS="--create-prefs --max-children 2 --username spamd -H ${SAHOME} -s ${SAHOME}spamd.log"
+          group add spamd
+          useradd -g spamd -s /bin/false -d /var/log/spamassassin spamd
+          mkdir /var/log/spamassassin
+          chown spamd:spamd /var/log/spamassassin
 
-- Edit /etc/postfix/master.cf, find the line "smtp inet n - - - - smtpd" for:
-      smtp      inet  n       -       -       -       -       smtpd -o content_filter=spamassassin
+    - Edit /etc/default/spamassassin and change or add:
+          ENABLED=1
+          CRON=1
+          SAHOME="/var/log/spamassassin/"
+          OPTIONS="--create-prefs --max-children 2 --username spamd -H ${SAHOME} -s ${SAHOME}spamd.log"
 
-- Edit /etc/postfix/master.cf add at the end:
-      spamassassin unix -     n       n       -       -       pipe
-            user=spamd argv=/usr/bin/spamc -f -e  
-                    /usr/sbin/sendmail -oi -f ${sender} ${recipient}
+    - Edit /etc/postfix/master.cf, find the line "smtp inet n - - - - smtpd" for:
+          smtp      inet  n       -       -       -       -       smtpd -o content_filter=spamassassin
 
+    - Edit /etc/postfix/master.cf add at the end:
+          spamassassin unix -     n       n       -       -       pipe
+                user=spamd argv=/usr/bin/spamc -f -e  
+                        /usr/sbin/sendmail -oi -f ${sender} ${recipient}
+
+MONGODB:
+    - sudo apt-get install mongodb mongodb-clients mongodb-server
+    - edit (as root) /etC/mongodb.conf, change these settings (change WEBMAILDIR for the package
+      (directory on your system).
+        # Where to store the data.
+        dbpath=WEBMAILDIR/backend/mongodb/data
+        #where to log
+        logpath=WEBMAILDIR/backend/mongodb/log/mongodb.log
+    - mkdir WEBMAILDIR/backend/mongodb
+    - mkdir WEBMAILDIR/backend/mongodb/data
+    - mkdir WEBMAILDIR/backend/mongodb/log
+    - sudo chown -R mongodb:nogroup WEBMAILDIR/backend/mongodb
+
+    (Note: on your distribution mongodb could be running under a different user/group, if 
+    in doubt: ls -l the original data and log dirs of mongo and check the permission)
+    - Run the mongo command and run these commands changing WEBMAILDIR for the full path to real directory:
+      use webmail
+      myuser = 
+        {
+                "loginname": "MYLOGINNAME",
+                "name": "MYNAME",
+                "surname": "MYSURNAME",
+                "admin": true,
+                "adresses": ["juanjux@juanjux.mooo.com", "juanjo.alvarez@juanjux.mooo.com"],
+        }
+      db.users.insert(myuser)  
+      userid = db.users.find().next()._id
+
+      mydomain = 
+        {   
+                "name": "MYDOMAIN",
+                "postmaster": userid,
+                "defaultUser": userid,
+                "domainAdmin": userid
+        }
+     db.domain.insert(mydomain)
+     domainid = db.domain.find().next()._id
+
+     retriever_config = 
+        {
+                "module" : "retriever",
+                "mainDir" : "/home/juanjux/webmail",
+                "ownDomain" : ObjectId("539977b104ac3d27431d0668"),
+                "rawMailStore" : "store/rawmails",
+                "attachmentStore" : "store/attachment",
+                "incomingMessageLimit" : 15728640
+        }
+      db.settings.insert(retriever_config)
+   
   TODO XXX
 
 - Eliminar todos los procesos de Postfix que sean innecesarios

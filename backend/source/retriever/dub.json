@@ -1,0 +1,62 @@
+{
+	"targetType": "executable",
+	"mainSourceFile": "main.d",
+	"license": "LGPL",
+	"sourcePaths": ["."],
+	"excludedSourceFiles": ["test.d"],
+	"dependencies": { "vibe-d": "~master" },
+	"version": "0.0.1",
+	"name": "retriever",
+	"importPaths": ["."],
+	"buildRequirements": ["requireBoundsCheck"],
+	"versions": ["VibeCustomMain", "VibeDisableCommandLineParsing"],
+
+	"configurations": [
+	    {
+            "name": "default",
+            "targetType": "executable",
+            "platforms": ["posix"],
+	    },
+	    {
+	        "name": "incomingmail_allmailstest",
+	        "versions": ["allmailstest"],
+	        "mainSourceFile": "incomingmail.d",
+	        "excludedSourceFiles": ["test.d", "main.d", "userrule.d"],
+	        "dflags": ["-main", "-unittest"], 
+	        "targetName": "test",
+	    },
+	    {
+	        "name": "incomingmail_singletest",
+	        "versions": ["singletest"],
+	        "buildOptions": ["debugMode"],
+	        "mainSourceFile": "incomingmail.d",
+	        "excludedSourceFiles": ["test.d", "main.d", "userrule.d"],
+	        "dflags": ["-main", "-unittest"], 
+	        "targetName": "test",
+	    },
+	    {
+	        "name": "incomingmail_createtestmails",
+	        "versions": ["createtestmails"],
+	        "mainSourceFile": "incomingmail.d",
+	        "excludedSourceFiles": ["test.d", "main.d", "userrule.d"],
+	        "dflags": ["-main", "-unittest"], 
+	        "targetName": "test",
+	    },
+	    {
+	        "name": "incomingmail_createtestdata",
+	        "versions": ["createtestdata"],
+	        "mainSourceFile": "incomingmail.d",
+	        "excludedSourceFiles": ["test.d", "main.d", "userrule.d"],
+	        "dflags": ["-main", "-unittest"], 
+	        "targetName": "test",
+	    },
+	    {
+	        "name": "userrule_test",
+	        "versions": ["UserRuleTest"],
+	        "mainSourceFile": "userrule.d",
+	        "excludedSourceFiles": ["test.d", "main.d", "incomingmail.d", "characterencoding.d"],
+	        "dflags": ["-main", "-unittest"], 
+	        "targetName": "test",
+	    },
+    ]
+}

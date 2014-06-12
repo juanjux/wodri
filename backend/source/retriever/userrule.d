@@ -1,7 +1,10 @@
 module retriever.userrule;
 
-import retriever.incomingemail;
 import std.string;
+import retriever.incomingemail;
+
+MongoClient client;
+
 version(unittest)
 {
     import retriever.config;

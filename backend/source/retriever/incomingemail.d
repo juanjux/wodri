@@ -18,14 +18,10 @@ import std.process;
 import vibe.utils.dictionarylist;
 import retriever.characterencodings;
 
-debug enum DEBUG_MARK = true;
-else  enum DEBUG_MARK = false;
-
-version(unittest) enum UNITTEST_MARK = true;
-else              enum UNITTEST_MARK = false;
-
-static if (DEBUG_MARK || UNITTEST_MARK)
-    string TEST_PATH_BASE = "/home/juanjux/webmail";
+// XXX get the path base from the config object
+debug version = DebugOrUnittest;
+else version(unittest) version = DebugOrUnittest;
+version(DebugOrUnittest) string TEST_PATH_BASE = "/home/juanjux/webmail";
 
 auto EMAIL_REGEX = ctRegex!r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b";
 
@@ -77,16 +73,12 @@ conversationId;
     bool[string] tags; 
     string lineSep = "\r\n";
     string[] doForwardTo;
-    debug File debugFile;
 
     this(string rawMailStore, string attachmentStore)
     {
         this.attachmentStore = attachmentStore;
         this.rawMailStore    = rawMailStore;
         this.rootPart        = new MIMEPart();
-        debug debugFile      = File(buildPath(TEST_PATH_BASE, 
-                                             "backend/source/retriever/inclog.txt"), 
-                                             "a");
     }
 
     @property bool isValid()
@@ -619,8 +611,6 @@ unittest
 
 
     // #unittest start here
-    writeln("Starting unittest");
-
     string backendTestDir  = buildPath(TEST_PATH_BASE, "backend", "test");
     string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
     string rawMailStore    = buildPath(backendTestDir, "rawmails");

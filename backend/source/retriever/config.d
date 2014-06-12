@@ -10,6 +10,10 @@ struct Config
     string[][string] validDestinations;
 }
 
+// XXX validDestination:
+// 1. config.domain.defaultUser != empty => valid
+// else: db.users.find({addresses: {$in: [DIRECCION1, DIRECCION2, etc]}})
+// (solo para cada direccion cuyo dominio sea uno de los nuestros)
 Config getConfig()
 {
     string mainDir          = "/home/juanjux/webmail";

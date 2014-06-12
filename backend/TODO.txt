@@ -1,6 +1,7 @@
 Backend-Retriever:
     - Test vibed MongoDB lib
     - Recover Config and UserFilters from MongoDB
+    - Implement the incoming message limit
     - Think about the Config singleton
     - Get a ConverstationID (new or existing from email references and/or reply-to)
     - Insert the email into MongoDB (get the Id)
@@ -9,6 +10,9 @@ Backend-Retriever:
     - Make the retriever index a copy of the message
     - Incoming.setTag/removeTag and use it (check for exists && false before setting it)
     - Const, immutable, pure, nothrow, in, out, safe et all
+    - Initial configuration script
+    - incomingmail.d, unittest: get the path from the config object
+
 
 Backend-API:
 

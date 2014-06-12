@@ -1,5 +1,5 @@
 #!/usr/bin/env rdmd
-module retriever.retriever_main;
+module retriever.main;
 
 import std.stdio;
 import std.regex;
@@ -9,6 +9,7 @@ import std.file;
 import std.array;
 import std.string;
 import std.path;
+
 import vibe.core.log;
 
 import retriever.incomingemail;
@@ -52,6 +53,7 @@ int main()
     bool isValid             = mail.isValid;
     bool hasValidDestination = hasValidDestination(mail, config.validDestinations);
 
+    // XXX Comprobar tamanio de emails entrantes con el config.incomingMessageLimit y rebotar en ese caso
     if (isValid && hasValidDestination)
     {
         if ("X-Spam-SetSpamTag" in mail.headers)
@@ -66,6 +68,7 @@ int main()
         auto failedMailPath = buildPath(failedMailDir, baseName(mail.rawMailPath));
         copy(mail.rawMailPath, failedMailPath);
         remove(mail.rawMailPath);
+
         auto f = File(failedMailPath, "a");
         f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", !isValid?"\nInvalid headers":"", 
                   !hasValidDestination?"\nInvalid destination":"");
@@ -74,5 +77,5 @@ int main()
                          "Message copy stored at %s", isValid, hasValidDestination, failedMailPath));
     }
 
-    return 0; // return != 0 == Postfix bound. Avoid
+    return 0; // return != 0 == Postfix rebound. Avoid
 }

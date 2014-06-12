@@ -1,0 +1,15 @@
+mongodb/
+source/retriever/log.txt
+source/retriever/salida
+source/retriever/test.d
+source/retriever/testmail
+test/..-source-lib-characterencodings.lst
+test/..-source-retriever-incomingemail.lst
+test/.directory
+test/base64_test/
+test/fake_received/
+test/incomingemail
+test/opciones_dmd.txt
+test/rawmails/
+test/tags
+../dub/
