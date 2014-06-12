@@ -3,8 +3,6 @@ module retriever.userrule;
 import std.string;
 import retriever.incomingemail;
 
-MongoClient client;
-
 version(unittest)
 {
     import retriever.config;
