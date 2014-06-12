@@ -1,21 +1,21 @@
 #!/bin/sh
 VIBEDIR=/home/juanjux/.dub/packages/vibe-d-0.7.20/source
+
 dmd -main\
-    -dw\
-    -m64\
-    -inline\
-    -O\
     -unittest\
+    -w\
+    -m64\
+    -dw\
     -version=VibeLibeventDriver\
-    -version=allmailstest\
+    -version=UserRuleTest\
     -L/usr/lib/x86_64-linux-gnu/libevent.a\
-    -I../source/lib\
-    -I../source\
     -I/home/juanjux/.dub/packages/libevent-master/\
     -I$VIBEDIR\
+    ../source/retriever/userrule.d\
     ../source/retriever/incomingemail.d\
+    ../source/retriever/config.d\
     ../source/retriever/characterencodings.d\
-    $VIBEDIR/vibe/utils/dictionarylist.d\
+    $VIBEDIR/vibe/utils/dictionarylist.d \
     $VIBEDIR/vibe/utils/array.d\
     $VIBEDIR/vibe/utils/string.d\
     $VIBEDIR/vibe/utils/memory.d\
@@ -33,14 +33,13 @@ dmd -main\
     $VIBEDIR/vibe/core/core.d\
     $VIBEDIR/vibe/core/net.d\
     $VIBEDIR/vibe/core/drivers/threadedfile.d\
-    $VIBEDIR/vibe/core/drivers/utils.d\
     $VIBEDIR/vibe/core/drivers/libevent2.d\
     $VIBEDIR/vibe/core/drivers/libevent2_tcp.d\
+    $VIBEDIR/vibe/core/drivers/utils.d\
     $VIBEDIR/vibe/inet/url.d\
     $VIBEDIR/vibe/inet/path.d\
     $VIBEDIR/vibe/textfilter/html.d\
     $VIBEDIR/vibe/textfilter/urlencode.d\
     $VIBEDIR/vibe/internal/meta/uda.d\
-    $VIBEDIR/vibe/internal/meta/traits.d &&\
-    rm -f incomingemail.o && ./incomingemail 
-
+    $VIBEDIR/vibe/internal/meta/traits.d\
+    && rm -f userrule.o && ./userrule && rm -f userrule

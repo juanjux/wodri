@@ -2,6 +2,13 @@ module retriever.userrule;
 
 import retriever.incomingemail;
 import std.string;
+version(unittest)
+{
+    import retriever.config;
+    import std.path;
+    import std.stdio;
+    import std.algorithm;
+}
 
 enum SizeRuleType 
 {
@@ -96,7 +103,6 @@ class UserFilter
     {
         // email.tags == false actually mean to the rest of the retriever 
         // processes: "it doesnt have the tag and please dont add it after this point"
-
         if (this.action.noInbox)
             email.tags["inbox"] = false;
 
@@ -128,43 +134,98 @@ class UserFilter
 }
 
 
-// XXX cargar de MongoDB, dejar esta para tests
+// XXX cargar de MongoDB
 UserFilter[] getUserFilters(string user)
 {
-    Match match1;
-    match1.headerMatches["From"]    = "juanjux@gmail.com";
-    match1.headerMatches["Subject"] = "polompos";
-    match1.withHtml                 = true;
-    match1.bodyMatches             ~= "Texto flag";
-
-    Action action1;
-    action1.markAsRead = true;
-    action1.noInbox = true;
-
-    Action action2;
-    action2.tagFavorite = true;
-    action2.tagsToAdd ~= "testlabel";
-    action2.forwardTo = "juanjux@yahoo.es";
-
-    Match match2            = match1;
-    match2.totalSizeType            = SizeRuleType.GreaterThan;
-    match2.totalSizeValue           = 1024;
-
-    auto filter1 = new UserFilter(match1, action1);
-    auto filter2 = new UserFilter(match2, action2);
-
-    return [filter1, filter2];
+    return [];
 }
 
-// XXX implementar y usar
-//UserFilter[] getUserFiltersFromDB(string user)
-//{
-//}
 
-unittest
+version(UserRuleTest)
 {
-    // XXX implementar:
-    // 1. Elegir algunos mails fijos, alguno con adjuntos y cambiar el contenido
-    // 2. Crear las reglas
-    // 3. Aplicar el match, comprobar regultado, cambiar regla, aplicar match, comprobar, etc
+    unittest
+    {
+        auto config = getConfig();
+        auto testDir = buildPath(config.mainDir, "backend", "test");
+        auto testMailDir = buildPath(testDir, "testmails");
+
+        IncomingEmail reInstance(Match match, Action action)
+        {   
+            auto email = new IncomingEmail(buildPath(testDir, "rawmails"), 
+                                           buildPath(testDir, "attachments"));
+            email.loadFromFile(buildPath(testMailDir, "with_attachment"));
+            auto filter = new UserFilter(match, action);
+            filter.apply(email);
+            return email;
+        }
+
+        // Match the From, set unread to false
+        Match match; match.headerMatches["From"] = "juanjo@juanjoalvarez.net";
+        Action action; action.markAsRead = true;
+        auto email = reInstance(match, action);
+        assert("unread" in email.tags && !email.tags["unread"]);
+
+        // Fail to match the From
+        Match match2; match2.headerMatches["From"] = "foo@foo.com";
+        Action action2; action2.markAsRead = true;
+        email = reInstance(match2, action2);
+        assert("unread" !in email.tags);
+
+        // Match the withAttachment, set inbox to false
+        Match match3; match3.withAttachment = true;
+        Action action3; action3.noInbox = true;
+        email = reInstance(match3, action3);
+        assert("inbox" in email.tags && !email.tags["inbox"]);
+
+        // Match the withHtml, set deleted to true
+        Match match4; match4.withHtml = true;
+        Action action4; action4.deleteIt = true;
+        email = reInstance(match4, action4);
+        assert("deleted" in email.tags && email.tags["deleted"]);
+
+        // Negative match on body
+        Match match5; match5.bodyMatches = ["nomatch_atall"];
+        Action action5; action5.deleteIt = true;
+        email = reInstance(match5, action5);
+        assert("deleted" !in email.tags);
+
+        //Match SizeGreaterThan, set tags
+        Match match6; 
+        match6.totalSizeValue = 1024*1024; // 1MB, the email is 1.36MB
+        match6.withSizeLimit = true;
+        Action action6; action6.tagsToAdd = ["testtag1", "testtag2"];
+        email = reInstance(match6, action6);
+        assert("testtag1" in email.tags && "testtag2" in email.tags);
+
+        //Dont match SizeGreaterThan, set tags
+        auto size1 = email.computeSize();
+        auto size2 = 2*1024*1024;
+        Match match7; 
+        match7.totalSizeValue = 2*1024*1024; // 1MB, the email is 1.36MB
+        match7.withSizeLimit = true;
+        Action action7; action7.tagsToAdd = ["testtag1", "testtag2"];
+        email = reInstance(match7, action7);
+        assert("testtag1" !in email.tags && "testtag2" !in email.tags);
+
+        // Match SizeSmallerThan, set forward
+        Match match8; 
+        match8.totalSizeType = SizeRuleType.SmallerThan;
+        match8.totalSizeValue = 2*1024*1024; // 2MB, the email is 1.38MB
+        match8.withSizeLimit = true;
+        Action action8;
+        action8.forwardTo = "juanjux@yahoo.es";
+        email = reInstance(match8, action8);
+        assert(email.doForwardTo[0] == "juanjux@yahoo.es");
+
+        // Dont match SizeSmallerTham
+        Match match9; 
+        match9.totalSizeType = SizeRuleType.SmallerThan;
+        match9.totalSizeValue = 1024*1024; // 2MB, the email is 1.39MB
+        match9.withSizeLimit = true;
+        Action action9;
+        action9.forwardTo = "juanjux@yahoo.es";
+        email = reInstance(match9, action9);
+        assert(!email.doForwardTo.length);
+        
+    }
 }

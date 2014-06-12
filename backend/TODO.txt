@@ -1,9 +1,9 @@
 Backend-Retriever:
-    - Unittest the UserFilter
     - Test vibed MongoDB lib
-    - Recover retriever settings and UserFilters from MongoDB
+    - Recover Config and UserFilters from MongoDB
+    - Think about the Config singleton
     - Get a ConverstationID (new or existing from email references and/or reply-to)
-    - Insert the email into MongoDB (get the id)
+    - Insert the email into MongoDB (get the Id)
     - Exception classes for the different parts (and use them)
     - Install and configure the indexer
     - Make the retriever index a copy of the message

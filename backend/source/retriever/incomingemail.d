@@ -721,7 +721,7 @@ unittest
 
     }
 
-    else // normal huge test with all the emails in 
+    else version(allmailstest) // normal huge test with all the emails in 
     {
         int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0, // broken mails, no newline after headers or parts, etc
                                    //"6988":0, "26876": 0, "36004":0, "37674":0, "38511":0, // munpack unpack these files with some different value
