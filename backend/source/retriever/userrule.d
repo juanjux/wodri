@@ -1,7 +1,11 @@
 module retriever.userrule;
 
 import std.string;
+import vibe.db.mongo.mongo;
+import vibe.core.log;
+import vibe.data.bson;
 import retriever.incomingemail;
+
 
 version(unittest)
 {
@@ -36,7 +40,7 @@ struct Action
     bool neverSpam    = false;
     bool setSpam      = false;
     bool tagFavorite  = false;
-    string[] tagsToAdd;
+    string[] addTags;
     string forwardTo;
 }
 
@@ -122,7 +126,7 @@ class UserFilter
         if (this.action.tagFavorite)
             email.tags["favorite"] = true;
 
-        foreach(string tag; this.action.tagsToAdd)
+        foreach(string tag; this.action.addTags)
         {
             tag = toLower(tag);
             if (tag !in email.tags)
@@ -135,10 +139,45 @@ class UserFilter
 }
 
 
-// XXX cargar de MongoDB
-UserFilter[] getUserFilters(string user)
+UserFilter[] getAddressFilters(string address)
 {
-    return [];
+    UserFilter[] res;
+    auto db = connectMongoDB("localhost").getDatabase("webmail");
+    auto userRuleCursor = db["userrule"].find(["destinationAccounts": address]);
+
+    foreach(rule; userRuleCursor)
+    {
+        Match match;
+        Action action;
+        try 
+        {
+            match.withAttachment = deserializeBson!bool       (rule["withAttachment"]);
+            match.withHtml       = deserializeBson!bool       (rule["withHtml"]);
+            match.withSizeLimit  = deserializeBson!bool       (rule["withSizeLimit"]);
+            match.bodyMatches    = deserializeBson!(string[]) (rule["bodyMatches"]);
+            match.headerMatches  = deserializeBson!(string[string]) (rule["headerMatches"]);
+            match.totalSizeType  = deserializeBson!string (rule["SizeRuleType"]) == "SmallerThan"? 
+                                                                                  SizeRuleType.SmallerThan:
+                                                                                  SizeRuleType.GreaterThan;
+            auto bsonSize = rule["totalSizeValue"];
+            match.totalSizeValue = bsonSize.type == Bson.Type.double_? 
+                                                           to!ulong(deserializeBson!double(bsonSize)):
+                                                           deserializeBson!ulong(bsonSize);
+
+            action.noInbox     = deserializeBson!bool        (rule["noInbox"]);
+            action.markAsRead  = deserializeBson!bool       (rule["markAsRead"]);
+            action.deleteIt    = deserializeBson!bool       (rule["delete"]);
+            action.neverSpam   = deserializeBson!bool       (rule["neverSpam"]);
+            action.setSpam     = deserializeBson!bool       (rule["setSpam"]);
+            action.tagFavorite = deserializeBson!bool       (rule["tagFavorite"]);
+            action.forwardTo   = deserializeBson!string     (rule["forwardTo"]);
+            action.addTags     = deserializeBson!(string[]) (rule["addTags"]);
+
+            res ~= new UserFilter(match, action);
+        } catch (Exception e) 
+            logWarn("Error deserializing rule from DB, ignoring: %s: %s", rule, e);
+    }
+    return res;
 }
 
 
@@ -146,6 +185,7 @@ version(UserRuleTest)
 {
     unittest
     {
+        auto filters = getAddressFilters("juanjux@juanjux.mooo.com");
         auto config = getConfig();
         auto testDir = buildPath(config.mainDir, "backend", "test");
         auto testMailDir = buildPath(testDir, "testmails");
@@ -194,7 +234,7 @@ version(UserRuleTest)
         Match match6; 
         match6.totalSizeValue = 1024*1024; // 1MB, the email is 1.36MB
         match6.withSizeLimit = true;
-        Action action6; action6.tagsToAdd = ["testtag1", "testtag2"];
+        Action action6; action6.addTags = ["testtag1", "testtag2"];
         email = reInstance(match6, action6);
         assert("testtag1" in email.tags && "testtag2" in email.tags);
 
@@ -204,7 +244,7 @@ version(UserRuleTest)
         Match match7; 
         match7.totalSizeValue = 2*1024*1024; // 1MB, the email is 1.36MB
         match7.withSizeLimit = true;
-        Action action7; action7.tagsToAdd = ["testtag1", "testtag2"];
+        Action action7; action7.addTags = ["testtag1", "testtag2"];
         email = reInstance(match7, action7);
         assert("testtag1" !in email.tags && "testtag2" !in email.tags);
 
