@@ -111,12 +111,12 @@ conversationId;
         bool bodyHasParts          = false;
         bool inputIsStdInput       = false; // Need to know if reading from stdin/stderr for the rawCopy
         Appender!string stdinLines = null;
-        auto partialBuffer         = appender!string();
+        auto partialBuffer         = appender!string;
 
         if (copyRaw && among(email_file, std.stdio.stdin, std.stdio.stderr))
         {
             inputIsStdInput = true;
-            stdinLines = appender!string();
+            stdinLines = appender!string;
             version(Windows) lineSep = "\r\n";
             else             lineSep = "\n";
         }
@@ -211,7 +211,7 @@ conversationId;
 
     string print_headers(bool as_string=false)
     {
-        auto textheaders = appender!string();
+        auto textheaders = appender!string;
         foreach(string name, string value; this.headers)
         {
             if (as_string)
@@ -466,7 +466,7 @@ conversationId;
         }
 
 
-        auto partialBuffer = appender!string();
+        auto partialBuffer = appender!string;
         int idx;
         foreach (string line; lines)
         {
@@ -769,8 +769,8 @@ unittest
             // TEST: Body parts
             auto testFilePath = buildPath(format("%s_t", e.name), "mime_info.txt");
             auto f            = File(testFilePath, "r");
-            auto ap1          = appender!string();
-            auto ap2          = appender!string();
+            auto ap1          = appender!string;
+            auto ap2          = appender!string;
 
             while(!f.eof)
                 ap1.put(f.readln());

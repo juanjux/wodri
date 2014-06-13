@@ -151,27 +151,22 @@ UserFilter[] getAddressFilters(string address, MongoDatabase db)
         Action action;
         try
         {
-            match.withAttachment = deserializeBson!bool       (rule["withAttachment"]);
-            match.withHtml       = deserializeBson!bool       (rule["withHtml"]);
-            match.withSizeLimit  = deserializeBson!bool       (rule["withSizeLimit"]);
-            match.bodyMatches    = deserializeBson!(string[]) (rule["bodyMatches"]);
-            match.headerMatches  = deserializeBson!(string[string])(rule["headerMatches"]);
-            match.totalSizeType  = deserializeBson!string     (rule["SizeRuleType"]) == "SmallerThan"?
-                                                                                  SizeRuleType.SmallerThan:
-                                                                                  SizeRuleType.GreaterThan;
-            auto bsonSize = rule["totalSizeValue"];
-            match.totalSizeValue = bsonSize.type == Bson.Type.double_?
-                                                           to!ulong(deserializeBson!double(bsonSize)):
-                                                           deserializeBson!ulong(bsonSize);
-
-            action.noInbox     = deserializeBson!bool       (rule["noInbox"]);
-            action.markAsRead  = deserializeBson!bool       (rule["markAsRead"]);
-            action.deleteIt    = deserializeBson!bool       (rule["delete"]);
-            action.neverSpam   = deserializeBson!bool       (rule["neverSpam"]);
-            action.setSpam     = deserializeBson!bool       (rule["setSpam"]);
-            action.tagFavorite = deserializeBson!bool       (rule["tagFavorite"]);
-            action.forwardTo   = deserializeBson!string     (rule["forwardTo"]);
-            action.addTags     = deserializeBson!(string[]) (rule["addTags"]);
+            match.totalSizeType  =  deserializeBson!string     (rule["SizeRuleType"]) ==  "SmallerThan"?
+                                                                              SizeRuleType.SmallerThan:
+                                                                              SizeRuleType.GreaterThan;
+            match.withAttachment =  deserializeBson!bool       (rule["withAttachment"]);
+            match.withHtml       =  deserializeBson!bool       (rule["withHtml"]);
+            match.withSizeLimit  =  deserializeBson!bool       (rule["withSizeLimit"]);
+            match.bodyMatches    =  deserializeBson!(string[]) (rule["bodyMatches"]);
+            match.headerMatches  =  deserializeBson!(string[string])(rule["headerMatches"]);
+            action.noInbox       =  deserializeBson!bool       (rule["noInbox"]);
+            action.markAsRead    =  deserializeBson!bool       (rule["markAsRead"]);
+            action.deleteIt      =  deserializeBson!bool       (rule["delete"]);
+            action.neverSpam     =  deserializeBson!bool       (rule["neverSpam"]);
+            action.setSpam       =  deserializeBson!bool       (rule["setSpam"]);
+            action.tagFavorite   =  deserializeBson!bool       (rule["tagFavorite"]);
+            action.forwardTo     =  deserializeBson!string     (rule["forwardTo"]);
+            action.addTags       =  deserializeBson!(string[]) (rule["addTags"]);
 
             res ~= new UserFilter(match, action);
         } catch (Exception e)
