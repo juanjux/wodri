@@ -1,6 +1,5 @@
 Backend-Retriever:
-    - Test vibed MongoDB lib
-    - Recover Config and UserFilters from MongoDB
+    - Recover Config from MongoDB
     - Implement the incoming message limit
     - Think about the Config singleton
     - Get a ConverstationID (new or existing from email references and/or reply-to)
@@ -12,8 +11,8 @@ Backend-Retriever:
     - Const, immutable, pure, nothrow, in, out, safe et all
     - Initial configuration script
     - incomingmail.d, unittest: get the path from the config object
-    - userrule.d: poder configurar el nombre de la BBDD y los datos de conexion
-      a Mongo (url, puerto, usuario, clave) con un fichero de texto
+    - userrule.d: configure DB name and connection data from a config file
+    - docstrings!
 
 
 Backend-API:

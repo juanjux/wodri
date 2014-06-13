@@ -58,5 +58,14 @@
 	        "dflags": ["-main", "-unittest"], 
 	        "targetName": "test",
 	    },
+
+	    {
+	        "name": "config_test",
+	        "versions": ["configtest"],
+	        "mainSourceFile": "config.d",
+	        "excludedSourceFiles": ["test.d", "main.d", "incomingmail.d", "characterencoding.d", "userrule.d"],
+	        "dflags": ["-main", "-unittest"], 
+	        "targetName": "test",
+	    },
     ]
 }

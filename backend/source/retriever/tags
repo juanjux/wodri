@@ -2,11 +2,11 @@
 !_TAG_FILE_SORTED	1
 !_TAG_FILE_AUTHOR	Brian Schott
 !_TAG_PROGRAM_URL	https://github.com/Hackerpilot/Dscanner/
-Action	/home/juanjux/webmail/backend/source/retriever/userrule.d	34;"	s
+Action	/home/juanjux/webmail/backend/source/retriever/userrule.d	35;"	s
 Attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	49;"	s
 Config	/home/juanjux/webmail/backend/source/retriever/config.d	5;"	s
 ContentData	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	42;"	s
-GreaterThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	19;"	e	enum:SizeRuleType
+GreaterThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	20;"	e	enum:SizeRuleType
 ISO_8859_1	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	375;"	v
 ISO_8859_10	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	502;"	v
 ISO_8859_11	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	516;"	v
@@ -28,31 +28,33 @@ IncomingEmail	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	64;
 KOI8_R	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	592;"	v
 KOI8_R_Lower	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	586;"	v
 MIMEPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	29;"	c
-Match	/home/juanjux/webmail/backend/source/retriever/userrule.d	23;"	s
+Match	/home/juanjux/webmail/backend/source/retriever/userrule.d	24;"	s
 NotStarted	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	106;"	e	enum:ParseState
 ParseState	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	104;"	g	function:loadFromFile
-SizeRuleType	/home/juanjux/webmail/backend/source/retriever/userrule.d	17;"	g
-SmallerThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	20;"	e	enum:SizeRuleType
+SizeRuleType	/home/juanjux/webmail/backend/source/retriever/userrule.d	18;"	g
+SmallerThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	21;"	e	enum:SizeRuleType
 TEST_PATH_BASE	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	24;"	v
-UserFilter	/home/juanjux/webmail/backend/source/retriever/userrule.d	46;"	c
+UserFilter	/home/juanjux/webmail/backend/source/retriever/userrule.d	47;"	c
 Windows_1251	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	612;"	v
 Windows_1251_Lower	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	606;"	v
 Windows_1252	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	366;"	v
-action	/home/juanjux/webmail/backend/source/retriever/userrule.d	180;"	v
-action	/home/juanjux/webmail/backend/source/retriever/userrule.d	49;"	v	class:UserFilter
-action2	/home/juanjux/webmail/backend/source/retriever/userrule.d	186;"	v
-action3	/home/juanjux/webmail/backend/source/retriever/userrule.d	192;"	v
-action4	/home/juanjux/webmail/backend/source/retriever/userrule.d	198;"	v
-action5	/home/juanjux/webmail/backend/source/retriever/userrule.d	204;"	v
-action6	/home/juanjux/webmail/backend/source/retriever/userrule.d	212;"	v
-action7	/home/juanjux/webmail/backend/source/retriever/userrule.d	222;"	v
-action8	/home/juanjux/webmail/backend/source/retriever/userrule.d	231;"	v
-action9	/home/juanjux/webmail/backend/source/retriever/userrule.d	241;"	v
+action	/home/juanjux/webmail/backend/source/retriever/userrule.d	151;"	v	function:getAddressFilters
+action	/home/juanjux/webmail/backend/source/retriever/userrule.d	205;"	v
+action	/home/juanjux/webmail/backend/source/retriever/userrule.d	50;"	v	class:UserFilter
+action2	/home/juanjux/webmail/backend/source/retriever/userrule.d	211;"	v
+action3	/home/juanjux/webmail/backend/source/retriever/userrule.d	217;"	v
+action4	/home/juanjux/webmail/backend/source/retriever/userrule.d	223;"	v
+action5	/home/juanjux/webmail/backend/source/retriever/userrule.d	229;"	v
+action6	/home/juanjux/webmail/backend/source/retriever/userrule.d	237;"	v
+action7	/home/juanjux/webmail/backend/source/retriever/userrule.d	247;"	v
+action8	/home/juanjux/webmail/backend/source/retriever/userrule.d	256;"	v
+action9	/home/juanjux/webmail/backend/source/retriever/userrule.d	266;"	v
 addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	242;"	f	arity:1	class:IncomingEmail
 addPartHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	431;"	f	arity:1	function:parsePartHeaders
+addTags	/home/juanjux/webmail/backend/source/retriever/userrule.d	43;"	v	struct:Action
 addresses	/home/juanjux/webmail/backend/source/retriever/main.d	23;"	v	function:hasValidDestination
-apply	/home/juanjux/webmail/backend/source/retriever/userrule.d	58;"	f	arity:1	class:UserFilter
-applyAction	/home/juanjux/webmail/backend/source/retriever/userrule.d	106;"	f	arity:1	class:UserFilter
+apply	/home/juanjux/webmail/backend/source/retriever/userrule.d	59;"	f	arity:1	class:UserFilter
+applyAction	/home/juanjux/webmail/backend/source/retriever/userrule.d	107;"	f	arity:1	class:UserFilter
 att	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	382;"	v	function:setAttachmentPart
 att_content	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	356;"	v	function:setAttachmentPart
 attachFileName	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	367;"	v	function:setAttachmentPart
@@ -65,14 +67,14 @@ attachments	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	72;"	
 backendTestDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	614;"	v
 base64Dir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	618;"	v
 bodyHasParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	111;"	v	function:loadFromFile
-bodyMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	29;"	v	struct:Match
+bodyMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	30;"	v	struct:Match
 boundaryEnd	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	258;"	v	function:parseParts
 boundaryPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	257;"	v	function:parseParts
 brokenMails	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	716;"	v
 bytetext	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	76;"	v	function:decodeBase64Stubborn
 cType	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	52;"	v	struct:Attachment
 charset	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	262;"	v	function:decodeEncodedWord
-checkMatch	/home/juanjux/webmail/backend/source/retriever/userrule.d	64;"	f	arity:1	class:UserFilter
+checkMatch	/home/juanjux/webmail/backend/source/retriever/userrule.d	65;"	f	arity:1	class:UserFilter
 computeSize	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	228;"	f	arity:0	class:IncomingEmail
 config	/home/juanjux/webmail/backend/source/retriever/config.d	20;"	v	function:getConfig
 contentStart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	297;"	v	function:parseParts
@@ -93,13 +95,13 @@ decodeEncodedWord	/home/juanjux/webmail/backend/source/retriever/characterencodi
 decodeImpl	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	214;"	f	arity:4
 decodeQuotedPrintable	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	312;"	f	arity:1
 decodedText	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	296;"	v	function:decodeEncodedWord
-deleteIt	/home/juanjux/webmail/backend/source/retriever/userrule.d	38;"	v	struct:Action
+deleteIt	/home/juanjux/webmail/backend/source/retriever/userrule.d	39;"	v	struct:Action
 destFilePath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	184;"	v	function:loadFromFile
 disposition	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	34;"	v	class:MIMEPart
 doForwardTo	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	75;"	v	class:IncomingEmail
 domain	/home/juanjux/webmail/backend/source/retriever/main.d	28;"	v	function:hasValidDestination
 emailFiles	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	554;"	v	function:getSortedEmailFilesList
-emailHeaderContent	/home/juanjux/webmail/backend/source/retriever/userrule.d	81;"	v	function:checkMatch
+emailHeaderContent	/home/juanjux/webmail/backend/source/retriever/userrule.d	82;"	v	function:checkMatch
 email_file	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	633;"	v
 encodedText	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	264;"	v	function:decodeEncodedWord
 encoding	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	263;"	v	function:decodeEncodedWord
@@ -108,16 +110,16 @@ extractAddressesFromHeader	/home/juanjux/webmail/backend/source/retriever/incomi
 fields	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	45;"	v	struct:ContentData
 filename	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	53;"	v	struct:Attachment
 finished	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	271;"	v	function:parseParts
-forwardTo	/home/juanjux/webmail/backend/source/retriever/userrule.d	43;"	v	struct:Action
+forwardTo	/home/juanjux/webmail/backend/source/retriever/userrule.d	44;"	v	struct:Action
+getAddressFilters	/home/juanjux/webmail/backend/source/retriever/userrule.d	142;"	f	arity:1
 getConfig	/home/juanjux/webmail/backend/source/retriever/config.d	17;"	f	arity:0
 getRootContentInfo	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	495;"	f	arity:1	class:IncomingEmail
 getSortedEmailFilesList	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	552;"	f	arity:1
-getUserFilters	/home/juanjux/webmail/backend/source/retriever/userrule.d	141;"	f	arity:1
 globalIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	272;"	v	function:parseParts
-hasHtml	/home/juanjux/webmail/backend/source/retriever/userrule.d	71;"	v	function:checkMatch
+hasHtml	/home/juanjux/webmail/backend/source/retriever/userrule.d	72;"	v	function:checkMatch
 hasValidDestination	/home/juanjux/webmail/backend/source/retriever/main.d	20;"	f	arity:2
 hasValidDestination	/home/juanjux/webmail/backend/source/retriever/main.d	54;"	v	function:main
-headerMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	28;"	v	struct:Match
+headerMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	29;"	v	struct:Match
 headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	67;"	v	class:IncomingEmail
 headers_str	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	738;"	v
 hexByte	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	316;"	v	function:decodeQuotedPrintable
@@ -138,23 +140,24 @@ mailindex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	632;"	v
 main	/home/juanjux/webmail/backend/source/retriever/main.d	46;"	f	arity:0
 mainDir	/home/juanjux/webmail/backend/source/retriever/config.d	19;"	v	function:getConfig
 mainDir	/home/juanjux/webmail/backend/source/retriever/config.d	7;"	v	struct:Config
-markAsRead	/home/juanjux/webmail/backend/source/retriever/userrule.d	37;"	v	struct:Action
-match	/home/juanjux/webmail/backend/source/retriever/userrule.d	179;"	v
-match	/home/juanjux/webmail/backend/source/retriever/userrule.d	48;"	v	class:UserFilter
-match2	/home/juanjux/webmail/backend/source/retriever/userrule.d	185;"	v
-match3	/home/juanjux/webmail/backend/source/retriever/userrule.d	191;"	v
-match4	/home/juanjux/webmail/backend/source/retriever/userrule.d	197;"	v
-match5	/home/juanjux/webmail/backend/source/retriever/userrule.d	203;"	v
-match6	/home/juanjux/webmail/backend/source/retriever/userrule.d	209;"	v
-match7	/home/juanjux/webmail/backend/source/retriever/userrule.d	219;"	v
-match8	/home/juanjux/webmail/backend/source/retriever/userrule.d	227;"	v
-match9	/home/juanjux/webmail/backend/source/retriever/userrule.d	237;"	v
+markAsRead	/home/juanjux/webmail/backend/source/retriever/userrule.d	38;"	v	struct:Action
+match	/home/juanjux/webmail/backend/source/retriever/userrule.d	150;"	v	function:getAddressFilters
+match	/home/juanjux/webmail/backend/source/retriever/userrule.d	204;"	v
+match	/home/juanjux/webmail/backend/source/retriever/userrule.d	49;"	v	class:UserFilter
+match2	/home/juanjux/webmail/backend/source/retriever/userrule.d	210;"	v
+match3	/home/juanjux/webmail/backend/source/retriever/userrule.d	216;"	v
+match4	/home/juanjux/webmail/backend/source/retriever/userrule.d	222;"	v
+match5	/home/juanjux/webmail/backend/source/retriever/userrule.d	228;"	v
+match6	/home/juanjux/webmail/backend/source/retriever/userrule.d	234;"	v
+match7	/home/juanjux/webmail/backend/source/retriever/userrule.d	244;"	v
+match8	/home/juanjux/webmail/backend/source/retriever/userrule.d	252;"	v
+match9	/home/juanjux/webmail/backend/source/retriever/userrule.d	262;"	v
 name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	248;"	v	function:addHeader
 name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	440;"	v	function:addPartHeader
 name	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	44;"	v	struct:ContentData
-neverSpam	/home/juanjux/webmail/backend/source/retriever/userrule.d	39;"	v	struct:Action
+neverSpam	/home/juanjux/webmail/backend/source/retriever/userrule.d	40;"	v	struct:Action
 newtext	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	326;"	v	function:setTextPart
-noInbox	/home/juanjux/webmail/backend/source/retriever/userrule.d	36;"	v	struct:Action
+noInbox	/home/juanjux/webmail/backend/source/retriever/userrule.d	37;"	v	struct:Action
 nolineinput	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	61;"	v	function:decodeBase64Stubborn
 origFileName	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	368;"	v	function:setAttachmentPart
 origMailDir	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	615;"	v
@@ -172,8 +175,9 @@ rawMailPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	71;"	
 rawMailStore	/home/juanjux/webmail/backend/source/retriever/config.d	8;"	v	struct:Config
 rawMailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	616;"	v
 rawMailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	64;"	v	class:IncomingEmail
-reInstance	/home/juanjux/webmail/backend/source/retriever/userrule.d	168;"	f	arity:2
+reInstance	/home/juanjux/webmail/backend/source/retriever/userrule.d	193;"	f	arity:2
 realPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	51;"	v	struct:Attachment
+res	/home/juanjux/webmail/backend/source/retriever/userrule.d	144;"	v	function:getAddressFilters
 ret	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	256;"	v	function:decodeEncodedWord
 ret	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	313;"	v	function:decodeQuotedPrintable
 ret	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	58;"	v	function:decodeBase64Stubborn
@@ -181,7 +185,7 @@ ret	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	94;"	v	f
 ret	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	204;"	v	function:extractAddressesFromHeader
 rootPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	68;"	v	class:IncomingEmail
 setAttachmentPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	354;"	f	arity:2	class:IncomingEmail
-setSpam	/home/juanjux/webmail/backend/source/retriever/userrule.d	40;"	v	struct:Action
+setSpam	/home/juanjux/webmail/backend/source/retriever/userrule.d	41;"	v	struct:Action
 setTextPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	324;"	f	arity:2	class:IncomingEmail
 size	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	55;"	v	struct:Attachment
 skipMails	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	723;"	v
@@ -189,17 +193,16 @@ startIndex	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	256;"	
 state	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	315;"	v	function:decodeQuotedPrintable
 stdinLines	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	113;"	v	function:loadFromFile
 subparts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	32;"	v	class:MIMEPart
-tagFavorite	/home/juanjux/webmail/backend/source/retriever/userrule.d	41;"	v	struct:Action
+tagFavorite	/home/juanjux/webmail/backend/source/retriever/userrule.d	42;"	v	struct:Action
 tags	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	73;"	v	class:IncomingEmail
-tagsToAdd	/home/juanjux/webmail/backend/source/retriever/userrule.d	42;"	v	struct:Action
 textContent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	37;"	v	class:MIMEPart
 textualParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	69;"	v	class:IncomingEmail
 this	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	77;"	f	arity:2	class:IncomingEmail
-this	/home/juanjux/webmail/backend/source/retriever/userrule.d	51;"	f	arity:2	class:UserFilter
+this	/home/juanjux/webmail/backend/source/retriever/userrule.d	52;"	f	arity:2	class:UserFilter
 thisPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	295;"	v	function:parseParts
 totalSize	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	230;"	v	function:computeSize
-totalSizeType	/home/juanjux/webmail/backend/source/retriever/userrule.d	30;"	v	struct:Match
-totalSizeValue	/home/juanjux/webmail/backend/source/retriever/userrule.d	31;"	v	struct:Match
+totalSizeType	/home/juanjux/webmail/backend/source/retriever/userrule.d	31;"	v	struct:Match
+totalSizeValue	/home/juanjux/webmail/backend/source/retriever/userrule.d	32;"	v	struct:Match
 tryToDetermineEncoding	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	178;"	f	arity:1
 user	/home/juanjux/webmail/backend/source/retriever/main.d	28;"	v	function:hasValidDestination
 utf8	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	225;"	v	function:decodeImpl
@@ -210,6 +213,6 @@ value	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	441;"	v	fun
 visitParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	511;"	f	arity:1	class:IncomingEmail
 was_encoded	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	357;"	v	function:setAttachmentPart
 was_encoded	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	58;"	v	struct:Attachment
-withAttachment	/home/juanjux/webmail/backend/source/retriever/userrule.d	25;"	v	struct:Match
-withHtml	/home/juanjux/webmail/backend/source/retriever/userrule.d	26;"	v	struct:Match
-withSizeLimit	/home/juanjux/webmail/backend/source/retriever/userrule.d	27;"	v	struct:Match
+withAttachment	/home/juanjux/webmail/backend/source/retriever/userrule.d	26;"	v	struct:Match
+withHtml	/home/juanjux/webmail/backend/source/retriever/userrule.d	27;"	v	struct:Match
+withSizeLimit	/home/juanjux/webmail/backend/source/retriever/userrule.d	28;"	v	struct:Match

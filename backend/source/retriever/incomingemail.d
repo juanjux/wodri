@@ -1,4 +1,4 @@
-#!/usr/bin/env rdmd 
+#!/usr/bin/env rdmd
 module retriever.incomingemail;
 
 import std.stdio;
@@ -53,8 +53,8 @@ struct Attachment // #attach
     string filename;
     string content_id;
     ulong size;
-    version(unittest) 
-    {  
+    version(unittest)
+    {
         bool was_encoded = false;
         string original_encoded_content;
     }
@@ -65,12 +65,12 @@ final class IncomingEmail { string attachmentStore; string rawMailStore; string
 conversationId;
 
     DictionaryList!(string, false) headers; // Note: keys are case insensitive
-    MIMEPart rootPart; 
+    MIMEPart rootPart;
     MIMEPart[] textualParts; // shortcut to the textual (text or html) parts in display
 
     string rawMailPath;
     Attachment[] attachments;
-    bool[string] tags; 
+    bool[string] tags;
     string lineSep = "\r\n";
     string[] doForwardTo;
 
@@ -99,18 +99,18 @@ conversationId;
     }
 
 
-    void loadFromFile(File email_file, bool copyRaw=true) 
+    void loadFromFile(File email_file, bool copyRaw=true)
     {
-        enum ParseState 
-        { 
-            NotStarted, InHeader, InBody 
+        enum ParseState
+        {
+            NotStarted, InHeader, InBody
         }
         ParseState parseState = ParseState.NotStarted;
 
         string currentLine;
         bool bodyHasParts          = false;
         bool inputIsStdInput       = false; // Need to know if reading from stdin/stderr for the rawCopy
-        Appender!string stdinLines = null;  
+        Appender!string stdinLines = null;
         auto partialBuffer         = appender!string();
 
         if (copyRaw && among(email_file, std.stdio.stdin, std.stdio.stderr))
@@ -118,9 +118,9 @@ conversationId;
             inputIsStdInput = true;
             stdinLines = appender!string();
             version(Windows) lineSep = "\r\n";
-            else             lineSep = "\n";  
+            else             lineSep = "\n";
         }
- 
+
         // === Header ===
         uint count = 0;
         while (!email_file.eof())
@@ -130,7 +130,7 @@ conversationId;
 
             if (!currentLine.length)
                 // Possible end of stdin/stderr input
-                break; 
+                break;
 
             if (count == 1 && currentLine.startsWith("From "))
                 // mbox format indicator, ignore
@@ -162,7 +162,7 @@ conversationId;
         while (!email_file.eof())
         {
             if (!currentLine.length)
-                break; 
+                break;
 
             currentLine = email_file.readln();
 
@@ -177,16 +177,16 @@ conversationId;
         else
             setTextPart(this.rootPart, partialBuffer.data);
 
-        // Finally, copy the email to rawMailPath 
+        // Finally, copy the email to rawMailPath
         // (the user of the class is responsible for deleting the original)
         if (copyRaw && this.rawMailStore.length)
         {
             string destFilePath;
-            do 
+            do
             {
                 destFilePath = buildPath(this.rawMailStore, format("%d_%d", stdTimeToUnixTime(Clock.currStdTime), uniform(0, 100000)));
             } while(destFilePath.exists);
-         
+
             if (inputIsStdInput)
             {
                 auto f = File(destFilePath, "w");
@@ -209,10 +209,10 @@ conversationId;
     }
 
 
-    string print_headers(bool as_string=false) 
+    string print_headers(bool as_string=false)
     {
         auto textheaders = appender!string();
-        foreach(string name, string value; this.headers) 
+        foreach(string name, string value; this.headers)
         {
             if (as_string)
             {
@@ -239,12 +239,12 @@ conversationId;
     }
 
 
-    private void addHeader(string raw) 
+    private void addHeader(string raw)
     {
         auto idxSeparator = indexOf(raw, ":");
-        if (idxSeparator == -1 || (idxSeparator+1 > raw.length)) 
+        if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
             return; // Not header, probably mbox indicator or broken header
-    
+
         string name  = raw[0..idxSeparator];
         string value = raw[idxSeparator+1..$];
         this.headers.addField(name, decodeEncodedWord(value));
@@ -255,7 +255,7 @@ conversationId;
     {
         int startIndex = -1;
         string boundaryPart = format("--%s", parent.ctype.fields["boundary"]);
-        string boundaryEnd  = format("%s--", boundaryPart); 
+        string boundaryEnd  = format("%s--", boundaryPart);
 
         // Find the starting boundary
         foreach (int i, string line; lines)
@@ -265,7 +265,7 @@ conversationId;
                 startIndex = i+1;
                 break;
             }
-        } 
+        }
 
         int endIndex;
         bool finished   = false;
@@ -289,12 +289,12 @@ conversationId;
                     break;
                 }
             }
-            if (endIndex == -1) 
-                return; 
+            if (endIndex == -1)
+                return;
 
             MIMEPart thisPart = new MIMEPart();
             // parsePartHeaders modifies thisPart by reference and returns the real content start index
-            int contentStart  = startIndex + parsePartHeaders(thisPart, 
+            int contentStart  = startIndex + parsePartHeaders(thisPart,
                                                               lines[startIndex..endIndex]);
             parent.subparts  ~= thisPart;
             thisPart.parent   = parent;
@@ -308,7 +308,7 @@ conversationId;
                 debug
                 {
                     writeln("========= DESPUES PARSEPARTS, CONTENT: ======", thisPart.ctype.name);
-                    write(thisPart.textContent); 
+                    write(thisPart.textContent);
                     writeln("=============================================");
                 }
             }
@@ -341,15 +341,15 @@ conversationId;
 
         debug
         {
-            if (part.textContent.length) 
+            if (part.textContent.length)
             {
                 writeln("===EMAIL OBJECT TEXTUAL PART===");
-                write(part.textContent); 
+                write(part.textContent);
                 writeln("===END TEXTUAL PART===");
             }
         }
     }
- 
+
 
     private void setAttachmentPart(MIMEPart part, string[] lines)
     {
@@ -358,7 +358,7 @@ conversationId;
 
         if (part.content_transfer_encoding == "base64")
         {
-            att_content = decodeBase64Stubborn(join(lines)); 
+            att_content = decodeBase64Stubborn(join(lines));
             version(unittest) was_encoded = true;
         }
         else // binary, 7bit, 8bit, no need to decode... I think
@@ -386,7 +386,7 @@ conversationId;
         att.size       = att.realPath.getSize;
         att.content_id = part.content_id;
 
-        version(unittest) 
+        version(unittest)
         {
             att.was_encoded = was_encoded;
             att.original_encoded_content = join(lines);
@@ -399,24 +399,24 @@ conversationId;
 
     private void parseContentHeader(ref ContentData content_data, string header_text)
     {
-        if (header_text.length == 0) 
+        if (header_text.length == 0)
             return;
 
         auto value_tokens = split(strip(header_text), ";");
         if (value_tokens.length == 0) // ???
-        { 
+        {
             content_data.name= "";
             return;
         }
-        
+
         content_data.name = strip(removechars(value_tokens[0], "\""));
         if (value_tokens.length > 1)
         {
-            foreach(string param; value_tokens[1..$]) 
+            foreach(string param; value_tokens[1..$])
             {
                 param        = strip(removechars(param, "\""));
                 auto eqIndex = indexOf(param, "=");
-                if (eqIndex == -1) 
+                if (eqIndex == -1)
                     continue;
 
                 content_data.fields[strip(toLower(param[0..eqIndex]))] = strip(param[eqIndex+1..$]);
@@ -432,8 +432,8 @@ conversationId;
         {
             auto idxSeparator = indexOf(text, ":");
             if (idxSeparator == -1 || (idxSeparator+1 > text.length))
-                // Some mail generators dont put a CRLF 
-                // after the part header in the text/plain part but 
+                // Some mail generators dont put a CRLF
+                // after the part header in the text/plain part but
                 // something like "----------"
                 return;
 
@@ -458,7 +458,7 @@ conversationId;
             }
         }
 
-        if (strip(lines[0]).length == 0) 
+        if (strip(lines[0]).length == 0)
         {
             // a part without part headers is supossed to be text/plain
             part.ctype.name = "text/plain";
@@ -545,8 +545,8 @@ unittest
 *       (you only need to do this once, unless you change the mimeinfo format in the function createPartInfoText)
  *
  * Once you have the single mails and the test data you can do:
- *      rdmd --main -unittest => run all the tests on all emails 
- *      rdmd --main -singletest => run the code in the singletest version (usually with a 
+ *      rdmd --main -unittest => run all the tests on all emails
+ *      rdmd --main -singletest => run the code in the singletest version (usually with a
  *      problematic email number hardcoded)
  */
     DirEntry[] getSortedEmailFilesList(string mailsDir)
@@ -555,7 +555,7 @@ unittest
         foreach(DirEntry e; dirEntries(mailsDir, SpanMode.shallow))
             if (!e.isDir) emailFiles ~= e;
 
-        bool intFileComp(DirEntry x, DirEntry y) 
+        bool intFileComp(DirEntry x, DirEntry y)
         {
             return to!int(baseName(x.name)) < to!int(baseName(y.name));
         }
@@ -571,18 +571,18 @@ unittest
 
         ap.put(format("==#== PART ==#==\n"));
 
-        if (part.parent !is null) 
+        if (part.parent !is null)
             ap.put(format("Son of: %s\n", part.parent.ctype.name));
-        else 
+        else
             ap.put("Root part\n");
-            
+
         ap.put(format("Level: %d\n", level));
         ap.put(format("Content-Type: %s\n", part.ctype.name));
         ap.put("\tfields: \n");
 
-        if ("charset" in part.ctype.fields)        
+        if ("charset" in part.ctype.fields)
             ap.put(format("\t\tcharset: %s\n", part.ctype.fields["charset"]));
-        if ("boundary" in part.ctype.fields)       
+        if ("boundary" in part.ctype.fields)
             ap.put(format("\t\tboundary: %s\n", part.ctype.fields["boundary"]));
 
         if (part.disposition.name.length)
@@ -592,7 +592,7 @@ unittest
                 ap.put(format("\t\tfilename: %s\n", part.disposition.fields["filename"]));
         }
 
-        if (part.content_transfer_encoding.length) 
+        if (part.content_transfer_encoding.length)
             ap.put(format("Content-Transfer-Encoding: %s\n", part.content_transfer_encoding));
 
         // attachments are compared with an md5 on the files, not here
@@ -625,7 +625,7 @@ unittest
 
         writeln("Splitting mailbox: ", mbox_fname);
 
-        if (!exists(origMailDir)) 
+        if (!exists(origMailDir))
             mkdir(origMailDir);
 
         auto mboxf = File(mbox_fname);
@@ -650,8 +650,8 @@ unittest
 
     else version(generatetestdata)
     {
-        // For every mail in maildir, parse, create a mailname_test dir, and create a testinfo file inside 
-        // with a description of every mime part (ctype, charset, transfer-encoding, disposition, length, etc) 
+        // For every mail in maildir, parse, create a mailname_test dir, and create a testinfo file inside
+        // with a description of every mime part (ctype, charset, transfer-encoding, disposition, length, etc)
         // and their contents. This will be used in the unittest for comparing the email parsing output with
         // these. Obviously, it's very important to regenerate these files only with Good and Tested versions :)
         auto sortedFiles = getSortedEmailFilesList(origMailDir);
@@ -662,15 +662,15 @@ unittest
             // - ctype, charset, content-disposition, length, subparts, parent, transfer-encoding, contenido
             // guardar en fichero
             writeln("Generating testfile for ", e.name);
-            if (e.name.isDir) 
+            if (e.name.isDir)
                 continue;
 
             auto testDir = format("%s_t", e.name);
-            if (!testDir.exists) 
+            if (!testDir.exists)
                 mkdir(testDir);
 
             auto testAttachDir = buildPath(testDir, "attachments");
-            if (!testAttachDir.exists) 
+            if (!testAttachDir.exists)
                 mkdir(testAttachDir);
 
             auto email = new IncomingEmail(rawMailStore, attachmentStore);
@@ -683,7 +683,7 @@ unittest
             f.write(ap.data);
             f.close();
         }
-       
+
     }
 
     else version(singletest)
@@ -703,7 +703,7 @@ unittest
         auto email_file = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
         auto email      = new IncomingEmail(rawMailStore, attachmentStore);
         email.loadFromFile(email_file, true);
-        
+
         email.visitParts(email.rootPart);
         //email.visitParts(email.rootPart;
         foreach(MIMEPart part; email.textualParts)
@@ -711,7 +711,7 @@ unittest
 
     }
 
-    else version(allmailstest) // normal huge test with all the emails in 
+    else version(allmailstest) // normal huge test with all the emails in
     {
         int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0, // broken mails, no newline after headers or parts, etc
                                    //"6988":0, "26876": 0, "36004":0, "37674":0, "38511":0, // munpack unpack these files with some different value
@@ -722,7 +722,7 @@ unittest
         //int[string] skipMails  = ["41051":0, "41112":0];
         int[string] skipMails;
         bool copyMail = true;
-        
+
         foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
         {
             //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
@@ -739,9 +739,9 @@ unittest
             auto header_lines  = split(headers_str, email.lineSep);
             auto orig_file     = File(e.name);
 
-            // Consume the first line (with the mbox From) 
+            // Consume the first line (with the mbox From)
             orig_file.readln();
-         
+
             // TEST: HEADERS
             int idx = 0;
             while(!orig_file.eof())
@@ -803,7 +803,7 @@ unittest
             foreach (Attachment att; email.attachments)
             {
                 // FIXME: this only text the base64-encoded attachments
-                if (!att.was_encoded) 
+                if (!att.was_encoded)
                     continue;
 
                 system(format("rm -f %s/*", base64Dir));
@@ -840,7 +840,7 @@ unittest
                 }
             }
             writeln("\t...attachments ok!");
-        
+
             // clean the attachment files and the rawmail
             foreach(Attachment att; email.attachments)
                 std.file.remove(att.realPath);

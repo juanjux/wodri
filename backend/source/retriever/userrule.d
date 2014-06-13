@@ -1,7 +1,7 @@
 module retriever.userrule;
 
 import std.string;
-import vibe.db.mongo.mongo;
+import vibe.db.mongo.database;
 import vibe.core.log;
 import vibe.data.bson;
 import retriever.incomingemail;
@@ -13,9 +13,10 @@ version(unittest)
     import std.path;
     import std.stdio;
     import std.algorithm;
+    import vibe.db.mongo.mongo;
 }
 
-enum SizeRuleType 
+enum SizeRuleType
 {
     GreaterThan,
     SmallerThan
@@ -55,7 +56,7 @@ class UserFilter
         this.action = action;
     }
 
-    
+
     void apply(IncomingEmail email)
     {
         if (checkMatch(email))
@@ -63,7 +64,7 @@ class UserFilter
     }
 
     bool checkMatch(IncomingEmail email)
-    {   
+    {
         if (this.match.withAttachment && !email.attachments.length)
             return false;
 
@@ -76,11 +77,11 @@ class UserFilter
             if (!hasHtml)
                 return false;
         }
-        
+
         foreach(string matchHeaderName, string matchHeaderFilter; this.match.headerMatches)
         {
             string emailHeaderContent = email.headers.get(matchHeaderName, "");
-            if (!emailHeaderContent.length || 
+            if (!emailHeaderContent.length ||
                 indexOf(emailHeaderContent, this.match.headerMatches[matchHeaderName]) == -1)
                 return false;
         }
@@ -89,7 +90,7 @@ class UserFilter
             foreach(string bodyMatch; this.match.bodyMatches)
                 if (indexOf(part.textContent, bodyMatch) == -1)
                     return false;
-            
+
         if (this.match.withSizeLimit)
         {
             auto mailSize = email.computeSize();
@@ -103,10 +104,10 @@ class UserFilter
         return true;
     }
 
-    
+
     void applyAction(IncomingEmail email)
     {
-        // email.tags == false actually mean to the rest of the retriever 
+        // email.tags == false actually mean to the rest of the retriever
         // processes: "it doesnt have the tag and please dont add it after this point"
         if (this.action.noInbox)
             email.tags["inbox"] = false;
@@ -139,32 +140,31 @@ class UserFilter
 }
 
 
-UserFilter[] getAddressFilters(string address)
+UserFilter[] getAddressFilters(string address, MongoDatabase db)
 {
     UserFilter[] res;
-    auto db = connectMongoDB("localhost").getDatabase("webmail");
     auto userRuleCursor = db["userrule"].find(["destinationAccounts": address]);
 
     foreach(rule; userRuleCursor)
     {
         Match match;
         Action action;
-        try 
+        try
         {
             match.withAttachment = deserializeBson!bool       (rule["withAttachment"]);
             match.withHtml       = deserializeBson!bool       (rule["withHtml"]);
             match.withSizeLimit  = deserializeBson!bool       (rule["withSizeLimit"]);
             match.bodyMatches    = deserializeBson!(string[]) (rule["bodyMatches"]);
-            match.headerMatches  = deserializeBson!(string[string]) (rule["headerMatches"]);
-            match.totalSizeType  = deserializeBson!string (rule["SizeRuleType"]) == "SmallerThan"? 
+            match.headerMatches  = deserializeBson!(string[string])(rule["headerMatches"]);
+            match.totalSizeType  = deserializeBson!string     (rule["SizeRuleType"]) == "SmallerThan"?
                                                                                   SizeRuleType.SmallerThan:
                                                                                   SizeRuleType.GreaterThan;
             auto bsonSize = rule["totalSizeValue"];
-            match.totalSizeValue = bsonSize.type == Bson.Type.double_? 
+            match.totalSizeValue = bsonSize.type == Bson.Type.double_?
                                                            to!ulong(deserializeBson!double(bsonSize)):
                                                            deserializeBson!ulong(bsonSize);
 
-            action.noInbox     = deserializeBson!bool        (rule["noInbox"]);
+            action.noInbox     = deserializeBson!bool       (rule["noInbox"]);
             action.markAsRead  = deserializeBson!bool       (rule["markAsRead"]);
             action.deleteIt    = deserializeBson!bool       (rule["delete"]);
             action.neverSpam   = deserializeBson!bool       (rule["neverSpam"]);
@@ -174,7 +174,7 @@ UserFilter[] getAddressFilters(string address)
             action.addTags     = deserializeBson!(string[]) (rule["addTags"]);
 
             res ~= new UserFilter(match, action);
-        } catch (Exception e) 
+        } catch (Exception e)
             logWarn("Error deserializing rule from DB, ignoring: %s: %s", rule, e);
     }
     return res;
@@ -185,14 +185,15 @@ version(UserRuleTest)
 {
     unittest
     {
-        auto filters = getAddressFilters("juanjux@juanjux.mooo.com");
-        auto config = getConfig();
+        auto db = connectMongoDB("localhost").getDatabase("webmail");
+        auto filters = getAddressFilters("juanjux@juanjux.mooo.com", db);
+        auto config = getConfig(db);
         auto testDir = buildPath(config.mainDir, "backend", "test");
         auto testMailDir = buildPath(testDir, "testmails");
 
         IncomingEmail reInstance(Match match, Action action)
-        {   
-            auto email = new IncomingEmail(buildPath(testDir, "rawmails"), 
+        {
+            auto email = new IncomingEmail(buildPath(testDir, "rawmails"),
                                            buildPath(testDir, "attachments"));
             email.loadFromFile(buildPath(testMailDir, "with_attachment"));
             auto filter = new UserFilter(match, action);
@@ -230,18 +231,18 @@ version(UserRuleTest)
         email = reInstance(match5, action5);
         assert("deleted" !in email.tags);
 
-        //Match SizeGreaterThan, set tags
-        Match match6; 
+        //Match SizeGreaterThan, set tag
+        Match match6;
         match6.totalSizeValue = 1024*1024; // 1MB, the email is 1.36MB
         match6.withSizeLimit = true;
         Action action6; action6.addTags = ["testtag1", "testtag2"];
         email = reInstance(match6, action6);
         assert("testtag1" in email.tags && "testtag2" in email.tags);
 
-        //Dont match SizeGreaterThan, set tags
+        //Dont match SizeGreaterThan, set tag
         auto size1 = email.computeSize();
         auto size2 = 2*1024*1024;
-        Match match7; 
+        Match match7;
         match7.totalSizeValue = 2*1024*1024; // 1MB, the email is 1.36MB
         match7.withSizeLimit = true;
         Action action7; action7.addTags = ["testtag1", "testtag2"];
@@ -249,7 +250,7 @@ version(UserRuleTest)
         assert("testtag1" !in email.tags && "testtag2" !in email.tags);
 
         // Match SizeSmallerThan, set forward
-        Match match8; 
+        Match match8;
         match8.totalSizeType = SizeRuleType.SmallerThan;
         match8.totalSizeValue = 2*1024*1024; // 2MB, the email is 1.38MB
         match8.withSizeLimit = true;
@@ -259,7 +260,7 @@ version(UserRuleTest)
         assert(email.doForwardTo[0] == "juanjux@yahoo.es");
 
         // Dont match SizeSmallerTham
-        Match match9; 
+        Match match9;
         match9.totalSizeType = SizeRuleType.SmallerThan;
         match9.totalSizeValue = 1024*1024; // 2MB, the email is 1.39MB
         match9.withSizeLimit = true;
@@ -267,6 +268,6 @@ version(UserRuleTest)
         action9.forwardTo = "juanjux@yahoo.es";
         email = reInstance(match9, action9);
         assert(!email.doForwardTo.length);
-        
+
     }
 }
