@@ -1,19 +1,19 @@
 Backend-Retriever:
-    - IncomingMail: parse the email addresses and store them in fromAddresses, toAddresses, etc.
-    - Incoming.setTag/removeTag and use it (check for exists && false before setting it)
-    - incomingmail.d, unittest: get the path from the config object
-    - Get a ConverstationID (new or existing from email references and/or reply-to)
-
     - Insert the email into MongoDB (get the Id)
-    - Exception classes for the different parts (and use them)
+    - Get a ConverstationID (first search for the id of the email, then search for the references
+      from last to first, any? => get the ConvId, add all the references too to the same ConvID,
+      none? create new, add the email and the references)
+
     - Install and configure the indexer
     - Make the retriever index a copy of the message
+
+    - main.d: configure DB name and connection data from a config file
+    - Exception classes for the different parts (and use them)
     - Const, immutable, pure, nothrow, in, out, safe et all
     - Initial configuration script
-    - main.d: configure DB name and connection data from a config file
     - document
 
-    - Retriever's unittest, use a Python script with the mail & smtp modules to parse
+    - Retriever's full test, use a Python script with the mail & smtp modules to parse
       the test mails collection changing the receiver from [myRealAddr] to [mongoTestAddr]
       before delivering to Postfix, create a MongoDB database "webmailtest", populate it,
       check that we receive every email, check that that the isValidAddress check is fine,

@@ -19,8 +19,8 @@ bool hasValidDestination(IncomingEmail email, MongoDatabase db)
     string domain;
     auto addrListString = appender!string;
 
-    foreach(header; ["To", "Cc", "Bcc", "Delivered-To"])
-        addresses ~= email.extractAddressesFromHeader(header);
+    foreach(headerName; ["To", "Cc", "Bcc", "Delivered-To"])
+        addresses ~= email.headers[headerName].addresses;
 
     // Check for a defaultUser ("catch-all") for this domain
     foreach(addr; addresses)

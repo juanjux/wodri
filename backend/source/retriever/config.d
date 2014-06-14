@@ -34,11 +34,11 @@ RetrieverConfig getConfig(MongoDatabase db)
     }
 
     // If the db path starts with '/' interpret it as absolute
-    config.mainDir         = deserializeBson!string (dbConfig["mainDir"]);
-    auto dbPath            = deserializeBson!string (dbConfig["rawMailStore"]);
-    config.rawMailStore    = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
-    dbPath                 = deserializeBson!string (dbConfig["attachmentStore"]);
-    config.attachmentStore = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
+    config.mainDir              = deserializeBson!string (dbConfig["mainDir"]);
+    auto dbPath                 = deserializeBson!string (dbConfig["rawMailStore"]);
+    config.rawMailStore         = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
+    dbPath                      = deserializeBson!string (dbConfig["attachmentStore"]);
+    config.attachmentStore      = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
     config.incomingMessageLimit = to!ulong(deserializeBson!double(dbConfig["incomingMessageLimit"]));
     return config;
 }

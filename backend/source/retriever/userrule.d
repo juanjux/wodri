@@ -80,16 +80,17 @@ class UserFilter
 
         foreach(string matchHeaderName, string matchHeaderFilter; this.match.headerMatches)
         {
-            string emailHeaderContent = email.headers.get(matchHeaderName, "");
-            if (!emailHeaderContent.length ||
-                indexOf(emailHeaderContent, this.match.headerMatches[matchHeaderName]) == -1)
+            if (matchHeaderName !in email.headers ||
+                indexOf(email.headers[matchHeaderName].rawValue, this.match.headerMatches[matchHeaderName]) == -1)
                 return false;
         }
 
         foreach(MIMEPart part; email.textualParts)
+        {
             foreach(string bodyMatch; this.match.bodyMatches)
                 if (indexOf(part.textContent, bodyMatch) == -1)
                     return false;
+        }
 
         if (this.match.withSizeLimit)
         {

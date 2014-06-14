@@ -1,6 +1,9 @@
 #!/usr/bin/env rdmd
 module retriever.incomingemail;
 
+debug version = DebugOrUnittest;
+else version(unittest) version = DebugOrUnittest;
+
 import std.stdio;
 import std.path;
 import std.regex;
@@ -14,14 +17,16 @@ import std.base64;
 import std.random;
 import std.datetime;
 import std.process;
-
 import vibe.utils.dictionarylist;
 import retriever.characterencodings;
 
-// XXX get the path base from the config object
-debug version = DebugOrUnittest;
-else version(unittest) version = DebugOrUnittest;
-version(DebugOrUnittest) string TEST_PATH_BASE = "/home/juanjux/webmail";
+version(DebugOrUnittest)
+{
+    import retriever.config;
+    import vibe.db.mongo.mongo;
+    import vibe.db.mongo.database;
+
+}
 
 auto EMAIL_REGEX = ctRegex!r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b";
 
@@ -61,18 +66,27 @@ struct Attachment // #attach
 }
 
 
+struct HeaderValue
+{
+    string rawValue;
+    string[] addresses;
+}
+
 final class IncomingEmail { string attachmentStore; string rawMailStore; string
 conversationId;
 
-    DictionaryList!(string, false) headers; // Note: keys are case insensitive
+    DictionaryList!(HeaderValue, false) headers; // Note: keys are case insensitive
     MIMEPart rootPart;
     MIMEPart[] textualParts; // shortcut to the textual (text or html) parts in display
-
-    string rawMailPath;
     Attachment[] attachments;
     bool[string] tags;
-    string lineSep = "\r\n";
     string[] doForwardTo;
+    string[] fromAddrs;
+    string[] toAddrs;
+    string[] ccAddrs;
+    string[] bccAddrs;
+    string rawMailPath;
+    string lineSep = "\r\n";
 
     this(string rawMailStore, string attachmentStore)
     {
@@ -84,18 +98,20 @@ conversationId;
     @property bool isValid()
     {
         // FIXME: Check the minimal valid headers and the values
-        return this.headers.get("From", "").length &&
-                 (this.headers.get("To", "").length           ||
-                  this.headers.get("Cc", "").length           ||
-                  this.headers.get("Delivered-To", "").length ||
-                  this.headers.get("Bcc", "").length);
+        return (
+                ("From"          in  headers && headers["From"].addresses.length) &&
+                (("To"           in  headers && headers["To"].addresses.length) ||
+                 ("Cc"           in  headers && headers["Cc"].addresses.length) ||
+                 ("Bcc"          in  headers && headers["Bcc"].addresses.length) ||
+                 ("Delivered-To" in  headers && headers["Delivered-To"].addresses.length))
+                );
     }
 
 
     void loadFromFile(string email_path, bool copyRaw=true)
     {
         auto f = File(email_path);
-            this.loadFromFile(f);
+            loadFromFile(f);
     }
 
 
@@ -199,31 +215,23 @@ conversationId;
         }
     }
 
-    string[] extractAddressesFromHeader(string header)
-    {
-        string[] ret;
-        foreach(c; match(this.headers.get(header, ""), EMAIL_REGEX))
-            ret ~= c.hit;
-
-        return ret;
-    }
-
 
     string print_headers(bool as_string=false)
     {
         auto textheaders = appender!string;
-        foreach(string name, string value; this.headers)
+        foreach(string name, HeaderValue value; this.headers)
         {
             if (as_string)
             {
                 textheaders.put(name ~ ":");
-                textheaders.put(value);
+                textheaders.put(value.rawValue);
             }
             else
                 write(name, ":", value);
         }
         return textheaders.data;
     }
+
 
     ulong computeSize()
     {
@@ -245,9 +253,17 @@ conversationId;
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
             return; // Not header, probably mbox indicator or broken header
 
-        string name  = raw[0..idxSeparator];
-        string value = raw[idxSeparator+1..$];
-        this.headers.addField(name, decodeEncodedWord(value));
+        HeaderValue value;
+        string name     = raw[0..idxSeparator];
+        value.rawValue  = decodeEncodedWord(raw[idxSeparator+1..$]);
+        
+        // add the bare emails to the value.addresses field
+        if (among(toLower(name), "from", "to", "cc", "bcc", "delivered-to", 
+                                 "x-forwarded-to", "x-forwarded-for", "references"))
+            foreach(c; match(value.rawValue, EMAIL_REGEX))
+                value.addresses ~= c.hit;
+
+        this.headers.addField(name, value);
     }
 
 
@@ -495,11 +511,14 @@ conversationId;
     private void getRootContentInfo(MIMEPart part)
     {
         string ct_transfer_encoding;
-        parseContentHeader(part.ctype       , this.headers.get("Content-Type"        , ""));
-        parseContentHeader(part.disposition , this.headers.get("Content-Disposition" , ""));
+        if ("Content-Type" in this.headers)
+            parseContentHeader(part.ctype, this.headers["Content-Type"].rawValue);
+
+        if ("Content-Disposition" in this.headers)
+            parseContentHeader(part.disposition, this.headers["Content-Disposition"].rawValue);
 
         if ("Content-Transfer-Encoding" in this.headers)
-            part.content_transfer_encoding = toLower(strip(removechars(this.headers["Content-Transfer-Encoding"], "\"")));
+            part.content_transfer_encoding = toLower(strip(removechars(this.headers["Content-Transfer-Encoding"].rawValue, "\"")));
 
         if (!part.ctype.name.startsWith("multipart") && "charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
@@ -611,7 +630,9 @@ unittest
 
 
     // #unittest start here
-    string backendTestDir  = buildPath(TEST_PATH_BASE, "backend", "test");
+    // FIXME XXX: read connection data and DB name from text config file
+    auto db                = connectMongoDB("localhost").getDatabase("webmail");
+    string backendTestDir  = buildPath(getConfig(db).mainDir, "backend", "test");
     string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
     string rawMailStore    = buildPath(backendTestDir, "rawmails");
     string attachmentStore = buildPath(backendTestDir, "attachments");
