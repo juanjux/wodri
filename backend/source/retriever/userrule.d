@@ -1,19 +1,17 @@
 module retriever.userrule;
 
 import std.string;
-import vibe.db.mongo.database;
 import vibe.core.log;
 import vibe.data.bson;
 import retriever.incomingemail;
+import retriever.db;
 
 
 version(unittest)
 {
-    import retriever.config;
     import std.path;
     import std.stdio;
     import std.algorithm;
-    import vibe.db.mongo.mongo;
 }
 
 enum SizeRuleType
@@ -141,10 +139,12 @@ class UserFilter
 }
 
 
-UserFilter[] getAddressFilters(string address, MongoDatabase db)
+// FIXME: abstract to db.d so this is independent from the actual DB API used
+UserFilter[] getAddressFilters(string address)
 {
     UserFilter[] res;
-    auto userRuleCursor = db["userrule"].find(["destinationAccounts": address]);
+    auto mongoDB = getDatabase();
+    auto userRuleCursor = mongoDB["userrule"].find(["destinationAccounts": address]);
 
     foreach(rule; userRuleCursor)
     {
@@ -181,9 +181,9 @@ version(UserRuleTest)
 {
     unittest
     {
-        auto db = connectMongoDB("localhost").getDatabase("webmail");
-        auto filters = getAddressFilters("juanjux@juanjux.mooo.com", db);
-        auto config = getConfig(db);
+        auto mongoDB = getDatabase();
+        auto filters = getAddressFilters("juanjux@juanjux.mooo.com");
+        auto config = getConfig();
         auto testDir = buildPath(config.mainDir, "backend", "test");
         auto testMailDir = buildPath(testDir, "testmails");
 

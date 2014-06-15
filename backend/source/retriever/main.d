@@ -7,28 +7,30 @@ import std.file;
 import std.string;
 import vibe.core.log;
 import vibe.db.mongo.mongo;
-import vibe.db.mongo.database;
 import retriever.incomingemail;
-import retriever.config;
 import retriever.userrule;
 import retriever.db;
 
-bool hasValidDestination(IncomingEmail email, MongoDatabase db)
+
+// FIXME: abstract to db.d so this is independent from the actual DB API used
+bool hasValidDestination(IncomingEmail email)
 {
     string[] addresses;
-    string domain;
-    auto addrListString = appender!string;
 
     foreach(headerName; ["To", "Cc", "Bcc", "Delivered-To"])
         addresses ~= email.headers[headerName].addresses;
 
     // Check for a defaultUser ("catch-all") for this domain
+    Bson domain;
+    auto addrListString = appender!string;
+    auto mongoDB = getDatabase();
+
     foreach(addr; addresses)
     {
-        auto domainRes = db["domain"].findOne(["name": toLower(addr.split("@")[1])]);
-        if (domainRes != Bson(null) &&
-            domainRes["defaultUser"] != Bson(null) &&
-            domainRes["defaultUser"].length)
+        domain = mongoDB["domain"].findOne(["name": toLower(addr.split("@")[1])]);
+        if (domain != Bson(null) &&
+            domain["defaultUser"] != Bson(null) &&
+            domain["defaultUser"].length)
             return true;
         addrListString.put(`"` ~ addr ~ `",`);
     }
@@ -37,7 +39,7 @@ bool hasValidDestination(IncomingEmail email, MongoDatabase db)
     if (addresses.length)
     {
         auto jsonStr    =  `{"addresses": {"$in": [` ~ addrListString.data ~ `]}}`;
-        auto addrResult =  db["user"].findOne(parseJsonString(jsonStr));
+        auto addrResult =  mongoDB["user"].findOne(parseJsonString(jsonStr));
 
         if (addrResult != Bson(null))
             return true;
@@ -45,24 +47,31 @@ bool hasValidDestination(IncomingEmail email, MongoDatabase db)
     return false;
 }
 
+// XXX seguir aqui
+void saveIncomingEmail(IncomingEmail email)
+{
+    auto mongoDB = getDatabase();
+}
+
 
 int main()
 {
     auto db = getDatabase();
-    auto config = getConfig(db);
+    auto config = getConfig();
     setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), LogLevel.info);
 
     auto mail = new IncomingEmail(config.rawMailStore, config.attachmentStore);
     mail.loadFromFile(std.stdio.stdin);
 
     bool isValid             = mail.isValid;
-    bool hasValidDestination = hasValidDestination(mail, db);
+    bool hasValidDestination = hasValidDestination(mail);
     bool tooBig            = mail.computeSize() > config.incomingMessageLimit;
 
     if (!tooBig && isValid && hasValidDestination)
     {
         if ("X-Spam-SetSpamTag" in mail.headers)
             mail.tags["spam"] = true;
+        // XXX seguir aqui, insertar en BBDD, sacar conversationId e indexar
     }
     else
     {

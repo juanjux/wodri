@@ -22,10 +22,7 @@ import retriever.characterencodings;
 
 version(DebugOrUnittest)
 {
-    import retriever.config;
-    import vibe.db.mongo.mongo;
-    import vibe.db.mongo.database;
-
+    import retriever.db;
 }
 
 auto EMAIL_REGEX = ctRegex!r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b";
@@ -631,8 +628,7 @@ unittest
 
     // #unittest start here
     // FIXME XXX: read connection data and DB name from text config file
-    auto db                = connectMongoDB("localhost").getDatabase("webmail");
-    string backendTestDir  = buildPath(getConfig(db).mainDir, "backend", "test");
+    string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
     string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
     string rawMailStore    = buildPath(backendTestDir, "rawmails");
     string attachmentStore = buildPath(backendTestDir, "attachments");

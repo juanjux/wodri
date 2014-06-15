@@ -60,9 +60,9 @@
 	    },
 
 	    {
-	        "name": "config_test",
-	        "versions": ["configtest"],
-	        "mainSourceFile": "config.d",
+	        "name": "db_test",
+	        "versions": ["dbtest"],
+	        "mainSourceFile": "db.d",
 	        "excludedSourceFiles": ["test.d", "main.d", "incomingmail.d", "characterencoding.d", "userrule.d"],
 	        "dflags": ["-main", "-unittest"], 
 	        "targetName": "test",
