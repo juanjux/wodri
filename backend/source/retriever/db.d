@@ -9,12 +9,14 @@ import vibe.core.log;
 import retriever.userrule: Match, Action, UserFilter, SizeRuleType;
 
 MongoDatabase mongoDB;
+RetrieverConfig config;
 bool connected = false;
 
 // FIXME: read db config from file
 static this()
 {
     mongoDB = connectMongoDB("localhost").getDatabase("webmail");
+    config  = getInitialConfig();
 }
 
 struct RetrieverConfig
@@ -22,16 +24,17 @@ struct RetrieverConfig
     string mainDir;
     string rawMailStore;
     string attachmentStore;
-    ulong incomingMessageLimit;
+    ulong  incomingMessageLimit;
 }
 
-MongoDatabase getDatabase()
+
+ref RetrieverConfig getConfig()
 {
-    return mongoDB;
+    return config;
 }
 
 
-RetrieverConfig getConfig()
+RetrieverConfig getInitialConfig()
 {
     RetrieverConfig config;
     auto dbConfig = mongoDB["settings"].findOne(["module": "retriever"]);
@@ -111,7 +114,7 @@ bool addressIsLocal(string address)
     if (domainHasDefaultUser(address.split("@")[1]))
         return true;
 
-    auto jsonStr = `{"addresses": {"$in": ["` ~ address ~ `]}}`;
+    auto jsonStr    = `{"addresses": {"$in": ["` ~ address ~ `]}}`;
     auto userRecord = mongoDB["user"].findOne(parseJsonString(jsonStr));
     return (userRecord == Bson("null"));
 }

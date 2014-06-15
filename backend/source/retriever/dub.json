@@ -67,5 +67,13 @@
 	        "dflags": ["-main", "-unittest"], 
 	        "targetName": "test",
 	    },
+	    {
+	        "name": "main_test",
+	        "versions": ["maintest"],
+	        "mainSourceFile": "main.d",
+	        "excludedSourceFiles": ["test.d"],
+	        "dflags": ["-main", "-unittest"], 
+	        "targetName": "test",
+	    },
     ]
 }
