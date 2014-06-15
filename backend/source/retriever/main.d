@@ -11,7 +11,7 @@ import vibe.db.mongo.database;
 import retriever.incomingemail;
 import retriever.config;
 import retriever.userrule;
-
+import retriever.db;
 
 bool hasValidDestination(IncomingEmail email, MongoDatabase db)
 {
@@ -48,7 +48,7 @@ bool hasValidDestination(IncomingEmail email, MongoDatabase db)
 
 int main()
 {
-    auto db     = connectMongoDB("localhost").getDatabase("webmail");
+    auto db = getDatabase();
     auto config = getConfig(db);
     setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), LogLevel.info);
 
