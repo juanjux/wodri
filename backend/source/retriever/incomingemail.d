@@ -19,11 +19,7 @@ import std.datetime;
 import std.process;
 import vibe.utils.dictionarylist;
 import retriever.characterencodings;
-
-version(DebugOrUnittest)
-{
-    import retriever.db;
-}
+version(DebugOrUnittest) import retriever.db;
 
 auto EMAIL_REGEX = ctRegex!r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b";
 
@@ -69,6 +65,7 @@ struct HeaderValue
     string[] addresses;
 }
 
+
 final class IncomingEmail { string attachmentStore; string rawMailStore; string
 conversationId;
 
@@ -76,8 +73,6 @@ conversationId;
     MIMEPart rootPart;
     MIMEPart[] textualParts; // shortcut to the textual (text or html) parts in display
     Attachment[] attachments;
-    bool[string] tags;
-    string[] doForwardTo;
     string[] fromAddrs;
     string[] toAddrs;
     string[] ccAddrs;
@@ -636,6 +631,7 @@ unittest
 
     version(createtestmails)
     {
+        writeln("Splitting test emails...");
         auto mbox_fname = buildPath(backendTestDir, "emails", "testmails.mbox");
         assert(mbox_fname.exists);
         assert(mbox_fname.isFile);
@@ -671,6 +667,7 @@ unittest
         // with a description of every mime part (ctype, charset, transfer-encoding, disposition, length, etc)
         // and their contents. This will be used in the unittest for comparing the email parsing output with
         // these. Obviously, it's very important to regenerate these files only with Good and Tested versions :)
+        writeln("Generating test data, make sure to do this with a stable version");
         auto sortedFiles = getSortedEmailFilesList(origMailDir);
         foreach(DirEntry e; sortedFiles)
         {
@@ -716,6 +713,7 @@ unittest
         // 50000 => multipart/alternative, text/plain sin encoding 7 bit y fuera de parte, text/html ISO8859-1 base64
         // 60000 => multipart/alternative Windows-1252 quoted-printable
         // 80000 => multipart/alternative ISO8859-1 quoted-printable
+        writeln("Starting single email test...");
         auto filenumber = 40398;
         auto email_file = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
         auto email      = new IncomingEmail(rawMailStore, attachmentStore);
@@ -730,6 +728,7 @@ unittest
 
     else version(allmailstest) // normal huge test with all the emails in
     {
+        writeln("Starting all mails test...");
         int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0, // broken mails, no newline after headers or parts, etc
                                    //"6988":0, "26876": 0, "36004":0, "37674":0, "38511":0, // munpack unpack these files with some different value
                                    //"41399":0, "41400":0
@@ -865,7 +864,6 @@ unittest
                 std.file.remove(email.rawMailPath);
         }
     }
-
     // Clean the attachment and rawMail dirs
     system(format("rm -f %s/*", attachmentStore));
 }

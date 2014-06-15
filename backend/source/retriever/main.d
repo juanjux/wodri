@@ -5,73 +5,78 @@ import std.stdio;
 import std.path;
 import std.file;
 import std.string;
+import std.conv;
 import vibe.core.log;
-import vibe.db.mongo.mongo;
 import retriever.incomingemail;
+import retriever.recipientemail;
 import retriever.userrule;
 import retriever.db;
 
 
-// FIXME: abstract to db.d so this is independent from the actual DB API used
-bool hasValidDestination(IncomingEmail email)
+string[] localReceivers(IncomingEmail email)
 {
-    string[] addresses;
+    string[] allAddresses;
+    string[] localAddresses;
 
     foreach(headerName; ["To", "Cc", "Bcc", "Delivered-To"])
-        addresses ~= email.headers[headerName].addresses;
+    {
+        if (headerName in email.headers)
+            allAddresses ~= email.headers[headerName].addresses;
+    }
 
     // Check for a defaultUser ("catch-all") for this domain
-    Bson domain;
-    auto addrListString = appender!string;
-    auto mongoDB = getDatabase();
+    foreach(addr; allAddresses)
+        if (addressIsLocal(addr))
+            localAddresses ~= addr;
 
-    foreach(addr; addresses)
-    {
-        domain = mongoDB["domain"].findOne(["name": toLower(addr.split("@")[1])]);
-        if (domain != Bson(null) &&
-            domain["defaultUser"] != Bson(null) &&
-            domain["defaultUser"].length)
-            return true;
-        addrListString.put(`"` ~ addr ~ `",`);
-    }
-
-    // Check if any of the addresses if one of our users own
-    if (addresses.length)
-    {
-        auto jsonStr    =  `{"addresses": {"$in": [` ~ addrListString.data ~ `]}}`;
-        auto addrResult =  mongoDB["user"].findOne(parseJsonString(jsonStr));
-
-        if (addrResult != Bson(null))
-            return true;
-    }
-    return false;
+    return localAddresses;
 }
 
-// XXX seguir aqui
-void saveIncomingEmail(IncomingEmail email)
+
+string[] removeDups(string[] inputarray)
 {
-    auto mongoDB = getDatabase();
+    bool[string] checker;
+    string[] res;
+    foreach(input; inputarray)
+    {
+        if (input in checker)
+            continue;
+        checker[input] = true;
+        res ~= input;
+    }
+    return res;
 }
 
 
 int main()
 {
-    auto db = getDatabase();
     auto config = getConfig();
     setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), LogLevel.info);
 
     auto mail = new IncomingEmail(config.rawMailStore, config.attachmentStore);
     mail.loadFromFile(std.stdio.stdin);
 
-    bool isValid             = mail.isValid;
-    bool hasValidDestination = hasValidDestination(mail);
-    bool tooBig            = mail.computeSize() > config.incomingMessageLimit;
+    bool isValid        = mail.isValid;
+    auto localReceivers = removeDups(localReceivers(mail));
+    bool tooBig         = mail.computeSize() > config.incomingMessageLimit;
 
-    if (!tooBig && isValid && hasValidDestination)
+    if (!tooBig && isValid && localReceivers.length)
     {
-        if ("X-Spam-SetSpamTag" in mail.headers)
-            mail.tags["spam"] = true;
-        // XXX seguir aqui, insertar en BBDD, sacar conversationId e indexar
+ 
+        foreach(destination; localReceivers)
+        {
+            auto recipientEmail = RecipientEmail(mail, destination);
+            recipientEmail.tags["inbox"] = true;
+
+            if ("X-Spam-SetSpamTag" in mail.headers)
+                recipientEmail.tags["spam"] = true;
+
+            auto userFilters = getAddressFilters(destination);
+            foreach(filter; userFilters) 
+                filter.apply(recipientEmail);
+
+            // XXX seguir aqui, insertar en BBDD, sacar conversationId e indexar
+        }
     }
     else
     {
@@ -86,10 +91,10 @@ int main()
 
         auto f = File(failedMailPath, "a");
         f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", !isValid?"\nInvalid headers":"",
-                                                       !hasValidDestination?"\nInvalid destination":"",
+                                                       !localReceivers.length?"\nInvalid destination":"",
                                                        tooBig? "\nMessage too big":"");
-        logInfo(format("Mesage denied from SMTP. ValidHeaders:%s SomeValidDestination:%s SizeTooBig:%s" ~
-                         "Message copy stored at %s", isValid, hasValidDestination, failedMailPath, tooBig));
+        logInfo(format("Mesage denied from SMTP. ValidHeaders:%s #localReceivers:%s SizeTooBig:%s. " ~
+                         "Message copy stored at %s", isValid, localReceivers.length, tooBig, failedMailPath));
     }
 
     return 0; // return != 0 == Postfix rebound the message. Avoid

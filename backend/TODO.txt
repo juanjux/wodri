@@ -1,8 +1,12 @@
 Backend-Retriever:
-    - Insert the email into MongoDB (get the Id)
-    - Get a ConverstationID (first search for the id of the email, then search for the references
-      from last to first, any? => get the ConvId, add all the references too to the same ConvID,
-      none? create new, add the email and the references)
+    - Create a struct with IncomingEmail + tags + forward, one for every receiver
+    - For every receiver:
+        - Apply the address filters in main.d to the receiver copy struct tags+forward.
+        - Insert the email into MongoDB (get the Id)
+        - Get a ConverstationID (first search for the id of the email, then search for the references
+          from last to first, any? => get the ConvId, add all the references too to the same ConvID,
+          none? create new, add the email and the references)
+    - Function to create and populate a DB por unittesting
 
     - Install and configure the indexer
     - Make the retriever index a copy of the message
