@@ -52,13 +52,11 @@ string[] removeDups(string[] inputarray)
 
 
 version(maintest)
+unittest
 {
-    unittest
-    {
-        writeln("Testing removeDups");
-        string[] foo = ["uno", "one", "one", "dos", "three", "four", "five", "five"];
-        assert(removeDups(foo) == ["uno", "one", "dos", "three", "four", "five"]);
-    }
+    writeln("Testing removeDups");
+    string[] foo = ["uno", "one", "one", "dos", "three", "four", "five", "five"];
+    assert(removeDups(foo) == ["uno", "one", "dos", "three", "four", "five"]);
 }
 
 version(not_maintest)
