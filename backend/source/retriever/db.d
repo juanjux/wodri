@@ -34,6 +34,7 @@ ref RetrieverConfig getConfig()
 }
 
 
+// XXX test when test db
 RetrieverConfig getInitialConfig()
 {
     RetrieverConfig config;
@@ -56,7 +57,7 @@ RetrieverConfig getInitialConfig()
     return config;
 }
 
-
+// XXX test when test DB
 bool domainHasDefaultUser(string domainName)
 {
     auto domain = mongoDB["domain"].findOne(["name": domainName]);
@@ -69,6 +70,7 @@ bool domainHasDefaultUser(string domainName)
 }
 
 
+// XXX test when test DB
 UserFilter[] getAddressFilters(string address)
 {
     UserFilter[] res;
@@ -105,7 +107,7 @@ UserFilter[] getAddressFilters(string address)
     return res;
 }
 
-
+// XXX tests when I've the test DB
 bool addressIsLocal(string address)
 {
     if (!address.length)
@@ -121,11 +123,9 @@ bool addressIsLocal(string address)
 
 
 version(dbtest)
+unittest
 {
-    unittest
-    {
-        writeln("Starting db.d unittest...");
-        auto config = getConfig();
-        // XXX probar mas, todo con la BBDD de prueba (cre
-    }
+    writeln("Starting db.d unittest...");
+    auto config = getConfig();
+    // XXX probar mas, todo con la BBDD de prueba (cre
 }

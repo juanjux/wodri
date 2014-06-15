@@ -54,32 +54,31 @@ string[] removeDups(string[] inputarray)
 version(maintest)
 unittest
 {
-    writeln("Testing removeDups");
+    writeln("Testing removeDups...");
     string[] foo = ["uno", "one", "one", "dos", "three", "four", "five", "five"];
     assert(removeDups(foo) == ["uno", "one", "dos", "three", "four", "five"]);
 }
 
+// XXX test: validity of the tooBig/isValid/localReceivers checks
 version(not_maintest)
+int main()
 {
-    int main()
-    {
-        auto config = getConfig();
-        setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), LogLevel.info);
+    auto config = getConfig();
+    setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), LogLevel.info);
 
-        auto mail = new IncomingEmail(config.rawMailStore, config.attachmentStore);
-        mail.loadFromFile(std.stdio.stdin);
+    auto mail = new IncomingEmail(config.rawMailStore, config.attachmentStore);
+    mail.loadFromFile(std.stdio.stdin);
 
-        bool isValid        = mail.isValid;
-        auto localReceivers = removeDups(localReceivers(mail));
-        bool tooBig         = mail.computeSize() > config.incomingMessageLimit;
+    bool isValid        = mail.isValid;
+    auto localReceivers = removeDups(localReceivers(mail));
+    bool tooBig         = mail.computeSize() > config.incomingMessageLimit;
 
-        if (!tooBig && isValid && localReceivers.length)
-            foreach(destination; localReceivers)
-                processMailForAddress(destination, mail);
-        else
-            logRejectedMail(mail, isValid, tooBig, localReceivers);
-        return 0; // return != 0 == Postfix rebound the message. Avoid
-    }
+    if (!tooBig && isValid && localReceivers.length)
+        foreach(destination; localReceivers)
+            processMailForAddress(destination, mail);
+    else
+        logRejectedMail(mail, isValid, tooBig, localReceivers);
+    return 0; // return != 0 == Postfix rebound the message. Avoid
 }
 
 
