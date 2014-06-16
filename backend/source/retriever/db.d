@@ -6,7 +6,11 @@ import std.path;
 
 import vibe.db.mongo.mongo;
 import vibe.core.log;
+import vibe.data.json;
+
 import retriever.userrule: Match, Action, UserFilter, SizeRuleType;
+import retriever.incomingemail;
+import retriever.envelope;
 
 MongoDatabase mongoDB;
 RetrieverConfig config;
@@ -41,7 +45,7 @@ RetrieverConfig getInitialConfig()
     auto dbConfig = mongoDB["settings"].findOne(["module": "retriever"]);
     if (dbConfig == Bson(null))
     {
-        auto err = "Could not retrieve config database, collection:settings,"~ 
+        auto err = "Could not retrieve config database, collection:settings,"~
                    " module=retriever";
         logError(err);
         throw new Exception(err);
@@ -63,7 +67,7 @@ bool domainHasDefaultUser(string domainName)
     auto domain = mongoDB["domain"].findOne(["name": domainName]);
     if (domain != Bson(null) &&
         domain["defaultUser"] != Bson(null) &&
-        domain["defaultUser"].length)
+        domain["defaultUser"].toString().length)
         return true;
 
     return false;
@@ -116,9 +120,113 @@ bool addressIsLocal(string address)
     if (domainHasDefaultUser(address.split("@")[1]))
         return true;
 
-    auto jsonStr    = `{"addresses": {"$in": ["` ~ address ~ `]}}`;
+    auto jsonStr    = `{"addresses": {"$in": ["` ~ address ~ `"]}}`;
     auto userRecord = mongoDB["user"].findOne(parseJsonString(jsonStr));
     return (userRecord == Bson("null"));
+}
+
+
+// XXX test when I've the test DB
+void saveEmailToDb(IncomingEmail email, Envelope envelope)
+{
+    string jsonizeField(string headerName, bool removeQuotes = false, bool onlyValue=false)
+    {
+        string ret;
+        if (headerName in email.headers && email.headers[headerName].rawValue.length)
+        {
+            string strHeader = strip(email.headers[headerName].rawValue);
+            if (removeQuotes)
+                strHeader = removechars(strHeader, "\"");
+
+            if (onlyValue)
+                ret = format("%s,", Json(strHeader).toString());
+            else
+                ret = format("\"%s\": %s,", headerName, Json(strHeader).toString());
+        }
+        return ret;
+    }
+
+
+    auto partAppender = appender!string;
+    foreach(part; email.textualParts)
+    {
+        partAppender.put("\"textpart\": {\"contenttype\": " ~ Json(part.ctype.name).toString() ~ ",");
+        partAppender.put(" \"content\": " ~ Json(part.textContent).toString() ~ "},");
+    }
+    string textPartsJsonStr = partAppender.data;
+
+    partAppender.clear();
+    foreach(attach; email.attachments)
+    {
+        partAppender.put(`"attachment": {"contenttype": "` ~ Json(attach.ctype).toString() ~ `",`);
+        partAppender.put(` "realpath": "` ~ Json(attach.realPath).toString() ~ `",`);
+        partAppender.put(` "size": ` ~ Json(attach.size).toString() ~ `,`);
+
+        if (attach.content_id.length)
+            partAppender.put(` "contentid": "` ~ Json(attach.content_id).toString() ~ `",`);
+        if (attach.filename.length)
+            partAppender.put(` "filename": "` ~ Json(attach.filename).toString() ~ `",`);
+
+    }
+    string attachmentsJsonStr = partAppender.data();
+    partAppender.clear();
+
+    auto emailInsertJson = format(`
+        {
+            "rawMailPath": "%s",
+            %s
+            %s
+            "from":
+            {
+                "content": %s
+                "addresses": %s,
+            },
+            "to":
+            {
+                "content": %s
+                "addresses": %s,
+            },
+            %s
+            %s
+            %s
+            %s
+            "textParts":
+            {
+                %s
+            },
+            "attachments":
+            {
+                %s
+            },
+        }`, email.rawMailPath,
+            jsonizeField("message-id", true),
+            jsonizeField("references"),
+            jsonizeField("from", false, true),
+            to!string(email.headers["From"].addresses),
+            jsonizeField("to", false, true),
+            to!string(email.headers["To"].addresses),
+            jsonizeField("date", true),
+            jsonizeField("subject"),
+            jsonizeField("cc"),
+            jsonizeField("bcc"),
+            textPartsJsonStr,
+            attachmentsJsonStr,
+        );
+
+    auto f = File("/home/juanjux/borrame.txt", "a");
+    f.write(emailInsertJson);
+    f.flush(); f.close();
+
+    Json jusr = parseJsonString(emailInsertJson);
+    mongoDB["emails"].insert(jusr);
+
+    auto envelopeInsertJson = `
+    {
+        id_email: %s,
+        tags: [%s],
+        destinationAddress: "%s",
+        id_user: %s,
+    }`;
 }
 
 

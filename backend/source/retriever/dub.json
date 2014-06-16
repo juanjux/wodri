@@ -4,12 +4,15 @@
 	"license": "LGPL",
 	"sourcePaths": ["."],
 	"excludedSourceFiles": ["test.d"],
-	"dependencies": { "vibe-d": "~master" },
+	"dependencies": { "vibe-d": "~master",
+	                  "smtp"  : ">=0.2.0"},
 	"version": "0.0.1",
 	"name": "retriever",
 	"importPaths": ["."],
 	"buildRequirements": ["requireBoundsCheck"],
 	"versions": ["VibeCustomMain", "VibeDisableCommandLineParsing"],
+
+	"subConfigurations": {"smtp": "ssl"},
 
 	"configurations": [
 	    {

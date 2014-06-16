@@ -1,12 +1,13 @@
-module retriever.recipientemail;
+module retriever.envelope;
 
 import retriever.incomingemail: IncomingEmail;
 
-// An incoming email represents an email, but it can go to different users
-// managed by this system, so a RecipientEmail is the same (unique) email plus
-// the receiving address and part that can change by every user (tags,
+// An IncomingEmail object represents an email, but it can go to different users
+// managed by this system, so an envelope has the same (unique) email plus
+// the receiving address and a part that can change by every user (tags,
 // doForwardTo). It has a similar document structure on the DB.
-struct RecipientEmail
+
+struct Envelope 
 {
     IncomingEmail email;
     bool[string] tags;

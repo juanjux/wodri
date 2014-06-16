@@ -47,7 +47,7 @@ struct ContentData
 struct Attachment // #attach
 {
     string realPath;
-    string cType;
+    string ctype;
     string filename;
     string content_id;
     ulong size;
@@ -125,8 +125,6 @@ conversationId;
         {
             inputIsStdInput = true;
             stdinLines = appender!string;
-            version(Windows) lineSep = "\r\n";
-            else             lineSep = "\n";
         }
 
         // === Header ===
@@ -140,9 +138,13 @@ conversationId;
                 // Possible end of stdin/stderr input
                 break;
 
-            if (count == 1 && currentLine.startsWith("From "))
-                // mbox format indicator, ignore
-                continue;
+            if (count == 1)
+            {
+                this.lineSep = currentLine.endsWith("\r\n")?"\r\n": "\n";
+                if (currentLine.startsWith("From "))
+                    // mbox format indicator, ignore
+                    continue;
+            }
 
             if (inputIsStdInput)
                 stdinLines.put(currentLine);
@@ -389,7 +391,7 @@ conversationId;
 
         Attachment att;
         att.realPath   = buildPath(this.attachmentStore, attachFileName);
-        att.cType      = part.ctype.name;
+        att.ctype      = part.ctype.name;
         att.filename   = origFileName;
         att.size       = att.realPath.getSize;
         att.content_id = part.content_id;
@@ -714,13 +716,12 @@ unittest
         // 60000 => multipart/alternative Windows-1252 quoted-printable
         // 80000 => multipart/alternative ISO8859-1 quoted-printable
         writeln("Starting single email test...");
-        auto filenumber = 40398;
+        auto filenumber = 55844;
         auto email_file = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
         auto email      = new IncomingEmail(rawMailStore, attachmentStore);
         email.loadFromFile(email_file, true);
 
         email.visitParts(email.rootPart);
-        //email.visitParts(email.rootPart;
         foreach(MIMEPart part; email.textualParts)
             writeln(part.ctype.name, ":", part.toHash());
 
