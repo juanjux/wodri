@@ -51,7 +51,6 @@ string saveRejectedEmail(IncomingEmail mail)
     auto failedMailPath = buildPath(failedMailDir, baseName(mail.rawMailPath));
     copy(mail.rawMailPath, failedMailPath);
     remove(mail.rawMailPath);
-
     return failedMailPath;
 }
 
@@ -143,10 +142,7 @@ int main()
     return 0; // return != 0 == Postfix rebound the message. Avoid
 }
 
-
 unittest
 {
-    // XXX TODO: create a test mongo database with domains, settings, users, 
-    // conversationsIds and userrules, parse test emails 
 }
 

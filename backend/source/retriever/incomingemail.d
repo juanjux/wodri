@@ -250,9 +250,9 @@ conversationId;
         HeaderValue value;
         string name     = raw[0..idxSeparator];
         value.rawValue  = decodeEncodedWord(raw[idxSeparator+1..$]);
-        
+
         // add the bare emails to the value.addresses field
-        if (among(toLower(name), "from", "to", "cc", "bcc", "delivered-to", 
+        if (among(toLower(name), "from", "to", "cc", "bcc", "delivered-to",
                                  "x-forwarded-to", "x-forwarded-for", "references"))
             foreach(c; match(value.rawValue, EMAIL_REGEX))
                 value.addresses ~= c.hit;
@@ -371,7 +371,7 @@ conversationId;
             att_content = decodeBase64Stubborn(join(lines));
             version(unittest) was_encoded = true;
         }
-        else // binary, 7bit, 8bit, no need to decode... I think
+        else // binary, 7bit, 8bit, no need to decode... I think...
             att_content = cast(immutable(ubyte)[]) join(lines, this.lineSep);
 
         string attachFileName;
@@ -540,9 +540,7 @@ conversationId;
 }
 
 
-unittest
-{
-/*
+/* UNITTESTS AND SUPPORT CODE 
  * HOW TO TEST:
  *
  * Since I'm not putting my personal email collection inside the unittests dirs, here's how to do it yourself:
@@ -562,67 +560,73 @@ unittest
  *      rdmd --main -singletest => run the code in the singletest version (usually with a
  *      problematic email number hardcoded)
  */
-    DirEntry[] getSortedEmailFilesList(string mailsDir)
+ 
+
+version(unittest)
+DirEntry[] getSortedEmailFilesList(string mailsDir)
+{
+    DirEntry[] emailFiles;
+    foreach(DirEntry e; dirEntries(mailsDir, SpanMode.shallow))
+        if (!e.isDir) emailFiles ~= e;
+
+    bool intFileComp(DirEntry x, DirEntry y)
     {
-        DirEntry[] emailFiles;
-        foreach(DirEntry e; dirEntries(mailsDir, SpanMode.shallow))
-            if (!e.isDir) emailFiles ~= e;
+        return to!int(baseName(x.name)) < to!int(baseName(y.name));
+    }
+    sort!(intFileComp)(emailFiles);
 
-        bool intFileComp(DirEntry x, DirEntry y)
-        {
-            return to!int(baseName(x.name)) < to!int(baseName(y.name));
-        }
-        sort!(intFileComp)(emailFiles);
+    return emailFiles;
+}
 
-        return emailFiles;
+
+version(unittest)
+void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)
+{
+    string parentStr;
+
+    ap.put(format("==#== PART ==#==\n"));
+
+    if (part.parent !is null)
+        ap.put(format("Son of: %s\n", part.parent.ctype.name));
+    else
+        ap.put("Root part\n");
+
+    ap.put(format("Level: %d\n", level));
+    ap.put(format("Content-Type: %s\n", part.ctype.name));
+    ap.put("\tfields: \n");
+
+    if ("charset" in part.ctype.fields)
+        ap.put(format("\t\tcharset: %s\n", part.ctype.fields["charset"]));
+    if ("boundary" in part.ctype.fields)
+        ap.put(format("\t\tboundary: %s\n", part.ctype.fields["boundary"]));
+
+    if (part.disposition.name.length)
+    {
+        ap.put(format("Content-Disposition: %s\n", part.disposition.name));
+        if ("filename" in part.disposition.fields)
+            ap.put(format("\t\tfilename: %s\n", part.disposition.fields["filename"]));
     }
 
+    if (part.content_transfer_encoding.length)
+        ap.put(format("Content-Transfer-Encoding: %s\n", part.content_transfer_encoding));
 
-    void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)
+    // attachments are compared with an md5 on the files, not here
+    if (part.textContent.length && !among(part.disposition.name, "attachment", "inline"))
     {
-        string parentStr;
-
-        ap.put(format("==#== PART ==#==\n"));
-
-        if (part.parent !is null)
-            ap.put(format("Son of: %s\n", part.parent.ctype.name));
-        else
-            ap.put("Root part\n");
-
-        ap.put(format("Level: %d\n", level));
-        ap.put(format("Content-Type: %s\n", part.ctype.name));
-        ap.put("\tfields: \n");
-
-        if ("charset" in part.ctype.fields)
-            ap.put(format("\t\tcharset: %s\n", part.ctype.fields["charset"]));
-        if ("boundary" in part.ctype.fields)
-            ap.put(format("\t\tboundary: %s\n", part.ctype.fields["boundary"]));
-
-        if (part.disposition.name.length)
-        {
-            ap.put(format("Content-Disposition: %s\n", part.disposition.name));
-            if ("filename" in part.disposition.fields)
-                ap.put(format("\t\tfilename: %s\n", part.disposition.fields["filename"]));
-        }
-
-        if (part.content_transfer_encoding.length)
-            ap.put(format("Content-Transfer-Encoding: %s\n", part.content_transfer_encoding));
-
-        // attachments are compared with an md5 on the files, not here
-        if (part.textContent.length > 0 && !among(part.disposition.name, "attachment", "inline"))
-        {
-            ap.put(format("Content Length: %d\n", part.textContent.length));
-            ap.put("##=## CONTENT ##=##\n");
-            ap.put(part.textContent);
-            ap.put("##=## ENDCONTENT ##=##\n");
-        }
-
-        ++level;
-        foreach(MIMEPart subpart; part.subparts)
-            createPartInfoText(subpart, ap, level);
+        ap.put(format("Content Length: %d\n", part.textContent.length));
+        ap.put("##=## CONTENT ##=##\n");
+        ap.put(part.textContent);
+        ap.put("##=## ENDCONTENT ##=##\n");
     }
 
+    ++level;
+    foreach(MIMEPart subpart; part.subparts)
+        createPartInfoText(subpart, ap, level);
+}
 
+
+unittest
+{
     // #unittest start here
     // FIXME XXX: read connection data and DB name from text config file
     string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
@@ -631,7 +635,7 @@ unittest
     string attachmentStore = buildPath(backendTestDir, "attachments");
     string base64Dir       = buildPath(backendTestDir, "base64_test");
 
-    version(createtestmails)
+    version(createtestdata)
     {
         writeln("Splitting test emails...");
         auto mbox_fname = buildPath(backendTestDir, "emails", "testmails.mbox");
@@ -663,7 +667,7 @@ unittest
         }
     }
 
-    else version(generatetestdata)
+    else version(regeneratetestdata)
     {
         // For every mail in maildir, parse, create a mailname_test dir, and create a testinfo file inside
         // with a description of every mime part (ctype, charset, transfer-encoding, disposition, length, etc)
@@ -730,10 +734,7 @@ unittest
     else version(allmailstest) // normal huge test with all the emails in
     {
         writeln("Starting all mails test...");
-        int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0, // broken mails, no newline after headers or parts, etc
-                                   //"6988":0, "26876": 0, "36004":0, "37674":0, "38511":0, // munpack unpack these files with some different value
-                                   //"41399":0, "41400":0
-                                   ];
+        int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,]; // broken mails, no newline after headers or parts, etc
 
         // Not broken, but for putting mails that need to be skipped for some reaso
         //int[string] skipMails  = ["41051":0, "41112":0];
@@ -801,11 +802,11 @@ unittest
                 writeln("Body parts different"                                 );
                 writeln("Parsed email: "                                       );
                 writeln("----------------------------------------------------" );
-                write(ap1.data                                                 );
+                write(ap2.data                                                 );
                 writeln("----------------------------------------------------" );
                 writeln("Text from testfile: "                                 );
                 writeln("----------------------------------------------------" );
-                write(ap2.data                                                 );
+                write(ap1.data                                                 );
                 writeln("----------------------------------------------------" );
                 assert(0);
             }

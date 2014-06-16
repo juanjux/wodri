@@ -1,8 +1,9 @@
 Backend-Retriever:
-    - See why it cuts the email when inserting into Mongo at the symbol that Vim displays as "^@"
+    - email 51504:
+        std.json.JSONException@std/json.d(804): JSON format error at byte 6658: Invalid UTF-8 sequence (at index 1)
+    - db.d: unittest inserting all mails into Mongo, then retrieving them and comparing
+      with the still in-memory object (size, ctype, content, attachment data, etc)
     - IncomingEmail: unify camelCase
-    - Convert main.d to a class?
-    - Identify where to make more unittests
     - processMailForAddress:
         - Get a ConverstationID (first search for the id of the email, then search for the references
           from last to first, any? => get the ConvId, add all the references too to the same ConvID,
@@ -10,10 +11,11 @@ Backend-Retriever:
     - Function to create and populate a DB por unittesting
     - When the message failed to enter (validation error, or error on save) generate a rebound
       using our message sending system (when implemented :).
+    - Convert main.d to a class? and db.d?
 
     - Install and configure the indexer
     - Make the retriever index a copy of the message
-    
+
     - main.d: configure DB name and connection data from a config file
     - Exception classes for the different parts (and use them)
     - Const, immutable, pure, nothrow, in, out, safe et all

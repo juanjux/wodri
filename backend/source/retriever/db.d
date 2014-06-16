@@ -3,6 +3,7 @@ module retriever.db;
 import std.stdio;
 import std.string;
 import std.path;
+version(dbtest) import std.file;
 
 import vibe.db.mongo.mongo;
 import vibe.core.log;
@@ -69,7 +70,6 @@ bool domainHasDefaultUser(string domainName)
         domain["defaultUser"] != Bson(null) &&
         domain["defaultUser"].toString().length)
         return true;
-
     return false;
 }
 
@@ -107,9 +107,9 @@ UserFilter[] getAddressFilters(string address)
         } catch (Exception e)
             logWarn("Error deserializing rule from DB, ignoring: %s: %s", rule, e);
     }
-
     return res;
 }
+
 
 // XXX tests when I've the test DB
 bool addressIsLocal(string address)
@@ -126,99 +126,96 @@ bool addressIsLocal(string address)
 }
 
 
+string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = false, bool onlyValue=false)
+{
+    string ret;
+    if (headerName in email.headers && email.headers[headerName].rawValue.length)
+    {
+        string strHeader = strip(email.headers[headerName].rawValue);
+        if (removeQuotes)
+            strHeader = removechars(strHeader, "\"");
+
+        if (onlyValue)
+            ret = format("%s,", Json(strHeader).toString());
+        else
+            ret = format("\"%s\": %s,", headerName, Json(strHeader).toString());
+    }
+    return ret;
+}
+
+
 // XXX test when I've the test DB
 void saveEmailToDb(IncomingEmail email, Envelope envelope)
 {
-    string jsonizeField(string headerName, bool removeQuotes = false, bool onlyValue=false)
-    {
-        string ret;
-        if (headerName in email.headers && email.headers[headerName].rawValue.length)
-        {
-            string strHeader = strip(email.headers[headerName].rawValue);
-            if (removeQuotes)
-                strHeader = removechars(strHeader, "\"");
-
-            if (onlyValue)
-                ret = format("%s,", Json(strHeader).toString());
-            else
-                ret = format("\"%s\": %s,", headerName, Json(strHeader).toString());
-        }
-        return ret;
-    }
-
 
     auto partAppender = appender!string;
-    foreach(part; email.textualParts)
+    foreach(idx, part; email.textualParts)
     {
-        partAppender.put("\"textpart\": {\"contenttype\": " ~ Json(part.ctype.name).toString() ~ ",");
-        partAppender.put(" \"content\": " ~ Json(part.textContent).toString() ~ "},");
+        partAppender.put("{\n");
+        partAppender.put("\"contenttype\": " ~ Json(part.ctype.name).toString() ~ ",\n");
+        partAppender.put("\"content\": " ~ Json(part.textContent).toString() ~ "\n");
+        partAppender.put("},\n");
     }
     string textPartsJsonStr = partAppender.data;
 
     partAppender.clear();
     foreach(attach; email.attachments)
     {
-        partAppender.put(`"attachment": {"contenttype": "` ~ Json(attach.ctype).toString() ~ `",`);
-        partAppender.put(` "realpath": "` ~ Json(attach.realPath).toString() ~ `",`);
+        partAppender.put("{\n");
+        partAppender.put(`"contenttype": ` ~ Json(attach.ctype).toString() ~ `,`);
+        partAppender.put(` "realpath": ` ~ Json(attach.realPath).toString() ~ `,`);
         partAppender.put(` "size": ` ~ Json(attach.size).toString() ~ `,`);
-
         if (attach.content_id.length)
-            partAppender.put(` "contentid": "` ~ Json(attach.content_id).toString() ~ `",`);
+            partAppender.put(` "contentid": ` ~ Json(attach.content_id).toString() ~ `,`);
         if (attach.filename.length)
-            partAppender.put(` "filename": "` ~ Json(attach.filename).toString() ~ `",`);
-
+            partAppender.put(` "filename": ` ~ Json(attach.filename).toString() ~ `,`);
+        partAppender.put("},\n");
     }
     string attachmentsJsonStr = partAppender.data();
     partAppender.clear();
 
-    auto emailInsertJson = format(`
-        {
-            "rawMailPath": "%s",
-            %s
-            %s
-            "from":
-            {
-                "content": %s
-                "addresses": %s,
-            },
-            "to":
-            {
-                "content": %s
-                "addresses": %s,
-            },
-            %s
-            %s
-            %s
-            %s
-            "textParts":
-            {
-                %s
-            },
-            "attachments":
-            {
-                %s
-            },
-        }`, email.rawMailPath,
-            jsonizeField("message-id", true),
-            jsonizeField("references"),
-            jsonizeField("from", false, true),
-            to!string(email.headers["From"].addresses),
-            jsonizeField("to", false, true),
-            to!string(email.headers["To"].addresses),
-            jsonizeField("date", true),
-            jsonizeField("subject"),
-            jsonizeField("cc"),
-            jsonizeField("bcc"),
-            textPartsJsonStr,
-            attachmentsJsonStr,
-        );
+    // Some mails doesnt have a "To:" header but a "Delivered-To:". Really.
+    string real_toField, real_toRaw, real_toAddresses;
+    if ("To" in email.headers)
+        real_toField = "To";
+    else if ("Cc" in email.headers)
+        real_toField = "Cc";
+    else if ("Bcc" in email.headers)
+        real_toField = "Bcc";
+    else if ("Delivered-To" in email.headers)
+        real_toField = "Delivered-To";
+    else
+        throw new Exception("Cant insert to DB mail without destination");
+    real_toRaw       = jsonizeField(email, real_toField, false, true);
+    real_toAddresses = to!string(email.headers[real_toField].addresses);
 
+    auto emailInsertJson = format(`{"rawMailPath": "%s", %s %s
+                                   "from": { "content": %s "addresses": %s },
+                                   "to": { "content": %s "addresses": %s },
+                                    %s %s %s %s
+                                   "textParts": [ %s ],
+                                   "attachments": [ %s ] }`,
+            email.rawMailPath,
+            jsonizeField(email, "message-id", true),
+            jsonizeField(email, "references"),
+            jsonizeField(email,"from", false, true),
+            to!string(email.headers["From"].addresses),
+            real_toRaw,
+            real_toAddresses,
+            jsonizeField(email, "date", true),
+            jsonizeField(email, "subject"),
+            jsonizeField(email, "cc"),
+            jsonizeField(email, "bcc"),
+            textPartsJsonStr,
+            attachmentsJsonStr);
+
+    // XXX quitar
     auto f = File("/home/juanjux/borrame.txt", "a");
     f.write(emailInsertJson);
     f.flush(); f.close();
 
     Json jusr = parseJsonString(emailInsertJson);
-    mongoDB["emails"].insert(jusr);
+    mongoDB["email"].insert(jusr);
 
     auto envelopeInsertJson = `
     {
@@ -230,10 +227,37 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
 }
 
 
+
+
+// XXX falta:
+// - recuperar de nuevo de Mongo y comparar con objeto en memoria
 version(dbtest)
 unittest
 {
     writeln("Starting db.d unittest...");
-    auto config = getConfig();
-    // XXX probar mas, todo con la BBDD de prueba (cre
+    string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
+    string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
+    string rawMailStore    = buildPath(backendTestDir, "rawmails");
+    string attachmentStore = buildPath(backendTestDir, "attachments");
+
+    int[string] brokenMails;
+    int[string] skipMails;
+
+    foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
+    {
+        //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
+        //if (to!int(e.name.baseName) < 32000) continue; // For testing from some mail forward
+
+        if (baseName(e.name) in brokenMails || baseName(e.name) in skipMails)
+            continue;
+
+        auto email = new IncomingEmail(rawMailStore, attachmentStore);
+        email.loadFromFile(File(e.name), false);
+        auto envelope = Envelope(email, "foo@foo.com");
+        if (email.isValid)
+        {
+            writeln(e.name, "...");
+            saveEmailToDb(email, envelope);
+        }
+    }
 }

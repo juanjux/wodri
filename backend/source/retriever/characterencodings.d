@@ -1,5 +1,5 @@
 // This module is part of Adam Druppe's arsd  from:
-// https://github.com/adamdruppe/arsd
+// https://github.com/adamdruppe/arsd with some modifications by Juanjo Alvarez
 
 // Boost License 1.0
 // Some modifications from Juanjo Alvarez (inserted the encodeDecodedWord here that originally
@@ -72,7 +72,7 @@ immutable(ubyte)[] decodeBase64Stubborn(string input)
         }
         ret = Base64.decode(nolineinput);
     } catch (AssertError e) {
-        // When the former method fails this works (and vice versa) :-/
+        // On my 200.000+ tests, when the former method fails this works (and vice versa) :-/
         ubyte[] bytetext;
         foreach (string line; split(input, "\r\n"))
             bytetext ~= Base64.decode(line);
@@ -328,7 +328,9 @@ immutable(ubyte)[] decodeQuotedPrintable(string text) {
                 }
             break;
             case 1:
-                if(b == '\n') {
+                if(b == '\r') 
+                    continue;
+                else if(b == '\n') {
                     state = 0;
                     continue;
                 }
