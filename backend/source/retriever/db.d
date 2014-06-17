@@ -62,6 +62,7 @@ RetrieverConfig getInitialConfig()
     return config;
 }
 
+
 // XXX test when test DB
 bool domainHasDefaultUser(string domainName)
 {
@@ -175,37 +176,41 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
     partAppender.clear();
 
     // Some mails doesnt have a "To:" header but a "Delivered-To:". Really.
-    string real_toField, real_toRaw, real_toAddresses;
+    string realToField, realToRawValue, realToAddresses;
     if ("To" in email.headers)
-        real_toField = "To";
-    else if ("Cc" in email.headers)
-        real_toField = "Cc";
+        realToField = "To";
     else if ("Bcc" in email.headers)
-        real_toField = "Bcc";
+        realToField = "Bcc";
     else if ("Delivered-To" in email.headers)
-        real_toField = "Delivered-To";
+        realToField = "Delivered-To";
     else
         throw new Exception("Cant insert to DB mail without destination");
-    real_toRaw       = jsonizeField(email, real_toField, false, true);
-    real_toAddresses = to!string(email.headers[real_toField].addresses);
+    realToRawValue       = jsonizeField(email, realToField, false, true);
+    realToAddresses = to!string(email.headers[realToField].addresses);
 
-    auto emailInsertJson = format(`{"rawMailPath": "%s", %s %s
+    string referencesJsonStr;
+    if ("References" in email.headers)
+        referencesJsonStr = format(`"references": %s,`, to!string(email.headers["References"].addresses));
+
+    auto emailInsertJson = format(`{"rawMailPath": "%s", %s 
+                                   %s
                                    "from": { "content": %s "addresses": %s },
                                    "to": { "content": %s "addresses": %s },
-                                    %s %s %s %s
+                                    %s %s %s %s %s
                                    "textParts": [ %s ],
                                    "attachments": [ %s ] }`,
             email.rawMailPath,
             jsonizeField(email, "message-id", true),
-            jsonizeField(email, "references"),
+            referencesJsonStr,
             jsonizeField(email,"from", false, true),
             to!string(email.headers["From"].addresses),
-            real_toRaw,
-            real_toAddresses,
+            realToRawValue,
+            realToAddresses,
             jsonizeField(email, "date", true),
             jsonizeField(email, "subject"),
             jsonizeField(email, "cc"),
             jsonizeField(email, "bcc"),
+            jsonizeField(email, "in-reply-to"),
             textPartsJsonStr,
             attachmentsJsonStr);
     //auto emailInsertJson = format(`{"textParts": [ %s ]}`, textPartsJsonStr);
@@ -228,6 +233,19 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
 }
 
 
+
+
+
+
+
+
+
+//  _    _       _ _   _            _   
+// | |  | |     (_) | | |          | |  
+// | |  | |_ __  _| |_| |_ ___  ___| |_ 
+// | |  | | '_ \| | __| __/ _ \/ __| __|
+// | |__| | | | | | |_| ||  __/\__ \ |_ 
+//  \____/|_| |_|_|\__|\__\___||___/\__|
 
 
 // XXX falta:
@@ -261,4 +279,98 @@ unittest
         }
     // XXX limpieza, borrar ficheros
     }
+}
+
+
+version(UserRuleTest)
+unittest
+{
+    writeln("Starting userrule.d unittests...");
+    auto filters = getAddressFilters("juanjux@juanjux.mooo.com");
+    auto config = getConfig();
+    auto testDir = buildPath(config.mainDir, "backend", "test");
+    auto testMailDir = buildPath(testDir, "testmails");
+
+    Envelope reInstance(Match match, Action action)
+    {
+        auto email = new IncomingEmail(buildPath(testDir, "rawmails"),
+                                       buildPath(testDir, "attachments"));
+        email.loadFromFile(buildPath(testMailDir, "with_attachment"));
+
+        auto envelope = Envelope(email, "foo@foo.com");
+        envelope.tags = ["inbox": true];
+
+        auto filter = new UserFilter(match, action);
+        filter.apply(envelope);
+
+        return envelope;
+    }
+
+    // Match the From, set unread to false
+    Match match; match.headerMatches["From"] = "juanjo@juanjoalvarez.net";
+    Action action; action.markAsRead = true;
+    auto envelope = reInstance(match, action);
+    assert("unread" in envelope.tags && !envelope.tags["unread"]);
+
+    // Fail to match the From
+    Match match2; match2.headerMatches["From"] = "foo@foo.com";
+    Action action2; action2.markAsRead = true;
+    envelope = reInstance(match2, action2);
+    assert("unread" !in envelope.tags);
+
+    // Match the withAttachment, set inbox to false
+    Match match3; match3.withAttachment = true;
+    Action action3; action3.noInbox = true;
+    envelope = reInstance(match3, action3);
+    assert("inbox" in envelope.tags && !envelope.tags["inbox"]);
+
+    // Match the withHtml, set deleted to true
+    Match match4; match4.withHtml = true;
+    Action action4; action4.deleteIt = true;
+    envelope = reInstance(match4, action4);
+    assert("deleted" in envelope.tags && envelope.tags["deleted"]);
+
+    // Negative match on body
+    Match match5; match5.bodyMatches = ["nomatch_atall"];
+    Action action5; action5.deleteIt = true;
+    envelope = reInstance(match5, action5);
+    assert("deleted" !in envelope.tags);
+
+    //Match SizeGreaterThan, set tag
+    Match match6;
+    match6.totalSizeValue = 1024*1024; // 1MB, the email is 1.36MB
+    match6.withSizeLimit = true;
+    Action action6; action6.addTags = ["testtag1", "testtag2"];
+    envelope = reInstance(match6, action6);
+    assert("testtag1" in envelope.tags && "testtag2" in envelope.tags);
+
+    //Dont match SizeGreaterThan, set tag
+    auto size1 = envelope.email.computeSize();
+    auto size2 = 2*1024*1024;
+    Match match7;
+    match7.totalSizeValue = 2*1024*1024; // 1MB, the email is 1.36MB
+    match7.withSizeLimit = true;
+    Action action7; action7.addTags = ["testtag1", "testtag2"];
+    envelope = reInstance(match7, action7);
+    assert("testtag1" !in envelope.tags && "testtag2" !in envelope.tags);
+
+    // Match SizeSmallerThan, set forward
+    Match match8;
+    match8.totalSizeType = SizeRuleType.SmallerThan;
+    match8.totalSizeValue = 2*1024*1024; // 2MB, the email is 1.38MB
+    match8.withSizeLimit = true;
+    Action action8;
+    action8.forwardTo = "juanjux@yahoo.es";
+    envelope = reInstance(match8, action8);
+    assert(envelope.doForwardTo[0] == "juanjux@yahoo.es");
+
+    // Dont match SizeSmallerTham
+    Match match9;
+    match9.totalSizeType = SizeRuleType.SmallerThan;
+    match9.totalSizeValue = 1024*1024; // 2MB, the email is 1.39MB
+    match9.withSizeLimit = true;
+    Action action9;
+    action9.forwardTo = "juanjux@yahoo.es";
+    envelope = reInstance(match9, action9);
+    assert(!envelope.doForwardTo.length);
 }

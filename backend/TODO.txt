@@ -1,25 +1,31 @@
 Backend-Retriever:
+
     - create a new archive with only mails (no chats)
 
     - db.d: unittest inserting all mails into Mongo, then retrieving them and compare
       with the still in-memory object (size, ctype, content, attachment data, etc)
 
-    - processMailForAddress:
-        - Get a ConverstationID (first search for the id of the email, then search for the references
-          from last to first, any? => get the ConvId, add all the references too to the same ConvID,
-          none? create new, add the email and the references)
+    - Get a ConverstationID (first search for the id of the email, then search for the references
+      from last to first, any? => get the ConvId, add all the references too to the same ConvID,
+      none? create new, add the email and the references)
+
     - Function to create and populate a DB por unittesting
     - When the message failed to enter (validation error, or error on save) generate a rebound
       using our message sending system (when implemented :).
+
     - Convert main.d to a class? and db.d?
 
     - Install and configure the indexer
     - Make the retriever index a copy of the message
 
     - main.d: configure DB name and connection data from a config file
+
     - Exception classes for the different parts (and use them)
+
     - Const, immutable, pure, nothrow, in, out, safe et all
+
     - Initial configuration script
+
     - document
 
     - Retriever's full test, use a Python script with the mail & smtp modules to parse

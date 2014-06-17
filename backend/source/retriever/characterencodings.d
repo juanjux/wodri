@@ -320,7 +320,7 @@ immutable(ubyte)[] decodeQuotedPrintable(string text) {
                 if(b == '=') {
                     state++;
                     hexByte = 0;
-                } else if (b == '_') { // RFC2047 4.2.2 tells that a _ may be used to represent a space
+                } else if (b == '_') { // RFC2047 4.2.2: a _ may be used to represent a space
                     ret ~= ' ';
                 }
                   else {

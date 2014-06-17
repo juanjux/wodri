@@ -117,6 +117,15 @@ void processMailForAddress(string destination, IncomingEmail mail)
 }
 
 
+
+//  _    _       _ _   _            _   
+// | |  | |     (_) | | |          | |  
+// | |  | |_ __  _| |_| |_ ___  ___| |_ 
+// | |  | | '_ \| | __| __/ _ \/ __| __|
+// | |__| | | | | | |_| ||  __/\__ \ |_ 
+//  \____/|_| |_|_|\__|\__\___||___/\__|
+
+
 // XXX test: validity of the tooBig/isValid/localReceivers checks
 version(not_maintest)
 int main()

@@ -1,8 +1,10 @@
 #!/usr/bin/env rdmd
 module retriever.incomingemail;
 
-debug version = DebugOrUnittest;
-else version(unittest) version = DebugOrUnittest;
+version(createtestdata) version     = anyincomingmailtest;
+version(regeneratetestdata) version = anyincomingmailtest;
+version(singletest) version         = anyincomingmailtest;
+version(allmailstest) version       = anyincomingmailtest;
 
 import std.stdio;
 import std.path;
@@ -19,9 +21,10 @@ import std.datetime;
 import std.process;
 import vibe.utils.dictionarylist;
 import retriever.characterencodings;
-version(DebugOrUnittest) import retriever.db;
+version(anyincomingmailtest) import retriever.db: getConfig;
 
-auto EMAIL_REGEX = ctRegex!r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b";
+auto EMAIL_REGEX = ctRegex!(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b", "g");
+auto MSGID_REGEX = ctRegex!(r"[a-zA-Z0-9.=_%+\-!#\$&'\*/\?\^`\{\}\|~]+@[a-zA-Z0-9.=_%+\-!#\$&'\*/\?\^`\{\}\|~]+\.[a-zA-Z0-9.=_%+\-!#\$&'\*/\?\^`\{\}\|~]{2,4}\b", "g");
 
 
 final class MIMEPart // #mimepart
@@ -252,9 +255,12 @@ conversationId;
         value.rawValue  = decodeEncodedWord(raw[idxSeparator+1..$]);
 
         // add the bare emails to the value.addresses field
-        if (among(toLower(name), "from", "to", "cc", "bcc", "delivered-to",
-                                 "x-forwarded-to", "x-forwarded-for", "references"))
+        auto lowname = toLower(name);
+        if (among(lowname, "from", "to", "cc", "bcc", "delivered-to", "x-forwarded-to", "x-forwarded-for"))
             foreach(c; match(value.rawValue, EMAIL_REGEX))
+                value.addresses ~= c.hit;
+        if (lowname == "references")
+            foreach(c; match(value.rawValue, MSGID_REGEX))
                 value.addresses ~= c.hit;
 
         this.headers.addField(name, value);
@@ -518,28 +524,20 @@ conversationId;
     }
 
 
-    version(unittest)
+    version(anyincomingmailtest)
     {
-        void visitParts(MIMEPart part)
-        {
-            writeln("===========");
-            writeln("CType Name: "          , part.ctype.name);
-            writeln("CType Fields: "        , part.ctype.fields);
-            writeln("CDisposition Name: "   , part.disposition.name);
-            writeln("CDisposition Fields: " , part.disposition.fields);
-            writeln("CID: "                 , part.contentId);
-            writeln("Subparts: "            , part.subparts.length);
-            writeln("Object hash: "         , part.toHash());
-            writeln("===========");
-
-            foreach(MIMEPart subpart; part.subparts)
-                visitParts(subpart);
-        }
     }
 }
 
 
-/* UNITTESTS AND SUPPORT CODE 
+
+//  _    _       _ _   _            _   
+// | |  | |     (_) | | |          | |  
+// | |  | |_ __  _| |_| |_ ___  ___| |_ 
+// | |  | | '_ \| | __| __/ _ \/ __| __|
+// | |__| | | | | | |_| ||  __/\__ \ |_ 
+//  \____/|_| |_|_|\__|\__\___||___/\__|
+/*
  * HOW TO TEST:
  *
  * Since I'm not putting my personal email collection inside the unittests dirs, here's how to do it yourself:
@@ -560,67 +558,83 @@ conversationId;
  *      problematic email number hardcoded)
  */
  
-
 version(unittest)
-DirEntry[] getSortedEmailFilesList(string mailsDir)
 {
-    DirEntry[] emailFiles;
-    foreach(DirEntry e; dirEntries(mailsDir, SpanMode.shallow))
-        if (!e.isDir) emailFiles ~= e;
-
-    bool intFileComp(DirEntry x, DirEntry y)
+    void visitParts(MIMEPart part)
     {
-        return to!int(baseName(x.name)) < to!int(baseName(y.name));
-    }
-    sort!(intFileComp)(emailFiles);
+        writeln("===========");
+        writeln("CType Name: "          , part.ctype.name);
+        writeln("CType Fields: "        , part.ctype.fields);
+        writeln("CDisposition Name: "   , part.disposition.name);
+        writeln("CDisposition Fields: " , part.disposition.fields);
+        writeln("CID: "                 , part.contentId);
+        writeln("Subparts: "            , part.subparts.length);
+        writeln("Object hash: "         , part.toHash());
+        writeln("===========");
 
-    return emailFiles;
-}
-
-
-version(unittest)
-void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)
-{
-    string parentStr;
-
-    ap.put(format("==#== PART ==#==\n"));
-
-    if (part.parent !is null)
-        ap.put(format("Son of: %s\n", part.parent.ctype.name));
-    else
-        ap.put("Root part\n");
-
-    ap.put(format("Level: %d\n", level));
-    ap.put(format("Content-Type: %s\n", part.ctype.name));
-    ap.put("\tfields: \n");
-
-    if ("charset" in part.ctype.fields)
-        ap.put(format("\t\tcharset: %s\n", part.ctype.fields["charset"]));
-    if ("boundary" in part.ctype.fields)
-        ap.put(format("\t\tboundary: %s\n", part.ctype.fields["boundary"]));
-
-    if (part.disposition.name.length)
-    {
-        ap.put(format("Content-Disposition: %s\n", part.disposition.name));
-        if ("filename" in part.disposition.fields)
-            ap.put(format("\t\tfilename: %s\n", part.disposition.fields["filename"]));
+        foreach(MIMEPart subpart; part.subparts)
+            visitParts(subpart);
     }
 
-    if (part.cTransferEncoding.length)
-        ap.put(format("Content-Transfer-Encoding: %s\n", part.cTransferEncoding));
 
-    // attachments are compared with an md5 on the files, not here
-    if (part.textContent.length && !among(part.disposition.name, "attachment", "inline"))
+    DirEntry[] getSortedEmailFilesList(string mailsDir)
     {
-        ap.put(format("Content Length: %d\n", part.textContent.length));
-        ap.put("##=## CONTENT ##=##\n");
-        ap.put(part.textContent);
-        ap.put("##=## ENDCONTENT ##=##\n");
+        DirEntry[] emailFiles;
+        foreach(DirEntry e; dirEntries(mailsDir, SpanMode.shallow))
+            if (!e.isDir) emailFiles ~= e;
+
+        bool intFileComp(DirEntry x, DirEntry y)
+        {
+            return to!int(baseName(x.name)) < to!int(baseName(y.name));
+        }
+        sort!(intFileComp)(emailFiles);
+
+        return emailFiles;
     }
 
-    ++level;
-    foreach(MIMEPart subpart; part.subparts)
-        createPartInfoText(subpart, ap, level);
+    void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)
+    {
+        string parentStr;
+
+        ap.put(format("==#== PART ==#==\n"));
+
+        if (part.parent !is null)
+            ap.put(format("Son of: %s\n", part.parent.ctype.name));
+        else
+            ap.put("Root part\n");
+
+        ap.put(format("Level: %d\n", level));
+        ap.put(format("Content-Type: %s\n", part.ctype.name));
+        ap.put("\tfields: \n");
+
+        if ("charset" in part.ctype.fields)
+            ap.put(format("\t\tcharset: %s\n", part.ctype.fields["charset"]));
+        if ("boundary" in part.ctype.fields)
+            ap.put(format("\t\tboundary: %s\n", part.ctype.fields["boundary"]));
+
+        if (part.disposition.name.length)
+        {
+            ap.put(format("Content-Disposition: %s\n", part.disposition.name));
+            if ("filename" in part.disposition.fields)
+                ap.put(format("\t\tfilename: %s\n", part.disposition.fields["filename"]));
+        }
+
+        if (part.cTransferEncoding.length)
+            ap.put(format("Content-Transfer-Encoding: %s\n", part.cTransferEncoding));
+
+        // attachments are compared with an md5 on the files, not here
+        if (part.textContent.length && !among(part.disposition.name, "attachment", "inline"))
+        {
+            ap.put(format("Content Length: %d\n", part.textContent.length));
+            ap.put("##=## CONTENT ##=##\n");
+            ap.put(part.textContent);
+            ap.put("##=## ENDCONTENT ##=##\n");
+        }
+
+        ++level;
+        foreach(MIMEPart subpart; part.subparts)
+            createPartInfoText(subpart, ap, level);
+    }
 }
 
 
@@ -628,11 +642,14 @@ unittest
 {
     // #unittest start here
     // FIXME XXX: read connection data and DB name from text config file
-    string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
-    string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
-    string rawMailStore    = buildPath(backendTestDir, "rawmails");
-    string attachmentStore = buildPath(backendTestDir, "attachments");
-    string base64Dir       = buildPath(backendTestDir, "base64_test");
+    version(anyincomingmailtest)
+    {
+        string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
+        string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
+        string rawMailStore    = buildPath(backendTestDir, "rawmails");
+        string attachmentStore = buildPath(backendTestDir, "attachments");
+        string base64Dir       = buildPath(backendTestDir, "base64_test");
+    }
 
     version(createtestdata)
     {
@@ -721,7 +738,7 @@ unittest
         // 60000 => multipart/alternative Windows-1252 quoted-printable
         // 80000 => multipart/alternative ISO8859-1 quoted-printable
         writeln("Starting single email test...");
-        auto filenumber = 999999;
+        auto filenumber = 40398;
         auto emailFile = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
         auto email      = new IncomingEmail(rawMailStore, attachmentStore);
         email.loadFromFile(emailFile, true);
@@ -867,6 +884,7 @@ unittest
                 std.file.remove(email.rawMailPath);
         }
     }
-    // Clean the attachment and rawMail dirs
-    system(format("rm -f %s/*", attachmentStore));
+    version(anyincomingmailtest)
+        // Clean the attachment and rawMail dirs
+        system(format("rm -f %s/*", attachmentStore));
 }
