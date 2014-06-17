@@ -165,8 +165,8 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
         partAppender.put(`"contenttype": ` ~ Json(attach.ctype).toString() ~ `,`);
         partAppender.put(` "realpath": ` ~ Json(attach.realPath).toString() ~ `,`);
         partAppender.put(` "size": ` ~ Json(attach.size).toString() ~ `,`);
-        if (attach.content_id.length)
-            partAppender.put(` "contentid": ` ~ Json(attach.content_id).toString() ~ `,`);
+        if (attach.contentId.length)
+            partAppender.put(` "contentid": ` ~ Json(attach.contentId).toString() ~ `,`);
         if (attach.filename.length)
             partAppender.put(` "filename": ` ~ Json(attach.filename).toString() ~ `,`);
         partAppender.put("},\n");
@@ -208,9 +208,10 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
             jsonizeField(email, "bcc"),
             textPartsJsonStr,
             attachmentsJsonStr);
+    //auto emailInsertJson = format(`{"textParts": [ %s ]}`, textPartsJsonStr);
 
     // XXX quitar
-    auto f = File("/home/juanjux/borrame.txt", "a");
+    auto f = File("/home/juanjux/borrame.txt", "w");
     f.write(emailInsertJson);
     f.flush(); f.close();
 
@@ -219,10 +220,10 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
 
     auto envelopeInsertJson = `
     {
-        id_email: %s,
+        idEmail: %s,
         tags: [%s],
         destinationAddress: "%s",
-        id_user: %s,
+        idUser: %s,
     }`;
 }
 
@@ -241,14 +242,13 @@ unittest
     string attachmentStore = buildPath(backendTestDir, "attachments");
 
     int[string] brokenMails;
-    int[string] skipMails;
 
     foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
     {
         //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
-        //if (to!int(e.name.baseName) < 32000) continue; // For testing from some mail forward
+        //if (to!int(e.name.baseName) < 51504) continue; // For testing from some mail forward
 
-        if (baseName(e.name) in brokenMails || baseName(e.name) in skipMails)
+        if (baseName(e.name) in brokenMails) 
             continue;
 
         auto email = new IncomingEmail(rawMailStore, attachmentStore);
@@ -259,5 +259,6 @@ unittest
             writeln(e.name, "...");
             saveEmailToDb(email, envelope);
         }
+    // XXX limpieza, borrar ficheros
     }
 }

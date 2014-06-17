@@ -30,8 +30,8 @@ final class MIMEPart // #mimepart
     MIMEPart[] subparts;
     ContentData ctype;
     ContentData disposition;
-    string content_transfer_encoding;
-    string content_id;
+    string cTransferEncoding;
+    string contentId;
     string textContent;
     Attachment attachment;
 }
@@ -49,12 +49,12 @@ struct Attachment // #attach
     string realPath;
     string ctype;
     string filename;
-    string content_id;
+    string contentId;
     ulong size;
     version(unittest)
     {
-        bool was_encoded = false;
-        string original_encoded_content;
+        bool wasEncoded = false;
+        string origEncodedContent;
     }
 }
 
@@ -100,14 +100,14 @@ conversationId;
     }
 
 
-    void loadFromFile(string email_path, bool copyRaw=true)
+    void loadFromFile(string emailPath, bool copyRaw=true)
     {
-        auto f = File(email_path);
+        auto f = File(emailPath);
             loadFromFile(f);
     }
 
 
-    void loadFromFile(File email_file, bool copyRaw=true)
+    void loadFromFile(File emailFile, bool copyRaw=true)
     {
         enum ParseState
         {
@@ -121,7 +121,7 @@ conversationId;
         Appender!string stdinLines = null;
         auto partialBuffer         = appender!string;
 
-        if (copyRaw && among(email_file, std.stdio.stdin, std.stdio.stderr))
+        if (copyRaw && among(emailFile, std.stdio.stdin, std.stdio.stderr))
         {
             inputIsStdInput = true;
             stdinLines = appender!string;
@@ -129,10 +129,10 @@ conversationId;
 
         // === Header ===
         uint count = 0;
-        while (!email_file.eof())
+        while (!emailFile.eof())
         {
             ++count;
-            currentLine = email_file.readln();
+            currentLine = emailFile.readln();
 
             if (!currentLine.length)
                 // Possible end of stdin/stderr input
@@ -169,12 +169,12 @@ conversationId;
         }
 
         // === Body=== (read all into the buffer, the parsing is done outside the loop)
-        while (!email_file.eof())
+        while (!emailFile.eof())
         {
             if (!currentLine.length)
                 break;
 
-            currentLine = email_file.readln();
+            currentLine = emailFile.readln();
 
             if (inputIsStdInput)
                 stdinLines.put(currentLine);
@@ -203,19 +203,19 @@ conversationId;
                 f.write(stdinLines.data);
             }
             else
-                copy(email_file.name, destFilePath);
+                copy(emailFile.name, destFilePath);
 
             this.rawMailPath = destFilePath;
         }
     }
 
 
-    string print_headers(bool as_string=false)
+    string printHeaders(bool asString=false)
     {
         auto textheaders = appender!string;
         foreach(string name, HeaderValue value; this.headers)
         {
-            if (as_string)
+            if (asString)
             {
                 textheaders.put(name ~ ":");
                 textheaders.put(value.rawValue);
@@ -337,10 +337,10 @@ conversationId;
         if ("charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
 
-        if (part.content_transfer_encoding == "quoted-printable")
+        if (part.cTransferEncoding == "quoted-printable")
             newtext = convertToUtf8Lossy(decodeQuotedPrintable(text), part.ctype.fields["charset"]);
 
-        else if (part.content_transfer_encoding == "base64")
+        else if (part.cTransferEncoding == "base64")
             newtext = convertToUtf8Lossy(decodeBase64Stubborn(text), part.ctype.fields["charset"]);
 
         else
@@ -363,16 +363,16 @@ conversationId;
 
     private void setAttachmentPart(MIMEPart part, string[] lines)
     {
-        immutable(ubyte)[] att_content;
-        version(unittest) bool was_encoded = false;
+        immutable(ubyte)[] attContent;
+        version(unittest) bool wasEncoded = false;
 
-        if (part.content_transfer_encoding == "base64")
+        if (part.cTransferEncoding == "base64")
         {
-            att_content = decodeBase64Stubborn(join(lines));
-            version(unittest) was_encoded = true;
+            attContent = decodeBase64Stubborn(join(lines));
+            version(unittest) wasEncoded = true;
         }
         else // binary, 7bit, 8bit, no need to decode... I think...
-            att_content = cast(immutable(ubyte)[]) join(lines, this.lineSep);
+            attContent = cast(immutable(ubyte)[]) join(lines, this.lineSep);
 
         string attachFileName;
         string origFileName = part.disposition.fields.get("filename", "");
@@ -386,7 +386,7 @@ conversationId;
 
         string attachFullPath = buildPath(this.attachmentStore, attachFileName);
         auto f = File(attachFullPath, "w");
-        f.rawWrite(att_content);
+        f.rawWrite(attContent);
         f.close();
 
         Attachment att;
@@ -394,12 +394,12 @@ conversationId;
         att.ctype      = part.ctype.name;
         att.filename   = origFileName;
         att.size       = att.realPath.getSize;
-        att.content_id = part.content_id;
+        att.contentId = part.contentId;
 
         version(unittest)
         {
-            att.was_encoded = was_encoded;
-            att.original_encoded_content = join(lines);
+            att.wasEncoded = wasEncoded;
+            att.origEncodedContent = join(lines);
         }
 
         part.attachment   = att;
@@ -407,29 +407,29 @@ conversationId;
     }
 
 
-    private void parseContentHeader(ref ContentData content_data, string header_text)
+    private void parseContentHeader(ref ContentData contentData, string headerText)
     {
-        if (header_text.length == 0)
+        if (headerText.length == 0)
             return;
 
-        auto value_tokens = split(strip(header_text), ";");
-        if (value_tokens.length == 0) // ???
+        auto valueTokens = split(strip(headerText), ";");
+        if (valueTokens.length == 0) // ???
         {
-            content_data.name= "";
+            contentData.name= "";
             return;
         }
 
-        content_data.name = strip(removechars(value_tokens[0], "\""));
-        if (value_tokens.length > 1)
+        contentData.name = strip(removechars(valueTokens[0], "\""));
+        if (valueTokens.length > 1)
         {
-            foreach(string param; value_tokens[1..$])
+            foreach(string param; valueTokens[1..$])
             {
                 param        = strip(removechars(param, "\""));
                 auto eqIndex = indexOf(param, "=");
                 if (eqIndex == -1)
                     continue;
 
-                content_data.fields[strip(toLower(param[0..eqIndex]))] = strip(param[eqIndex+1..$]);
+                contentData.fields[strip(toLower(param[0..eqIndex]))] = strip(param[eqIndex+1..$]);
             }
         }
     }
@@ -459,10 +459,10 @@ conversationId;
                     parseContentHeader(part.disposition, value);
                     break;
                 case "content-transfer-encoding":
-                    part.content_transfer_encoding = toLower(strip(removechars(value, "\"")));
+                    part.cTransferEncoding = toLower(strip(removechars(value, "\"")));
                     break;
                 case "content-id":
-                    part.content_id = strip(removechars(value, "\""));
+                    part.contentId = strip(removechars(value, "\""));
                     break;
                 default:
             }
@@ -504,7 +504,6 @@ conversationId;
 
     private void getRootContentInfo(MIMEPart part)
     {
-        string ct_transfer_encoding;
         if ("Content-Type" in this.headers)
             parseContentHeader(part.ctype, this.headers["Content-Type"].rawValue);
 
@@ -512,7 +511,7 @@ conversationId;
             parseContentHeader(part.disposition, this.headers["Content-Disposition"].rawValue);
 
         if ("Content-Transfer-Encoding" in this.headers)
-            part.content_transfer_encoding = toLower(strip(removechars(this.headers["Content-Transfer-Encoding"].rawValue, "\"")));
+            part.cTransferEncoding = toLower(strip(removechars(this.headers["Content-Transfer-Encoding"].rawValue, "\"")));
 
         if (!part.ctype.name.startsWith("multipart") && "charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
@@ -528,7 +527,7 @@ conversationId;
             writeln("CType Fields: "        , part.ctype.fields);
             writeln("CDisposition Name: "   , part.disposition.name);
             writeln("CDisposition Fields: " , part.disposition.fields);
-            writeln("CID: "                 , part.content_id);
+            writeln("CID: "                 , part.contentId);
             writeln("Subparts: "            , part.subparts.length);
             writeln("Object hash: "         , part.toHash());
             writeln("===========");
@@ -607,8 +606,8 @@ void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)
             ap.put(format("\t\tfilename: %s\n", part.disposition.fields["filename"]));
     }
 
-    if (part.content_transfer_encoding.length)
-        ap.put(format("Content-Transfer-Encoding: %s\n", part.content_transfer_encoding));
+    if (part.cTransferEncoding.length)
+        ap.put(format("Content-Transfer-Encoding: %s\n", part.cTransferEncoding));
 
     // attachments are compared with an md5 on the files, not here
     if (part.textContent.length && !among(part.disposition.name, "attachment", "inline"))
@@ -638,32 +637,34 @@ unittest
     version(createtestdata)
     {
         writeln("Splitting test emails...");
-        auto mbox_fname = buildPath(backendTestDir, "emails", "testmails.mbox");
-        assert(mbox_fname.exists);
-        assert(mbox_fname.isFile);
+        auto mboxFileName = buildPath(backendTestDir, "emails", "testmails.mbox");
+        assert(mboxFileName.exists);
+        assert(mboxFileName.isFile);
 
-        writeln("Splitting mailbox: ", mbox_fname);
+        writeln("Splitting mailbox: ", mboxFileName);
 
         if (!exists(origMailDir))
             mkdir(origMailDir);
 
-        auto mboxf = File(mbox_fname);
+        auto mboxf = File(mboxFileName);
         ulong mailindex = 0;
-        File email_file;
+        File emailFile;
 
-        while (!mboxf.eof()) {
+        while (!mboxf.eof()) 
+        {
             string line = chomp(mboxf.readln());
-            if (line.length > 6 && line[0..5] == "From ") {
-                if (email_file.isOpen) {
-                    email_file.flush();
-                    email_file.close();
-                    //run_munpack(email_file.name);
+            if (line.length > 6 && line[0..5] == "From ") 
+            {
+                if (emailFile.isOpen) 
+                {
+                    emailFile.flush();
+                    emailFile.close();
                 }
 
-                email_file = File(buildPath(origMailDir, to!string(++mailindex)), "w");
+                emailFile = File(buildPath(origMailDir, to!string(++mailindex)), "w");
                 writeln(mailindex);
             }
-            email_file.write(line ~ "\r\n");
+            emailFile.write(line ~ "\r\n");
         }
     }
 
@@ -720,10 +721,10 @@ unittest
         // 60000 => multipart/alternative Windows-1252 quoted-printable
         // 80000 => multipart/alternative ISO8859-1 quoted-printable
         writeln("Starting single email test...");
-        auto filenumber = 55844;
-        auto email_file = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
+        auto filenumber = 999999;
+        auto emailFile = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
         auto email      = new IncomingEmail(rawMailStore, attachmentStore);
-        email.loadFromFile(email_file, true);
+        email.loadFromFile(emailFile, true);
 
         email.visitParts(email.rootPart);
         foreach(MIMEPart part; email.textualParts)
@@ -753,29 +754,29 @@ unittest
             auto email = new IncomingEmail(rawMailStore, attachmentStore);
             email.loadFromFile(File(e.name), copyMail);
 
-            string headers_str = email.print_headers(true);
-            auto header_lines  = split(headers_str, email.lineSep);
-            auto orig_file     = File(e.name);
+            string headersStr = email.printHeaders(true);
+            auto headerLines  = split(headersStr, email.lineSep);
+            auto origFile     = File(e.name);
 
             // Consume the first line (with the mbox From)
-            orig_file.readln();
+            origFile.readln();
 
             // TEST: HEADERS
             int idx = 0;
-            while(!orig_file.eof())
+            while(!origFile.eof())
             {
-                string orig_line = decodeEncodedWord(orig_file.readln());
-                if (orig_line == email.lineSep) // Body start, stop comparing
+                string origLine = decodeEncodedWord(origFile.readln());
+                if (origLine == email.lineSep) // Body start, stop comparing
                     break;
 
-                auto header_line = header_lines[idx] ~ email.lineSep;
-                if (orig_line != header_line)
+                auto headerLine = headerLines[idx] ~ email.lineSep;
+                if (origLine != headerLine)
                 {
                     writeln("UNMATCHED HEADER IN FILE: ", e.name);
-                    write("\nORIGINAL: |",orig_line, "|");
-                    write("\nOUR     : |", header_line, "|");
+                    write("\nORIGINAL: |",origLine, "|");
+                    write("\nOUR     : |", headerLine, "|");
                     writeln("All headers:");
-                    writeln(join(header_lines, "\r\n"));
+                    writeln(join(headerLines, "\r\n"));
                     writeln("------------------------------------------------------");
                     assert(0);
                     //break;
@@ -815,32 +816,32 @@ unittest
             if (!base64Dir.exists)
                 mkdir(base64Dir);
 
-            auto buf_base64  = new ubyte[1024*1024*2]; // 2MB
-            auto buf_ourfile = new ubyte[1024*1024*2];
+            auto bufBase64  = new ubyte[1024*1024*2]; // 2MB
+            auto bufOurfile = new ubyte[1024*1024*2];
 
             foreach (Attachment att; email.attachments)
             {
                 // FIXME: this only text the base64-encoded attachments
-                if (!att.was_encoded)
+                if (!att.wasEncoded)
                     continue;
 
                 system(format("rm -f %s/*", base64Dir));
 
-                auto fname_encoded = buildPath(base64Dir, "encoded.txt");
-                auto encoded_f     = File(fname_encoded, "w");
-                encoded_f.write(att.original_encoded_content);
-                encoded_f.flush(); encoded_f.close();
+                auto fnameEncoded = buildPath(base64Dir, "encoded.txt");
+                auto encodedFile   = File(fnameEncoded, "w");
+                encodedFile.write(att.origEncodedContent);
+                encodedFile.flush(); encodedFile.close();
 
-                auto fname_decoded = buildPath(base64Dir, "decoded");
-                auto base64_cmd    = format("base64 -d %s > %s", fname_encoded, fname_decoded);
-                assert(system(base64_cmd) == 0);
-                auto decoded_file = File(fname_decoded);
-                auto our_file     = File(buildPath(att.realPath));
+                auto fnameDecoded = buildPath(base64Dir, "decoded");
+                auto base64Cmd    = format("base64 -d %s > %s", fnameEncoded, fnameDecoded);
+                assert(system(base64Cmd) == 0);
+                auto decodedFile  = File(fnameDecoded);
+                auto ourFile      = File(buildPath(att.realPath));
 
-                while (!decoded_file.eof)
+                while (!decodedFile.eof)
                 {
-                    auto bufread1 = decoded_file.rawRead(buf_base64);
-                    auto bufread2 = our_file.rawRead(buf_ourfile);
+                    auto bufread1 = decodedFile.rawRead(bufBase64);
+                    auto bufread2 = ourFile.rawRead(bufOurfile);
                     ulong idx1, idx2;
 
                     while (idx1 < bufread1.length && idx2 < bufread2.length)
@@ -848,8 +849,8 @@ unittest
                         if (bufread1[idx1] != bufread2[idx2])
                         {
                             writeln("Different attachments!");
-                            writeln("Our decoded attachment: "            , our_file.name);
-                            writeln("Base64 command decoded attachment: " , decoded_file.name);
+                            writeln("Our decoded attachment: "            , ourFile.name);
+                            writeln("Base64 command decoded attachment: " , decodedFile.name);
                             assert(0);
                         }
                         ++idx1;

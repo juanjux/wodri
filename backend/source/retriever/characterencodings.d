@@ -87,8 +87,8 @@ immutable(ubyte)[] decodeBase64Stubborn(string input)
 string convertToUtf8Lossy(immutable(ubyte)[] data, string dataCharacterEncoding) {
     try {
         auto ret = convertToUtf8(data, dataCharacterEncoding);
-        //import std.utf;
-        //validate(ret);
+        import std.utf;
+        validate(ret);
         return ret;
     } catch(Exception e) {
         string ret;

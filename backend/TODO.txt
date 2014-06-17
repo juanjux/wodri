@@ -1,9 +1,9 @@
 Backend-Retriever:
-    - email 51504:
-        std.json.JSONException@std/json.d(804): JSON format error at byte 6658: Invalid UTF-8 sequence (at index 1)
-    - db.d: unittest inserting all mails into Mongo, then retrieving them and comparing
+    - create a new archive with only mails (no chats)
+
+    - db.d: unittest inserting all mails into Mongo, then retrieving them and compare
       with the still in-memory object (size, ctype, content, attachment data, etc)
-    - IncomingEmail: unify camelCase
+
     - processMailForAddress:
         - Get a ConverstationID (first search for the id of the email, then search for the references
           from last to first, any? => get the ConvId, add all the references too to the same ConvID,
