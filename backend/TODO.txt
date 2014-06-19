@@ -1,23 +1,22 @@
 Backend-Retriever:
 
-    - Insert the Date into the DB with a searchable format
+    - Rethink the "conversation" document. Should it have the User id?
 
-    - Log the times for search and insert into the conversation collection
+    - Insert the envelope once we've the ConversationID (BASIC TESTS)
 
-    - Insert the envelope once we've the ConversationID
-    
+    - Log the times for search and insert into the conversation collection => see the std.datetime.StopWatch
+
     - Function to create and populate a DB por unittesting
 
     - Think about what to do with messages without Message-ID field
 
-    - create a new archive with only mails (no chats)
-
     - When the message failed to enter (validation error, or error on save) generate a rebound
-      using our message sending system (when implemented :) 
+      using our message sending system (when implemented)
 
     - Convert main.d to a class? and db.d?
 
     - Install and configure the indexer
+
     - Make the retriever index a copy of the message
 
     - main.d: configure DB name and connection data from a config file
@@ -36,9 +35,9 @@ Backend-Retriever:
       check that we receive every email, check that that the isValidAddress check is fine,
       check that the filters of the test DB apply correctly
 
-    - Sent the new changes in characterencodings.d to ruppe 
+    - Sent the new changes in characterencodings.d to ruppe
 
-    - See how to get around Mongo's 16MB document limit (GridFS?) Check is some email of my 
+    - See how to get around Mongo's 16MB document limit (GridFS?) Check is some email of my
       collection is bigger than 16MB without attachments
 
 Backend-API:

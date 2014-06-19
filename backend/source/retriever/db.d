@@ -91,7 +91,9 @@ bool domainHasDefaultUser(string domainName)
 UserFilter[] getAddressFilters(string address)
 {
     UserFilter[] res;
-    auto userRuleCursor = mongoDB["userrule"].find(["destinationAccounts": address]);
+    //auto userRuleCursor = mongoDB["userrule"].find(["destinationAccounts": address]);
+    auto userRuleFindJson = format(`{"destinationAccounts": {"$in": ["%s"]}}`, address);
+    auto userRuleCursor = mongoDB["userrule"].find(parseJsonString(userRuleFindJson));
 
     foreach(rule; userRuleCursor)
     {
@@ -160,13 +162,12 @@ string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = 
 
 
 // XXX Test the fuck out of this when I've the testing DB
-BsonObjectID getConversationId_Mongo(string[] references, string msgId)
+BsonObjectID getConversationId(string[] references, string msgId)
 {
     string[] newReferences;
     if (references.length)
     {
         // Search for a conversation with one of these references
-        BsonObjectID id;
         char[][] reversed = to!(char[][])(references);
         reverse(reversed);
         auto jsonFindStr = format(`{"references": {"$in": %s}}`, reversed);
@@ -192,11 +193,27 @@ BsonObjectID getConversationId_Mongo(string[] references, string msgId)
 }
 
 
+void saveEnvelope(Envelope envelope, BsonObjectID messageId, BsonObjectID conversationId)
+{
+    // Find the user
+    auto userFindJson = format(`{"addresses": {"$in": [%s]}}`, envelope.destination);
+    auto userResult = mongoDB["user"].findOne(parseJsonString(userFindJson));
+
+    auto envelopeDoc = Bson.emptyObject;
+    envelopeDoc["idEmail"] = messageId;
+    envelopeDoc["idConversation"] = conversationId;
+    envelopeDoc["destinationAddress"] = envelope.destination;
+    envelopeDoc["forwardedTo"] = to!string(envelope.doForwardTo);
+    envelopeDoc["tags"] = to!string(envelope.tags.keys);
+    if (userResult != Bson(null))
+        envelopeDoc["idUser"] = deserializeBson!BsonObjectID(userResult["_id"]);
+    mongoDB["envelope"].insert(envelopeDoc);
+}
+
 
 // XXX test when I've the test DB
 void saveEmailToDb(IncomingEmail email, Envelope envelope)
 {
-
     auto partAppender = appender!string;
     foreach(idx, part; email.textualParts)
     {
@@ -245,16 +262,21 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
         hasRefs = true;
     }
 
-    auto emailInsertJson = format(`{"rawMailPath": "%s", 
-                                   "message-id": "%s", 
+    auto messageId = BsonObjectID.generate();
+    auto emailInsertJson = format(`{"_id": "%s",
+                                    "rawMailPath": "%s",
+                                   "message-id": "%s",
+                                   "isodate": "%s",
                                    %s
                                    "from": { "content": %s "addresses": %s },
                                    "to": { "content": %s "addresses": %s },
                                     %s %s %s %s %s
                                    "textParts": [ %s ],
                                    "attachments": [ %s ] }`,
+                                        messageId,
                                         email.rawMailPath,
                                         email.headers["message-id"].addresses[0],
+                                        BsonDate(email.date).toString,
                                         referencesJsonStr,
                                         jsonizeField(email,"from", false, true),
                                         to!string(email.headers["From"].addresses),
@@ -270,32 +292,13 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
 
     auto parsedJson = parseJsonString(emailInsertJson);
     mongoDB["email"].insert(parsedJson);
-    // XXX con el findAndModify puede que no haga falta
-    auto same = mongoDB["email"].findOne(parsedJson); // FIXME: any way to get the id on the same insert with Vibed mongo module?
-    auto id_ = deserializeBson!BsonObjectID(same["_id"]);
-
-    // FIXME: I do this insert,find,update kludge to update the date which is a BsonDate
-    // because using a ISODate in the json string doest seem to work
-
-    //auto jsonStr = format(`{"$set": {"isodate": ISODate("%s")}}`, BsonDate(email.date).toString());
-    //writeln(jsonStr);
-    //mongoDB["email"].findAndModify(["_id": id_],
-                            //parseJsonString(jsonStr));
-                            ////["isodate": BsonDate(email.date)]);
+    //auto same = mongoDB["email"].findOne(parsedJson); // FIXME: any way to get the id on the same insert with Vibed mongo module?
+    //auto id_ = deserializeBson!BsonObjectID(same["_id"]);
 
     string[] empty;
-    auto conversationId = getConversationId_Mongo(hasRefs? email.headers["References"].addresses: 
-                                                      empty, 
-                                                      email.headers["Message-ID"].addresses[0]);
-
-
-    auto envelopeInsertJson = `
-    {
-        idEmail: %s,
-        tags: [%s],
-        destinationAddress: "%s",
-        idUser: %s,
-    }`;
+    auto conversationId = getConversationId(hasRefs? email.headers["References"].addresses: empty,
+                                            email.headers["Message-ID"].addresses[0]);
+    saveEnvelope(envelope, messageId, conversationId);
 }
 
 
@@ -306,11 +309,11 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
 
 
 
-//  _    _       _ _   _            _   
-// | |  | |     (_) | | |          | |  
-// | |  | |_ __  _| |_| |_ ___  ___| |_ 
+//  _    _       _ _   _            _
+// | |  | |     (_) | | |          | |
+// | |  | |_ __  _| |_| |_ ___  ___| |_
 // | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_ 
+// | |__| | | | | | |_| ||  __/\__ \ |_
 //  \____/|_| |_|_|\__|\__\___||___/\__|
 
 
@@ -332,7 +335,7 @@ unittest
         //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
         //if (to!int(e.name.baseName) < 57853) continue; // For testing from some mail forward
 
-        if (baseName(e.name) in brokenMails) 
+        if (baseName(e.name) in brokenMails)
             continue;
 
         auto email = new IncomingEmail(rawMailStore, attachmentStore);

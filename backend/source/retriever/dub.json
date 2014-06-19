@@ -39,7 +39,7 @@
 	    },
 	    {
 	        "name": "incomingmail_createtestmails",
-	        "versions": ["createtestmails"],
+	        "versions": ["createtestdata"],
 	        "mainSourceFile": "incomingmail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
