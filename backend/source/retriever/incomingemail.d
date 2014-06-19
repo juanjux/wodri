@@ -24,7 +24,8 @@ import retriever.characterencodings;
 version(anyincomingmailtest) import retriever.db: getConfig;
 
 auto EMAIL_REGEX = ctRegex!(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b", "g");
-auto MSGID_REGEX = ctRegex!(r"[a-zA-Z0-9.=_%+\-!#\$&'\*/\?\^`\{\}\|~]+@[a-zA-Z0-9.=_%+\-!#\$&'\*/\?\^`\{\}\|~]+\.[a-zA-Z0-9.=_%+\-!#\$&'\*/\?\^`\{\}\|~]{2,4}\b", "g");
+auto MSGID_REGEX = ctRegex!(r"[\w@.=%+\-!#\$&'\*/\?\^`\{\}\|~]*\b", "g");
+string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 
 final class MIMEPart // #mimepart
@@ -76,6 +77,8 @@ conversationId;
     MIMEPart rootPart;
     MIMEPart[] textualParts; // shortcut to the textual (text or html) parts in display
     Attachment[] attachments;
+    DateTime date;
+    bool dateSet = false;
     string[] fromAddrs;
     string[] toAddrs;
     string[] ccAddrs;
@@ -94,10 +97,11 @@ conversationId;
     {
         // FIXME: Check the minimal valid headers and the values
         return (
-                ("From"          in  headers && headers["From"].addresses.length) &&
-                (("To"           in  headers && headers["To"].addresses.length) ||
-                 ("Cc"           in  headers && headers["Cc"].addresses.length) ||
-                 ("Bcc"          in  headers && headers["Bcc"].addresses.length) ||
+                ("From"          in  headers && headers["From"].addresses.length       &&
+                 "Message-ID"    in  headers && headers["Message-ID"].rawValue.length) &&
+                (("To"           in  headers && headers["To"].addresses.length)        ||
+                 ("Cc"           in  headers && headers["Cc"].addresses.length)        ||
+                 ("Bcc"          in  headers && headers["Bcc"].addresses.length)       ||
                  ("Delivered-To" in  headers && headers["Delivered-To"].addresses.length))
                 );
     }
@@ -131,24 +135,17 @@ conversationId;
         }
 
         // === Header ===
-        uint count = 0;
-        while (!emailFile.eof())
+        currentLine = emailFile.readln();
+        if (currentLine.length)
         {
-            ++count;
-            currentLine = emailFile.readln();
+            this.lineSep = currentLine.endsWith("\r\n")?"\r\n": "\n";
+            if (currentLine.startsWith("From "))
+                // mbox format indicator, ignore
+                currentLine = emailFile.readln();
+        }
 
-            if (!currentLine.length)
-                // Possible end of stdin/stderr input
-                break;
-
-            if (count == 1)
-            {
-                this.lineSep = currentLine.endsWith("\r\n")?"\r\n": "\n";
-                if (currentLine.startsWith("From "))
-                    // mbox format indicator, ignore
-                    continue;
-            }
-
+        while (currentLine.length && !emailFile.eof())
+        {
             if (inputIsStdInput)
                 stdinLines.put(currentLine);
 
@@ -169,14 +166,12 @@ conversationId;
                 partialBuffer.clear();
                 break;
             }
+            currentLine = emailFile.readln();
         }
 
         // === Body=== (read all into the buffer, the parsing is done outside the loop)
-        while (!emailFile.eof())
+        while (currentLine.length && !emailFile.eof())
         {
-            if (!currentLine.length)
-                break;
-
             currentLine = emailFile.readln();
 
             if (inputIsStdInput)
@@ -197,7 +192,9 @@ conversationId;
             string destFilePath;
             do
             {
-                destFilePath = buildPath(this.rawMailStore, format("%d_%d", stdTimeToUnixTime(Clock.currStdTime), uniform(0, 100000)));
+                destFilePath = buildPath(this.rawMailStore, 
+                                         format("%d_%d", stdTimeToUnixTime(Clock.currStdTime), 
+                                                uniform(0, 100000)));
             } while(destFilePath.exists);
 
             if (inputIsStdInput)
@@ -221,26 +218,12 @@ conversationId;
             if (asString)
             {
                 textheaders.put(name ~ ":");
-                textheaders.put(value.rawValue);
+                textheaders.put(value.rawValue ~ this.lineSep);
             }
             else
                 write(name, ":", value);
         }
         return textheaders.data;
-    }
-
-
-    ulong computeSize()
-    {
-        ulong totalSize;
-
-        foreach(MIMEPart textualPart; this.textualParts)
-            totalSize += textualPart.textContent.length;
-
-        foreach(Attachment attachment; this.attachments)
-            totalSize += attachment.size;
-
-        return totalSize;
     }
 
 
@@ -252,18 +235,96 @@ conversationId;
 
         HeaderValue value;
         string name     = raw[0..idxSeparator];
-        value.rawValue  = decodeEncodedWord(raw[idxSeparator+1..$]);
+        string valueStr = decodeEncodedWord(raw[idxSeparator+1..$]);
+
+        if (valueStr.endsWith("\r\n"))
+            value.rawValue = valueStr[0..$-2];
+        else
+            value.rawValue = valueStr;
 
         // add the bare emails to the value.addresses field
         auto lowname = toLower(name);
-        if (among(lowname, "from", "to", "cc", "bcc", "delivered-to", "x-forwarded-to", "x-forwarded-for"))
-            foreach(c; match(value.rawValue, EMAIL_REGEX))
-                value.addresses ~= c.hit;
-        if (lowname == "references")
-            foreach(c; match(value.rawValue, MSGID_REGEX))
-                value.addresses ~= c.hit;
+        string tmpValue;
+        switch(lowname)
+        {
+			case "from":
+            case "to":
+            case "cc":
+            case "bcc":
+            case "delivered-to":
+            case "x-forwarded-to":
+            case "x-forwarded-for":
+                 foreach(c; match(value.rawValue, EMAIL_REGEX))
+                 {
+                    tmpValue = c.hit;
+                    if (tmpValue.length)
+                        value.addresses ~= tmpValue;
+                 }
+                break;
+            case "message-id":
+                value.addresses = [match(value.rawValue, MSGID_REGEX).hit];
+                break;
+            case "references":
+                 foreach(c; match(value.rawValue, MSGID_REGEX))
+                 {
+                    tmpValue = c.hit;
+                    if (tmpValue.length)
+                        value.addresses ~= tmpValue;
+                 }
+                break;
+            case "date":
+                this.date = parseDate(value.rawValue);
+                break;
+            default:
+        }
 
         this.headers.addField(name, value);
+    }
+
+
+    DateTime parseDate(string strDate)
+    {
+        // Default to current time so we've some date if 
+        // the format is broken
+        DateTime ldate = to!DateTime(Clock.currTime);
+        auto tokDate = strip(strDate).split(' ').filter!(a => !a.empty).array;
+
+        if (!tokDate.length)
+            return ldate;
+
+        try
+        {
+            uint posAdjust = 0;
+            if (tokDate.length >= 5)
+            {
+                // like: Tue, 18 Mar 2014 16:09:36 +0100
+                if (tokDate.length >= 6 && 
+                    among(tokDate[0][0..3], "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+                    ++posAdjust;
+                // else like: 4 Jan 2005 07:04:19 -0000
+
+                auto month     = to!int(countUntil(MONTH_CODES, tokDate[1+posAdjust])+1);
+                auto year      = to!int(tokDate[2+posAdjust]);
+                auto day       = to!int(tokDate[0+posAdjust]);
+                auto hmsTokens = tokDate[3+posAdjust].split(":");
+                auto hour      = to!int(hmsTokens[0]);
+                auto minute    = to!int(hmsTokens[1]);
+                int second = hmsTokens.length > 2? to!int(hmsTokens[2]):0;
+                string tz      = tokDate[4+posAdjust];
+                ldate = DateTime(Date(year, month, day), 
+                                     TimeOfDay(hour, minute, second));
+
+                // The date is saved on UTC, so we add/substract the TZ
+                if (tz.length == 5 && tz[1..$] != "0000")
+                {
+                    int multiplier = tz[0] == '+'? -1: 1;
+                    ldate += dur!"hours"(to!int(tz[1..3])*multiplier);
+                    ldate += dur!"minutes"(to!int(tz[3..5])*multiplier);
+                }
+            }
+        } catch(std.conv.ConvException e) { /* Broken date, use default */}
+
+        return ldate;
     }
 
 
@@ -400,7 +461,7 @@ conversationId;
         att.ctype      = part.ctype.name;
         att.filename   = origFileName;
         att.size       = att.realPath.getSize;
-        att.contentId = part.contentId;
+        att.contentId  = part.contentId;
 
         version(unittest)
         {
@@ -524,18 +585,33 @@ conversationId;
     }
 
 
-    version(anyincomingmailtest)
+    ulong computeSize()
     {
+        ulong totalSize;
+        totalSize += computeBodySize();
+
+        foreach(Attachment attachment; this.attachments)
+            totalSize += attachment.size;
+        return totalSize;
+    }
+
+
+    ulong computeBodySize()
+    {
+        ulong totalSize;
+        foreach(MIMEPart textualPart; this.textualParts)
+            totalSize += textualPart.textContent.length;
+        return totalSize;
     }
 }
 
 
 
-//  _    _       _ _   _            _   
-// | |  | |     (_) | | |          | |  
-// | |  | |_ __  _| |_| |_ ___  ___| |_ 
+//  _    _       _ _   _            _
+// | |  | |     (_) | | |          | |
+// | |  | |_ __  _| |_| |_ ___  ___| |_
 // | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_ 
+// | |__| | | | | | |_| ||  __/\__ \ |_
 //  \____/|_| |_|_|\__|\__\___||___/\__|
 /*
  * HOW TO TEST:
@@ -557,7 +633,7 @@ conversationId;
  *      rdmd --main -singletest => run the code in the singletest version (usually with a
  *      problematic email number hardcoded)
  */
- 
+
 version(unittest)
 {
     void visitParts(MIMEPart part)
@@ -667,12 +743,12 @@ unittest
         ulong mailindex = 0;
         File emailFile;
 
-        while (!mboxf.eof()) 
+        while (!mboxf.eof())
         {
             string line = chomp(mboxf.readln());
-            if (line.length > 6 && line[0..5] == "From ") 
+            if (line.length > 6 && line[0..5] == "From ")
             {
-                if (emailFile.isOpen) 
+                if (emailFile.isOpen)
                 {
                     emailFile.flush();
                     emailFile.close();
@@ -714,10 +790,13 @@ unittest
             auto email = new IncomingEmail(rawMailStore, attachmentStore);
             email.loadFromFile(File(e.name), true);
 
+            auto headerFile = File(buildPath(testDir, "header.txt"), "w");
+            headerFile.write(email.printHeaders(true));
+            headerFile.close();
+
             auto ap = appender!string;
             createPartInfoText(email.rootPart, ap, 0);
-            auto testFile = buildPath(testDir, "mime_info.txt");
-            auto f = File(testFile, "w");
+            auto f = File(buildPath(testDir, "mime_info.txt"), "w");
             f.write(ap.data);
             f.close();
         }
@@ -738,15 +817,22 @@ unittest
         // 60000 => multipart/alternative Windows-1252 quoted-printable
         // 80000 => multipart/alternative ISO8859-1 quoted-printable
         writeln("Starting single email test...");
-        auto filenumber = 40398;
+        auto filenumber = 145;
         auto emailFile = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
         auto email      = new IncomingEmail(rawMailStore, attachmentStore);
         email.loadFromFile(emailFile, true);
 
-        email.visitParts(email.rootPart);
+        visitParts(email.rootPart);
         foreach(MIMEPart part; email.textualParts)
             writeln(part.ctype.name, ":", part.toHash());
 
+        //assert("Date" in email.headers);
+        //auto f2 = File("/home/juanjux/webmail/backend/test/dates.txt");
+        //while(!f2.eof)
+        //{
+            //auto line = strip(f2.readln());
+            //email.parseDate(line);
+        //}
     }
 
     else version(allmailstest) // normal huge test with all the emails in
@@ -771,34 +857,26 @@ unittest
             auto email = new IncomingEmail(rawMailStore, attachmentStore);
             email.loadFromFile(File(e.name), copyMail);
 
+            if (email.computeBodySize() > 16*1024*1024)
+                assert(0);
+
+            writeln("XXX Date: ", email.headers["date"].rawValue);
+
+            auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
             string headersStr = email.printHeaders(true);
-            auto headerLines  = split(headersStr, email.lineSep);
-            auto origFile     = File(e.name);
+            auto refTextAppender = appender!string;
+            while(!fRef.eof)
+                refTextAppender.put(fRef.readln());
 
-            // Consume the first line (with the mbox From)
-            origFile.readln();
-
-            // TEST: HEADERS
-            int idx = 0;
-            while(!origFile.eof())
+            if (headersStr != refTextAppender.data)
             {
-                string origLine = decodeEncodedWord(origFile.readln());
-                if (origLine == email.lineSep) // Body start, stop comparing
-                    break;
-
-                auto headerLine = headerLines[idx] ~ email.lineSep;
-                if (origLine != headerLine)
-                {
-                    writeln("UNMATCHED HEADER IN FILE: ", e.name);
-                    write("\nORIGINAL: |",origLine, "|");
-                    write("\nOUR     : |", headerLine, "|");
-                    writeln("All headers:");
-                    writeln(join(headerLines, "\r\n"));
-                    writeln("------------------------------------------------------");
-                    assert(0);
-                    //break;
-                }
-                ++idx;
+                auto mis = mismatch(headersStr, refTextAppender.data);
+                writeln("UNMATCHED HEADER IN FILE: ", e.name);
+                writeln("---ORIGINAL FOLLOWS FROM UNMATCHING POSITION:");
+                writeln(mis[0]);
+                writeln("---PARSED FOLLOWS FROM UNMATCHING POSITION:");
+                writeln(mis[1]);
+                assert(0);
             }
             writeln("\t\t...headers ok!");
 
@@ -884,7 +962,12 @@ unittest
                 std.file.remove(email.rawMailPath);
         }
     }
+
     version(anyincomingmailtest)
+    {
         // Clean the attachment and rawMail dirs
         system(format("rm -f %s/*", attachmentStore));
+        system(format("rm -f %s/*", rawMailStore));
+    }
 }
+

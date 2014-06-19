@@ -3,6 +3,7 @@ module retriever.db;
 import std.stdio;
 import std.string;
 import std.path;
+import std.algorithm;
 version(dbtest) import std.file;
 
 import vibe.db.mongo.mongo;
@@ -30,6 +31,11 @@ struct RetrieverConfig
     string rawMailStore;
     string attachmentStore;
     ulong  incomingMessageLimit;
+    string smtpServer;
+    uint   smtpEncription;
+    ulong  smtpPort;
+    string smtpUser;
+    string smtpPass;
 }
 
 
@@ -54,11 +60,17 @@ RetrieverConfig getInitialConfig()
 
     // If the db path starts with '/' interpret it as absolute
     config.mainDir              = deserializeBson!string (dbConfig["mainDir"]);
+    config.smtpServer           = deserializeBson!string (dbConfig["smtpServer"]);
+    config.smtpUser             = deserializeBson!string (dbConfig["smtpUser"]);
+    config.smtpPass             = deserializeBson!string (dbConfig["smtpPass"]);
+    config.smtpEncription       = to!uint(deserializeBson!double (dbConfig["smtpEncription"]));
+    config.smtpPort             = to!ulong(deserializeBson!double (dbConfig["smtpPort"]));
     auto dbPath                 = deserializeBson!string (dbConfig["rawMailStore"]);
     config.rawMailStore         = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
-    dbPath                      = deserializeBson!string (dbConfig["attachmentStore"]);
-    config.attachmentStore      = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
+    auto attachPath             = deserializeBson!string (dbConfig["attachmentStore"]);
+    config.attachmentStore      = attachPath.startsWith(dirSeparator)? attachPath: buildPath(config.mainDir, attachPath);
     config.incomingMessageLimit = to!ulong(deserializeBson!double(dbConfig["incomingMessageLimit"]));
+
     return config;
 }
 
@@ -132,7 +144,7 @@ string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = 
     string ret;
     if (headerName in email.headers && email.headers[headerName].rawValue.length)
     {
-        string strHeader = strip(email.headers[headerName].rawValue);
+        string strHeader = email.headers[headerName].rawValue;
         if (removeQuotes)
             strHeader = removechars(strHeader, "\"");
 
@@ -141,8 +153,44 @@ string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = 
         else
             ret = format("\"%s\": %s,", headerName, Json(strHeader).toString());
     }
+    if (onlyValue && !ret.length)
+        ret = `"",`;
     return ret;
 }
+
+
+// XXX Test the fuck out of this when I've the testing DB
+BsonObjectID getConversationId_Mongo(string[] references, string msgId)
+{
+    string[] newReferences;
+    if (references.length)
+    {
+        // Search for a conversation with one of these references
+        BsonObjectID id;
+        char[][] reversed = to!(char[][])(references);
+        reverse(reversed);
+        auto jsonFindStr = format(`{"references": {"$in": %s}}`, reversed);
+        auto convFind = mongoDB["conversation"].findOne(parseJsonString(jsonFindStr));
+
+        // found: add this msgId to the existing conversation and return the conversationId
+        if (convFind != Bson(null))
+        {
+            auto convId = deserializeBson!BsonObjectID(convFind["_id"]);
+            auto jsonUpdateStr = format(`{"$push": {"references": "%s"}}`, msgId);
+            mongoDB["conversation"].update(["_id": convId], parseJsonString(jsonUpdateStr));
+            return convId;
+        }
+    }
+
+    // The email didnt have references or no Conversation found for its
+    // references, create a new one, add the references + msgid to it and return
+    newReferences = references ~ msgId;
+    auto jsonInsert = parseJsonString(format(`{"references": %s}`, to!string(newReferences)));
+    mongoDB["conversation"].insert(jsonInsert);
+    auto convIdNew = deserializeBson!BsonObjectID(mongoDB["conversation"].findOne(jsonInsert)["_id"]);
+    return convIdNew;
+}
+
 
 
 // XXX test when I've the test DB
@@ -158,8 +206,8 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
         partAppender.put("},\n");
     }
     string textPartsJsonStr = partAppender.data;
-
     partAppender.clear();
+
     foreach(attach; email.attachments)
     {
         partAppender.put("{\n");
@@ -185,43 +233,61 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
         realToField = "Delivered-To";
     else
         throw new Exception("Cant insert to DB mail without destination");
-    realToRawValue       = jsonizeField(email, realToField, false, true);
+    realToRawValue  = jsonizeField(email, realToField, false, true);
     realToAddresses = to!string(email.headers[realToField].addresses);
 
+    // Format the reference list
     string referencesJsonStr;
+    bool hasRefs = false;
     if ("References" in email.headers)
+    {
         referencesJsonStr = format(`"references": %s,`, to!string(email.headers["References"].addresses));
+        hasRefs = true;
+    }
 
-    auto emailInsertJson = format(`{"rawMailPath": "%s", %s 
+    auto emailInsertJson = format(`{"rawMailPath": "%s", 
+                                   "message-id": "%s", 
                                    %s
                                    "from": { "content": %s "addresses": %s },
                                    "to": { "content": %s "addresses": %s },
                                     %s %s %s %s %s
                                    "textParts": [ %s ],
                                    "attachments": [ %s ] }`,
-            email.rawMailPath,
-            jsonizeField(email, "message-id", true),
-            referencesJsonStr,
-            jsonizeField(email,"from", false, true),
-            to!string(email.headers["From"].addresses),
-            realToRawValue,
-            realToAddresses,
-            jsonizeField(email, "date", true),
-            jsonizeField(email, "subject"),
-            jsonizeField(email, "cc"),
-            jsonizeField(email, "bcc"),
-            jsonizeField(email, "in-reply-to"),
-            textPartsJsonStr,
-            attachmentsJsonStr);
-    //auto emailInsertJson = format(`{"textParts": [ %s ]}`, textPartsJsonStr);
+                                        email.rawMailPath,
+                                        email.headers["message-id"].addresses[0],
+                                        referencesJsonStr,
+                                        jsonizeField(email,"from", false, true),
+                                        to!string(email.headers["From"].addresses),
+                                        realToRawValue,
+                                        realToAddresses,
+                                        jsonizeField(email, "date", true),
+                                        jsonizeField(email, "subject"),
+                                        jsonizeField(email, "cc"),
+                                        jsonizeField(email, "bcc"),
+                                        jsonizeField(email, "in-reply-to"),
+                                        textPartsJsonStr,
+                                        attachmentsJsonStr);
 
-    // XXX quitar
-    auto f = File("/home/juanjux/borrame.txt", "w");
-    f.write(emailInsertJson);
-    f.flush(); f.close();
+    auto parsedJson = parseJsonString(emailInsertJson);
+    mongoDB["email"].insert(parsedJson);
+    // XXX con el findAndModify puede que no haga falta
+    auto same = mongoDB["email"].findOne(parsedJson); // FIXME: any way to get the id on the same insert with Vibed mongo module?
+    auto id_ = deserializeBson!BsonObjectID(same["_id"]);
 
-    Json jusr = parseJsonString(emailInsertJson);
-    mongoDB["email"].insert(jusr);
+    // FIXME: I do this insert,find,update kludge to update the date which is a BsonDate
+    // because using a ISODate in the json string doest seem to work
+
+    //auto jsonStr = format(`{"$set": {"isodate": ISODate("%s")}}`, BsonDate(email.date).toString());
+    //writeln(jsonStr);
+    //mongoDB["email"].findAndModify(["_id": id_],
+                            //parseJsonString(jsonStr));
+                            ////["isodate": BsonDate(email.date)]);
+
+    string[] empty;
+    auto conversationId = getConversationId_Mongo(hasRefs? email.headers["References"].addresses: 
+                                                      empty, 
+                                                      email.headers["Message-ID"].addresses[0]);
+
 
     auto envelopeInsertJson = `
     {
@@ -264,7 +330,7 @@ unittest
     foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
     {
         //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
-        //if (to!int(e.name.baseName) < 51504) continue; // For testing from some mail forward
+        //if (to!int(e.name.baseName) < 57853) continue; // For testing from some mail forward
 
         if (baseName(e.name) in brokenMails) 
             continue;

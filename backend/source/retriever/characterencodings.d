@@ -285,11 +285,15 @@ string decodeEncodedWord(string data) {
         data = data[questionMark + 2 .. $];
 
         delimiter = data.indexOf("=?");
-        if (delimiter == 1 && data[0] == ' ') {
-            // a single space between encoded words must be ignored because it is
-            // used to separate multiple encoded words (RFC2047 says CRLF SPACE but a most clients
-            // just use a space)
-            data = data[1..$];
+        if (delimiter == 1 && (data[0] == ' ' || data[0] == '\n') || 
+            delimiter == 3 && data[0..2] == "\n " ||
+            delimiter == 3 && data[0..2] == "\r\n" ||
+            delimiter == 4 && data[0..3] == "\r\n ") {
+            // a single <space>, <newline> or a <newline><space> between
+            // encoded words must be ignored because it is used to separate
+            // multiple encoded words (RFC2047 says CRLF SPACE but a lot of
+            // clients just use a space or some variation or )
+            data = data[delimiter..$];
             delimiter = 0;
         }
 

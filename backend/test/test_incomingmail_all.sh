@@ -1,3 +1,3 @@
 #!/bin/sh
 cd ../source/retriever
-dub build --build=plain --config=incomingmail_allmailstest --force && ./test && rm -f ./test
+dub build --build=plain --config=incomingmail_allmailstest && ./test && rm -f ./test
