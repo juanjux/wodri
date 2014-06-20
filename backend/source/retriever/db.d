@@ -4,7 +4,6 @@ import std.stdio;
 import std.string;
 import std.path;
 import std.algorithm;
-version(dbtest) import std.file;
 
 import vibe.db.mongo.mongo;
 import vibe.core.log;
@@ -188,16 +187,13 @@ string getOrCreateConversationId(string[] references, string messageId, string e
         {
             auto convId = deserializeBson!string(convFind["_id"]);
             auto jsonUpdateStr = format(`{"$push": {"links": {"messageId": "%s", "emailId": "%s"}}}`, messageId, emailDbId);
-            writeln("XXX 1");
             mongoDB["conversation"].update(["_id": convId], parseJsonString(jsonUpdateStr));
-            writeln("XXX 2");
             return convId;
         }
     }
 
     // The email didnt have references or no Conversation found for its
-    // references, create a new one, add the references + our msgid to a new Conversation 
-    // document
+    // references: create a new one and add the references + our msgid to it
     auto linksAppender = appender!string;
     foreach(reference; references)
     {
@@ -209,9 +205,7 @@ string getOrCreateConversationId(string[] references, string messageId, string e
     auto convIdNew = BsonObjectID.generate();
     auto jsonInsert = parseJsonString(format(`{"_id": "%s", "userId": "%s", "links": [%s]}`, 
                                              convIdNew, userId, linksAppender.data));
-    writeln("XXX 3");
     mongoDB["conversation"].insert(jsonInsert);
-    writeln("XXX 4");
     return convIdNew.toString;
 }
 
@@ -356,45 +350,91 @@ string saveEmailToDb(IncomingEmail email)
 version(dbtest)
 unittest
 {
+    import std.file;
+    import std.datetime;
+    import std.process;
+
     writeln("Starting db.d unittest...");
     string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
     string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
     string rawMailStore    = buildPath(backendTestDir, "rawmails");
     string attachmentStore = buildPath(backendTestDir, "attachments");
-
     int[string] brokenMails;
+    StopWatch sw;
+    StopWatch totalSw;
+    ulong totalTime = 0;
+    ulong count = 0;
+
 
     foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
     {
         //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
-        //if (to!int(e.name.baseName) < 57853) continue; // For testing from some mail forward
+        //if (to!int(e.name.baseName) < 62879) continue; // For testing from some mail forward
 
+        writeln(e.name, "...");
+
+        totalSw.start();
         if (baseName(e.name) in brokenMails)
             continue;
-
         auto email = new IncomingEmail(rawMailStore, attachmentStore);
+        auto email_withcopy = new IncomingEmail(rawMailStore, attachmentStore);
+
+        sw.start();
         email.loadFromFile(File(e.name), false);
+        sw.stop(); writeln("loadFromFile time: ", sw.peek().usecs); sw.reset();
+
+        sw.start();
+        email_withcopy.loadFromFile(File(e.name), true);
+        sw.stop(); writeln("loadFromFile_withCopy time: ", sw.peek().usecs); sw.reset();
+
+        sw.start();
         auto envelope = Envelope(email, "juanjux@juanjux.mooo.com");
         envelope.userId = getUserIdFromAddress(envelope.destination);
         envelope.tags["inbox"] = true;
+        sw.stop(); writeln("getUserIdFromAddress time: ", sw.peek().usecs); sw.reset();
+
         if (email.isValid)
         {
-            writeln(e.name, "...");
-            writeln(email.headers["Subject"].rawValue);
+            if ("Subject" in email.headers)
+                writeln("Subject: ", email.headers["Subject"].rawValue);
+
+            sw.start();
             envelope.emailId = saveEmailToDb(email);
+            sw.stop(); writeln("saveEmailToDb: ", sw.peek().usecs); sw.reset();
+
+            sw.start();
             envelope.saveEnvelope;
+            sw.stop(); writeln("saveEnvelope: ", sw.peek().usecs); sw.reset();
 
             string[] references;
             if ("References" in email.headers && email.headers["References"].addresses.length)
                 references = email.headers["References"].addresses;
 
+            sw.start();
             auto convId = getOrCreateConversationId(references, email.headers["Message-ID"].addresses[0],
                                       envelope.emailId, envelope.userId);
-            writeln("Conversation: ", convId);
-
+            sw.stop();
+            writeln("Conversation: ", convId, " time: ", sw.peek().usecs);
+            sw.reset();
         }
-    // XXX limpieza, borrar ficheros
+
+        totalSw.stop();
+        if (email.isValid)
+        {
+            auto emailTime = totalSw.peek().usecs;
+            totalTime += emailTime;
+            ++count;
+            writeln("Total time for this email: ", emailTime);
+        }
+        totalSw.reset();
     }
+
+    writeln("Total number of valid emails: ", count);
+    writeln("Average time per valid email: ", totalTime/count);
+
+    // Clean the attachment and rawMail dirs
+    system(format("rm -f %s/*", attachmentStore));
+    system(format("rm -f %s/*", rawMailStore));
 }
 
 
@@ -412,13 +452,10 @@ unittest
         auto email = new IncomingEmail(buildPath(testDir, "rawmails"),
                                        buildPath(testDir, "attachments"));
         email.loadFromFile(buildPath(testMailDir, "with_attachment"));
-
         auto envelope = Envelope(email, "foo@foo.com");
         envelope.tags = ["inbox": true];
-
-        auto filter = new UserFilter(match, action);
+        auto filter   = new UserFilter(match, action);
         filter.apply(envelope);
-
         return envelope;
     }
 

@@ -7,7 +7,7 @@
 Action	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^struct Action$/;"	s	file:
 Attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^struct Attachment \/\/ #attach$/;"	s	file:
 ContentData	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^struct ContentData$/;"	s	file:
-Envelope	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^struct Envelope $/;"	s	file:
+Envelope	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^struct Envelope$/;"	s	file:
 GreaterThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    GreaterThan,$/;"	e	enum:SizeRuleType	file:
 HeaderValue	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^struct HeaderValue$/;"	s	file:
 ISO_8859_1	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^immutable dchar[] ISO_8859_1 = [$/;"	v

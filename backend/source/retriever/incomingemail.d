@@ -1,11 +1,6 @@
 #!/usr/bin/env rdmd
 module retriever.incomingemail;
 
-version(createtestdata) version     = anyincomingmailtest;
-version(regeneratetestdata) version = anyincomingmailtest;
-version(singletest) version         = anyincomingmailtest;
-version(allmailstest) version       = anyincomingmailtest;
-
 import std.stdio;
 import std.path;
 import std.regex;
@@ -18,10 +13,18 @@ import std.array;
 import std.base64;
 import std.random;
 import std.datetime;
-import std.process;
 import vibe.utils.dictionarylist;
 import retriever.characterencodings;
-version(anyincomingmailtest) import retriever.db: getConfig;
+
+version(createtestdata) version     = anyincomingmailtest;
+version(regeneratetestdata) version = anyincomingmailtest;
+version(singletest) version         = anyincomingmailtest;
+version(allmailstest) version       = anyincomingmailtest;
+version(anyincomingmailtest)
+{
+    import retriever.db: getConfig;
+    import std.process;
+}
 
 auto EMAIL_REGEX = ctRegex!(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b", "g");
 auto MSGID_REGEX = ctRegex!(r"[\w@.=%+\-!#\$&'\*/\?\^`\{\}\|~]*\b", "g");

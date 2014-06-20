@@ -1,0 +1,185 @@
+DOMAIN
+
+Information about a domain managed by this email system. The optional
+defaultUser will receive all the email that goes to any address on the domain
+not owned by an user. The domainAdmin will be able to change the domain
+settings. The postMaster will receive warnings and errors.
+
+{
+        "_id" : "<ThisDocumentId>",
+        "defaultUser" : "<user Id>",
+        "domainAdmin" : "<user Id>",
+        "name" : "foo.com",
+        "postMaster" : "<user Id>"
+}
+
+SETTINGS
+
+Three documents, one for every module (retriever, API, frontend). The paths can
+be absolute (starting with a "/") or relative. If relative, they'll be appended
+to the "maindir" setting. The incomingMessageLimit is in bytes.
+
+{
+        "_id" : "<ThisDocumentId>",
+        "attachmentStore" : "path/for/attachments",
+        "incomingMessageLimit" : 15728640,
+        "mainDir" : "/opt/mainSystemDir",
+        "module" : "retriever",
+        "rawMailStore" : "path/for/rawmails",
+        "smtpEncription" : 0,
+        "smtpPass" : "somePasswordForTheOutgoingSMTPRelay",
+        "smtpPort" : 25,
+        "smtpServer" : "someSMTP.server.com",
+        "smtpUser" : "someUserForTheOutgoingSMTPRelay"
+}
+
+USER
+
+User information. 
+
+{
+        "_id" : "<ThisDocumentId>",
+        "loginname" : "someUserLoginName",
+        "name" : "John",
+        "surname" : "Smith",
+        "admin" : false,
+        "addresses" : [
+                "johnsmith@foo.com",
+                "secretmail@foo.com",
+        ]
+}
+
+USERRULE
+
+Contains rules that will match documents and actions to do on them
+
+{
+        "SizeRuleType" : "GreaterThan",
+        "_id" : "<ThisDocumentId>", 
+        "addTags" : [
+                "sometag1",
+                "sometag2"
+        ],
+        "bodyMatches" : [
+                "XXXBODYMATCHXXX"
+        ],
+        "delete" : false,
+        "destinationAccounts" : [
+                "john@foo.com",
+                "secretmail@foo.com"
+        ],
+        "forwardTo" : "",
+        "headerMatches" : {
+                "From" : "somedude@gmail.com"
+        },
+        "markAsRead" : true,
+        "neverSpam" : false,
+        "noInbox" : false,
+        "setSpam" : false,
+        "tagFavorite" : false,
+        "totalSizeValue" : 100485760,
+        "userId" : "<rule owner user Id>",
+        "withAttachment" : false,
+        "withHtml" : false,
+        "withSizeLimit" : false
+}
+
+
+
+ENVELOPE
+
+By-user email metadata; emails are static and only 1 copy for all receivers,
+Envelopes are one copy for every receiving address (so if a user get an email
+to two address he owns, he'll have two envelopes but a single email).
+
+{
+        "idEmail" : "<email Id>",
+        "tags" : [
+                "inbox",
+                "<OtherTags>",
+        ],
+        "_id" : "<ThisDocumentId>",
+        "idUser" : "<user Id>",
+        "destinationAddress" : "email@foo.com",
+        "forwardedTo" : ["someotheremail@foo.com", ]
+}
+
+EMAIL
+
+An email. Only the fields that would be displayed on the frontend gui are
+stored on the database. A copy of the original email is kept on the filesystem
+if the user wants to see the original email (could also be used for a database
+recovery process).  Only a single copy of every email is stored in the DB, even
+if the email is addresses for several users of the system; see the description
+for the Envelope document.
+
+
+{
+        "rawMailPath" : "/path/to/the/original/email/somenumbers_5534534534",
+        "references" : [
+                "ffa77066-3d52-4a90-bc24-fdaf309b6dec@p73g2000hsd.googlegroups.com",
+                "8CA51F67883FE3B-1098-5552@mblk-d27.sysops.aol.com"
+        ],
+        "subject" : "some subject",
+        "attachments" : [ {
+                "contenttype": "mime/jpeg",
+                "realpath": "/path/to/file/2342342343.jpg",
+                "size": 3423432432,
+                "contentid": "some-file-content-id",
+                "filename": "somefile.jpg"
+                },
+        ],
+        "message-id" : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
+        "_id" : "<ThisDocumentId>",
+        "from" : {
+                "content" : "Some Guy Name <someguy@gmail.com>",
+                "addresses" : [
+                        "someguy@gmail.com"
+                ]
+        },
+        "date" : " Wed, 12 Mar 2008 11:45:49 -0700 (PDT)",
+        "in-reply-to" : " <8CA51F67883FE3B-1098-5552@mblk-d27.sysops.aol.com>",
+        "isodate" : "2008-03-12T17:45:49Z",
+        "to" : {
+                "content" : " NodLogin <nodlogin@googlegroups.com>",
+                "addresses" : [
+                        "nodlogin@googlegroups.com"
+                ]
+        },
+        "textParts" : [
+                {
+                        "content" : "Text content, plain or html (see contenttype for every part), already decoded into UTF-8",
+                        "contenttype" : "text/plain"
+                }
+        ]
+}
+
+
+CONVERSATION
+
+Used to group different emails that form a single conversation. The frontend
+could order them by plain+date, using threading, et cetera. The list has, for
+every message, the message-id (as in the email heder), and the ID of the
+document in the email collection (could be missing if there is a reference to
+an email not in the database).
+
+{
+        "_id" : "<ThisDocumentId>",
+        "links" : [
+                {
+                        "messageId" : "CAGA-+RQDsMTnFegb_FYeiyHOFeSQc3cSw9uRY1a41L+vWEBB3g@mail.gmail.com",
+                        "emailId" : "<some email id>"
+                },
+                {
+                        "messageId" : "DUB117-W199FD472475A8034B1A715A8870@phx.gbl",
+                        "emailId" : "<another email id>"
+                },
+                {
+                        "messageId" : "CAGA-+RTYnkF6OA-tzT+vBP4eL5LS_+gou7yVC0rZyVLCieQ_ng@mail.gmail.com",
+                        "emailId" : "<third email in the conversation id>"
+                }
+        ],
+        "userId" : "<user id>"
+}
+
+

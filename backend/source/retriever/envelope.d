@@ -7,19 +7,12 @@ import retriever.incomingemail: IncomingEmail;
 // the receiving address and a part that can change by every user (tags,
 // doForwardTo). It has a similar document structure on the DB.
 
-struct Envelope 
+struct Envelope
 {
     IncomingEmail email;
-    string emailId;
+    string destination;
     string userId;
+    string emailId;
     bool[string] tags;
     string[] doForwardTo;
-    string destination;
-
-    this(IncomingEmail email, string destination)
-    {
-        this.email = email;
-        this.destination = destination;
-    }
 }
-

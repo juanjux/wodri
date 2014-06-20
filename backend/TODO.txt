@@ -1,12 +1,10 @@
 Backend-Retriever:
 
-    - Review the Envelope constructor
-
     - Write down the schemas for: conversation, domain, email, envelope, settings, user, userrule
 
-    - Log the times for search and insert into the conversation collection => see the std.datetime.StopWatch
-
     - Function to create and populate a DB por unittesting
+
+    - Dont insert messages already on the DB (check everything after parsing).
 
     - Think about what to do with messages without Message-ID field
 

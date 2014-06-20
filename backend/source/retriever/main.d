@@ -93,9 +93,7 @@ void processMailForAddress(string destination, IncomingEmail mail, string mailId
 {
     // Create the email=>user envelope
     auto userId            = getUserIdFromAddress(destination);
-    auto envelope          = Envelope(mail, destination);
-    envelope.emailId       = mailId;
-    envelope.userId        = userId;
+    auto envelope          = Envelope(mail, destination, userId, mailId);
     envelope.tags["inbox"] = true;
 
     if ("X-Spam-SetSpamTag" in mail.headers)
