@@ -17,7 +17,12 @@ MongoDatabase mongoDB;
 RetrieverConfig config;
 bool connected = false;
 
-//alias deserializeBson!string = deserializeBson!(string);
+alias bsonStr      = deserializeBson!string;
+alias bsonDouble   = deserializeBson!double;
+alias bsonId       = deserializeBson!BsonObjectID;
+alias bsonBool     = deserializeBson!bool;
+alias bsonStrArray = deserializeBson!(string[]);
+alias bsonStrHash  = deserializeBson!(string[string]);
 
 // FIXME: read db config from file
 static this()
@@ -60,17 +65,17 @@ RetrieverConfig getInitialConfig()
     }
 
     // If the db path starts with '/' interpret it as absolute
-    config.mainDir              = deserializeBson!string (dbConfig["mainDir"]);
-    config.smtpServer           = deserializeBson!string (dbConfig["smtpServer"]);
-    config.smtpUser             = deserializeBson!string (dbConfig["smtpUser"]);
-    config.smtpPass             = deserializeBson!string (dbConfig["smtpPass"]);
-    config.smtpEncription       = to!uint(deserializeBson!double (dbConfig["smtpEncription"]));
-    config.smtpPort             = to!ulong(deserializeBson!double (dbConfig["smtpPort"]));
-    auto dbPath                 = deserializeBson!string (dbConfig["rawEmailStore"]);
-    config.rawEmailStore         = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
-    auto attachPath             = deserializeBson!string (dbConfig["attachmentStore"]);
+    config.mainDir              = bsonStr(dbConfig["mainDir"]);
+    config.smtpServer           = bsonStr(dbConfig["smtpServer"]);
+    config.smtpUser             = bsonStr(dbConfig["smtpUser"]);
+    config.smtpPass             = bsonStr(dbConfig["smtpPass"]);
+    config.smtpEncription       = to!uint(bsonDouble(dbConfig["smtpEncription"]));
+    config.smtpPort             = to!ulong(bsonDouble(dbConfig["smtpPort"]));
+    auto dbPath                 = bsonStr(dbConfig["rawEmailStore"]);
+    config.rawEmailStore        = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
+    auto attachPath             = bsonStr(dbConfig["attachmentStore"]);
     config.attachmentStore      = attachPath.startsWith(dirSeparator)? attachPath: buildPath(config.mainDir, attachPath);
-    config.incomingMessageLimit = to!ulong(deserializeBson!double(dbConfig["incomingMessageLimit"]));
+    config.incomingMessageLimit = to!ulong(bsonDouble(dbConfig["incomingMessageLimit"]));
 
     return config;
 }
@@ -101,22 +106,22 @@ UserFilter[] getAddressFilters(string address)
         Action action;
         try
         {
-            match.totalSizeType  =  deserializeBson!string     (rule["sizeRuleType"]) ==  "SmallerThan"?
+            match.totalSizeType  = bsonStr(rule["sizeRuleType"]) ==  "SmallerThan"?
                                                                               SizeRuleType.SmallerThan:
                                                                               SizeRuleType.GreaterThan;
-            match.withAttachment = deserializeBson!bool       (rule["withAttachment"]);
-            match.withHtml       = deserializeBson!bool       (rule["withHtml"]);
-            match.withSizeLimit  = deserializeBson!bool       (rule["withSizeLimit"]);
-            match.bodyMatches    = deserializeBson!(string[]) (rule["bodyMatches"]);
-            match.headerMatches  = deserializeBson!(string[string])(rule["headerMatches"]);
-            action.noInbox       = deserializeBson!bool       (rule["noInbox"]);
-            action.markAsRead    = deserializeBson!bool       (rule["markAsRead"]);
-            action.deleteIt      = deserializeBson!bool       (rule["delete"]);
-            action.neverSpam     = deserializeBson!bool       (rule["neverSpam"]);
-            action.setSpam       = deserializeBson!bool       (rule["setSpam"]);
-            action.tagFavorite   = deserializeBson!bool       (rule["tagFavorite"]);
-            action.forwardTo     = deserializeBson!string     (rule["forwardTo"]);
-            action.addTags       = deserializeBson!(string[]) (rule["addTags"]);
+            match.withAttachment = bsonBool      (rule["withAttachment"]);
+            match.withHtml       = bsonBool      (rule["withHtml"]);
+            match.withSizeLimit  = bsonBool      (rule["withSizeLimit"]);
+            match.bodyMatches    = bsonStrArray  (rule["bodyMatches"]);
+            match.headerMatches  = bsonStrHash   (rule["headerMatches"]);
+            action.noInbox       = bsonBool      (rule["noInbox"]);
+            action.markAsRead    = bsonBool      (rule["markAsRead"]);
+            action.deleteIt      = bsonBool      (rule["delete"]);
+            action.neverSpam     = bsonBool      (rule["neverSpam"]);
+            action.setSpam       = bsonBool      (rule["setSpam"]);
+            action.tagFavorite   = bsonBool      (rule["tagFavorite"]);
+            action.forwardTo     = bsonStr       (rule["forwardTo"]);
+            action.addTags       = bsonStrArray  (rule["addTags"]);
 
             res ~= new UserFilter(match, action);
         } catch (Exception e)
@@ -167,7 +172,7 @@ string getEmailIdByMessageId(string messageId)
     auto jsonFind = parseJsonString(format(`{"messageId": "%s"}`, messageId));
     auto res = mongoDB["email"].findOne(jsonFind);
     if (res != Bson(null))
-        return deserializeBson!string(res["_id"]);
+        return bsonStr(res["_id"]);
     return "";
 }
 
@@ -187,7 +192,7 @@ string getOrCreateConversationId(string[] references, string messageId, string e
         // found: add this messageId to the existing conversation and return the conversationId
         if (convFind != Bson(null))
         {
-            auto convId = deserializeBson!string(convFind["_id"]);
+            auto convId = bsonStr(convFind["_id"]);
             auto jsonUpdateStr = format(`{"$push": {"links": {"messageId": "%s", "emailId": "%s"}}}`, messageId, emailDbId);
             mongoDB["conversation"].update(["_id": convId], parseJsonString(jsonUpdateStr));
             return convId;
@@ -243,7 +248,7 @@ string getUserIdFromAddress(string address)
     auto userResult = mongoDB["user"].findOne(parseJsonString(userFindJson));
     if (userResult == Bson(null))
         return "";
-    return deserializeBson!BsonObjectID(userResult["_id"]).toString();
+    return bsonId(userResult["_id"]).toString();
 }
 
 
@@ -336,10 +341,10 @@ bool emailAlreadyOnDb(IncomingEmail email)
     if (emailInDb == Bson(null))
         return false;
     
-    if (email.getHeader("subject").rawValue != deserializeBson!string(emailInDb["subject"])       ||
-        email.getHeader("from").rawValue    != deserializeBson!string(emailInDb["from"]["content"]) ||
-        email.getHeader("to").rawValue      != deserializeBson!string(emailInDb["to"]["content"])   ||
-        email.getHeader("date").rawValue    != deserializeBson!string(emailInDb["date"]))
+    if (email.getHeader("subject").rawValue != bsonStr(emailInDb["subject"])       ||
+        email.getHeader("from").rawValue    != bsonStr(emailInDb["from"]["content"]) ||
+        email.getHeader("to").rawValue      != bsonStr(emailInDb["to"]["content"])   ||
+        email.getHeader("date").rawValue    != bsonStr(emailInDb["date"]))
         return false;
     return true;
 }
