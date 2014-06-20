@@ -25,7 +25,7 @@ ISO_8859_6	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/
 ISO_8859_7	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^immutable dchar[] ISO_8859_7 = [$/;"	v
 ISO_8859_8	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^immutable dchar[] ISO_8859_8 = [$/;"	v
 ISO_8859_9	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^immutable dchar[] ISO_8859_9 = [$/;"	v
-IncomingEmail	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^final class IncomingEmail { string attachmentStore; string rawMailStore; string$/;"	c	file:
+IncomingEmail	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^final class IncomingEmail $/;"	c	file:
 KOI8_R	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^immutable dchar[] KOI8_R = [$/;"	v
 KOI8_R_Lower	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^immutable dchar[] KOI8_R_Lower = [$/;"	v
 MIMEPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^final class MIMEPart \/\/ #mimepart$/;"	c	file:
@@ -57,7 +57,7 @@ applyAction	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    void
 attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    Attachment attachment;$/;"	m	class:MIMEPart	file:
 attachmentStore	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string attachmentStore = buildPath(backendTestDir, "attachments");$/;"	v
 attachmentStore	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string attachmentStore;$/;"	m	struct:RetrieverConfig	file:
-attachmentStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^final class IncomingEmail { string attachmentStore; string rawMailStore; string$/;"	m	class:IncomingEmail	file:
+attachmentStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string attachmentStore; $/;"	m	class:IncomingEmail	file:
 attachments	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    Attachment[] attachments;$/;"	m	class:IncomingEmail	file:
 backendTestDir	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");$/;"	v
 bccAddrs	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[] bccAddrs;$/;"	m	class:IncomingEmail	file:
@@ -71,7 +71,6 @@ computeSize	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^   
 config	/home/juanjux/webmail/backend/source/retriever/db.d	/^RetrieverConfig config;$/;"	v
 contentId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	class:MIMEPart	file:
 contentId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	struct:Attachment	file:
-conversationId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^conversationId;$/;"	m	class:IncomingEmail	file:
 createPartInfoText	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)$/;"	f
 ctype	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    ContentData ctype;$/;"	m	class:MIMEPart	file:
 ctype	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string ctype;$/;"	m	struct:Attachment	file:
@@ -86,6 +85,7 @@ disposition	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^   
 doForwardTo	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string[] doForwardTo;$/;"	m	struct:Envelope	file:
 domainHasDefaultUser	/home/juanjux/webmail/backend/source/retriever/db.d	/^bool domainHasDefaultUser(string domainName)$/;"	f
 email	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    IncomingEmail email;$/;"	m	struct:Envelope	file:
+emailId	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string emailId;$/;"	m	struct:Envelope	file:
 fields	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[string] fields;$/;"	m	struct:ContentData	file:
 filename	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string filename;$/;"	m	struct:Attachment	file:
 forwardTo	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string forwardTo;$/;"	m	struct:Action	file:
@@ -93,10 +93,12 @@ fromAddrs	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    s
 g:include_dirs	/home/juanjux/webmail/backend/source/retriever/env.vim	/^let g:include_dirs = [".\/include",]$/;"	v
 getAddressFilters	/home/juanjux/webmail/backend/source/retriever/db.d	/^UserFilter[] getAddressFilters(string address)$/;"	f
 getConfig	/home/juanjux/webmail/backend/source/retriever/db.d	/^ref RetrieverConfig getConfig()$/;"	f
-getConversationId	/home/juanjux/webmail/backend/source/retriever/db.d	/^BsonObjectID getConversationId(string[] references, string msgId)$/;"	f
+getEmailIdByMessageId	/home/juanjux/webmail/backend/source/retriever/db.d	/^string getEmailIdByMessageId(string messageId)$/;"	f
 getInitialConfig	/home/juanjux/webmail/backend/source/retriever/db.d	/^RetrieverConfig getInitialConfig()$/;"	f
+getOrCreateConversationId	/home/juanjux/webmail/backend/source/retriever/db.d	/^string getOrCreateConversationId(string[] references, string messageId, string emailDbId, string userId)$/;"	f
 getRootContentInfo	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private void getRootContentInfo(MIMEPart part)$/;"	f	class:IncomingEmail	file:
 getSortedEmailFilesList	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    DirEntry[] getSortedEmailFilesList(string mailsDir)$/;"	f
+getUserIdFromAddress	/home/juanjux/webmail/backend/source/retriever/db.d	/^string getUserIdFromAddress(string address)$/;"	f
 headerMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string[string]   headerMatches;$/;"	m	struct:Match	file:
 headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    DictionaryList!(HeaderValue, false) headers; \/\/ Note: keys are case insensitive$/;"	m	class:IncomingEmail	file:
 incomingMessageLimit	/home/juanjux/webmail/backend/source/retriever/db.d	/^    ulong  incomingMessageLimit;$/;"	m	struct:RetrieverConfig	file:
@@ -132,7 +134,7 @@ printHeaders	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^  
 rawMailPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string rawMailPath;$/;"	m	class:IncomingEmail	file:
 rawMailStore	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string rawMailStore    = buildPath(backendTestDir, "rawmails");$/;"	v
 rawMailStore	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string rawMailStore;$/;"	m	struct:RetrieverConfig	file:
-rawMailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^final class IncomingEmail { string attachmentStore; string rawMailStore; string$/;"	m	class:IncomingEmail	file:
+rawMailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string rawMailStore; $/;"	m	class:IncomingEmail	file:
 rawValue	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string rawValue;$/;"	m	struct:HeaderValue	file:
 reInstance	/home/juanjux/webmail/backend/source/retriever/db.d	/^    Envelope reInstance(Match match, Action action)$/;"	f
 realPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string realPath;$/;"	m	struct:Attachment	file:
@@ -143,7 +145,8 @@ retriever.incomingemail	/home/juanjux/webmail/backend/source/retriever/incominge
 retriever.main	/home/juanjux/webmail/backend/source/retriever/main.d	/^module retriever.main;$/;"	M
 retriever.userrule	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^module retriever.userrule;$/;"	M
 rootPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    MIMEPart rootPart;$/;"	m	class:IncomingEmail	file:
-saveEmailToDb	/home/juanjux/webmail/backend/source/retriever/db.d	/^void saveEmailToDb(IncomingEmail email, Envelope envelope)$/;"	f
+saveEmailToDb	/home/juanjux/webmail/backend/source/retriever/db.d	/^string saveEmailToDb(IncomingEmail email)$/;"	f
+saveEnvelope	/home/juanjux/webmail/backend/source/retriever/db.d	/^void saveEnvelope(Envelope envelope)$/;"	f
 setAttachmentPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private void setAttachmentPart(MIMEPart part, string[] lines)$/;"	f	class:IncomingEmail	file:
 setSpam	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool setSpam      = false;$/;"	m	struct:Action	file:
 setTextPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private void setTextPart(MIMEPart part, string text)$/;"	f	class:IncomingEmail	file:
@@ -164,6 +167,7 @@ totalSizeValue	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    u
 tryToDetermineEncoding	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^string tryToDetermineEncoding(in ubyte[] rawdata) {$/;"	f
 unittest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    version(unittest)$/;"	V	file:
 unittest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^version(unittest)$/;"	V	file:
+userId	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string userId;$/;"	m	struct:Envelope	file:
 visitParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void visitParts(MIMEPart part)$/;"	f
 withAttachment	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool withAttachment = false;$/;"	m	struct:Match	file:
 withHtml	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool withHtml       = false;$/;"	m	struct:Match	file:

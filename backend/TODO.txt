@@ -1,8 +1,8 @@
 Backend-Retriever:
 
-    - Rethink the "conversation" document. Should it have the User id?
+    - Review the Envelope constructor
 
-    - Insert the envelope once we've the ConversationID (BASIC TESTS)
+    - Write down the schemas for: conversation, domain, email, envelope, settings, user, userrule
 
     - Log the times for search and insert into the conversation collection => see the std.datetime.StopWatch
 
@@ -27,8 +27,6 @@ Backend-Retriever:
 
     - Initial configuration script
 
-    - document
-
     - Retriever's full test, use a Python script with the mail & smtp modules to parse
       the test mails collection changing the receiver from [myRealAddr] to [mongoTestAddr]
       before delivering to Postfix, create a MongoDB database "webmailtest", populate it,
@@ -39,6 +37,13 @@ Backend-Retriever:
 
     - See how to get around Mongo's 16MB document limit (GridFS?) Check is some email of my
       collection is bigger than 16MB without attachments
+
+    - Term unification: 
+            "id" at the end of start? 
+            mail or email? 
+            save or serialize? 
+            forwardedTo, doForward...
+            message-id (email document), messageId, idMessage
 
 Backend-API:
 

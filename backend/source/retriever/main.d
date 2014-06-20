@@ -62,7 +62,7 @@ void saveAndLogRejectedMail(IncomingEmail mail, bool isValid, bool tooBig, strin
     f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", !isValid?"\nInvalid headers":"",
                                                    !localReceivers.length?"\nInvalid destination":"",
                                                    tooBig? "\nMessage too big":"");
-    logInfo(format("Mesage denied from SMTP. ValidHeaders:%s #localReceivers:%s SizeTooBig:%s. " ~
+    logInfo(format("Message denied from SMTP. ValidHeaders:%s #localReceivers:%s SizeTooBig:%s. " ~
                      "Message copy stored at %s", isValid, localReceivers.length, tooBig, failedMailPath));
 
 }
@@ -80,7 +80,6 @@ string[] localReceivers(IncomingEmail email)
             allAddresses ~= email.headers[headerName].addresses;
     }
 
-    // Check for a defaultUser ("catch-all") for this domain
     foreach(addr; allAddresses)
         if (addressIsLocal(addr))
             localAddresses ~= addr;
@@ -89,42 +88,32 @@ string[] localReceivers(IncomingEmail email)
 }
 
 
-void processMailForAddress(string destination, IncomingEmail mail)
+// XXX test
+void processMailForAddress(string destination, IncomingEmail mail, string mailId)
 {
-    auto envelope = Envelope(mail, destination);
+    // Create the email=>user envelope
+    auto userId            = getUserIdFromAddress(destination);
+    auto envelope          = Envelope(mail, destination);
+    envelope.emailId       = mailId;
+    envelope.userId        = userId;
     envelope.tags["inbox"] = true;
 
     if ("X-Spam-SetSpamTag" in mail.headers)
         envelope.tags["spam"] = true;
 
+    // Apply the user-defined filters (if any)
     auto userFilters = getAddressFilters(destination);
-    foreach(filter; userFilters) 
+    foreach(filter; userFilters)
         filter.apply(envelope);
+    saveEnvelope(envelope);
 
-    try
-    {
-        saveEmailToDb(mail, envelope); 
-        // XXX index the message
-    } catch (Exception e) 
-    {
-        auto savedPath = saveRejectedEmail(mail);
-        string exceptionReport = "Mail failed to save on DB because of exception:\n" ~ e.msg;
-        auto f = File(savedPath, "a");
-        f.writeln(exceptionReport);
-        logError(exceptionReport);
-        // XXX rebound the message using the output route
-    }
+    string[] references;
+    if ("References" in mail.headers && mail.headers["References"].addresses.length)
+        references = mail.headers["References"].addresses;
+
+    getOrCreateConversationId(references, mail.headers["Message-ID"].addresses[0],
+                              mailId, userId);
 }
-
-
-
-//  _    _       _ _   _            _   
-// | |  | |     (_) | | |          | |  
-// | |  | |_ __  _| |_| |_ ___  ___| |_ 
-// | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_ 
-//  \____/|_| |_|_|\__|\__\___||___/\__|
-
 
 // XXX test: validity of the tooBig/isValid/localReceivers checks
 version(not_maintest)
@@ -141,8 +130,21 @@ int main()
     bool tooBig         = mail.computeSize() > config.incomingMessageLimit;
 
     if (!tooBig && isValid && localReceivers.length)
-        foreach(destination; localReceivers)
-            processMailForAddress(destination, mail);
+    {
+        try
+        {
+            auto mailId = saveEmailToDb(mail);
+            foreach(destination; localReceivers)
+                processMailForAddress(destination, mail, mailId);
+        } catch (Exception e)
+        {
+            auto savedPath = saveRejectedEmail(mail);
+            string exceptionReport = "Mail failed to save on DB because of exception:\n" ~ e.msg;
+            auto f = File(savedPath, "a");
+            f.writeln(exceptionReport);
+            logError(exceptionReport);
+        }
+    }
     else
     {
         saveAndLogRejectedMail(mail, isValid, tooBig, localReceivers);
@@ -150,6 +152,16 @@ int main()
     }
     return 0; // return != 0 == Postfix rebound the message. Avoid
 }
+
+
+
+//  _    _       _ _   _            _
+// | |  | |     (_) | | |          | |
+// | |  | |_ __  _| |_| |_ ___  ___| |_
+// | |  | | '_ \| | __| __/ _ \/ __| __|
+// | |__| | | | | | |_| ||  __/\__ \ |_
+//  \____/|_| |_|_|\__|\__\___||___/\__|
+
 
 unittest
 {

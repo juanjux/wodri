@@ -10,6 +10,8 @@ import retriever.incomingemail: IncomingEmail;
 struct Envelope 
 {
     IncomingEmail email;
+    string emailId;
+    string userId;
     bool[string] tags;
     string[] doForwardTo;
     string destination;

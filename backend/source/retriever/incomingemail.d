@@ -70,8 +70,10 @@ struct HeaderValue
 }
 
 
-final class IncomingEmail { string attachmentStore; string rawMailStore; string
-conversationId;
+final class IncomingEmail 
+{ 
+    string attachmentStore; 
+    string rawMailStore; 
 
     DictionaryList!(HeaderValue, false) headers; // Note: keys are case insensitive
     MIMEPart rootPart;

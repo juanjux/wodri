@@ -104,19 +104,19 @@ UserFilter[] getAddressFilters(string address)
             match.totalSizeType  =  deserializeBson!string     (rule["SizeRuleType"]) ==  "SmallerThan"?
                                                                               SizeRuleType.SmallerThan:
                                                                               SizeRuleType.GreaterThan;
-            match.withAttachment =  deserializeBson!bool       (rule["withAttachment"]);
-            match.withHtml       =  deserializeBson!bool       (rule["withHtml"]);
-            match.withSizeLimit  =  deserializeBson!bool       (rule["withSizeLimit"]);
-            match.bodyMatches    =  deserializeBson!(string[]) (rule["bodyMatches"]);
-            match.headerMatches  =  deserializeBson!(string[string])(rule["headerMatches"]);
-            action.noInbox       =  deserializeBson!bool       (rule["noInbox"]);
-            action.markAsRead    =  deserializeBson!bool       (rule["markAsRead"]);
-            action.deleteIt      =  deserializeBson!bool       (rule["delete"]);
-            action.neverSpam     =  deserializeBson!bool       (rule["neverSpam"]);
-            action.setSpam       =  deserializeBson!bool       (rule["setSpam"]);
-            action.tagFavorite   =  deserializeBson!bool       (rule["tagFavorite"]);
-            action.forwardTo     =  deserializeBson!string     (rule["forwardTo"]);
-            action.addTags       =  deserializeBson!(string[]) (rule["addTags"]);
+            match.withAttachment = deserializeBson!bool       (rule["withAttachment"]);
+            match.withHtml       = deserializeBson!bool       (rule["withHtml"]);
+            match.withSizeLimit  = deserializeBson!bool       (rule["withSizeLimit"]);
+            match.bodyMatches    = deserializeBson!(string[]) (rule["bodyMatches"]);
+            match.headerMatches  = deserializeBson!(string[string])(rule["headerMatches"]);
+            action.noInbox       = deserializeBson!bool       (rule["noInbox"]);
+            action.markAsRead    = deserializeBson!bool       (rule["markAsRead"]);
+            action.deleteIt      = deserializeBson!bool       (rule["delete"]);
+            action.neverSpam     = deserializeBson!bool       (rule["neverSpam"]);
+            action.setSpam       = deserializeBson!bool       (rule["setSpam"]);
+            action.tagFavorite   = deserializeBson!bool       (rule["tagFavorite"]);
+            action.forwardTo     = deserializeBson!string     (rule["forwardTo"]);
+            action.addTags       = deserializeBson!(string[]) (rule["addTags"]);
 
             res ~= new UserFilter(match, action);
         } catch (Exception e)
@@ -161,8 +161,18 @@ string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = 
 }
 
 
-// XXX Test the fuck out of this when I've the testing DB
-BsonObjectID getConversationId(string[] references, string msgId)
+string getEmailIdByMessageId(string messageId)
+{
+    auto jsonFind = parseJsonString(format(`{"message-id": "%s"}`, messageId));
+    auto res = mongoDB["email"].findOne(jsonFind);
+    if (res != Bson(null))
+        return deserializeBson!string(res["_id"]);
+    return "";
+}
+
+
+// XXX tests when I've the test DB
+string getOrCreateConversationId(string[] references, string messageId, string emailDbId, string userId)
 {
     string[] newReferences;
     if (references.length)
@@ -170,49 +180,79 @@ BsonObjectID getConversationId(string[] references, string msgId)
         // Search for a conversation with one of these references
         char[][] reversed = to!(char[][])(references);
         reverse(reversed);
-        auto jsonFindStr = format(`{"references": {"$in": %s}}`, reversed);
+        auto jsonFindStr = format(`{"userId": "%s", "links.messageId": {"$in": %s}}`, userId, reversed);
         auto convFind = mongoDB["conversation"].findOne(parseJsonString(jsonFindStr));
 
-        // found: add this msgId to the existing conversation and return the conversationId
+        // found: add this messageId to the existing conversation and return the conversationId
         if (convFind != Bson(null))
         {
-            auto convId = deserializeBson!BsonObjectID(convFind["_id"]);
-            auto jsonUpdateStr = format(`{"$push": {"references": "%s"}}`, msgId);
+            auto convId = deserializeBson!string(convFind["_id"]);
+            auto jsonUpdateStr = format(`{"$push": {"links": {"messageId": "%s", "emailId": "%s"}}}`, messageId, emailDbId);
+            writeln("XXX 1");
             mongoDB["conversation"].update(["_id": convId], parseJsonString(jsonUpdateStr));
+            writeln("XXX 2");
             return convId;
         }
     }
 
     // The email didnt have references or no Conversation found for its
-    // references, create a new one, add the references + msgid to it and return
-    newReferences = references ~ msgId;
-    auto jsonInsert = parseJsonString(format(`{"references": %s}`, to!string(newReferences)));
+    // references, create a new one, add the references + our msgid to a new Conversation 
+    // document
+    auto linksAppender = appender!string;
+    foreach(reference; references)
+    {
+        auto referenceEmailId = getEmailIdByMessageId(reference); // empty string if not found
+        linksAppender.put(format(`{"messageId": "%s", "emailId": "%s"},`, reference, referenceEmailId));
+    }
+    // Also this message 
+    linksAppender.put(format(`{"messageId": "%s", "emailId": "%s"}`, messageId, emailDbId));
+    auto convIdNew = BsonObjectID.generate();
+    auto jsonInsert = parseJsonString(format(`{"_id": "%s", "userId": "%s", "links": [%s]}`, 
+                                             convIdNew, userId, linksAppender.data));
+    writeln("XXX 3");
     mongoDB["conversation"].insert(jsonInsert);
-    auto convIdNew = deserializeBson!BsonObjectID(mongoDB["conversation"].findOne(jsonInsert)["_id"]);
-    return convIdNew;
+    writeln("XXX 4");
+    return convIdNew.toString;
 }
 
 
-void saveEnvelope(Envelope envelope, BsonObjectID messageId, BsonObjectID conversationId)
+// XXX tests when I've the test DB
+void saveEnvelope(Envelope envelope)
 {
-    // Find the user
-    auto userFindJson = format(`{"addresses": {"$in": [%s]}}`, envelope.destination);
-    auto userResult = mongoDB["user"].findOne(parseJsonString(userFindJson));
+    string[] enabledTags;
+    foreach(string tag, bool enabled; envelope.tags)
+        if (enabled) enabledTags ~= tag;
+    auto envelopeId = BsonObjectID.generate();
 
-    auto envelopeDoc = Bson.emptyObject;
-    envelopeDoc["idEmail"] = messageId;
-    envelopeDoc["idConversation"] = conversationId;
-    envelopeDoc["destinationAddress"] = envelope.destination;
-    envelopeDoc["forwardedTo"] = to!string(envelope.doForwardTo);
-    envelopeDoc["tags"] = to!string(envelope.tags.keys);
-    if (userResult != Bson(null))
-        envelopeDoc["idUser"] = deserializeBson!BsonObjectID(userResult["_id"]);
-    mongoDB["envelope"].insert(envelopeDoc);
+    auto envelopeInsertJson = format(`{"_id": "%s",
+                                    "idEmail": "%s",
+                                    "idUser": "%s",
+                                    "destinationAddress": "%s",
+                                    "forwardedTo": %s,
+                                    "tags": %s}`,
+                                      envelopeId,
+                                      BsonObjectID.fromString(envelope.emailId),
+                                      BsonObjectID.fromString(envelope.userId),
+                                      envelope.destination,
+                                      to!string(envelope.doForwardTo),
+                                      to!string(enabledTags));
+    mongoDB["envelope"].insert(parseJsonString(envelopeInsertJson));
+}
+
+
+// XXX tests when I've the test DB
+string getUserIdFromAddress(string address)
+{
+    auto userFindJson = format(`{"addresses": {"$in": ["%s"]}}`, address);
+    auto userResult = mongoDB["user"].findOne(parseJsonString(userFindJson));
+    if (userResult == Bson(null))
+        return "";
+    return deserializeBson!BsonObjectID(userResult["_id"]).toString();
 }
 
 
 // XXX test when I've the test DB
-void saveEmailToDb(IncomingEmail email, Envelope envelope)
+string saveEmailToDb(IncomingEmail email)
 {
     auto partAppender = appender!string;
     foreach(idx, part; email.textualParts)
@@ -292,13 +332,7 @@ void saveEmailToDb(IncomingEmail email, Envelope envelope)
 
     auto parsedJson = parseJsonString(emailInsertJson);
     mongoDB["email"].insert(parsedJson);
-    //auto same = mongoDB["email"].findOne(parsedJson); // FIXME: any way to get the id on the same insert with Vibed mongo module?
-    //auto id_ = deserializeBson!BsonObjectID(same["_id"]);
-
-    string[] empty;
-    auto conversationId = getConversationId(hasRefs? email.headers["References"].addresses: empty,
-                                            email.headers["Message-ID"].addresses[0]);
-    saveEnvelope(envelope, messageId, conversationId);
+    return messageId.toString();
 }
 
 
@@ -340,11 +374,24 @@ unittest
 
         auto email = new IncomingEmail(rawMailStore, attachmentStore);
         email.loadFromFile(File(e.name), false);
-        auto envelope = Envelope(email, "foo@foo.com");
+        auto envelope = Envelope(email, "juanjux@juanjux.mooo.com");
+        envelope.userId = getUserIdFromAddress(envelope.destination);
+        envelope.tags["inbox"] = true;
         if (email.isValid)
         {
             writeln(e.name, "...");
-            saveEmailToDb(email, envelope);
+            writeln(email.headers["Subject"].rawValue);
+            envelope.emailId = saveEmailToDb(email);
+            envelope.saveEnvelope;
+
+            string[] references;
+            if ("References" in email.headers && email.headers["References"].addresses.length)
+                references = email.headers["References"].addresses;
+
+            auto convId = getOrCreateConversationId(references, email.headers["Message-ID"].addresses[0],
+                                      envelope.emailId, envelope.userId);
+            writeln("Conversation: ", convId);
+
         }
     // XXX limpieza, borrar ficheros
     }
