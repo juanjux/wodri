@@ -25,7 +25,7 @@ to the "maindir" setting. The incomingMessageLimit is in bytes.
         "incomingMessageLimit" : 15728640,
         "mainDir" : "/opt/mainSystemDir",
         "module" : "retriever",
-        "rawMailStore" : "path/for/rawmails",
+        "rawEmailStore" : "path/for/rawemails",
         "smtpEncription" : 0,
         "smtpPass" : "somePasswordForTheOutgoingSMTPRelay",
         "smtpPort" : 25,
@@ -39,7 +39,7 @@ User information.
 
 {
         "_id" : "<ThisDocumentId>",
-        "loginname" : "someUserLoginName",
+        "loginName" : "someUserLoginName",
         "name" : "John",
         "surname" : "Smith",
         "admin" : false,
@@ -54,7 +54,7 @@ USERRULE
 Contains rules that will match documents and actions to do on them
 
 {
-        "SizeRuleType" : "GreaterThan",
+        "sizeRuleType" : "GreaterThan",
         "_id" : "<ThisDocumentId>", 
         "addTags" : [
                 "sometag1",
@@ -93,15 +93,15 @@ Envelopes are one copy for every receiving address (so if a user get an email
 to two address he owns, he'll have two envelopes but a single email).
 
 {
-        "idEmail" : "<email Id>",
+        "emailId" : "<email Id>",
         "tags" : [
                 "inbox",
                 "<OtherTags>",
         ],
         "_id" : "<ThisDocumentId>",
-        "idUser" : "<user Id>",
+        "userId" : "<user Id>",
         "destinationAddress" : "email@foo.com",
-        "forwardedTo" : ["someotheremail@foo.com", ]
+        "forwardTo" : ["someotheremail@foo.com", ]
 }
 
 EMAIL
@@ -115,21 +115,21 @@ for the Envelope document.
 
 
 {
-        "rawMailPath" : "/path/to/the/original/email/somenumbers_5534534534",
+        "rawEmailPath" : "/path/to/the/original/email/somenumbers_5534534534",
         "references" : [
                 "ffa77066-3d52-4a90-bc24-fdaf309b6dec@p73g2000hsd.googlegroups.com",
                 "8CA51F67883FE3B-1098-5552@mblk-d27.sysops.aol.com"
         ],
         "subject" : "some subject",
         "attachments" : [ {
-                "contenttype": "mime/jpeg",
-                "realpath": "/path/to/file/2342342343.jpg",
+                "contentType": "mime/jpeg",
+                "realPath": "/path/to/file/2342342343.jpg",
                 "size": 3423432432,
-                "contentid": "some-file-content-id",
+                "contentId": "some-file-content-id",
                 "filename": "somefile.jpg"
                 },
         ],
-        "message-id" : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
+        "messageId" : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
         "_id" : "<ThisDocumentId>",
         "from" : {
                 "content" : "Some Guy Name <someguy@gmail.com>",
@@ -138,7 +138,7 @@ for the Envelope document.
                 ]
         },
         "date" : " Wed, 12 Mar 2008 11:45:49 -0700 (PDT)",
-        "in-reply-to" : " <8CA51F67883FE3B-1098-5552@mblk-d27.sysops.aol.com>",
+        "inReplyTo" : " <8CA51F67883FE3B-1098-5552@mblk-d27.sysops.aol.com>",
         "isodate" : "2008-03-12T17:45:49Z",
         "to" : {
                 "content" : " NodLogin <nodlogin@googlegroups.com>",
@@ -149,7 +149,7 @@ for the Envelope document.
         "textParts" : [
                 {
                         "content" : "Text content, plain or html (see contenttype for every part), already decoded into UTF-8",
-                        "contenttype" : "text/plain"
+                        "contentType" : "text/plain"
                 }
         ]
 }

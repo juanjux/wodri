@@ -29,7 +29,7 @@ static this()
 struct RetrieverConfig
 {
     string mainDir;
-    string rawMailStore;
+    string rawEmailStore;
     string attachmentStore;
     ulong  incomingMessageLimit;
     string smtpServer;
@@ -66,8 +66,8 @@ RetrieverConfig getInitialConfig()
     config.smtpPass             = deserializeBson!string (dbConfig["smtpPass"]);
     config.smtpEncription       = to!uint(deserializeBson!double (dbConfig["smtpEncription"]));
     config.smtpPort             = to!ulong(deserializeBson!double (dbConfig["smtpPort"]));
-    auto dbPath                 = deserializeBson!string (dbConfig["rawMailStore"]);
-    config.rawMailStore         = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
+    auto dbPath                 = deserializeBson!string (dbConfig["rawEmailStore"]);
+    config.rawEmailStore         = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
     auto attachPath             = deserializeBson!string (dbConfig["attachmentStore"]);
     config.attachmentStore      = attachPath.startsWith(dirSeparator)? attachPath: buildPath(config.mainDir, attachPath);
     config.incomingMessageLimit = to!ulong(deserializeBson!double(dbConfig["incomingMessageLimit"]));
@@ -92,9 +92,8 @@ bool domainHasDefaultUser(string domainName)
 UserFilter[] getAddressFilters(string address)
 {
     UserFilter[] res;
-    //auto userRuleCursor = mongoDB["userrule"].find(["destinationAccounts": address]);
     auto userRuleFindJson = format(`{"destinationAccounts": {"$in": ["%s"]}}`, address);
-    auto userRuleCursor = mongoDB["userrule"].find(parseJsonString(userRuleFindJson));
+    auto userRuleCursor   = mongoDB["userrule"].find(parseJsonString(userRuleFindJson));
 
     foreach(rule; userRuleCursor)
     {
@@ -102,7 +101,7 @@ UserFilter[] getAddressFilters(string address)
         Action action;
         try
         {
-            match.totalSizeType  =  deserializeBson!string     (rule["SizeRuleType"]) ==  "SmallerThan"?
+            match.totalSizeType  =  deserializeBson!string     (rule["sizeRuleType"]) ==  "SmallerThan"?
                                                                               SizeRuleType.SmallerThan:
                                                                               SizeRuleType.GreaterThan;
             match.withAttachment = deserializeBson!bool       (rule["withAttachment"]);
@@ -145,9 +144,10 @@ bool addressIsLocal(string address)
 string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = false, bool onlyValue=false)
 {
     string ret;
-    if (email.getHeader(headerName).rawValue.length)
+    auto hdr = email.getHeader(headerName);
+    if (hdr.rawValue.length)
     {
-        string strHeader = email.headers[headerName].rawValue;
+        string strHeader = hdr.rawValue;
         if (removeQuotes)
             strHeader = removechars(strHeader, "\"");
 
@@ -164,7 +164,7 @@ string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = 
 
 string getEmailIdByMessageId(string messageId)
 {
-    auto jsonFind = parseJsonString(format(`{"message-id": "%s"}`, messageId));
+    auto jsonFind = parseJsonString(format(`{"messageId": "%s"}`, messageId));
     auto res = mongoDB["email"].findOne(jsonFind);
     if (res != Bson(null))
         return deserializeBson!string(res["_id"]);
@@ -213,7 +213,7 @@ string getOrCreateConversationId(string[] references, string messageId, string e
 
 
 // XXX tests when I've the test DB
-void saveEnvelope(Envelope envelope)
+void storeEnvelope(Envelope envelope)
 {
     string[] enabledTags;
     foreach(string tag, bool enabled; envelope.tags)
@@ -221,16 +221,16 @@ void saveEnvelope(Envelope envelope)
     auto envelopeId = BsonObjectID.generate();
 
     auto envelopeInsertJson = format(`{"_id": "%s",
-                                    "idEmail": "%s",
-                                    "idUser": "%s",
+                                    "emailId": "%s",
+                                    "userId": "%s",
                                     "destinationAddress": "%s",
-                                    "forwardedTo": %s,
+                                    "forwardTo": %s,
                                     "tags": %s}`,
                                       envelopeId,
                                       BsonObjectID.fromString(envelope.emailId),
                                       BsonObjectID.fromString(envelope.userId),
                                       envelope.destination,
-                                      to!string(envelope.doForwardTo),
+                                      to!string(envelope.forwardTo),
                                       to!string(enabledTags));
     mongoDB["envelope"].insert(parseJsonString(envelopeInsertJson));
 }
@@ -248,13 +248,13 @@ string getUserIdFromAddress(string address)
 
 
 // XXX test when I've the test DB
-string saveEmailToDb(IncomingEmail email)
+string storeEmail(IncomingEmail email)
 {
     auto partAppender = appender!string;
     foreach(idx, part; email.textualParts)
     {
         partAppender.put("{\n");
-        partAppender.put("\"contenttype\": " ~ Json(part.ctype.name).toString() ~ ",\n");
+        partAppender.put("\"contentType\": " ~ Json(part.ctype.name).toString() ~ ",\n");
         partAppender.put("\"content\": " ~ Json(part.textContent).toString() ~ "\n");
         partAppender.put("},\n");
     }
@@ -264,35 +264,35 @@ string saveEmailToDb(IncomingEmail email)
     foreach(attach; email.attachments)
     {
         partAppender.put("{\n");
-        partAppender.put(`"contenttype": `    ~ Json(attach.ctype).toString()     ~ `,`);
-        partAppender.put(` "realpath": `      ~ Json(attach.realPath).toString()  ~ `,`);
+        partAppender.put(`"contentType": `    ~ Json(attach.ctype).toString()     ~ `,`);
+        partAppender.put(` "realPath": `      ~ Json(attach.realPath).toString()  ~ `,`);
         partAppender.put(` "size": `          ~ Json(attach.size).toString()      ~ `,`);
         if (attach.contentId.length)
-            partAppender.put(` "contentid": ` ~ Json(attach.contentId).toString() ~ `,`);
+            partAppender.put(` "contentId": ` ~ Json(attach.contentId).toString() ~ `,`);
         if (attach.filename.length)
-            partAppender.put(` "filename": `  ~ Json(attach.filename).toString()  ~ `,`);
+            partAppender.put(` "fileName": `  ~ Json(attach.filename).toString()  ~ `,`);
         partAppender.put("},\n");
     }
     string attachmentsJsonStr = partAppender.data();
     partAppender.clear();
 
-    // Some mails doesnt have a "To:" header but a "Delivered-To:". Really.
+    // Some emails doesnt have a "To:" header but a "Delivered-To:". Really.
     string realReceiverField, realReceiverRawValue, realReceiverAddresses;
-    if ("To" in email.headers)
+    if ("to" in email.headers)
         realReceiverField = "To";
-    else if ("Bcc" in email.headers)
+    else if ("bcc" in email.headers)
         realReceiverField = "Bcc";
-    else if ("Delivered-To" in email.headers)
-        realReceiverField = "Delivered-To";
+    else if ("delivered-to" in email.headers)
+        realReceiverField = "delivered-to";
     else
-        throw new Exception("Cant insert to DB mail without destination");
+        throw new Exception("Cant insert to DB email without destination");
     realReceiverRawValue  = jsonizeField(email, realReceiverField, false, true);
     realReceiverAddresses = to!string(email.headers[realReceiverField].addresses);
 
     auto messageId = BsonObjectID.generate();
     auto emailInsertJson = format(`{"_id": "%s",
-                                    "rawMailPath": "%s",
-                                   "message-id": "%s",
+                                   "rawEmailPath": "%s",
+                                   "messageId": "%s",
                                    "isodate": "%s",
                                    "references": %s,
                                    "from": { "content": %s "addresses": %s },
@@ -301,19 +301,19 @@ string saveEmailToDb(IncomingEmail email)
                                    "textParts": [ %s ],
                                    "attachments": [ %s ] }`,
                                         messageId,
-                                        email.rawMailPath,
-                                        email.headers["message-id"].addresses[0],
+                                        email.rawEmailPath,
+                                        email.getHeader("message-id").addresses[0],
                                         BsonDate(email.date).toString,
                                         to!string(email.getHeader("references").addresses),
                                         jsonizeField(email,"from", false, true),
-                                        to!string(email.headers["From"].addresses),
+                                        to!string(email.getHeader("from").addresses),
                                         realReceiverRawValue,
                                         realReceiverAddresses,
                                         jsonizeField(email, "date", true),
                                         jsonizeField(email, "subject"),
                                         jsonizeField(email, "cc"),
                                         jsonizeField(email, "bcc"),
-                                        jsonizeField(email, "in-reply-to"),
+                                        jsonizeField(email, "inReplyTo"),
                                         textPartsJsonStr,
                                         attachmentsJsonStr);
 
@@ -326,20 +326,20 @@ string saveEmailToDb(IncomingEmail email)
 /**
     Search for an equal email on the DB, comparing all relevant fields
 */
-bool emailAlreadyOnDb(IncomingEmail mail)
+bool emailAlreadyOnDb(IncomingEmail email)
 {
-    auto incomingMsgId = mail.getHeader("message-id");
+    auto incomingMsgId = email.getHeader("message-id");
     if (!incomingMsgId.rawValue.length)
         return false;
 
-    auto emailInDb = mongoDB["email"].findOne(["message-id": incomingMsgId.addresses[0]]);
+    auto emailInDb = mongoDB["email"].findOne(["messageId": incomingMsgId.addresses[0]]);
     if (emailInDb == Bson(null))
         return false;
     
-    if (mail.getHeader("subject").rawValue != deserializeBson!string(emailInDb["subject"])       ||
-        mail.getHeader("from").rawValue    != deserializeBson!string(emailInDb["from"]["content"]) ||
-        mail.getHeader("to").rawValue      != deserializeBson!string(emailInDb["to"]["content"])   ||
-        mail.getHeader("date").rawValue    != deserializeBson!string(emailInDb["date"]))
+    if (email.getHeader("subject").rawValue != deserializeBson!string(emailInDb["subject"])       ||
+        email.getHeader("from").rawValue    != deserializeBson!string(emailInDb["from"]["content"]) ||
+        email.getHeader("to").rawValue      != deserializeBson!string(emailInDb["to"]["content"])   ||
+        email.getHeader("date").rawValue    != deserializeBson!string(emailInDb["date"]))
         return false;
     return true;
 }
@@ -358,8 +358,6 @@ bool emailAlreadyOnDb(IncomingEmail mail)
 //  \____/|_| |_|_|\__|\__\___||___/\__|
 
 
-// XXX falta:
-// - recuperar de nuevo de Mongo y comparar con objeto en memoria
 version(dbtest)
 unittest
 {
@@ -369,28 +367,28 @@ unittest
 
     writeln("Starting db.d unittest...");
     string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
-    string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
-    string rawMailStore    = buildPath(backendTestDir, "rawmails");
+    string origEmailDir     = buildPath(backendTestDir, "emails", "single_emails");
+    string rawEmailStore    = buildPath(backendTestDir, "rawemails");
     string attachmentStore = buildPath(backendTestDir, "attachments");
-    int[string] brokenMails;
+    int[string] brokenEmails;
     StopWatch sw;
     StopWatch totalSw;
     ulong totalTime = 0;
     ulong count = 0;
 
 
-    foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
+    foreach (DirEntry e; getSortedEmailFilesList(origEmailDir))
     {
-        //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
-        //if (to!int(e.name.baseName) < 62879) continue; // For testing from some mail forward
+        //if (indexOf(e, "62877") == -1) continue; // For testing a specific email
+        //if (to!int(e.name.baseName) < 62879) continue; // For testing from some email forward
 
         writeln(e.name, "...");
 
         totalSw.start();
-        if (baseName(e.name) in brokenMails)
+        if (baseName(e.name) in brokenEmails)
             continue;
-        auto email = new IncomingEmail(rawMailStore, attachmentStore);
-        auto email_withcopy = new IncomingEmail(rawMailStore, attachmentStore);
+        auto email = new IncomingEmail(rawEmailStore, attachmentStore);
+        auto email_withcopy = new IncomingEmail(rawEmailStore, attachmentStore);
 
         sw.start();
         email.loadFromFile(File(e.name), false);
@@ -408,24 +406,20 @@ unittest
 
         if (email.isValid)
         {
-            if ("Subject" in email.headers)
-                writeln("Subject: ", email.headers["Subject"].rawValue);
+            writeln("Subject: ", email.getHeader("subject").rawValue);
 
             sw.start();
-            envelope.emailId = saveEmailToDb(email);
-            sw.stop(); writeln("saveEmailToDb: ", sw.peek().usecs); sw.reset();
+            envelope.emailId = storeEmail(email);
+            sw.stop(); writeln("storeEmail: ", sw.peek().usecs); sw.reset();
 
             sw.start();
-            envelope.saveEnvelope;
-            sw.stop(); writeln("saveEnvelope: ", sw.peek().usecs); sw.reset();
-
-            string[] references;
-            if ("References" in email.headers && email.headers["References"].addresses.length)
-                references = email.headers["References"].addresses;
+            envelope.storeEnvelope;
+            sw.stop(); writeln("storeEnvelope: ", sw.peek().usecs); sw.reset();
 
             sw.start();
-            auto convId = getOrCreateConversationId(references, email.headers["Message-ID"].addresses[0],
-                                      envelope.emailId, envelope.userId);
+            auto convId = getOrCreateConversationId(email.getHeader("references").addresses, 
+                                                    email.headers["message-id"].addresses[0],
+                                                    envelope.emailId, envelope.userId);
             sw.stop();
             writeln("Conversation: ", convId, " time: ", sw.peek().usecs);
             sw.reset();
@@ -445,9 +439,9 @@ unittest
     writeln("Total number of valid emails: ", count);
     writeln("Average time per valid email: ", totalTime/count);
 
-    // Clean the attachment and rawMail dirs
+    // Clean the attachment and rawEmail dirs
     system(format("rm -f %s/*", attachmentStore));
-    system(format("rm -f %s/*", rawMailStore));
+    system(format("rm -f %s/*", rawEmailStore));
 }
 
 
@@ -458,13 +452,13 @@ unittest
     auto filters = getAddressFilters("juanjux@juanjux.mooo.com");
     auto config = getConfig();
     auto testDir = buildPath(config.mainDir, "backend", "test");
-    auto testMailDir = buildPath(testDir, "testmails");
+    auto testEmailDir = buildPath(testDir, "testemails");
 
     Envelope reInstance(Match match, Action action)
     {
-        auto email = new IncomingEmail(buildPath(testDir, "rawmails"),
+        auto email = new IncomingEmail(buildPath(testDir, "rawemails"),
                                        buildPath(testDir, "attachments"));
-        email.loadFromFile(buildPath(testMailDir, "with_attachment"));
+        email.loadFromFile(buildPath(testEmailDir, "with_attachment"));
         auto envelope = Envelope(email, "foo@foo.com");
         envelope.tags = ["inbox": true];
         auto filter   = new UserFilter(match, action);
@@ -473,13 +467,13 @@ unittest
     }
 
     // Match the From, set unread to false
-    Match match; match.headerMatches["From"] = "juanjo@juanjoalvarez.net";
+    Match match; match.headerMatches["from"] = "juanjo@juanjoalvarez.net";
     Action action; action.markAsRead = true;
     auto envelope = reInstance(match, action);
     assert("unread" in envelope.tags && !envelope.tags["unread"]);
 
     // Fail to match the From
-    Match match2; match2.headerMatches["From"] = "foo@foo.com";
+    Match match2; match2.headerMatches["from"] = "foo@foo.com";
     Action action2; action2.markAsRead = true;
     envelope = reInstance(match2, action2);
     assert("unread" !in envelope.tags);
@@ -528,7 +522,7 @@ unittest
     Action action8;
     action8.forwardTo = "juanjux@yahoo.es";
     envelope = reInstance(match8, action8);
-    assert(envelope.doForwardTo[0] == "juanjux@yahoo.es");
+    assert(envelope.forwardTo[0] == "juanjux@yahoo.es");
 
     // Dont match SizeSmallerTham
     Match match9;
@@ -538,5 +532,5 @@ unittest
     Action action9;
     action9.forwardTo = "juanjux@yahoo.es";
     envelope = reInstance(match9, action9);
-    assert(!envelope.doForwardTo.length);
+    assert(!envelope.forwardTo.length);
 }

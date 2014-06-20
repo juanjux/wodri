@@ -40,26 +40,26 @@ unittest
 }
 
 
-string saveRejectedEmail(IncomingEmail mail)
+string saveRejectedEmail(IncomingEmail email)
 {
     auto config = getConfig();
-    auto failedMailDir = buildPath(config.mainDir, "backend", "log", "failed_mails");
-    if (!failedMailDir.exists)
-        mkdir(failedMailDir);
+    auto failedEmailDir = buildPath(config.mainDir, "backend", "log", "failed_emails");
+    if (!failedEmailDir.exists)
+        mkdir(failedEmailDir);
 
-    // Save a copy of the denied mail in failedMailPath and log the event
-    auto failedMailPath = buildPath(failedMailDir, baseName(mail.rawMailPath));
-    copy(mail.rawMailPath, failedMailPath);
-    remove(mail.rawMailPath);
-    return failedMailPath;
+    // Save a copy of the denied email in failedEmailPath and log the event
+    auto failedEmailPath = buildPath(failedEmailDir, baseName(email.rawEmailPath));
+    copy(email.rawEmailPath, failedEmailPath);
+    remove(email.rawEmailPath);
+    return failedEmailPath;
 }
 
 
-void saveAndLogRejectedMail(IncomingEmail mail, bool isValid, bool tooBig,
+void saveAndLogRejectedEmail(IncomingEmail email, bool isValid, bool tooBig,
                             string[] localReceivers, bool alreadyOnDb)
 {
-    auto failedMailPath = saveRejectedEmail(mail);
-    auto f = File(failedMailPath, "a");
+    auto failedEmailPath = saveRejectedEmail(email);
+    auto f = File(failedEmailPath, "a");
     f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", !isValid? "\nInvalid headers":"",
                                                    !localReceivers.length? "\nInvalid destination":"",
                                                    tooBig? "\nMessage too big":"",
@@ -67,7 +67,7 @@ void saveAndLogRejectedMail(IncomingEmail mail, bool isValid, bool tooBig,
     logInfo(format("Message denied from SMTP. ValidHeaders:%s"~
                    "#localReceivers:%s SizeTooBig:%s. AlreadyOnDb: %s" ~
                    "Message copy stored at %s",
-                   isValid, localReceivers.length, tooBig, alreadyOnDb, failedMailPath));
+                   isValid, localReceivers.length, tooBig, alreadyOnDb, failedEmailPath));
 }
 
 
@@ -77,11 +77,8 @@ string[] localReceivers(IncomingEmail email)
     string[] allAddresses;
     string[] localAddresses;
 
-    foreach(headerName; ["To", "Cc", "Bcc", "Delivered-To"])
-    {
-        if (headerName in email.headers)
-            allAddresses ~= email.headers[headerName].addresses;
-    }
+    foreach(headerName; ["to", "cc", "bcc", "delivered-to"])
+        allAddresses ~= email.getHeader(headerName).addresses;
 
     foreach(addr; allAddresses)
         if (addressIsLocal(addr))
@@ -92,28 +89,25 @@ string[] localReceivers(IncomingEmail email)
 
 
 // XXX test
-void processMailForAddress(string destination, IncomingEmail mail, string mailId)
+void processEmailForAddress(string destination, IncomingEmail email, string emailId)
 {
     // Create the email=>user envelope
     auto userId            = getUserIdFromAddress(destination);
-    auto envelope          = Envelope(mail, destination, userId, mailId);
+    auto envelope          = Envelope(email, destination, userId, emailId);
     envelope.tags["inbox"] = true;
 
-    if ("X-Spam-SetSpamTag" in mail.headers)
+    if ("x-spam-setspamtag" in email.headers)
         envelope.tags["spam"] = true;
 
     // Apply the user-defined filters (if any)
     auto userFilters = getAddressFilters(destination);
     foreach(filter; userFilters)
         filter.apply(envelope);
-    saveEnvelope(envelope);
+    storeEnvelope(envelope);
 
-    string[] references;
-    if ("References" in mail.headers && mail.headers["References"].addresses.length)
-        references = mail.headers["References"].addresses;
-
-    getOrCreateConversationId(references, mail.headers["Message-ID"].addresses[0],
-                              mailId, userId);
+    getOrCreateConversationId(email.getHeader("references").addresses, 
+                              email.headers["message-id"].addresses[0],
+                              emailId, userId);
 }
 
 // XXX test: validity of the tooBig/isValid/localReceivers checks
@@ -123,25 +117,25 @@ int main()
     auto config = getConfig();
     setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), LogLevel.info);
 
-    auto mail = new IncomingEmail(config.rawMailStore, config.attachmentStore);
-    mail.loadFromFile(std.stdio.stdin);
+    auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
+    email.loadFromFile(std.stdio.stdin);
 
-    bool isValid        = mail.isValid;
-    auto localReceivers = removeDups(localReceivers(mail));
-    bool tooBig         = mail.computeSize() > config.incomingMessageLimit;
-    bool alreadyOnDb    = mail.emailAlreadyOnDb;
+    bool isValid        = email.isValid;
+    auto localReceivers = removeDups(localReceivers(email));
+    bool tooBig         = email.computeSize() > config.incomingMessageLimit;
+    bool alreadyOnDb    = email.emailAlreadyOnDb;
 
     if (!tooBig && isValid && localReceivers.length && !alreadyOnDb)
     {
         try
         {
-            auto mailId = saveEmailToDb(mail);
+            auto emailId = storeEmail(email);
             foreach(destination; localReceivers)
-                processMailForAddress(destination, mail, mailId);
+                processEmailForAddress(destination, email, emailId);
         } catch (Exception e)
         {
-            auto savedPath = saveRejectedEmail(mail);
-            string exceptionReport = "Mail failed to save on DB because of exception:\n" ~ e.msg;
+            auto savedPath = saveRejectedEmail(email);
+            string exceptionReport = "Email failed to save on DB because of exception:\n" ~ e.msg;
             auto f = File(savedPath, "a");
             f.writeln(exceptionReport);
             logError(exceptionReport);
@@ -149,7 +143,7 @@ int main()
     }
     else
         // XXX rebound the message using the output route
-        saveAndLogRejectedMail(mail, isValid, tooBig, localReceivers, alreadyOnDb);
+        saveAndLogRejectedEmail(email, isValid, tooBig, localReceivers, alreadyOnDb);
     return 0; // return != 0 == Postfix rebound the message. Avoid
 }
 

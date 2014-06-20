@@ -76,7 +76,7 @@ struct HeaderValue
 final class IncomingEmail 
 { 
     string attachmentStore; 
-    string rawMailStore; 
+    string rawEmailStore; 
 
     DictionaryList!(HeaderValue, false) headers; // Note: keys are case insensitive
     MIMEPart rootPart;
@@ -88,32 +88,30 @@ final class IncomingEmail
     string[] toAddrs;
     string[] ccAddrs;
     string[] bccAddrs;
-    string rawMailPath;
+    string rawEmailPath;
     string lineSep = "\r\n";
 
-    this(string rawMailStore, string attachmentStore)
+    this(string rawEmailStore, string attachmentStore)
     {
         this.attachmentStore = attachmentStore;
-        this.rawMailStore    = rawMailStore;
+        this.rawEmailStore    = rawEmailStore;
         this.rootPart        = new MIMEPart();
     }
 
     @property bool isValid()
     {
-        // FIXME: Check the minimal valid headers and the values
-        return (
-                ("From"          in  headers && headers["From"].addresses.length       &&
-                 "Message-ID"    in  headers && headers["Message-ID"].rawValue.length) &&
-                (("To"           in  headers && headers["To"].addresses.length)        ||
-                 ("Cc"           in  headers && headers["Cc"].addresses.length)        ||
-                 ("Bcc"          in  headers && headers["Bcc"].addresses.length)       ||
-                 ("Delivered-To" in  headers && headers["Delivered-To"].addresses.length))
-                );
+        // From and Message-ID and at least one of to/cc/bcc/delivered-to
+        return ((getHeader("from").addresses.length && getHeader("message-id").rawValue.length) &&
+                (getHeader("to").addresses.length        ||
+                getHeader("cc").addresses.length         ||
+                getHeader("bcc").addresses.length        ||
+                getHeader("delivered-to").addresses.length));
     }
 
 
     /**
         Return the header if it exists. If not, returns an empty HeaderValue.
+        Useful when you want a default empty value.
     */
     HeaderValue getHeader(string name)
     {
@@ -203,14 +201,14 @@ final class IncomingEmail
         else
             setTextPart(this.rootPart, partialBuffer.data);
 
-        // Finally, copy the email to rawMailPath
+        // Finally, copy the email to rawEmailPath
         // (the user of the class is responsible for deleting the original)
-        if (copyRaw && this.rawMailStore.length)
+        if (copyRaw && this.rawEmailStore.length)
         {
             string destFilePath;
             do
             {
-                destFilePath = buildPath(this.rawMailStore, 
+                destFilePath = buildPath(this.rawEmailStore, 
                                          format("%d_%d", stdTimeToUnixTime(Clock.currStdTime), 
                                                 uniform(0, 100000)));
             } while(destFilePath.exists);
@@ -223,7 +221,7 @@ final class IncomingEmail
             else
                 copy(emailFile.name, destFilePath);
 
-            this.rawMailPath = destFilePath;
+            this.rawEmailPath = destFilePath;
         }
     }
 
@@ -295,7 +293,6 @@ final class IncomingEmail
                 break;
             default:
         }
-
         this.headers.addField(name, value);
     }
 
@@ -527,7 +524,7 @@ final class IncomingEmail
         {
             auto idxSeparator = indexOf(text, ":");
             if (idxSeparator == -1 || (idxSeparator+1 > text.length))
-                // Some mail generators dont put a CRLF
+                // Some email generators dont put a CRLF
                 // after the part header in the text/plain part but
                 // something like "----------"
                 return;
@@ -589,14 +586,14 @@ final class IncomingEmail
 
     private void getRootContentInfo(MIMEPart part)
     {
-        if ("Content-Type" in this.headers)
-            parseContentHeader(part.ctype, this.headers["Content-Type"].rawValue);
+        if ("content-type" in this.headers)
+            parseContentHeader(part.ctype, headers["content-type"].rawValue);
 
-        if ("Content-Disposition" in this.headers)
-            parseContentHeader(part.disposition, this.headers["Content-Disposition"].rawValue);
+        if ("content-disposition" in this.headers)
+            parseContentHeader(part.disposition, headers["content-disposition"].rawValue);
 
-        if ("Content-Transfer-Encoding" in this.headers)
-            part.cTransferEncoding = toLower(strip(removechars(this.headers["Content-Transfer-Encoding"].rawValue, "\"")));
+        if ("content-transfer-encoding" in this.headers)
+            part.cTransferEncoding = toLower(strip(removechars(headers["content-transfer-encoding"].rawValue, "\"")));
 
         if (!part.ctype.name.startsWith("multipart") && "charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
@@ -635,8 +632,8 @@ final class IncomingEmail
  * HOW TO TEST:
  *
  * Since I'm not putting my personal email collection inside the unittests dirs, here's how to do it yourself:
- * - Get all your mails (or the mails you want to test) into a single mbox file. For example, Gmail exports
- *   all your mail in that format with Google Takeout (https://www.google.com/settings/takeout/custom/gmail)
+ * - Get all your emails (or the emails you want to test) into a single mbox file. For example, Gmail exports
+ *   all your email in that format with Google Takeout (https://www.google.com/settings/takeout/custom/gmail)
  *
  * - Split that mbox in single emails running:
  *      rdmd --main -unittest -version=createtestemails incomingemail.d
@@ -646,7 +643,7 @@ final class IncomingEmail
  *      rdmd --main -unittest -version=generatetestdata
 *       (you only need to do this once, unless you change the mimeinfo format in the function createPartInfoText)
  *
- * Once you have the single mails and the test data you can do:
+ * Once you have the single emails and the test data you can do:
  *      rdmd --main -unittest => run all the tests on all emails
  *      rdmd --main -singletest => run the code in the singletest version (usually with a
  *      problematic email number hardcoded)
@@ -671,10 +668,10 @@ version(unittest)
     }
 
 
-    DirEntry[] getSortedEmailFilesList(string mailsDir)
+    DirEntry[] getSortedEmailFilesList(string emailsDir)
     {
         DirEntry[] emailFiles;
-        foreach(DirEntry e; dirEntries(mailsDir, SpanMode.shallow))
+        foreach(DirEntry e; dirEntries(emailsDir, SpanMode.shallow))
             if (!e.isDir) emailFiles ~= e;
 
         bool intFileComp(DirEntry x, DirEntry y)
@@ -739,8 +736,8 @@ unittest
     version(anyincomingmailtest)
     {
         string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
-        string origMailDir     = buildPath(backendTestDir, "emails", "single_emails");
-        string rawMailStore    = buildPath(backendTestDir, "rawmails");
+        string origEmailDir     = buildPath(backendTestDir, "emails", "single_emails");
+        string rawEmailStore    = buildPath(backendTestDir, "rawemails");
         string attachmentStore = buildPath(backendTestDir, "attachments");
         string base64Dir       = buildPath(backendTestDir, "base64_test");
     }
@@ -754,11 +751,11 @@ unittest
 
         writeln("Splitting mailbox: ", mboxFileName);
 
-        if (!exists(origMailDir))
-            mkdir(origMailDir);
+        if (!exists(origEmailDir))
+            mkdir(origEmailDir);
 
         auto mboxf = File(mboxFileName);
-        ulong mailindex = 0;
+        ulong emailindex = 0;
         File emailFile;
 
         while (!mboxf.eof())
@@ -772,8 +769,8 @@ unittest
                     emailFile.close();
                 }
 
-                emailFile = File(buildPath(origMailDir, to!string(++mailindex)), "w");
-                writeln(mailindex);
+                emailFile = File(buildPath(origEmailDir, to!string(++emailindex)), "w");
+                writeln(emailindex);
             }
             emailFile.write(line ~ "\r\n");
         }
@@ -781,12 +778,12 @@ unittest
 
     else version(regeneratetestdata)
     {
-        // For every mail in maildir, parse, create a mailname_test dir, and create a testinfo file inside
+        // For every email in emaildir, parse, create a emailname_test dir, and create a testinfo file inside
         // with a description of every mime part (ctype, charset, transfer-encoding, disposition, length, etc)
         // and their contents. This will be used in the unittest for comparing the email parsing output with
         // these. Obviously, it's very important to regenerate these files only with Good and Tested versions :)
         writeln("Generating test data, make sure to do this with a stable version");
-        auto sortedFiles = getSortedEmailFilesList(origMailDir);
+        auto sortedFiles = getSortedEmailFilesList(origEmailDir);
         foreach(DirEntry e; sortedFiles)
         {
             // parsear email e.name
@@ -805,7 +802,7 @@ unittest
             if (!testAttachDir.exists)
                 mkdir(testAttachDir);
 
-            auto email = new IncomingEmail(rawMailStore, attachmentStore);
+            auto email = new IncomingEmail(rawEmailStore, attachmentStore);
             email.loadFromFile(File(e.name), true);
 
             auto headerFile = File(buildPath(testDir, "header.txt"), "w");
@@ -835,9 +832,9 @@ unittest
         // 60000 => multipart/alternative Windows-1252 quoted-printable
         // 80000 => multipart/alternative ISO8859-1 quoted-printable
         writeln("Starting single email test...");
-        auto filenumber = 145;
-        auto emailFile = File(format("%s/%d", origMailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
-        auto email      = new IncomingEmail(rawMailStore, attachmentStore);
+        auto filenumber = 30509;
+        auto emailFile = File(format("%s/%d", origEmailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
+        auto email      = new IncomingEmail(rawEmailStore, attachmentStore);
         email.loadFromFile(emailFile, true);
 
         visitParts(email.rootPart);
@@ -853,32 +850,30 @@ unittest
         //}
     }
 
-    else version(allmailstest) // normal huge test with all the emails in
+    else version(allemailstest) // normal huge test with all the emails in
     {
-        writeln("Starting all mails test...");
-        int[string] brokenMails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,]; // broken mails, no newline after headers or parts, etc
+        writeln("Starting all emails test...");
+        int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,]; // broken emails, no newline after headers or parts, etc
 
-        // Not broken, but for putting mails that need to be skipped for some reaso
+        // Not broken, but for putting emails that need to be skipped for some reaso
         //int[string] skipMails  = ["41051":0, "41112":0];
-        int[string] skipMails;
-        bool copyMail = true;
+        int[string] skipEmails;
+        bool copyEmail = true;
 
-        foreach (DirEntry e; getSortedEmailFilesList(origMailDir))
+        foreach (DirEntry e; getSortedEmailFilesList(origEmailDir))
         {
-            //if (indexOf(e, "62877") == -1) continue; // For testing a specific mail
-            //if (to!int(e.name.baseName) < 32000) continue; // For testing from some mail forward
+            //if (indexOf(e, "62877") == -1) continue; // For testing a specific email
+            //if (to!int(e.name.baseName) < 32000) continue; // For testing from some email forward
 
             writeln(e.name, "...");
-            if (baseName(e.name) in brokenMails || baseName(e.name) in skipMails)
+            if (baseName(e.name) in brokenEmails || baseName(e.name) in skipEmails)
                 continue;
 
-            auto email = new IncomingEmail(rawMailStore, attachmentStore);
-            email.loadFromFile(File(e.name), copyMail);
+            auto email = new IncomingEmail(rawEmailStore, attachmentStore);
+            email.loadFromFile(File(e.name), copyEmail);
 
             if (email.computeBodySize() > 16*1024*1024)
                 assert(0);
-
-            writeln("XXX Date: ", email.headers["date"].rawValue);
 
             auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
             string headersStr = email.printHeaders(true);
@@ -973,19 +968,19 @@ unittest
             }
             writeln("\t...attachments ok!");
 
-            // clean the attachment files and the rawmail
+            // clean the attachment files and the rawemail
             foreach(Attachment att; email.attachments)
                 std.file.remove(att.realPath);
-            if (copyMail)
-                std.file.remove(email.rawMailPath);
+            if (copyEmail)
+                std.file.remove(email.rawEmailPath);
         }
     }
 
     version(anyincomingmailtest)
     {
-        // Clean the attachment and rawMail dirs
+        // Clean the attachment and rawEmail dirs
         system(format("rm -f %s/*", attachmentStore));
-        system(format("rm -f %s/*", rawMailStore));
+        system(format("rm -f %s/*", rawEmailStore));
     }
 }
 

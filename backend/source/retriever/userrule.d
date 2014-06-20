@@ -73,11 +73,8 @@ class UserFilter
         }
 
         foreach(string matchHeaderName, string matchHeaderFilter; this.match.headerMatches)
-        {
-            if (matchHeaderName !in envelope.email.headers ||
-                indexOf(envelope.email.headers[matchHeaderName].rawValue, this.match.headerMatches[matchHeaderName]) == -1)
+            if (indexOf(envelope.email.getHeader(matchHeaderName).rawValue, matchHeaderFilter) == -1)
                 return false;
-        }
 
         foreach(MIMEPart part; envelope.email.textualParts)
         {
@@ -88,12 +85,12 @@ class UserFilter
 
         if (this.match.withSizeLimit)
         {
-            auto mailSize = envelope.email.computeSize();
+            auto emailSize = envelope.email.computeSize();
             if (this.match.totalSizeType == SizeRuleType.GreaterThan &&
-                mailSize < this.match.totalSizeValue)
+                emailSize < this.match.totalSizeValue)
                 return false;
             else if (this.match.totalSizeType == SizeRuleType.SmallerThan &&
-                mailSize > this.match.totalSizeValue)
+                emailSize > this.match.totalSizeValue)
                 return false;
         }
         return true;
@@ -130,7 +127,7 @@ class UserFilter
         }
 
         if (this.action.forwardTo.length)
-            envelope.doForwardTo ~= this.action.forwardTo;
+            envelope.forwardTo ~= this.action.forwardTo;
     }
 }
 

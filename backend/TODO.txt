@@ -2,7 +2,8 @@ Backend-Retriever:
 
     - Function to create and populate a DB por unittesting
 
-    - Think about what to do with messages without Message-ID field
+    - Think about what to do with messages without Message-ID field: 
+      generate one for them? 
 
     - When the message failed to enter (validation error, or error on save) generate a rebound
       using our message sending system (when implemented)
@@ -32,13 +33,6 @@ Backend-Retriever:
     - See how to get around Mongo's 16MB document limit (GridFS?) Check is some email of my
       collection is bigger than 16MB without attachments
 
-    - Term unification: 
-            "id" at the end of start? 
-            mail or email? 
-            save or serialize? 
-            forwardedTo, doForward...
-            message-id (email document), messageId, idMessage
-            capitalized keys in email.headers => use all lowercase
 
 Backend-API:
 
