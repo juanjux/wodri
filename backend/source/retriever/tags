@@ -52,6 +52,7 @@ addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    p
 addTags	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string[] addTags;$/;"	m	struct:Action	file:
 addressIsLocal	/home/juanjux/webmail/backend/source/retriever/db.d	/^bool addressIsLocal(string address)$/;"	f
 addresses	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[] addresses;$/;"	m	struct:HeaderValue	file:
+anyincomingmailtest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^version(anyincomingmailtest)$/;"	V	file:
 apply	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    void apply(ref Envelope envelope)$/;"	f	class:UserFilter
 applyAction	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    void applyAction(ref Envelope envelope)$/;"	f	class:UserFilter
 attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    Attachment attachment;$/;"	m	class:MIMEPart	file:
@@ -63,6 +64,7 @@ backendTestDir	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string 
 bccAddrs	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[] bccAddrs;$/;"	m	class:IncomingEmail	file:
 bodyMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string[]         bodyMatches;$/;"	m	struct:Match	file:
 brokenMails	/home/juanjux/webmail/backend/source/retriever/db.d	/^    int[string] brokenMails;$/;"	v
+bsonStr	/home/juanjux/webmail/backend/source/retriever/db.d	/^alias bsonStr = deserializeBson!string;$/;"	t	file:
 cTransferEncoding	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string cTransferEncoding;$/;"	m	class:MIMEPart	file:
 ccAddrs	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[] ccAddrs;$/;"	m	class:IncomingEmail	file:
 checkMatch	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool checkMatch(ref Envelope envelope)$/;"	f	class:UserFilter
@@ -85,6 +87,7 @@ disposition	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^   
 doForwardTo	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string[] doForwardTo;$/;"	m	struct:Envelope	file:
 domainHasDefaultUser	/home/juanjux/webmail/backend/source/retriever/db.d	/^bool domainHasDefaultUser(string domainName)$/;"	f
 email	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    IncomingEmail email;$/;"	m	struct:Envelope	file:
+emailAlreadyOnDb	/home/juanjux/webmail/backend/source/retriever/db.d	/^bool emailAlreadyOnDb(IncomingEmail mail)$/;"	f
 emailId	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string emailId;$/;"	m	struct:Envelope	file:
 fields	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[string] fields;$/;"	m	struct:ContentData	file:
 filename	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string filename;$/;"	m	struct:Attachment	file:
@@ -94,6 +97,7 @@ g:include_dirs	/home/juanjux/webmail/backend/source/retriever/env.vim	/^let g:in
 getAddressFilters	/home/juanjux/webmail/backend/source/retriever/db.d	/^UserFilter[] getAddressFilters(string address)$/;"	f
 getConfig	/home/juanjux/webmail/backend/source/retriever/db.d	/^ref RetrieverConfig getConfig()$/;"	f
 getEmailIdByMessageId	/home/juanjux/webmail/backend/source/retriever/db.d	/^string getEmailIdByMessageId(string messageId)$/;"	f
+getHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    HeaderValue getHeader(string name)$/;"	f	class:IncomingEmail
 getInitialConfig	/home/juanjux/webmail/backend/source/retriever/db.d	/^RetrieverConfig getInitialConfig()$/;"	f
 getOrCreateConversationId	/home/juanjux/webmail/backend/source/retriever/db.d	/^string getOrCreateConversationId(string[] references, string messageId, string emailDbId, string userId)$/;"	f
 getRootContentInfo	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private void getRootContentInfo(MIMEPart part)$/;"	f	class:IncomingEmail	file:
@@ -157,6 +161,7 @@ smtpPort	/home/juanjux/webmail/backend/source/retriever/db.d	/^    ulong  smtpPo
 smtpServer	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string smtpServer;$/;"	m	struct:RetrieverConfig	file:
 smtpUser	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string smtpUser;$/;"	m	struct:RetrieverConfig	file:
 subparts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    MIMEPart[] subparts;$/;"	m	class:MIMEPart	file:
+sw	/home/juanjux/webmail/backend/source/retriever/db.d	/^    StopWatch sw;$/;"	v
 tagFavorite	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool tagFavorite  = false;$/;"	m	struct:Action	file:
 tags	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    bool[string] tags;$/;"	m	struct:Envelope	file:
 textContent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string textContent;$/;"	m	class:MIMEPart	file:
@@ -164,6 +169,7 @@ textualParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^  
 toAddrs	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[] toAddrs;$/;"	m	class:IncomingEmail	file:
 totalSizeType	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    SizeRuleType     totalSizeType = SizeRuleType.GreaterThan;$/;"	m	struct:Match	file:
 totalSizeValue	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    ulong            totalSizeValue;$/;"	m	struct:Match	file:
+totalSw	/home/juanjux/webmail/backend/source/retriever/db.d	/^    StopWatch totalSw;$/;"	v
 tryToDetermineEncoding	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^string tryToDetermineEncoding(in ubyte[] rawdata) {$/;"	f
 unittest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    version(unittest)$/;"	V	file:
 unittest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^version(unittest)$/;"	V	file:

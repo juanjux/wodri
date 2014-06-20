@@ -112,6 +112,19 @@ final class IncomingEmail
     }
 
 
+    /**
+        Return the header if it exists. If not, returns an empty HeaderValue.
+    */
+    HeaderValue getHeader(string name)
+    {
+        if (name in this.headers)
+            return this.headers[name];
+
+        HeaderValue hv;
+        return hv;
+    }
+
+
     void loadFromFile(string emailPath, bool copyRaw=true)
     {
         auto f = File(emailPath);

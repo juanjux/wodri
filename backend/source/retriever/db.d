@@ -17,6 +17,8 @@ MongoDatabase mongoDB;
 RetrieverConfig config;
 bool connected = false;
 
+//alias deserializeBson!string = deserializeBson!(string);
+
 // FIXME: read db config from file
 static this()
 {
@@ -143,7 +145,7 @@ bool addressIsLocal(string address)
 string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = false, bool onlyValue=false)
 {
     string ret;
-    if (headerName in email.headers && email.headers[headerName].rawValue.length)
+    if (email.getHeader(headerName).rawValue.length)
     {
         string strHeader = email.headers[headerName].rawValue;
         if (removeQuotes)
@@ -262,46 +264,37 @@ string saveEmailToDb(IncomingEmail email)
     foreach(attach; email.attachments)
     {
         partAppender.put("{\n");
-        partAppender.put(`"contenttype": ` ~ Json(attach.ctype).toString() ~ `,`);
-        partAppender.put(` "realpath": ` ~ Json(attach.realPath).toString() ~ `,`);
-        partAppender.put(` "size": ` ~ Json(attach.size).toString() ~ `,`);
+        partAppender.put(`"contenttype": `    ~ Json(attach.ctype).toString()     ~ `,`);
+        partAppender.put(` "realpath": `      ~ Json(attach.realPath).toString()  ~ `,`);
+        partAppender.put(` "size": `          ~ Json(attach.size).toString()      ~ `,`);
         if (attach.contentId.length)
             partAppender.put(` "contentid": ` ~ Json(attach.contentId).toString() ~ `,`);
         if (attach.filename.length)
-            partAppender.put(` "filename": ` ~ Json(attach.filename).toString() ~ `,`);
+            partAppender.put(` "filename": `  ~ Json(attach.filename).toString()  ~ `,`);
         partAppender.put("},\n");
     }
     string attachmentsJsonStr = partAppender.data();
     partAppender.clear();
 
     // Some mails doesnt have a "To:" header but a "Delivered-To:". Really.
-    string realToField, realToRawValue, realToAddresses;
+    string realReceiverField, realReceiverRawValue, realReceiverAddresses;
     if ("To" in email.headers)
-        realToField = "To";
+        realReceiverField = "To";
     else if ("Bcc" in email.headers)
-        realToField = "Bcc";
+        realReceiverField = "Bcc";
     else if ("Delivered-To" in email.headers)
-        realToField = "Delivered-To";
+        realReceiverField = "Delivered-To";
     else
         throw new Exception("Cant insert to DB mail without destination");
-    realToRawValue  = jsonizeField(email, realToField, false, true);
-    realToAddresses = to!string(email.headers[realToField].addresses);
-
-    // Format the reference list
-    string referencesJsonStr;
-    bool hasRefs = false;
-    if ("References" in email.headers)
-    {
-        referencesJsonStr = format(`"references": %s,`, to!string(email.headers["References"].addresses));
-        hasRefs = true;
-    }
+    realReceiverRawValue  = jsonizeField(email, realReceiverField, false, true);
+    realReceiverAddresses = to!string(email.headers[realReceiverField].addresses);
 
     auto messageId = BsonObjectID.generate();
     auto emailInsertJson = format(`{"_id": "%s",
                                     "rawMailPath": "%s",
                                    "message-id": "%s",
                                    "isodate": "%s",
-                                   %s
+                                   "references": %s,
                                    "from": { "content": %s "addresses": %s },
                                    "to": { "content": %s "addresses": %s },
                                     %s %s %s %s %s
@@ -311,11 +304,11 @@ string saveEmailToDb(IncomingEmail email)
                                         email.rawMailPath,
                                         email.headers["message-id"].addresses[0],
                                         BsonDate(email.date).toString,
-                                        referencesJsonStr,
+                                        to!string(email.getHeader("references").addresses),
                                         jsonizeField(email,"from", false, true),
                                         to!string(email.headers["From"].addresses),
-                                        realToRawValue,
-                                        realToAddresses,
+                                        realReceiverRawValue,
+                                        realReceiverAddresses,
                                         jsonizeField(email, "date", true),
                                         jsonizeField(email, "subject"),
                                         jsonizeField(email, "cc"),
@@ -330,6 +323,26 @@ string saveEmailToDb(IncomingEmail email)
 }
 
 
+/**
+    Search for an equal email on the DB, comparing all relevant fields
+*/
+bool emailAlreadyOnDb(IncomingEmail mail)
+{
+    auto incomingMsgId = mail.getHeader("message-id");
+    if (!incomingMsgId.rawValue.length)
+        return false;
+
+    auto emailInDb = mongoDB["email"].findOne(["message-id": incomingMsgId.addresses[0]]);
+    if (emailInDb == Bson(null))
+        return false;
+    
+    if (mail.getHeader("subject").rawValue != deserializeBson!string(emailInDb["subject"])       ||
+        mail.getHeader("from").rawValue    != deserializeBson!string(emailInDb["from"]["content"]) ||
+        mail.getHeader("to").rawValue      != deserializeBson!string(emailInDb["to"]["content"])   ||
+        mail.getHeader("date").rawValue    != deserializeBson!string(emailInDb["date"]))
+        return false;
+    return true;
+}
 
 
 

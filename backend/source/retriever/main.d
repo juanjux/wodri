@@ -55,16 +55,19 @@ string saveRejectedEmail(IncomingEmail mail)
 }
 
 
-void saveAndLogRejectedMail(IncomingEmail mail, bool isValid, bool tooBig, string[] localReceivers)
+void saveAndLogRejectedMail(IncomingEmail mail, bool isValid, bool tooBig,
+                            string[] localReceivers, bool alreadyOnDb)
 {
     auto failedMailPath = saveRejectedEmail(mail);
     auto f = File(failedMailPath, "a");
-    f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", !isValid?"\nInvalid headers":"",
-                                                   !localReceivers.length?"\nInvalid destination":"",
-                                                   tooBig? "\nMessage too big":"");
-    logInfo(format("Message denied from SMTP. ValidHeaders:%s #localReceivers:%s SizeTooBig:%s. " ~
-                     "Message copy stored at %s", isValid, localReceivers.length, tooBig, failedMailPath));
-
+    f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", !isValid? "\nInvalid headers":"",
+                                                   !localReceivers.length? "\nInvalid destination":"",
+                                                   tooBig? "\nMessage too big":"",
+                                                   alreadyOnDb? "\nAlready on DB": "");
+    logInfo(format("Message denied from SMTP. ValidHeaders:%s"~
+                   "#localReceivers:%s SizeTooBig:%s. AlreadyOnDb: %s" ~
+                   "Message copy stored at %s",
+                   isValid, localReceivers.length, tooBig, alreadyOnDb, failedMailPath));
 }
 
 
@@ -126,8 +129,9 @@ int main()
     bool isValid        = mail.isValid;
     auto localReceivers = removeDups(localReceivers(mail));
     bool tooBig         = mail.computeSize() > config.incomingMessageLimit;
+    bool alreadyOnDb    = mail.emailAlreadyOnDb;
 
-    if (!tooBig && isValid && localReceivers.length)
+    if (!tooBig && isValid && localReceivers.length && !alreadyOnDb)
     {
         try
         {
@@ -144,10 +148,8 @@ int main()
         }
     }
     else
-    {
-        saveAndLogRejectedMail(mail, isValid, tooBig, localReceivers);
         // XXX rebound the message using the output route
-    }
+        saveAndLogRejectedMail(mail, isValid, tooBig, localReceivers, alreadyOnDb);
     return 0; // return != 0 == Postfix rebound the message. Avoid
 }
 
