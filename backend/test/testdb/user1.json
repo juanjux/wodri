@@ -1,0 +1,10 @@
+{
+        "_id" : "5399b94c759fc00f2362c5f0",
+        "addresses" : [
+                "testuser@testdatabase.com",
+        ],
+        "admin" : true,
+        "loginName" : "testuser",
+        "name" : "testUserName",
+        "surname" : "testUserSurName"
+}

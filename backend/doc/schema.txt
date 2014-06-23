@@ -54,34 +54,34 @@ USERRULE
 Contains rules that will match documents and actions to do on them
 
 {
-        "sizeRuleType" : "GreaterThan",
         "_id" : "<ThisDocumentId>", 
-        "addTags" : [
-                "sometag1",
-                "sometag2"
-        ],
-        "bodyMatches" : [
-                "XXXBODYMATCHXXX"
-        ],
-        "delete" : false,
+        "userId" : "<rule owner user Id>",
         "destinationAccounts" : [
                 "john@foo.com",
                 "secretmail@foo.com"
         ],
-        "forwardTo" : "",
-        "headerMatches" : {
+        "match_totalSizeValue" : 100485760,
+        "match_withAttachment" : false,
+        "match_withHtml" : false,
+        "match_withSizeLimit" : false
+        "match_sizeRuleType" : "GreaterThan",
+        "match_bodyText" : [
+                "XXXBODYMATCHXXX"
+        ],
+        "match_headers" : {
                 "From" : "somedude@gmail.com"
         },
-        "markAsRead" : true,
-        "neverSpam" : false,
-        "noInbox" : false,
-        "setSpam" : false,
-        "tagFavorite" : false,
-        "totalSizeValue" : 100485760,
-        "userId" : "<rule owner user Id>",
-        "withAttachment" : false,
-        "withHtml" : false,
-        "withSizeLimit" : false
+        "action_addTags" : [
+                "sometag1",
+                "sometag2"
+        ],
+        "action_delete" : false,
+        "action_forwardTo" : "",
+        "action_markAsRead" : true,
+        "action_neverSpam" : false,
+        "action_noInbox" : false,
+        "action_setSpam" : false,
+        "action_tagFavorite" : false,
 }
 
 

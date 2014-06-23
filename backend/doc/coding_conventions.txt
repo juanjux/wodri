@@ -1,0 +1,35 @@
+I don't feel strongly about these styles but I do about having some uniformity in the code.
+
+- camelCase in code and mongo fields but not for paths (paths are all lowecase)
+
+- don't name members like m_someMember, use "this.someMember"
+
+- Symbol names: better to be long and clear than to be short and concise (but
+  short and clear is preferred).
+
+- Allman style braces:
+    void someFunc()  
+    {
+        if (bla)
+        {
+            dfsdf;
+            dfsdf;
+        }
+        else
+        {
+            dfdsf;
+            ewrw;
+        }
+    }
+
+- "id" like in "userId" goes at the end both for code and DB fields. Inside
+  camelized words is "someId" not "someID"
+
+- "email" not "mail"
+
+- Verbs to put something somehwere:
+  - Database: store
+  - Disk: save
+
+- The IncomingMail.header member DictionaryList object is case insensitive, but
+  please use lowercase for keys.

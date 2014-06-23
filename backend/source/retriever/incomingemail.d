@@ -16,10 +16,10 @@ import std.datetime;
 import vibe.utils.dictionarylist;
 import retriever.characterencodings;
 
-version(createtestdata) version     = anyincomingmailtest;
-version(regeneratetestdata) version = anyincomingmailtest;
-version(singletest) version         = anyincomingmailtest;
-version(allmailstest) version       = anyincomingmailtest;
+version(incomingemail_createtestdata) version     = anyincomingmailtest;
+version(incomingemail_regeneratetestdata) version = anyincomingmailtest;
+version(incomingemail_singletest) version         = anyincomingmailtest;
+version(incomingemail_allmailstest) version       = anyincomingmailtest;
 version(anyincomingmailtest)
 {
     import retriever.db: getConfig;
@@ -742,7 +742,7 @@ unittest
         string base64Dir       = buildPath(backendTestDir, "base64_test");
     }
 
-    version(createtestdata)
+    version(incomingemail_createtestdata)
     {
         writeln("Splitting test emails...");
         auto mboxFileName = buildPath(backendTestDir, "emails", "testmails.mbox");
@@ -776,7 +776,7 @@ unittest
         }
     }
 
-    else version(regeneratetestdata)
+    else version(incomingemail_regeneratetestdata)
     {
         // For every email in emaildir, parse, create a emailname_test dir, and create a testinfo file inside
         // with a description of every mime part (ctype, charset, transfer-encoding, disposition, length, etc)
@@ -818,7 +818,7 @@ unittest
 
     }
 
-    else version(singletest)
+    else version(incomingemail_singletest)
     {
 
         // Specific tests
@@ -850,7 +850,7 @@ unittest
         //}
     }
 
-    else version(allemailstest) // normal huge test with all the emails in
+    else version(incomingemail_allmailstest) // normal huge test with all the emails in
     {
         writeln("Starting all emails test...");
         int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,]; // broken emails, no newline after headers or parts, etc
@@ -976,7 +976,7 @@ unittest
         }
     }
 
-    version(anyincomingmailtest)
+    version(incomingemail_allmailstest)
     {
         // Clean the attachment and rawEmail dirs
         system(format("rm -f %s/*", attachmentStore));

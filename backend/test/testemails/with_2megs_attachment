@@ -1,16 +1,12 @@
-From 1457850669259040352@xxx Tue Jan 21 02:32:20 2014
-X-GM-THRID: 1457850669259040352
-X-Gmail-Labels: Enviados,Importante,conadjuntos
 MIME-Version: 1.0
-Sender: juanjux@gmail.com
+Sender: someuser@somedomain.com
 Received: by 10.227.21.6 with HTTP; Tue, 21 Jan 2014 06:32:20 -0800 (PST)
 Date: Tue, 21 Jan 2014 15:32:20 +0100
-Delivered-To: juanjux@gmail.com
-X-Google-Sender-Auth: hExvvqslwIl-nohMs6yomzb3zXs
+Delivered-To: testuser@testdatabase.com
 Message-ID: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>
-Subject: Libro C++ Pocket Reference
-From: Juanjo Alvarez <juanjo@juanjoalvarez.net>
-To: Juanjo <juanjux@juanjux.mooo.com>
+Subject: Attachment test
+From: Some Random User <someuser@somedomain.com>
+To: Test User1 <testuser@testdatabase.com>
 Content-Type: multipart/mixed; boundary=001a11c1a3f83d671c04f07be060
 
 --001a11c1a3f83d671c04f07be060

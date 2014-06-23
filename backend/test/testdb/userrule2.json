@@ -1,0 +1,26 @@
+{
+        "_id" : "53997f3404ac3d27431d088b",
+        "userId" : "53a6ddb5e3644712463cbce3",
+        "destinationAccounts" : [
+                "anotherUser@testdatabase.com",
+                "anotherUser@anotherdomain.com",
+        ],
+        "match_bodyText" : [
+                "XXX ANOTHER BODYMATCH XXX"
+        ],
+        "match_withAttachment" : true,
+        "match_withHtml" : true,
+        "match_withSizeLimit" : false,
+        "action_addTags" : [
+                "testtag3",
+                "testtag4"
+        ],
+        "action_delete" : false,
+        "action_forwardTo" : [],
+        "action_markAsRead" : false,
+        "action_neverSpam" : false,
+        "action_noInbox" : true,
+        "action_setSpam" : false,
+        "action_tagFavorite" : true,
+}
+

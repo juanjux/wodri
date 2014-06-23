@@ -1,8 +1,5 @@
-From juanjux@gmail.com  Tue Jun 10 14:51:47 2014
-Return-Path: <juanjux@gmail.com>
-X-Original-To: juanjux@juanjux.mooo.com
-Delivered-To: juanjux@juanjux.mooo.com
-Received: by juanjux.mooo.com (Postfix, from userid 1002)
+Delivered-To: testuser@testdatabase.com
+Received: by testdatabase.com (Postfix, from userid 1002)
 	id 174541848D5; Tue, 10 Jun 2014 14:51:47 +0200 (CEST)
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on tatil2014
 X-Spam-Flag: YES
@@ -22,11 +19,8 @@ X-Spam-Report:
 	*  0.0 ADVANCE_FEE_4_NEW Appears to be advance fee fraud (Nigerian 419)
 	*  3.7 MONEY_FRAUD_5 Lots of money and many fraud phrases
 	*  1.8 ADVANCE_FEE_5_NEW_MONEY Advance Fee fraud and lots of money
-Received: from mail-la0-f43.google.com (mail-la0-f43.google.com [209.85.215.43])
-	by juanjux.mooo.com (Postfix) with ESMTPS id C3A04183E76
-	for <juanjux@juanjux.mooo.com>; Tue, 10 Jun 2014 14:51:31 +0200 (CEST)
 Received: by mail-la0-f43.google.com with SMTP id mc6so3975006lab.30
-        for <juanjux@juanjux.mooo.com>; Tue, 10 Jun 2014 05:51:30 -0700 (PDT)
+        for <testuser@testdatabase.com>; Tue, 10 Jun 2014 05:51:30 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=gmail.com; s=20120113;
         h=mime-version:sender:in-reply-to:references:from:date:message-id
@@ -41,16 +35,15 @@ DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
 X-Received: by 10.112.155.230 with SMTP id vz6mr1316863lbb.73.1402404690802;
  Tue, 10 Jun 2014 05:51:30 -0700 (PDT)
 MIME-Version: 1.0
-Sender: juanjux@gmail.com
+Sender: someuser@anydomain.com
 Received: by 10.152.21.135 with HTTP; Tue, 10 Jun 2014 05:51:10 -0700 (PDT)
 In-Reply-To: <20140609205429.01E5AC000035B@1xj.tpn.terra.com>
 References: <20140609205429.01E5AC000035B@1xj.tpn.terra.com>
-From: Juanjo Alvarez <juanjo@juanjoalvarez.net>
+From: SomeUser Random <someuser@anydomain.com>
 Date: Tue, 10 Jun 2014 14:51:10 +0200
-X-Google-Sender-Auth: OqeKwUinRZv205oxVsvxbL3E7NA
 Message-ID: <CAGA-+RScZe0tqmG4rbPTSrSCKT8BmkNAGBUOgvCOT5ywycZzZA@mail.gmail.com>
 Subject: Fwd: Hello My Dearest, please I need your help!
-To: juanjux@juanjux.mooo.com
+To: testuser@testdatabase.com
 Content-Type: multipart/alternative; boundary=089e011770cb6d402304fb7ac9ff
 
 --089e011770cb6d402304fb7ac9ff

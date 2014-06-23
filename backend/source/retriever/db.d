@@ -18,7 +18,6 @@ RetrieverConfig config;
 bool connected = false;
 
 alias bsonStr      = deserializeBson!string;
-alias bsonDouble   = deserializeBson!double;
 alias bsonId       = deserializeBson!BsonObjectID;
 alias bsonBool     = deserializeBson!bool;
 alias bsonStrArray = deserializeBson!(string[]);
@@ -27,9 +26,20 @@ alias bsonStrHash  = deserializeBson!(string[string]);
 // FIXME: read db config from file
 static this()
 {
-    mongoDB = connectMongoDB("localhost").getDatabase("webmail");
-    config  = getInitialConfig();
+    version(db_usetestdb)
+    {
+        mongoDB = connectMongoDB("localhost").getDatabase("testwebmail");
+        insertTestSettings();
+        config = getInitialConfig();
+        createTestDb();
+    }
+    else
+    {
+        mongoDB = connectMongoDB("localhost").getDatabase("webmail");
+        config  = getInitialConfig();
+    }
 }
+
 
 struct RetrieverConfig
 {
@@ -42,6 +52,23 @@ struct RetrieverConfig
     ulong  smtpPort;
     string smtpUser;
     string smtpPass;
+}
+
+
+double bsonNumber(Bson input)
+{
+    switch(input.type)
+    {
+        case Bson.Type.double_:
+            return deserializeBson!double(input);
+        case Bson.Type.int_:
+            return to!double(deserializeBson!int(input));
+        case Bson.Type.long_:
+            return to!double(deserializeBson!long(input));
+        default:
+            throw new Exception(format("Bson input is not of numeric type but: ", input.type));
+    }
+    assert(0);
 }
 
 
@@ -69,14 +96,13 @@ RetrieverConfig getInitialConfig()
     config.smtpServer           = bsonStr(dbConfig["smtpServer"]);
     config.smtpUser             = bsonStr(dbConfig["smtpUser"]);
     config.smtpPass             = bsonStr(dbConfig["smtpPass"]);
-    config.smtpEncription       = to!uint(bsonDouble(dbConfig["smtpEncription"]));
-    config.smtpPort             = to!ulong(bsonDouble(dbConfig["smtpPort"]));
+    config.smtpEncription       = to!uint(bsonNumber(dbConfig["smtpEncription"]));
+    config.smtpPort             = to!ulong(bsonNumber(dbConfig["smtpPort"]));
     auto dbPath                 = bsonStr(dbConfig["rawEmailStore"]);
     config.rawEmailStore        = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
     auto attachPath             = bsonStr(dbConfig["attachmentStore"]);
     config.attachmentStore      = attachPath.startsWith(dirSeparator)? attachPath: buildPath(config.mainDir, attachPath);
-    config.incomingMessageLimit = to!ulong(bsonDouble(dbConfig["incomingMessageLimit"]));
-
+    config.incomingMessageLimit = to!ulong(bsonNumber(dbConfig["incomingMessageLimit"]));
     return config;
 }
 
@@ -106,22 +132,22 @@ UserFilter[] getAddressFilters(string address)
         Action action;
         try
         {
-            match.totalSizeType  = bsonStr(rule["sizeRuleType"]) ==  "SmallerThan"?
+            match.totalSizeType  = bsonStr(rule["match_sizeRuleType"]) ==  "SmallerThan"?
                                                                               SizeRuleType.SmallerThan:
                                                                               SizeRuleType.GreaterThan;
-            match.withAttachment = bsonBool      (rule["withAttachment"]);
-            match.withHtml       = bsonBool      (rule["withHtml"]);
-            match.withSizeLimit  = bsonBool      (rule["withSizeLimit"]);
-            match.bodyMatches    = bsonStrArray  (rule["bodyMatches"]);
-            match.headerMatches  = bsonStrHash   (rule["headerMatches"]);
-            action.noInbox       = bsonBool      (rule["noInbox"]);
-            action.markAsRead    = bsonBool      (rule["markAsRead"]);
-            action.deleteIt      = bsonBool      (rule["delete"]);
-            action.neverSpam     = bsonBool      (rule["neverSpam"]);
-            action.setSpam       = bsonBool      (rule["setSpam"]);
-            action.tagFavorite   = bsonBool      (rule["tagFavorite"]);
-            action.forwardTo     = bsonStr       (rule["forwardTo"]);
-            action.addTags       = bsonStrArray  (rule["addTags"]);
+            match.withAttachment = bsonBool      (rule["match_withAttachment"]);
+            match.withHtml       = bsonBool      (rule["match_withHtml"]);
+            match.withSizeLimit  = bsonBool      (rule["match_withSizeLimit"]);
+            match.bodyMatches    = bsonStrArray  (rule["match_bodyText"]);
+            match.headerMatches  = bsonStrHash   (rule["match_headers"]);
+            action.noInbox       = bsonBool      (rule["action_noInbox"]);
+            action.markAsRead    = bsonBool      (rule["action_markAsRead"]);
+            action.deleteIt      = bsonBool      (rule["action_delete"]);
+            action.neverSpam     = bsonBool      (rule["action_neverSpam"]);
+            action.setSpam       = bsonBool      (rule["action_setSpam"]);
+            action.tagFavorite   = bsonBool      (rule["action_tagFavorite"]);
+            action.forwardTo     = bsonStr       (rule["action_forwardTo"]);
+            action.addTags       = bsonStrArray  (rule["action_addTags"]);
 
             res ~= new UserFilter(match, action);
         } catch (Exception e)
@@ -167,6 +193,7 @@ string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = 
 }
 
 
+// XXX tests when I've the test DB
 string getEmailIdByMessageId(string messageId)
 {
     auto jsonFind = parseJsonString(format(`{"messageId": "%s"}`, messageId));
@@ -187,12 +214,12 @@ string getOrCreateConversationId(string[] references, string messageId, string e
         char[][] reversed = to!(char[][])(references);
         reverse(reversed);
         auto jsonFindStr = format(`{"userId": "%s", "links.messageId": {"$in": %s}}`, userId, reversed);
-        auto convFind = mongoDB["conversation"].findOne(parseJsonString(jsonFindStr));
+        auto convFind    = mongoDB["conversation"].findOne(parseJsonString(jsonFindStr));
 
         // found: add this messageId to the existing conversation and return the conversationId
         if (convFind != Bson(null))
         {
-            auto convId = bsonStr(convFind["_id"]);
+            auto convId        = bsonStr(convFind["_id"]);
             auto jsonUpdateStr = format(`{"$push": {"links": {"messageId": "%s", "emailId": "%s"}}}`, messageId, emailDbId);
             mongoDB["conversation"].update(["_id": convId], parseJsonString(jsonUpdateStr));
             return convId;
@@ -200,17 +227,17 @@ string getOrCreateConversationId(string[] references, string messageId, string e
     }
 
     // The email didnt have references or no Conversation found for its
-    // references: create a new one and add the references + our msgid to it
+    // references: create a new one and add the references + this msg id to it
     auto linksAppender = appender!string;
     foreach(reference; references)
     {
         auto referenceEmailId = getEmailIdByMessageId(reference); // empty string if not found
         linksAppender.put(format(`{"messageId": "%s", "emailId": "%s"},`, reference, referenceEmailId));
     }
-    // Also this message 
+    // Also this message
     linksAppender.put(format(`{"messageId": "%s", "emailId": "%s"}`, messageId, emailDbId));
     auto convIdNew = BsonObjectID.generate();
-    auto jsonInsert = parseJsonString(format(`{"_id": "%s", "userId": "%s", "links": [%s]}`, 
+    auto jsonInsert = parseJsonString(format(`{"_id": "%s", "userId": "%s", "links": [%s]}`,
                                              convIdNew, userId, linksAppender.data));
     mongoDB["conversation"].insert(jsonInsert);
     return convIdNew.toString;
@@ -340,7 +367,7 @@ bool emailAlreadyOnDb(IncomingEmail email)
     auto emailInDb = mongoDB["email"].findOne(["messageId": incomingMsgId.addresses[0]]);
     if (emailInDb == Bson(null))
         return false;
-    
+
     if (email.getHeader("subject").rawValue != bsonStr(emailInDb["subject"])       ||
         email.getHeader("from").rawValue    != bsonStr(emailInDb["from"]["content"]) ||
         email.getHeader("to").rawValue      != bsonStr(emailInDb["to"]["content"])   ||
@@ -362,25 +389,68 @@ bool emailAlreadyOnDb(IncomingEmail email)
 // | |__| | | | | | |_| ||  __/\__ \ |_
 //  \____/|_| |_|_|\__|\__\___||___/\__|
 
+version(db_usetestdb)
+{
+    void insertTestSettings()
+    {
+        mongoDB["settings"].remove();
+        string settingsJsonStr = format(`
+        {
+                "_id" : "5399793904ac3d27431d0669",
+                "mainDir" : "/home/juanjux/webmail",
+                "attachmentStore" : "backend/test/attachments",
+                "incomingMessageLimit" : 15728640,
+                "module" : "retriever",
+                "rawEmailStore" : "backend/test/rawemails",
+                "smtpEncription" : 0,
+                "smtpPass" : "smtpPass",
+                "smtpPort" : 25,
+                "smtpServer" : "localhost",
+                "smtpUser" : "smtpUser"
+        }`);
+        mongoDB["settings"].insert(parseJsonString(settingsJsonStr));
+    }
 
-version(dbtest)
+
+    void createTestDb()
+    {
+        import std.file;
+        writeln("Recreating test db...");
+        foreach(string collection; ["envelope", "email", "conversation", "domain", "user", "userrule"])
+            mongoDB[collection].remove();
+
+        // Fill the test DB
+        string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", "test", "testdb");
+        string[string] jsonfile2collection = ["user1.json": "user",
+                                              "user2.json": "user",
+                                              "domain1.json": "domain",
+                                              "domain2.json": "domain",
+                                              "userrule1.json": "userrule",
+                                              "userrule2.json": "userrule",];
+        foreach(file_, collection; jsonfile2collection)
+            mongoDB[collection].insert(parseJsonString(readText(buildPath(backendTestDataDir_, file_))));
+
+        // XXX insertar los emails de testemails, usar similar a processEmailForAddress
+    }
+}
+
+
+version(db_insertalltest)
 unittest
 {
-    import std.file;
     import std.datetime;
     import std.process;
 
     writeln("Starting db.d unittest...");
     string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
-    string origEmailDir     = buildPath(backendTestDir, "emails", "single_emails");
-    string rawEmailStore    = buildPath(backendTestDir, "rawemails");
+    string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
+    string rawEmailStore   = buildPath(backendTestDir, "rawemails");
     string attachmentStore = buildPath(backendTestDir, "attachments");
     int[string] brokenEmails;
     StopWatch sw;
     StopWatch totalSw;
     ulong totalTime = 0;
     ulong count = 0;
-
 
     foreach (DirEntry e; getSortedEmailFilesList(origEmailDir))
     {
@@ -422,7 +492,7 @@ unittest
             sw.stop(); writeln("storeEnvelope: ", sw.peek().usecs); sw.reset();
 
             sw.start();
-            auto convId = getOrCreateConversationId(email.getHeader("references").addresses, 
+            auto convId = getOrCreateConversationId(email.getHeader("references").addresses,
                                                     email.headers["message-id"].addresses[0],
                                                     envelope.emailId, envelope.userId);
             sw.stop();
@@ -450,11 +520,10 @@ unittest
 }
 
 
-version(UserRuleTest)
+version(userrule_test)
 unittest
 {
     writeln("Starting userrule.d unittests...");
-    auto filters = getAddressFilters("juanjux@juanjux.mooo.com");
     auto config = getConfig();
     auto testDir = buildPath(config.mainDir, "backend", "test");
     auto testEmailDir = buildPath(testDir, "testemails");
@@ -463,7 +532,7 @@ unittest
     {
         auto email = new IncomingEmail(buildPath(testDir, "rawemails"),
                                        buildPath(testDir, "attachments"));
-        email.loadFromFile(buildPath(testEmailDir, "with_attachment"));
+        email.loadFromFile(buildPath(testEmailDir, "with_2megs_attachment"));
         auto envelope = Envelope(email, "foo@foo.com");
         envelope.tags = ["inbox": true];
         auto filter   = new UserFilter(match, action);
@@ -472,7 +541,7 @@ unittest
     }
 
     // Match the From, set unread to false
-    Match match; match.headerMatches["from"] = "juanjo@juanjoalvarez.net";
+    Match match; match.headerMatches["from"] = "someuser@somedomain.com";
     Action action; action.markAsRead = true;
     auto envelope = reInstance(match, action);
     assert("unread" in envelope.tags && !envelope.tags["unread"]);

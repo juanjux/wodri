@@ -39,7 +39,7 @@ unittest
     assert(removeDups(foo) == ["uno", "one", "dos", "three", "four", "five"]);
 }
 
-
+// XXX test when I've the full cicle tests
 string saveRejectedEmail(IncomingEmail email)
 {
     auto config = getConfig();
@@ -55,6 +55,7 @@ string saveRejectedEmail(IncomingEmail email)
 }
 
 
+// XXX test when I've the full cicle tests
 void saveAndLogRejectedEmail(IncomingEmail email, bool isValid, bool tooBig,
                             string[] localReceivers, bool alreadyOnDb)
 {
@@ -110,7 +111,7 @@ void processEmailForAddress(string destination, IncomingEmail email, string emai
                               emailId, userId);
 }
 
-// XXX test: validity of the tooBig/isValid/localReceivers checks
+// XXX test when I've the full cycle tests 
 version(not_maintest)
 int main()
 {

@@ -22,7 +22,7 @@
 	    },
 	    {
 	        "name": "incomingmail_allemailstest",
-	        "versions": ["allemailstest"],
+	        "versions": ["incomingemail_allemailstest"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
@@ -30,7 +30,7 @@
 	    },
 	    {
 	        "name": "incomingemail_singletest",
-	        "versions": ["singletest"],
+	        "versions": ["incomingemail_singletest"],
 	        "buildOptions": ["debugMode"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
@@ -39,7 +39,7 @@
 	    },
 	    {
 	        "name": "incomingemail_createtestemails",
-	        "versions": ["createtestdata"],
+	        "versions": ["incomingemail_createtestdata"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
@@ -47,7 +47,7 @@
 	    },
 	    {
 	        "name": "incomingemail_createtestdata",
-	        "versions": ["regeneratetestdata"],
+	        "versions": ["incomingemail_regeneratetestdata"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
@@ -55,7 +55,7 @@
 	    },
 	    {
 	        "name": "userrule_test",
-	        "versions": ["UserRuleTest"],
+	        "versions": ["userrule_test"],
 	        "mainSourceFile": "userrule.d",
 	        "excludedSourceFiles": ["test.d", "main.d", "characterencoding.d"],
 	        "dflags": ["-main", "-unittest"], 
@@ -64,7 +64,7 @@
 
 	    {
 	        "name": "db_test",
-	        "versions": ["dbtest"],
+	        "versions": ["db_usetestdb"],
 	        "mainSourceFile": "db.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
