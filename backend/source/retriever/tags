@@ -31,11 +31,10 @@ KOI8_R_Lower	/home/juanjux/webmail/backend/source/retriever/characterencodings.d
 MIMEPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^final class MIMEPart \/\/ #mimepart$/;"	c	file:
 MONTH_CODES	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];$/;"	v
 Match	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^struct Match$/;"	s	file:
+None	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    None$/;"	e	enum:SizeRuleType	file:
 RetrieverConfig	/home/juanjux/webmail/backend/source/retriever/db.d	/^struct RetrieverConfig$/;"	s	file:
-S	/home/juanjux/webmail/backend/source/retriever/test.d	/^void foo(S)(S oneparam){}$/;"	f
-S	/home/juanjux/webmail/backend/source/retriever/test.d	/^void foo(S)(S oneparam, int anotherParam){}$/;"	f
 SizeRuleType	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^enum SizeRuleType$/;"	g	file:
-SmallerThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    SmallerThan$/;"	e	enum:SizeRuleType	file:
+SmallerThan	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    SmallerThan,$/;"	e	enum:SizeRuleType	file:
 UserFilter	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^class UserFilter$/;"	c	file:
 Windows_1251	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^immutable dchar[] Windows_1251 = [$/;"	v
 Windows_1251_Lower	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^immutable dchar[] Windows_1251_Lower = [$/;"	v
@@ -50,7 +49,7 @@ action6	/home/juanjux/webmail/backend/source/retriever/db.d	/^    Action action6
 action7	/home/juanjux/webmail/backend/source/retriever/db.d	/^    Action action7; action7.addTags = ["testtag1", "testtag2"];$/;"	v
 action8	/home/juanjux/webmail/backend/source/retriever/db.d	/^    Action action8;$/;"	v
 action9	/home/juanjux/webmail/backend/source/retriever/db.d	/^    Action action9;$/;"	v
-addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private void addHeader(string raw)$/;"	f	class:IncomingEmail	file:
+addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void addHeader(string raw)$/;"	f	class:IncomingEmail
 addTags	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string[] addTags;$/;"	m	struct:Action	file:
 addressIsLocal	/home/juanjux/webmail/backend/source/retriever/db.d	/^bool addressIsLocal(string address)$/;"	f
 addresses	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[] addresses;$/;"	m	struct:HeaderValue	file:
@@ -81,7 +80,6 @@ config	/home/juanjux/webmail/backend/source/retriever/db.d	/^RetrieverConfig con
 contentId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	class:MIMEPart	file:
 contentId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	struct:Attachment	file:
 createPartInfoText	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)$/;"	f
-createTestDb	/home/juanjux/webmail/backend/source/retriever/db.d	/^    void createTestDb()$/;"	f
 ctype	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    ContentData ctype;$/;"	m	class:MIMEPart	file:
 ctype	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string ctype;$/;"	m	struct:Attachment	file:
 date	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    DateTime date;$/;"	m	class:IncomingEmail	file:
@@ -99,9 +97,8 @@ emailAlreadyOnDb	/home/juanjux/webmail/backend/source/retriever/db.d	/^bool emai
 emailId	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string emailId;$/;"	m	struct:Envelope	file:
 fields	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[string] fields;$/;"	m	struct:ContentData	file:
 filename	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string filename;$/;"	m	struct:Attachment	file:
-fooStr	/home/juanjux/webmail/backend/source/retriever/test.d	/^alias fooStr = foo!string(string);$/;"	t	file:
 forwardTo	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string[] forwardTo;$/;"	m	struct:Envelope	file:
-forwardTo	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string forwardTo;$/;"	m	struct:Action	file:
+forwardTo	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string[] forwardTo;$/;"	m	struct:Action	file:
 fromAddrs	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[] fromAddrs;$/;"	m	class:IncomingEmail	file:
 g:include_dirs	/home/juanjux/webmail/backend/source/retriever/env.vim	/^let g:include_dirs = [".\/include",]$/;"	v
 getAddressFilters	/home/juanjux/webmail/backend/source/retriever/db.d	/^UserFilter[] getAddressFilters(string address)$/;"	f
@@ -109,7 +106,6 @@ getConfig	/home/juanjux/webmail/backend/source/retriever/db.d	/^ref RetrieverCon
 getEmailIdByMessageId	/home/juanjux/webmail/backend/source/retriever/db.d	/^string getEmailIdByMessageId(string messageId)$/;"	f
 getHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    HeaderValue getHeader(string name)$/;"	f	class:IncomingEmail
 getInitialConfig	/home/juanjux/webmail/backend/source/retriever/db.d	/^RetrieverConfig getInitialConfig()$/;"	f
-getOrCreateConversationId	/home/juanjux/webmail/backend/source/retriever/db.d	/^string getOrCreateConversationId(string[] references, string messageId, string emailDbId, string userId)$/;"	f
 getRootContentInfo	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private void getRootContentInfo(MIMEPart part)$/;"	f	class:IncomingEmail	file:
 getSortedEmailFilesList	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    DirEntry[] getSortedEmailFilesList(string emailsDir)$/;"	f
 getUserIdFromAddress	/home/juanjux/webmail/backend/source/retriever/db.d	/^string getUserIdFromAddress(string address)$/;"	f
@@ -118,7 +114,7 @@ headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    Dic
 incomingMessageLimit	/home/juanjux/webmail/backend/source/retriever/db.d	/^    ulong  incomingMessageLimit;$/;"	m	struct:RetrieverConfig	file:
 insertTestSettings	/home/juanjux/webmail/backend/source/retriever/db.d	/^    void insertTestSettings()$/;"	f
 isValid	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property bool isValid()$/;"	f	class:IncomingEmail
-jsonizeField	/home/juanjux/webmail/backend/source/retriever/db.d	/^string jsonizeField(IncomingEmail email, string headerName, bool removeQuotes = false, bool onlyValue=false)$/;"	f
+jsonizeHeader	/home/juanjux/webmail/backend/source/retriever/db.d	/^string jsonizeHeader(IncomingEmail email, string headerName, bool removeQuotes = false, bool onlyValue=false)$/;"	f
 lineSep	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string lineSep = "\\r\\n";$/;"	m	class:IncomingEmail	file:
 loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void loadFromFile(File emailFile, bool copyRaw=true)$/;"	f	class:IncomingEmail
 loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void loadFromFile(string emailPath, bool copyRaw=true)$/;"	f	class:IncomingEmail
@@ -153,6 +149,7 @@ rawEmailStore	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^ 
 rawValue	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string rawValue;$/;"	m	struct:HeaderValue	file:
 reInstance	/home/juanjux/webmail/backend/source/retriever/db.d	/^    Envelope reInstance(Match match, Action action)$/;"	f
 realPath	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string realPath;$/;"	m	struct:Attachment	file:
+recreateTestDb	/home/juanjux/webmail/backend/source/retriever/db.d	/^    void recreateTestDb()$/;"	f
 retriever.characterencodings	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^module retriever.characterencodings;$/;"	M
 retriever.db	/home/juanjux/webmail/backend/source/retriever/db.d	/^module retriever.db;$/;"	M
 retriever.envelope	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^module retriever.envelope;$/;"	M
@@ -173,19 +170,19 @@ storeEmail	/home/juanjux/webmail/backend/source/retriever/db.d	/^string storeEma
 storeEnvelope	/home/juanjux/webmail/backend/source/retriever/db.d	/^void storeEnvelope(Envelope envelope)$/;"	f
 subparts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    MIMEPart[] subparts;$/;"	m	class:MIMEPart	file:
 sw	/home/juanjux/webmail/backend/source/retriever/db.d	/^    StopWatch sw;$/;"	v
-tagFavorite	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool tagFavorite  = false;$/;"	m	struct:Action	file:
 tags	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    bool[string] tags;$/;"	m	struct:Envelope	file:
 textContent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string textContent;$/;"	m	class:MIMEPart	file:
 textualParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    MIMEPart[] textualParts; \/\/ shortcut to the textual (text or html) parts in display$/;"	m	class:IncomingEmail	file:
 toAddrs	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string[] toAddrs;$/;"	m	class:IncomingEmail	file:
-totalSizeType	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    SizeRuleType     totalSizeType = SizeRuleType.GreaterThan;$/;"	m	struct:Match	file:
+totalSizeType	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    SizeRuleType     totalSizeType = SizeRuleType.None;$/;"	m	struct:Match	file:
 totalSizeValue	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    ulong            totalSizeValue;$/;"	m	struct:Match	file:
 totalSw	/home/juanjux/webmail/backend/source/retriever/db.d	/^    StopWatch totalSw;$/;"	v
+tresCosas	/home/juanjux/webmail/backend/source/retriever/test.d	/^void tresCosas(int a, string b)$/;"	f
 tryToDetermineEncoding	/home/juanjux/webmail/backend/source/retriever/characterencodings.d	/^string tryToDetermineEncoding(in ubyte[] rawdata) {$/;"	f
 unittest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    version(unittest)$/;"	V	file:
 unittest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^version(unittest)$/;"	V	file:
+upsertConversation	/home/juanjux/webmail/backend/source/retriever/db.d	/^string upsertConversation(string[] references, string messageId, string emailDbId, string userId)$/;"	f
 userId	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string userId;$/;"	m	struct:Envelope	file:
 visitParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void visitParts(MIMEPart part)$/;"	f
 withAttachment	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool withAttachment = false;$/;"	m	struct:Match	file:
 withHtml	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool withHtml       = false;$/;"	m	struct:Match	file:
-withSizeLimit	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    bool withSizeLimit  = false;$/;"	m	struct:Match	file:

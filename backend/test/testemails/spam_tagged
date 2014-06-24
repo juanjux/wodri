@@ -39,6 +39,7 @@ Sender: someuser@anydomain.com
 Received: by 10.152.21.135 with HTTP; Tue, 10 Jun 2014 05:51:10 -0700 (PDT)
 In-Reply-To: <20140609205429.01E5AC000035B@1xj.tpn.terra.com>
 References: <20140609205429.01E5AC000035B@1xj.tpn.terra.com>
+            <testreference@blabla.testdomain.com>
 From: SomeUser Random <someuser@anydomain.com>
 Date: Tue, 10 Jun 2014 14:51:10 +0200
 Message-ID: <CAGA-+RScZe0tqmG4rbPTSrSCKT8BmkNAGBUOgvCOT5ywycZzZA@mail.gmail.com>

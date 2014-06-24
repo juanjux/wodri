@@ -1,0 +1,696 @@
+From 1348960512223548457@xxx Thu Oct 07 04:29:54 2010
+Delivered-To: anotherUser@testdatabase.com
+Received: by 10.150.62.1 with SMTP id k1cs5588yba;
+        Thu, 7 Oct 2010 09:29:56 -0700 (PDT)
+Received: by 10.227.153.208 with SMTP id l16mr1040987wbw.199.1286468995172;
+        Thu, 07 Oct 2010 09:29:55 -0700 (PDT)
+Return-Path: <no-reply@prestashop.com>
+Received: from info8.prestashop.com (info8.prestashop.com [213.186.52.92])
+        by mx.google.com with ESMTP id v32si3564563weq.142.2010.10.07.09.29.53;
+        Thu, 07 Oct 2010 09:29:54 -0700 (PDT)
+Received: from info8.prestashop.com (localhost [127.0.0.1])
+	by info8.prestashop.com (Postfix) with ESMTP id 7DC241DC209
+	for <anotherUser@testdatabase.com>; Thu,  7 Oct 2010 18:28:16 +0200 (CEST)
+DomainKey-Signature: a=rsa-sha1; b=fzIokJezws3MuFTRMq9Th0cSqX8EwDZfA7cVR/TU1DKyPZ9qyD0qmmgntqtizLCPC7cxjpV2KZZxogK4RFXKr0DtThplAv/1/HVWoNSlu60hvr4qsF/xVBRhdeBWumffVOAHAGOHuuCXgEnP58GPpTamHNBABmGAC4MV2WiUths=; c=simple; d=prestashop.com; q=dns; s=info
+Received: from www.prestashop.com (unknown [213.186.52.92])
+	by info8.prestashop.com (Postfix) with ESMTP id 1EDC51DC00E
+	for <anotherUser@testdatabase.com>; Thu,  7 Oct 2010 16:28:16 +0000 (UTC)
+Message-ID: <1286468896.4cadf5201bd4b@www.prestashop.com>
+Date: Thu, 07 Oct 2010 18:28:16 +0200
+Subject: =?utf-8?Q?=C2=A1PrestaShop?= v.1.3.2 ya =?utf-8?Q?est=C3=A1?= disponible !
+From: PrestaShop <newsletter@info.prestashop.com>
+To: anotherUser@testdatabase.com
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN" "http://www.w3.=
+org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-eq=
+uiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8" />
+    <t=
+itle>Newsletter PrestaShop n=C2=B052 =E2=80=93 Jueves 7 de Octubre del 20=
+10</title>
+    <style type=3D"text/css" media=3D"screen" >
+     =
+ *{padding:0; margin:0;}
+    </style>
+  </head>
+	<body sty=
+le=3D"padding:0; margin:0;background-color:#cccccc;">
+		<div  style=
+=3D"width:800px; margin:0 auto;background-color:#cccccc;padding-bottom:15p=
+x;">
+
+    <table cellpadding=3D"0" cellspacing=3D"0" border=3D"0"=
+ style=3D"width:660px;margin:0 auto;background-color:#cccccc;">
+		<tr=
+>
+		<td width=3D"80">
+			<a href=3D"http://www.prestashop.com"=
+>
+				<img src=3D"http://prestashop.com/newsletters/newsletterV2/img/=
+logo/logo52es.jpg" alt=3D"Prestashop" height=3D"101" width=3D"77" styl=
+e=3D"border:none;display:block;"/>
+			</a>
+
+		</td>
+	=
+  <td>
+	    <table cellpadding=3D"0" cellspacing=3D"0" border=3D"0=
+">
+	      <tr>
+		<td style=3D"font-family: Arial; font-size:36=
+px;font-weight:bold;">
+		  <a href=3D"http://www.prestashop.com/" styl=
+e=3D"text-decoration:none;"><span  style=3D"color:#77b01f" >PrestaShop</=
+span><span style=3D"color:#be517d">Newsletter n=C2=B052</span></a>
+	=
+	</td>
+	      </tr>
+	      <tr>
+		<td style=3D"font-family:=
+ Arial;font-size:26px; font-weight:bold;">
+		  <a href=3D"http://www.p=
+restashop.com/"  style=3D"text-decoration:none;color:#FFFFFF; ">Jueves 7 d=
+e Octubre del 2010</a>
+		</td>
+	      </tr>
+	    </table>=
+
+		</td>
+		</tr>
+
+    </table>
+    <table cellpa=
+dding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"width:655px;margin-l=
+eft:69px;">
+	<tr>
+	  <td style=3D"padding-top:10px;">
+	    =
+<span style=3D"vertical-align:super; color:#a02f5d;font-size:11px;font-fam=
+ily: Arial;margin-left:5px;">Elegir su idioma : </span>
+	    <a h=
+ref=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;li=
+nk=3Dhttp://www.prestashop.com/newsletters/052/newsmail_fr.html?email=3D=
+anotherUser@testdatabase.com&nltoken=3D06041ae1f2742ad303384e9358d0465d32e9f674"><img=
+ src=3D"http://prestashop.com/newsletters/newsletterV2/img/flag/fr.jpg" al=
+t=3D"Francais" style=3D"border:none;" height=3D"22" width=3D"28"/></=
+a>
+	    <a href=3D"http://www.prestashop.com/newsletters/redirect.php?=
+id=3D52&amp;link=3Dhttp://www.prestashop.com/newsletters/052/newsmail_en=
+.html?email=3DanotherUser@testdatabase.com&nltoken=3D06041ae1f2742ad303384e9358d046=
+5d32e9f674"><img src=3D"http://prestashop.com/newsletters/newsletterV2/img=
+/flag/en.jpg" alt=3D"English" style=3D"border:none;" height=3D"22" wid=
+th=3D"28"/></a>
+	    <a href=3D"http://www.prestashop.com/newslette=
+rs/redirect.php?id=3D52&amp;link=3Dhttp://www.prestashop.com/newsletters=
+/052/newsmail_es.html?email=3DanotherUser@testdatabase.com&nltoken=3D06041ae1f2742a=
+d303384e9358d0465d32e9f674"><img src=3D"http://prestashop.com/newsletters/=
+newsletterV2/img/flag/es.jpg" alt=3D"espagnol" style=3D"border:none;" he=
+ight=3D"22" width=3D"28"/></a>
+	  </td>
+	  <td style=3D"text-al=
+ign:right;padding-right:2px;font-family:arial;font-size:11px;"><a href=3D"=
+http://www.prestashop.com/newsletters/052/newsmail_es.html" style=3D"color=
+:#a02f5d;display:block;margin-top:6px;">Si este mensaje no se visualiza =
+correctamente, puede hacer clic aqu=C3=AD</a></td>
+	</tr>
+    <=
+/table>
+      <table cellpadding=3D"0" cellspacing=3D"0" border=3D"=
+0">
+	<tr>
+	  <td colspan=3D"2">
+	    <table cellpadding=3D"=
+0" cellspacing=3D"0" border=3D"0" style=3D"width:655px;margin-left:69px;">=
+
+	      <tr>
+		<td style=3D"padding-left:1px;" colspan=3D"=
+2">
+		  <img src=3D"http://prestashop.com/newsletters/newsletterV2/=
+img/table2_top.jpg"  alt=3D"" height=3D"20" width=3D"660" style=3D"displ=
+ay:block;"/>
+		</td>
+	      </tr>
+	    </table>
+	    <=
+table cellpadding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"width:65=
+2px; background-color:#ffffff; border-left:1px solid #aaaaaa;border-righ=
+t:1px solid #aaaaaa; margin-left:73px;">
+	      <tr>
+		<td=
+>
+		  <h1 style=3D"font-weight:bold; font-size:20px; color:#a02f5d;fo=
+nt-family: Arial; border-bottom:1px solid #e0e0e0;width:610px; margin-le=
+ft:20px;padding-bottom:5px;"><img src=3D"http://prestashop.com/newsletters=
+/newsletterV2/img/logo/edito.jpg" alt=3D"EDITO"  height=3D"12" width=3D"16=
+" style=3D"margin-right:10px;"/>Editorial :</h1>
+		</td>
+	    =
+  </tr>
+	      <tr>
+		<td>
+		  <p style=3D"font-family:ver=
+dana;font-size:12px; color:#383838;padding:10px 10px 15px 15px;line-heig=
+ht:18px;">
+			<b>=C2=A1 Otra semana rica en acontecimientos para Pres=
+taShop ! Una nueva versi=C3=B3n de PrestaShop, la V.1.3.2 ,</b> se estren=
+=C3=B3 hace un par de d=C3=ADas. =C2=A1No dudes en descargarla para benefic=
+iarte con todas nuestras =C3=BAltimas optimizaciones!<b> PrestaShop tambi=
+=C3=A9n publica Treepodia, un nuevo m=C3=B3dulo asociado</b>, que permite =
+a los negociantes crear autom=C3=A1ticamente videos de sus productos.=
+ =C2=A1No esperes para conseguirlo!<br /><br />
+			=C2=A1Adem=C3=A1=
+s, puedes descubrir <b>las herramientas de administraci=C3=B3n en PrestaS=
+hop Addons </b> y una prestigiosa referencia en la presentaci=C3=B3n de l=
+a tienda de la semana!<br /><br />
+		  </p>
+		</td>
+	    =
+  </tr>
+	    </table>
+
+	    <table cellpadding=3D"0" cells=
+pacing=3D"0" border=3D"0" style=3D"border-left: 1px solid #AAAAAA;border-r=
+ight: 1px solid #AAAAAA; width:652px; background-color:#fff;margin-left:=
+73px;">
+	      <tr>
+		<td colspan=3D"2">
+		  <h1 style=3D"fo=
+nt-weight:bold; font-size:20px; color:#a02f5d;font-family: Arial; border=
+-bottom:1px solid #e0e0e0;width:610px; margin-left:20px;padding-bottom:5=
+px;"><img src=3D"http://prestashop.com/newsletters/newsletterV2/img/icon/a=
+rticle1.jpg" alt=3D""  height=3D"16" width=3D"16" style=3D"margin-right:=
+10px;"/>=C2=A1PrestaShop v.1.3.2 est=C3=A1 disponible !</h1>
+		</t=
+d>
+		</tr>
+		<tr>
+			<td>
+			<a href=3D"http://www.pr=
+estashop.com/newsletters/redirect.php?id=3D52&amp;link=3Dhttp://www.pres=
+tashop.com/es/downloads/"><img border=3D"0" style=3D"float: left;margin-=
+left:25px;margin-top:10px;display:block" alt=3D"nouvelle version prestasho=
+p 1.3.2" src=3D"http://www.prestashop.com/newsletters/052/img/Ps-132_es.jp=
+g" width=3D"600" height=3D"64"/></a><br />
+    			<p style=3D"font-fam=
+ily:verdana;font-size:12px; width:600px;color:#383838;padding-bottom:7px=
+;line-height:18px;margin-left:25px;">
+					<b><br />El equipo Prest=
+aShop tiene el agrado de anunciar la publicaci=C3=B3n de una nueva ve=
+rsi=C3=B3n para PrestaShop, la v.1.3.2.</b>
+    			</p>			=09
+				<=
+p style=3D"font-family:verdana;font-size:12px; width:600px;color:#383838;p=
+adding-bottom:7px;line-height:18px;margin-left:25px;">
+					Esta nue=
+va versi=C3=B3n es a=C3=BAn m=C3=A1s rica en contenido y presenta un gran n=
+=C3=BAmero de <b>mejoras y optimizaciones elaboradas a partir dePrestaSho=
+p v.1.3.1 :</b> son elementos claves de la soluci=C3=B3n, tales como la g=
+esti=C3=B3n de los redondeos, del cat=C3=A1logo y del referenciamiento=
+.
+				</p>
+			=09
+				<p style=3D"font-family:verdana;font-si=
+ze:10px; width:600px;color:#383838;line-height:18px;margin-left:25px;pad=
+ding-top: 10px;">
+					<a href=3D"http://www.prestashop.com/newslette=
+rs/redirect.php?id=3D52&amp;link=3Dhttp://www.prestashop.com/es/download=
+s/"style=3D"color:#78B82C; display:block; font-family:Arial; font-size:15p=
+x; font-weight:bold; margin-left:20px;text-decoration:none;"><img width=3D=
+"12" height=3D"14" style=3D"display: block; float: left; border: medium =
+none; margin-right: 5px;margin-top:2px;" alt=3D"" src=3D"http://prestash=
+op.com/newsletters/newsletterV2/img/arrow.jpg" />Descargar PrestaShop v.=
+1.3.2 </a>
+					<a href=3D"http://www.prestashop.com/newsletters/redir=
+ect.php?id=3D52&amp;link=3Dhttp://www.prestashop.com/blog/article/presta=
+shop_v132_se_encuentra_disponible/"style=3D"color:#78B82C; display:block; =
+font-family:Arial; font-size:15px; font-weight:bold; margin-left:20px;te=
+xt-decoration:none;"><img width=3D"12" height=3D"14" style=3D"display: blo=
+ck; float: left; border: medium none; margin-right: 5px;margin-top:2px;"=
+ alt=3D"" src=3D"http://prestashop.com/newsletters/newsletterV2/img/arro=
+w.jpg" />Saber m=C3=A1s gracias al blog </a>
+			   </p>
+			</=
+td>
+		</tr>
+	    </table>
+
+	    <table cellpadding=3D"=
+0" cellspacing=3D"0" border=3D"0" style=3D"width:652px; background-color:#=
+fff;border-left:1px solid #aaa;border-right:1px solid #aaa;margin-left:7=
+3px">
+	      <tr>
+		<td colspan=3D"2">
+		  <h1 style=3D"fo=
+nt-weight:bold; font-size:20px; color:#a02f5d; font-family: Arial; borde=
+r-bottom:1px solid #e0e0e0; width:610px; margin-left:20px; padding-botto=
+m:5px;margin-top:20px;"><img src=3D"http://prestashop.com/newsletters/news=
+letterV2/img/icon/store.jpg" alt=3D"" width=3D"12" height=3D"14" style=
+=3D"margin-right:10px; display:block; float:left; margin-top:5px;"/>En Pre=
+staShop Addons=E2=80=A6 Las herramientas de administraci=C3=B3n</h1>
+	=
+	</td>
+	      </tr>
+	      <tr>
+		<td style=3D"vertical-ali=
+gn:top;padding-top:13px;padding-bottom:10px;padding-bottom:15px;*padding=
+-bottom:30px;">
+			<img src=3D"http://prestashop.com/newsletters/05=
+2/img/store_es.jpg"  width=3D"402" height=3D"103" alt=3D"" style=3D"marg=
+in-left:20px;display:block;"/>
+			<p style=3D"font-family:verdana;font=
+-size:12px; width:400px;color:#383838;padding-top:10px;padding-left:20px=
+;line-height:18px;">
+				<b>Ganar tiempo al manejar eficazmente su =
+negocio en l=C3=ADnea es el sue=C3=B1o de muchos negociantes.</b><br /><br=
+ />
+				PrestaShop Addons le brinda m=C3=A1s de 30 m=C3=B3dulos cuy=
+o pr=C3=B3posito es mejorar y facilitar a=C3=BAn m=C3=A1s la gesti=C3=B3=
+n de su actividad d=C3=ADa a d=C3=ADa: modificaci=C3=B3n desde el Back-Offi=
+ce, gesti=C3=B3n del correo electr=C3=B3nico, facturas, cat=C3=A1lo=
+go=E2=80=A6<br /><br />
+				<b>Descubre en nuestro Top 5 los m=C3=B3du=
+los de administraci=C3=B3n m=C3=A1s solicitados por los negociantes Presta=
+Shop!</b>
+			</p>
+            <br />
+                    <=
+a href=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp=
+;link=3Dhttp://addons.prestashop.com/es"style=3D"color:#78B82C; display:=
+block; font-family:Arial; font-size:15px; font-weight:bold; margin-left:=
+20px;text-decoration:none;"><img width=3D"12" height=3D"14" style=3D"displ=
+ay: block; float: left; border: medium none; margin-right: 5px;margin-to=
+p:2px;" alt=3D"" src=3D"http://prestashop.com/newsletters/newsletterV2/i=
+mg/arrow.jpg" />Visitar PrestaShop Addons</a>
+		</td>
+         =
+                       <td style=3D"padding-top:13px;vertical-align:top; w=
+idth:200px;">
+  <h1 style=3D"font-weight:bold; font-size:14px; color:=
+#a02f5d;font-family: Arial; width:208px; margin-left:20px; padding-botto=
+m:5px; margin-bottom:5px; ">Top 5: administraci=C3=B3n</h1>
+  <table =
+cellpadding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border:1px sol=
+id #cccccc;width:190px; margin-left:20px; margin-bottom:5px;">
+    <=
+tr>
+      <td style=3D"border-bottom:1px solid #cccccc;padding-top:=
+1px;vertical-align:top; padding-bottom:1px"><img src=3D"http://prestashop.=
+com/newsletters/newsletterV2/img/numero/un.jpg"  width=3D"29" height=3D"=
+49" alt=3D"" style=3D"display:block;" /></td>
+      <td style=3D"bord=
+er-bottom:1px solid #cccccc;vertical-align:top;padding-top:1px;padding-b=
+ottom:1px;"><a href=3D"http://www.prestashop.com/newsletters/redirect.php?=
+id=3D52&amp;link=3Dhttp://addons.prestashop.com/es/outils-administration=
+/1322-mulideclinaison-telechargeable.html"><img src=3D"http://www.prestash=
+op.com/newsletters/052/img/1.jpg" width=3D"41" height=3D"41" alt=3D"" styl=
+e=3D"padding-top:4px;display:block;border:none;" /></a></td>
+      <td=
+ style=3D"border-bottom:1px solid #cccccc;vertical-align:top;padding-top:4=
+px;padding-bottom:1px;">
+    <h2 style=3D"font-family: Arial;font-siz=
+e:12px; font-weight:bold;width:80px;margin-top:1px; margin-bottom:0px"><=
+a href=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp=
+;link=3Dhttp://addons.prestashop.com/es/outils-administration/1322-mulidec=
+linaison-telechargeable.html" style=3D"text-decoration:none;color:#78b82c;=
+">Mulid&eacute;clinaison t&eacute;l&eacute;chargeable</a></h2>
+    <=
+h3 style=3D"font-family:verdana; font-size:10px;font-weight:normal;margin-=
+top:0px;margin-bottom:0px"><a href=3D"http://www.prestashop.com/newsletter=
+s/redirect.php?id=3D52&amp;link=3Dhttp://addons.prestashop.com/es/outils=
+-administration/1322-mulideclinaison-telechargeable.html"  style=3D"color:=
+#383838;text-decoration:none;">50 &euro; H.T.</a></h3>
+      </t=
+d>
+    </tr>
+    <tr>
+      <td style=3D"border-bottom:1p=
+x solid #cccccc;padding-top:1px;vertical-align:top; padding-bottom:1px">=
+<img src=3D"http://prestashop.com/newsletters/newsletterV2/img/numero/deux=
+.jpg" width=3D"29" height=3D"49" alt=3D"" style=3D"display:block;" /></t=
+d>
+      <td style=3D"border-bottom:1px solid #cccccc;vertical-align:t=
+op;padding-bottom:1px;padding-top:1px;"><a href=3D"http://www.prestashop.c=
+om/newsletters/redirect.php?id=3D52&amp;link=3Dhttp://addons.prestashop.=
+com/es/outils-administration/1376-email-template.html" style=3D"text-decor=
+ation:none;color:#78b82c;"><img src=3D"http://www.prestashop.com/newslette=
+rs/052/img/2.jpg" width=3D"41" height=3D"41" alt=3D"" style=3D"padding-t=
+op:4px;display:block;border:none" /></a></td>
+      <td style=3D"bord=
+er-bottom:1px solid #cccccc;vertical-align:top;padding-top:4px;padding-b=
+ottom:1px;">
+    <h2 style=3D"font-family: Arial;font-size:12px; font=
+-weight:bold;width:80px;margin-top:2px; margin-bottom:0px"><a href=3D"http=
+://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;link=3Dhttp:/=
+/addons.prestashop.com/es/outils-administration/1376-email-template.html=
+" style=3D"text-decoration:none;color:#78b82c;">Email Template</a></h2=
+>
+    <h3 style=3D"font-family:verdana; font-size:10px;font-weight:no=
+rmal;margin-top:0px;margin-bottom:0px"><a href=3D"http://www.prestashop.co=
+m/newsletters/redirect.php?id=3D52&amp;link=3Dhttp://addons.prestashop.c=
+om/es/outils-administration/1376-email-template.html" style=3D"text-decora=
+tion:none;color:#383838;"  style=3D"color:#383838;text-decoration:none;">7=
+9 &euro; H.T.</a></h3>
+      </td>
+    </tr>
+    <tr>
+ =
+     <td style=3D"border-bottom:1px solid #cccccc;padding-top:1px;vertical=
+-align:top; padding-bottom:1px"><img src=3D"http://prestashop.com/newslett=
+ers/newsletterV2/img/numero/trois.jpg" width=3D"29" height=3D"49" alt=3D""=
+ style=3D"display:block;" /></td>
+      <td style=3D"border-bottom:1p=
+x solid #cccccc;vertical-align:top;padding-bottom:1px;padding-top:1px;">=
+<a href=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&am=
+p;link=3Dhttp://addons.prestashop.com/es/outils-administration/255-outils-=
+dadministration-mails-manager.html"><img src=3D"http://www.prestashop.com/=
+newsletters/052/img/3.jpg" width=3D"41" height=3D"41" alt=3D"" style=3D"=
+padding-top:4px;display:block;border:none;" /></a></td>
+      <td sty=
+le=3D"border-bottom:1px solid #cccccc;vertical-align:top;padding-top:4px;p=
+adding-bottom:1px;">
+    <h2 style=3D"font-family: Arial;font-size:12=
+px; font-weight:bold;width:80px;margin-top:5px; margin-bottom:0px"><a hr=
+ef=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;lin=
+k=3Dhttp://addons.prestashop.com/es/outils-administration/255-outils-dadmi=
+nistration-mails-manager.html" style=3D"text-decoration:none;color:#78b82c=
+;">Mails manager</a></h2>
+    <h3 style=3D"font-family:verdana; font-=
+size:10px;font-weight:normal;margin-top:0px;margin-bottom:0px"><a href=3D"=
+http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;link=3Dht=
+tp://addons.prestashop.com/es/outils-administration/255-outils-dadminist=
+ration-mails-manager.html"  style=3D"color:#383838;text-decoration:none;">=
+90 &euro; H.T.</a></h3>
+      </td>
+    </tr>
+    <t=
+r>
+      <td style=3D"border-bottom:1px solid #cccccc;padding-top:1px;=
+vertical-align:top; padding-bottom:1px"><img src=3D"http://prestashop.com/=
+newsletters/newsletterV2/img/numero/quatre.jpg" width=3D"29" height=3D"4=
+9" alt=3D"" style=3D"display:block;" /></td>
+      <td style=3D"borde=
+r-bottom:1px solid #cccccc;vertical-align:top;padding-bottom:1px;padding=
+-top:1px;"><a href=3D"http://www.prestashop.com/newsletters/redirect.php?i=
+d=3D52&amp;link=3Dhttp://addons.prestashop.com/es/outils-administration/=
+367-outils-dadministration-ban-ips.html"><img src=3D"http://www.prestashop=
+.com/newsletters/052/img/4.jpg" width=3D"41" height=3D"41" alt=3D"" st=
+yle=3D"padding-top:4px;display:block;border:none" /></a></td>
+     =
+ <td style=3D"border-bottom:1px solid #cccccc;vertical-align:top;padding-t=
+op:4px;padding-bottom:1px;">
+    <h2 style=3D"font-family: Arial;font=
+-size:12px; font-weight:bold;width:80px;margin-top:2px; margin-bottom:0p=
+x"><a href=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52=
+&amp;link=3Dhttp://addons.prestashop.com/es/outils-administration/367-outi=
+ls-dadministration-ban-ips.html" style=3D"text-decoration:none;color:#78b8=
+2c;">Ban IPs</a></h2>
+    <h3 style=3D"font-family:verdana; font-size=
+:10px;font-weight:normal;margin-top:0px;margin-bottom:0px"><a href=3D"http=
+://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;link=3Dhttp:/=
+/addons.prestashop.com/es/outils-administration/367-outils-dadministrati=
+on-ban-ips.html"  style=3D"color:#383838;text-decoration:none;">50 &euro; =
+H.T.</a></h3>
+      </td>
+    </tr>
+    <tr>
+      <td=
+ style=3D"padding-top:1px;vertical-align:top; padding-bottom:1px"><img src=
+=3D"http://prestashop.com/newsletters/newsletterV2/img/numero/cinq.jpg" wi=
+dth=3D"29" height=3D"49" alt=3D"" style=3D"display:block;" /></td>
+ =
+     <td style=3D"vertical-align:top;padding-bottom:1px;padding-top:1px;">=
+<a href=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&am=
+p;link=3Dhttp://addons.prestashop.com/es/outils-administration/791-birthda=
+y-reminder.html"><img src=3D"http://www.prestashop.com/newsletters/052/img=
+/5.jpg" alt=3D"" width=3D"41" height=3D"41" style=3D"padding-top:4px;dis=
+play:block;border:none" /></a></td>
+      <td style=3D"vertical-ali=
+gn:top;padding-top:4px;padding-bottom:1px;">
+    <h2 style=3D"font-fa=
+mily: Arial;font-size:12px; font-weight:bold;width:80px;margin-top:2px; =
+margin-bottom:0px"><a href=3D"http://www.prestashop.com/newsletters/redire=
+ct.php?id=3D52&amp;link=3Dhttp://addons.prestashop.com/es/outils-adminis=
+tration/791-birthday-reminder.html" style=3D"text-decoration:none;color:#7=
+8b82c;">Birthday Reminder</a></h2>
+    <h3 style=3D"font-family:verdan=
+a; font-size:10px;font-weight:normal; margin-top:0px; margin-bottom:0px"=
+><a href=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&a=
+mp;link=3Dhttp://addons.prestashop.com/es/outils-administration/791-birthd=
+ay-reminder.html"  style=3D"color:#383838;text-decoration:none;">30 &euro;=
+ H.T.</a></h3>
+      </td>
+    </tr>
+  </table>
+      =
+            <a href=3D"http://www.prestashop.com/newsletters/redirect.php?=
+id=3D52&amp;link=3Dhttp://addons.prestashop.com/es" style=3D"color:#78b82c=
+;font-size:12px; font-weight:bold; font-family:Arial;padding-left:15px;m=
+argin-top:10px;display:block;"><img src=3D"http://prestashop.com/newslette=
+rs/newsletterV2/img/go_es.jpg" alt=3D""  width=3D"188" height=3D"32" style=
+=3D"border:none;display:block;margin-left:7px;" /></a>
+              =
+  </td>
+              </tr>
+            </table>
+	    <tab=
+le cellpadding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-left=
+: 1px solid #AAAAAA;border-right: 1px solid #AAAAAA; width:652px; backgr=
+ound-color:#fff;margin-left:73px;padding-top:20px;">
+	      <tr=
+>
+		<td colspan=3D"2">
+		  <h1 style=3D"font-weight:bold; font=
+-size:20px; color:#a02f5d;font-family: Arial; border-bottom:1px solid #e=
+0e0e0;width:610px; margin-left:20px;padding-bottom:5px;"><img src=3D"http:=
+//prestashop.com/newsletters/newsletterV2/img/icon/dev.png" alt=3D"Dev"  h=
+eight=3D"16" width=3D"16" style=3D"margin-right:10px;"/>Por parte de los d=
+esarrolladores=E2=80=A6 PrestaShop v.1.4</h1>
+		  <p style=3D"font-fa=
+mily:verdana;font-size:12px; width:610px;color:#383838;padding-top:10px;=
+padding-left:20px;line-height:18px;"><b>Varias novedades y mejoramientos=
+ esta semana en la versi=C3=B3n 1.4 de PrestaShop,</b> entre las cuales:<=
+/p>
+		</td>
+	      </tr>
+	      <tr>
+		<td colspan=
+=3D"2" style=3D"padding-top:13px;vertical-align:top;">
+		  <h2 style=
+=3D"font-weight:bold;font-size:14px; font-family:Arial; color:#a02f5d;marg=
+in-left:20px;margin-bottom:10px;">PrestaShop v1.4</h2>
+		</td>
+	=
+      </tr>
+	      <tr>
+		<td style=3D"vertical-align:top;"=
+>
+			<img style=3D"float: left; margin-right: 10px;margin-left:15px;d=
+isplay:block" alt=3D"" src=3D"http://www.prestashop.com/newsletters/041/=
+images/dev14.png" width=3D"110" height=3D"136"/>
+		</td>
+		<td=
+ style=3D"vertical-align:top;">
+			<ul style=3D"margin-top:10px;fon=
+t-size:12px; font-family: verdana;color:#383838;list-style-position:insi=
+de;margin-bottom:20px;line-height:18px;">
+				<li style=3D"margin-bot=
+tom:5px;">El seguimiento muestra ahora =C3=BAnicamente los atributos out =
+of sotck </li>
+				<li style=3D"margin-bottom:5px;">Posibilidad de def=
+inir m=C3=A1s f=C3=A1cilmente los precios por zona de transportistas</=
+li>
+				<li style=3D"margin-bottom:5px;">Nuevos m=C3=B3dulos PayPal =
+y Moneybookers</li>
+				<li style=3D"margin-bottom:5px;">Posibilida=
+d de configurar mensajes predefinidos en el Servicio Posventa </li>
+	=
+		</ul>
+		</td>
+	    </table>
+	    <table cellpadding=3D"0=
+" cellspacing=3D"0" border=3D"0" style=3D"width:652px; background-color:#f=
+ff;border-left:1px solid #aaa;border-right:1px solid #aaa;margin-left:73=
+px;padding-top:15px;">
+	      <tr>
+		<td colspan=3D"3"><img sr=
+c=3D"http://prestashop.com/newsletters/newsletterV2/img/separator2.jpg" al=
+t=3D"" style=3D"width:622px; margin:0 auto;height:1px;display:block;padd=
+ing-left:17px; padding-top:14px;"/></td>
+	      </tr>
+	      <t=
+r>
+		<td style=3D"padding-left:20px; width:208px;padding-top:20px;vert=
+ical-align:top;">
+		  <div>
+		    <h2 style=3D"font-size:20px; f=
+ont-family: Arial;font-weight:bold;color:#a33964;margin-bottom:10px;"><i=
+mg src=3D"http://prestashop.com/newsletters/newsletterV2/img/icon/press.jp=
+g" width=3D"16" height=3D"16" alt=3D"" style=3D"margin-right:5px; float:=
+left; display:block; border:none;margin-top:3px;"/>Revista de prensa</h2=
+>
+		    <p style=3D"font-family: Verdana; font-weight:bold; font-size=
+:12px;width:200px;margin-bottom:10px; line-height:18px;">
+			=C2=A1A=
+poya a PrestaShop para el Open-Source Awards!<br /><br />
+			<a sty=
+le=3D"text-decoration: none;" href=3D"http://www.prestashop.com/newslett=
+ers/redirect.php?id=3D52&amp;link=3Dhttps://www.packtpub.com/open-source=
+-awards-home/vote-open-source-e-commerce-application"><span style=3D"font-=
+size: 12px; font-family: verdana; color: rgb(56, 56, 56); text-decoratio=
+n: none; font-weight: normal;">
+			PrestaShop se encuentra selecciona=
+da entre los finalistas de la categor=C3=ADa Aplicaciones E-Comercio Open=
+-Source, para el Open-Source Awards.
+			  <br>
+			  </span><=
+br>
+			  <img style=3D"border: medium none;" alt=3D"" src=3D"http:/=
+/www.prestashop.com/newsletters/051/img/asw_press_es.png">
+			  </a>=
+<br />
+		    </p>
+
+		    <a href=3D"http://www.prestashop.=
+com/newsletters/redirect.php?id=3D52&amp;link=3Dhttps://www.packtpub.com=
+/open-source-awards-home/vote-open-source-e-commerce-application" style=3D=
+"color:#78b82c;font-size:15px; font-weight:bold; font-family:Arial; marg=
+in-top:15px; display:block;text-decoration:none;"><img src=3D"http://prest=
+ashop.com/newsletters/newsletterV2/img/arrow.jpg" alt=3D"" width=3D"12" =
+height=3D"14" style=3D"display:block;float:left;border:none;margin-right=
+:5px;margin-top:2px;" />=C2=A1Vota por PrestaShop!=C2=A1</a>
+		  </div=
+>
+		</td>
+		<td style=3D"padding-top:20px;vertical-align:top;=
+">
+		  <div style=3D"overflow:hidden;margin-bottom:15px;padding-left:2=
+0px;border-left:1px solid #cccccc;margin-bottom:15px;width:400px;" >=
+
+		    <h2 style=3D"font-size:20px; font-family: Arial;font-weight:bo=
+ld;margin-bottom:15px;color:#A33964"><img src=3D"http://prestashop.com/new=
+sletters/newsletterV2/img/icon/shop_week.jpg" width=3D"14" height=3D"16"=
+ alt=3D"" style=3D"margin-right:5px; float:left; display:block; border:n=
+one; margin-top:3px;"/>La tienda de la semana</h2>
+		    <table>=
+
+		      <tr>
+			<td style=3D"vertical-align:top">
+			  <a h=
+ref=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;li=
+nk=3Dhttp://www.fatherandsons.fr/"style=3D"color: black;"><img src=3D"http=
+://prestashop.com/newsletters/052/img/capture-fatherandsons.jpg" width=3D"=
+191" height=3D"145" alt=3D"" style=3D"float:left; margin-right:10px; borde=
+r:1px solid #a33964"/></a>
+			  <p style=3D"font-size:12px; font-famil=
+y:verdana; color:#383838;margin-top:5px;line-height:18px">
+				<b>Ot=
+ra gran referencia adopt=C3=B3 PrestaShop : </b>descubre esta semana <a h=
+ref=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;li=
+nk=3Dhttp://www.fatherandsons.fr/" style=3D"color: black;"><b>Father and=
+ Sons</b></a>, c=C3=A9l=C3=A8bre marque de pr=C3=AAt =C3=A0 porter pour =
+hommes.<br /><br />famosa marca de pr=C3=AAt-=C3=A0-porter para hombres. U=
+n dise=C3=B1o sobrio y elegante, para un sitio que propone numerosos prod=
+uctos y que completa la oferta de las 25 tiendas f=C3=ADsicas de la marca=
+.<i><br />Father and Sons fue realizado por Profileo.</i>
+				<=
+/p>
+			</td>
+		      </tr>
+		    </table>
+		    <a h=
+ref=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;li=
+nk=3Dhttp://www.prestashop.com/es/showcase_liveshops/?" style=3D"color:#=
+78b82c;font-size:15px; font-weight:bold; font-family:Arial; margin-top:1=
+5px; display:block;text-decoration:none;"><img src=3D"http://prestashop.co=
+m/newsletters/newsletterV2/img/arrow.jpg" alt=3D"" width=3D"12" height=3D"=
+14" style=3D"display:block;float:left;border:none;margin-right:5px;margin-=
+top:2px;" />Visitar el showcase de PrestaShop</a>
+		  </div>
+	=
+	</td>
+
+	      </tr>
+	    </table>
+	    <table cellpa=
+dding=3D"0" cellspacing=3D"0" border=3D"0">
+	      <tr>
+		<td sty=
+le=3D"width:660px;height:20px;padding-left:69px;" colspan=3D"2">
+		=
+  <img src=3D"http://prestashop.com/newsletters/newsletterV2/img/table2_bo=
+ttom.jpg" width=3D"660" height=3D"20" alt=3D"" style=3D"border:none;" />=
+</td>
+	      </tr>
+	    </table>
+
+	    <table style=
+=3D"margin-left:70px;">
+						<tr>
+
+							<td style=3D"fon=
+t-family:verdana; font-size:11px;height:25px;width:190px;"><a href=3D"http=
+://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;link=3Dhttp:/=
+/www.facebook.com/#!/pages/PrestaShop/114089955274622?ref=3Dts" style=3D=
+"color:#a33964;text-decoration:none"><img src=3D"http://prestashop.com/new=
+sletters/newsletterV2/img/icon/facebook.jpg" width=3D"16" height=3D"16" =
+alt=3D"Facebook" style=3D"display:block; float:left; margin-right:5px;bo=
+rder:none;" />S=C3=ADganos sobre  <strong style=3D"text-decoration:underlin=
+e">Facebook</strong></a></td>
+							<td style=3D"font-family:verdana=
+; font-size:11px;height:25px;width:185px;"><a href=3D"http://www.prestasho=
+p.com/newsletters/redirect.php?id=3D52&amp;link=3Dhttp://twitter.com/Pre=
+staShop_Team" style=3D"color:#a33964;text-decoration:none"><img src=3D"h=
+ttp://prestashop.com/newsletters/newsletterV2/img/icon/twitter.jpg" widt=
+h=3D"16" height=3D"16" alt=3D"twitter" style=3D"display:block; float:lef=
+t; margin-right:5px;border:none;" />S=C3=ADganos sobre  <strong style=3D"te=
+xt-decoration:underline">Twitter</strong></a></td>
+							<td style=3D=
+"font-family:verdana; font-size:11px;height:25px;width:110px;"><a href=3D"=
+http://www.prestashop.com/newsletters/redirect.php?id=3D52&amp;link=3Dht=
+tp://www.prestashop.com/blog/feed/?lang=3Dfrench" style=3D"color:#a33964=
+;"><img src=3D"http://prestashop.com/newsletters/newsletterV2/img/icon/rss=
+.jpg" alt=3D"" width=3D"16" height=3D"17" style=3D"display:block;float:l=
+eft; margin-right:5px; border:none;" /><strong>RSS Feed</strong></a></td=
+>
+							<td style=3D"font-family:verdana; font-size:11px;height:25px=
+;"><a href=3D"http://www.prestashop.com/newsletters/redirect.php?id=3D48=
+&amp;link=3Dhttp://www.prestashop.com/forums" style=3D"color:#a33964;"><=
+img src=3D"http://prestashop.com/newsletters/newsletterV2/img/icon/forum.j=
+pg" alt=3D"Forum" width=3D"16" height=3D"15" style=3D"display:block; flo=
+at:left; margin-right:5px;border:none;" /><strong>Foro de  Prestashop</s=
+trong> </a></td>
+						</tr>
+
+						<tr>
+							<td co=
+lspan=3D"4"><img src=3D"http://prestashop.com/newsletters/newsletterV2/i=
+mg/separator3.jpg" alt=3D"" /></td>
+						</tr>
+						<tr>
+	=
+						<td colspan=3D"4" style=3D"text-transform:uppercase;font-family: A=
+rial;font-size:10px; color:#888888; padding-top:10px; width:660px"><img =
+src=3D"http://prestashop.com/newsletters/newsletterV2/img/icon/newsletter.=
+jpg" width=3D"16" height=3D"13" alt=3D"newsletter" style=3D"display:bloc=
+k; float:left; margin-right:5px;" /> Si usted no desea m=C3=A1s recibir d=
+e mensajes por parte de PrestaShop,
+nous le invitamos a ejercer su de=
+recho de d=C3=A9sinscription haciendo <a href=3D"{unsubscribe-link}" st=
+yle=3D" color:#888888"><strong>eclic aqu=C3=AD.</strong></a></td>
+	=
+					</tr>
+					</table>
+	  </td>
+	</tr>
+      </table=
+>
+    </div>
+  </body>
+</html>
+
+

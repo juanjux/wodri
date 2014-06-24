@@ -55,16 +55,23 @@
 	    },
 	    {
 	        "name": "userrule_test",
-	        "versions": ["userrule_test"],
+	        "versions": ["userrule_test", "db_usetestdb"],
 	        "mainSourceFile": "userrule.d",
 	        "excludedSourceFiles": ["test.d", "main.d", "characterencoding.d"],
 	        "dflags": ["-main", "-unittest"], 
 	        "targetName": "test",
 	    },
-
 	    {
 	        "name": "db_test",
 	        "versions": ["db_usetestdb"],
+	        "mainSourceFile": "db.d",
+	        "excludedSourceFiles": ["test.d", "main.d"],
+	        "dflags": ["-main", "-unittest"], 
+	        "targetName": "test",
+	    },
+	    {
+	        "name": "db_insertalltest",
+	        "versions": ["db_usetestdb", "db_insertalltest"],
 	        "mainSourceFile": "db.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 

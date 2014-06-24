@@ -243,7 +243,7 @@ final class IncomingEmail
     }
 
 
-    private void addHeader(string raw)
+    void addHeader(string raw)
     {
         auto idxSeparator = indexOf(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))

@@ -1,11 +1,6 @@
 TESTS
 
 db.d:
-    getEmailIdByMessageId => dbEmail
-    getOrCreateConversationId => dbConversation, dbUser, dbEmail
-    storeEnvelope => dbEnvelope
-    storeEmail => dbEmail
-    getUserIdFromAddress => dbUser
     emailAlreadyOnDb => dbEmail
 
 main.d:
@@ -14,6 +9,11 @@ main.d:
 
 
 Backend-Retriever:
+
+    - Move unittests at the correct section
+
+    - Look like IncomingEmail.parseFromFile doesnt parse the References correctly if 
+      separated by space
 
     - Test what happens if we insert an email with references to another one and THEN
       we insert the referenced one. Should keep a single conversation with both emails

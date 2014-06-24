@@ -30,14 +30,10 @@ static this()
     {
         mongoDB = connectMongoDB("localhost").getDatabase("testwebmail");
         insertTestSettings();
-        config = getInitialConfig();
-        createTestDb();
     }
     else
-    {
         mongoDB = connectMongoDB("localhost").getDatabase("webmail");
-        config  = getInitialConfig();
-    }
+    config = getInitialConfig();
 }
 
 
@@ -66,7 +62,9 @@ double bsonNumber(Bson input)
         case Bson.Type.long_:
             return to!double(deserializeBson!long(input));
         default:
-            throw new Exception(format("Bson input is not of numeric type but: ", input.type));
+            auto err = format("Bson input is not of numeric type but: ", input.type);
+            logError(err);
+            throw new Exception(err);
     }
     assert(0);
 }
@@ -78,7 +76,6 @@ ref RetrieverConfig getConfig()
 }
 
 
-// XXX test when test db
 RetrieverConfig getInitialConfig()
 {
     RetrieverConfig config;
@@ -116,11 +113,6 @@ bool domainHasDefaultUser(string domainName)
         return true;
     return false;
 }
-version(db_usetestdb) unittest
-{
-    assert(domainHasDefaultUser("testdatabase.com"));
-    assert(!domainHasDefaultUser("anotherdomain.com"));
-}
 
 
 UserFilter[] getAddressFilters(string address)
@@ -145,7 +137,9 @@ UserFilter[] getAddressFilters(string address)
                 case "GreaterThan":
                     match.totalSizeType = SizeRuleType.GreaterThan; break;
                 default:
-                    throw new Exception("SizeRuleType must be one of None, GreaterThan or SmallerThan");
+                    auto err = "SizeRuleType must be one of None, GreaterThan or SmallerThan";
+                    logError(err);
+                    throw new Exception(err);
             }
             match.withAttachment = bsonBool      (rule["match_withAttachment"]);
             match.withHtml       = bsonBool      (rule["match_withHtml"]);
@@ -166,31 +160,6 @@ UserFilter[] getAddressFilters(string address)
     }
     return res;
 }
-version(db_usetestdb) unittest
-{
-    auto filters = getAddressFilters("testuser@testdatabase.com");
-    assert(filters.length == 1);
-    assert(!filters[0].match.withAttachment);
-    assert(!filters[0].match.withHtml);
-    assert(filters[0].match.totalSizeType == SizeRuleType.GreaterThan);
-    assert(filters[0].match.totalSizeValue == 100485760);
-    assert(filters[0].match.bodyMatches.length == 1);
-    assert(filters[0].match.bodyMatches[0] == "XXXBODYMATCHXXX");
-    assert(filters[0].match.headerMatches.length == 1);
-    assert("From" in filters[0].match.headerMatches);
-    assert(filters[0].match.headerMatches["From"] == "juanjo@juanjoalvarez.net");
-    assert(!filters[0].action.forwardTo.length);
-    assert(!filters[0].action.noInbox);
-    assert(filters[0].action.markAsRead);
-    assert(!filters[0].action.deleteIt);
-    assert(filters[0].action.neverSpam);
-    assert(!filters[0].action.setSpam);
-    assert(filters[0].action.addTags == ["testtag1", "testtag2"]);
-    filters = getAddressFilters("anotherUser@anotherdomain.com");
-    assert(filters[0].action.addTags == ["testtag3", "testtag4"]);
-    auto newfilters = getAddressFilters("anotherUser@testdatabase.com");
-    assert(filters[0].action.addTags == newfilters[0].action.addTags);
-}
 
 
 bool addressIsLocal(string address)
@@ -204,14 +173,6 @@ bool addressIsLocal(string address)
     auto jsonStr    = `{"addresses": {"$in": ["` ~ address ~ `"]}}`;
     auto userRecord = mongoDB["user"].findOne(parseJsonString(jsonStr));
     return !userRecord.isNull;
-}
-version(db_usetestdb) unittest
-{
-    assert(addressIsLocal("testuser@testdatabase.com"));
-    assert(addressIsLocal("random@testdatabase.com")); // has default user
-    assert(addressIsLocal("anotherUser@testdatabase.com"));
-    assert(addressIsLocal("anotherUser@anotherdomain.com"));
-    assert(!addressIsLocal("random@anotherdomain.com"));
 }
 
 
@@ -234,18 +195,8 @@ string jsonizeHeader(IncomingEmail email, string headerName, bool removeQuotes =
         ret = `"",`;
     return ret;
 }
-version(db_usetestdb) unittest
-{
-    string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
-    auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
-    email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"));
-    assert(email.jsonizeHeader("from") == `"from": " Test Sender <someuser@insomedomain.com>",`);
-    assert(email.jsonizeHeader("to") == `"to": " Test User2 <testuser@testdatabase.com>",`);
-    assert(email.jsonizeHeader("Date", true, true) == `" Sat, 25 Dec 2010 13:31:57 +0100",`);
-}
 
 
-// XXX tests when I've the test DB
 string getEmailIdByMessageId(string messageId)
 {
     auto jsonFind = parseJsonString(format(`{"messageId": "%s"}`, messageId));
@@ -256,7 +207,6 @@ string getEmailIdByMessageId(string messageId)
 }
 
 
-// XXX tests when I've the test DB
 string upsertConversation(string[] references, string messageId, string emailDbId, string userId)
 {
     // Search for a conversation with one of these references
@@ -318,7 +268,6 @@ string upsertConversation(string[] references, string messageId, string emailDbI
 }
 
 
-// XXX tests when I've the test DB
 void storeEnvelope(Envelope envelope)
 {
     string[] enabledTags;
@@ -342,7 +291,6 @@ void storeEnvelope(Envelope envelope)
 }
 
 
-// XXX tests when I've the test DB
 string getUserIdFromAddress(string address)
 {
     auto userFindJson = format(`{"addresses": {"$in": ["%s"]}}`, address);
@@ -353,7 +301,6 @@ string getUserIdFromAddress(string address)
 }
 
 
-// XXX test when I've the test DB
 string storeEmail(IncomingEmail email)
 {
     auto partAppender = appender!string;
@@ -391,7 +338,11 @@ string storeEmail(IncomingEmail email)
     else if ("delivered-to" in email.headers)
         realReceiverField = "delivered-to";
     else
-        throw new Exception("Cant insert to DB email without destination");
+    {
+        auto err = "Cant insert to DB email without destination";
+        logError(err);
+        throw new Exception(err);
+    }
     realReceiverRawValue  = email.jsonizeHeader(realReceiverField, false, true);
     realReceiverAddresses = to!string(email.headers[realReceiverField].addresses);
 
@@ -463,6 +414,11 @@ bool emailAlreadyOnDb(IncomingEmail email)
 // | |__| | | | | | |_| ||  __/\__ \ |_
 //  \____/|_| |_|_|\__|\__\___||___/\__|
 
+version(db_usetestdb) string[] TEST_EMAILS = ["multipart_mixed_rel_alternative_attachments",
+                                               "simple_alternative_noattach",
+                                               //"spam_notagged_nomsgid",
+                                               "spam_tagged",
+                                               "with_2megs_attachment"];
 version(db_usetestdb)
 {
     void insertTestSettings()
@@ -486,10 +442,9 @@ version(db_usetestdb)
     }
 
 
-    void createTestDb()
+    void recreateTestDb()
     {
         import std.file;
-        writeln("Recreating test db...");
         foreach(string collection; ["envelope", "email", "conversation", "domain", "user", "userrule"])
             mongoDB[collection].remove();
 
@@ -504,14 +459,8 @@ version(db_usetestdb)
         foreach(file_, collection; jsonfile2collection)
             mongoDB[collection].insert(parseJsonString(readText(buildPath(backendTestDataDir_, file_))));
 
-        // XXX insertar los emails de testemails, usar similar a processEmailForAddress
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
-
-        foreach(mailname; ["multipart_mixed_rel_alternative_attachments",
-                           "simple_alternative_noattach",
-                           //"spam_notagged_nomsgid",
-                           "spam_tagged",
-                           "with_2megs_attachment"])
+        foreach(mailname; TEST_EMAILS)
         {
             auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
             email.loadFromFile(buildPath(backendTestEmailsDir, mailname), false);
@@ -520,6 +469,7 @@ version(db_usetestdb)
             auto emailId = storeEmail(email);
             auto userId = getUserIdFromAddress(destination);
             auto envelope = Envelope(email, destination, userId, emailId);
+            envelope.tags["inbox"] = true;
             storeEnvelope(envelope);
             upsertConversation(email.getHeader("references").addresses,
                                       email.headers["message-id"].addresses[0],
@@ -527,23 +477,191 @@ version(db_usetestdb)
         }
     }
 
-    unittest
+    unittest // domainHasDefaultUser
     {
-        // XXX comprobar conversation, envelope y email insertados
-        // - envelope.count == email.count
-        
-        // - sacar ids de emails y msgids en un hash y comprobar que estan en las 
-        // conversaciones que deben estar
+        recreateTestDb();
+        assert(domainHasDefaultUser("testdatabase.com"));
+        assert(!domainHasDefaultUser("anotherdomain.com"));
+    }
 
-        // comprobar diversos campos de los emails y las parts (sobre todo acentos)
+    unittest // getAddressFilters
+    {
+        recreateTestDb();
+        auto filters = getAddressFilters("testuser@testdatabase.com");
+        assert(filters.length == 1);
+        assert(!filters[0].match.withAttachment);
+        assert(!filters[0].match.withHtml);
+        assert(filters[0].match.totalSizeType == SizeRuleType.GreaterThan);
+        assert(filters[0].match.totalSizeValue == 100485760);
+        assert(filters[0].match.bodyMatches.length == 1);
+        assert(filters[0].match.bodyMatches[0] == "XXXBODYMATCHXXX");
+        assert(filters[0].match.headerMatches.length == 1);
+        assert("From" in filters[0].match.headerMatches);
+        assert(filters[0].match.headerMatches["From"] == "juanjo@juanjoalvarez.net");
+        assert(!filters[0].action.forwardTo.length);
+        assert(!filters[0].action.noInbox);
+        assert(filters[0].action.markAsRead);
+        assert(!filters[0].action.deleteIt);
+        assert(filters[0].action.neverSpam);
+        assert(!filters[0].action.setSpam);
+        assert(filters[0].action.addTags == ["testtag1", "testtag2"]);
+        filters = getAddressFilters("anotherUser@anotherdomain.com");
+        assert(filters[0].action.addTags == ["testtag3", "testtag4"]);
+        auto newfilters = getAddressFilters("anotherUser@testdatabase.com");
+        assert(filters[0].action.addTags == newfilters[0].action.addTags);
+    }
 
-        // comprobar campos de envelope y que apuntan al email correcto
+    unittest // addressIsLocal
+    {
+        recreateTestDb(); 
+        assert(addressIsLocal("testuser@testdatabase.com"));
+        assert(addressIsLocal("random@testdatabase.com")); // has default user
+        assert(addressIsLocal("anotherUser@testdatabase.com"));
+        assert(addressIsLocal("anotherUser@anotherdomain.com"));
+        assert(!addressIsLocal("random@anotherdomain.com"));
+    }
+
+    unittest // jsonizeHeader
+    {
+        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
+        auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), false);
+        assert(email.jsonizeHeader("from") == `"from": " Test Sender <someuser@insomedomain.com>",`);
+        assert(email.jsonizeHeader("to") == `"to": " Test User2 <testuser@testdatabase.com>",`);
+        assert(email.jsonizeHeader("Date", true, true) == `" Sat, 25 Dec 2010 13:31:57 +0100",`);
+    }
+
+    unittest // getEmailIdByMessageId
+    {
+        recreateTestDb();
+        auto id1 = getEmailIdByMessageId("CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
+        auto id2 = getEmailIdByMessageId("AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
+        auto id3 = getEmailIdByMessageId("CAGA-+RScZe0tqmG4rbPTSrSCKT8BmkNAGBUOgvCOT5ywycZzZA@mail.gmail.com");
+        auto id4 = getEmailIdByMessageId("doesntexist");
+
+        assert(id4 == "");
+        assert((id1.length == id2.length) && (id3.length == id1.length) && id1.length == 24);
+        auto arr = [id1, id2, id3, id4];
+        assert(count(arr, id1) == 1);
+        assert(count(arr, id2) == 1);
+        assert(count(arr, id3) == 1);
+        assert(count(arr, id4) == 1);
+    }
+
+    unittest // upsertConversation
+    {
+        recreateTestDb();
+        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
+        auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), false);
+        auto userId = getUserIdFromAddress(email.getHeader("to").addresses[0]);
+        // test1: insert as is, should create a new conversation with this email as single member
+        auto emailId = storeEmail(email);
+        auto convId = upsertConversation(email.getHeader("references").addresses, 
+                                         email.getHeader("message-id").addresses[0], 
+                                         emailId, userId);
+        auto convDoc = mongoDB["conversation"].findOne(["_id": convId]);
+        assert(!convDoc.isNull);
+        assert(bsonStr(convDoc["userId"]) == userId);
+        assert(convDoc["links"].type == Bson.Type.array);
+        assert(convDoc["links"].length == 1);
+        assert(bsonStr(convDoc["links"][0]["messageId"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc["links"][0]["emailId"]) == emailId);
+
+        // test2: insert as a msgid of a reference already on a conversation, check that the right
+        // conversationId is returned and the emailId added to its entry in the conversation.links
+        recreateTestDb();
+        email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), false);
+        email.headers["message-id"].addresses[0] = "testreference@blabla.testdomain.com";
+        emailId = storeEmail(email);
+        convId = upsertConversation(email.getHeader("references").addresses, 
+                                         email.getHeader("message-id").addresses[0], 
+                                         emailId, userId);
+        convDoc = mongoDB["conversation"].findOne(["_id": convId]);
+        assert(!convDoc.isNull);
+        assert(bsonStr(convDoc["userId"]) == userId);
+        assert(convDoc["links"].type == Bson.Type.array);
+        assert(convDoc["links"].length == 3);
+        assert(bsonStr(convDoc["links"][1]["messageId"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc["links"][1]["emailId"]) == emailId);
+
+        // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
+        // is added to that conversation
+        recreateTestDb();
+        email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), false);
+        string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
+        email.addHeader(refHeader);
+        emailId = storeEmail(email);
+        convId = upsertConversation(email.getHeader("references").addresses, 
+                                         email.getHeader("message-id").addresses[0], 
+                                         emailId, userId);
+        convDoc = mongoDB["conversation"].findOne(["_id": convId]);
+        assert(!convDoc.isNull);
+        assert(bsonStr(convDoc["userId"]) == userId);
+        assert(convDoc["links"].type == Bson.Type.array);
+        assert(convDoc["links"].length == 2);
+        assert(bsonStr(convDoc["links"][1]["messageId"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc["links"][1]["emailId"]) == emailId);
+    }
+
+    unittest // storeEnvelope
+    {
+        import std.exception;
+        import core.exception;
+        recreateTestDb();
+        auto cursor = mongoDB["envelope"].find(["destinationAddress": "testuser@testdatabase.com"]);
+        assert(!cursor.empty);
+        auto envDoc = cursor.front; 
+        cursor.popFront; cursor.front;
+        cursor.popFront;
+        assert(collectException!AssertError(cursor.popFront));
+        assert(envDoc["forwardTo"].type == Bson.Type.array);
+        auto userId = getUserIdFromAddress("testuser@testdatabase.com");
+        assert(bsonStr(envDoc["userId"]) == userId);
+        assert(envDoc["tags"].type == Bson.Type.array);
+        assert(envDoc["tags"].length == 1);
+        assert(bsonStr(envDoc["tags"][0]) == "inbox");
+        auto emailId = getEmailIdByMessageId("CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
+        assert(bsonStr(envDoc["emailId"]) == emailId);
+    }
+
+    unittest // storeEmail
+    {
+        recreateTestDb();
+        auto cursor = mongoDB["email"].find();
+        assert(!cursor.empty);
+        auto emailDoc = cursor.front;
+        assert(emailDoc["references"].length == 1);
+        assert(bsonStr(emailDoc["references"][0]) == "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
+        assert(bsonStr(emailDoc["subject"]) == " Fwd: Se ha evitado un inicio de sesión sospechoso");
+        assert(emailDoc["attachments"].length == 2);
+        assert(bsonStr(emailDoc["isodate"]) == "2013-05-27T03:42:30Z");
+        assert(bsonStr(emailDoc["to"]["addresses"][0]) == "testuser@testdatabase.com");
+        assert(bsonStr(emailDoc["from"]["addresses"][0]) == "someuser@somedomain.com");
+        assert(emailDoc["textParts"].length == 2);
+    }
+
+    unittest // emailAlreadyOnDb
+    {
+        recreateTestDb();
+        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
+        foreach(mailname; TEST_EMAILS)
+        {
+            auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), false);
+            assert(emailAlreadyOnDb(email));
+        }
+
     }
 }
 
 
 version(db_insertalltest) unittest
 {
+    version(db_usetestdb)
+        recreateTestDb();
     import std.datetime;
     import std.process;
 
@@ -562,7 +680,6 @@ version(db_insertalltest) unittest
     {
         //if (indexOf(e, "62877") == -1) continue; // For testing a specific email
         //if (to!int(e.name.baseName) < 62879) continue; // For testing from some email forward
-
         writeln(e.name, "...");
 
         totalSw.start();
@@ -580,7 +697,7 @@ version(db_insertalltest) unittest
         sw.stop(); writeln("loadFromFile_withCopy time: ", sw.peek().usecs); sw.reset();
 
         sw.start();
-        auto envelope = Envelope(email, "juanjux@juanjux.mooo.com");
+        auto envelope = Envelope(email, email.getHeader("to").addresses[0]);
         envelope.userId = getUserIdFromAddress(envelope.destination);
         envelope.tags["inbox"] = true;
         sw.stop(); writeln("getUserIdFromAddress time: ", sw.peek().usecs); sw.reset();
@@ -628,6 +745,8 @@ version(db_insertalltest) unittest
 
 version(userrule_test) unittest
 {
+    version(db_usetestdb)
+        recreateTestDb();
     writeln("Starting userrule.d unittests...");
     auto config = getConfig();
     auto testDir = buildPath(config.mainDir, "backend", "test");
