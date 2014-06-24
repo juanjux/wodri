@@ -2,11 +2,11 @@ MIME-Version: 1.0
 Sender: someuser@somedomain.com
 Received: by 10.227.21.6 with HTTP; Tue, 21 Jan 2014 06:32:20 -0800 (PST)
 Date: Tue, 21 Jan 2014 15:32:20 +0100
-Delivered-To: testuser@testdatabase.com
+Delivered-To: anotherUser@anotherdomain.com
 Message-ID: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>
 Subject: Attachment test
 From: Some Random User <someuser@somedomain.com>
-To: Test User1 <testuser@testdatabase.com>
+To: Test User1 <anotherUser@anotherdomain.com>
 Content-Type: multipart/mixed; boundary=001a11c1a3f83d671c04f07be060
 
 --001a11c1a3f83d671c04f07be060

@@ -10,7 +10,9 @@
         ],
         "match_withAttachment" : true,
         "match_withHtml" : true,
-        "match_withSizeLimit" : false,
+        "match_totalSizeValue": 0,
+        "match_sizeRuleType": "None",
+        "match_headers" : {},
         "action_addTags" : [
                 "testtag3",
                 "testtag4"
@@ -21,6 +23,5 @@
         "action_neverSpam" : false,
         "action_noInbox" : true,
         "action_setSpam" : false,
-        "action_tagFavorite" : true,
 }
 

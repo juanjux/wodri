@@ -21,10 +21,8 @@
         "action_noInbox" : false,
         "action_setSpam" : false,
         "match_sizeRuleType" : "GreaterThan",
-        "action_tagFavorite" : false,
         "match_totalSizeValue" : 100485760,
         "match_withAttachment" : false,
         "match_withHtml" : false,
-        "match_withSizeLimit" : true,
 }
 

@@ -10,7 +10,8 @@ import retriever.incomingemail;
 enum SizeRuleType
 {
     GreaterThan,
-    SmallerThan
+    SmallerThan,
+    None
 }
 
 
@@ -18,10 +19,9 @@ struct Match
 {
     bool withAttachment = false;
     bool withHtml       = false;
-    bool withSizeLimit  = false;
     string[string]   headerMatches;
     string[]         bodyMatches;
-    SizeRuleType     totalSizeType = SizeRuleType.GreaterThan;
+    SizeRuleType     totalSizeType = SizeRuleType.None;
     ulong            totalSizeValue;
 }
 
@@ -33,9 +33,8 @@ struct Action
     bool deleteIt     = false;
     bool neverSpam    = false;
     bool setSpam      = false;
-    bool tagFavorite  = false;
     string[] addTags;
-    string forwardTo;
+    string[] forwardTo;
 }
 
 
@@ -83,7 +82,7 @@ class UserFilter
                     return false;
         }
 
-        if (this.match.withSizeLimit)
+        if (this.match.totalSizeType != SizeRuleType.None)
         {
             auto emailSize = envelope.email.computeSize();
             if (this.match.totalSizeType == SizeRuleType.GreaterThan &&
@@ -115,9 +114,6 @@ class UserFilter
 
         if (this.action.setSpam)
             envelope.tags["spam"] = true;
-
-        if (this.action.tagFavorite)
-            envelope.tags["favorite"] = true;
 
         foreach(string tag; this.action.addTags)
         {

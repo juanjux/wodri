@@ -106,7 +106,7 @@ void processEmailForAddress(string destination, IncomingEmail email, string emai
         filter.apply(envelope);
     storeEnvelope(envelope);
 
-    getOrCreateConversationId(email.getHeader("references").addresses, 
+    upsertConversation(email.getHeader("references").addresses, 
                               email.headers["message-id"].addresses[0],
                               emailId, userId);
 }

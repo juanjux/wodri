@@ -1,4 +1,4 @@
-Delivered-To: testuser@testdatabase.com
+Delivered-To: anotherUser@testdatabase.com
 Received: by testdatabase.com (Postfix, from userid 1002)
 	id 174541848D5; Tue, 10 Jun 2014 14:51:47 +0200 (CEST)
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on tatil2014
@@ -20,7 +20,7 @@ X-Spam-Report:
 	*  3.7 MONEY_FRAUD_5 Lots of money and many fraud phrases
 	*  1.8 ADVANCE_FEE_5_NEW_MONEY Advance Fee fraud and lots of money
 Received: by mail-la0-f43.google.com with SMTP id mc6so3975006lab.30
-        for <testuser@testdatabase.com>; Tue, 10 Jun 2014 05:51:30 -0700 (PDT)
+        for <anotherUser@testdatabase.com>; Tue, 10 Jun 2014 05:51:30 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=gmail.com; s=20120113;
         h=mime-version:sender:in-reply-to:references:from:date:message-id
@@ -43,7 +43,7 @@ From: SomeUser Random <someuser@anydomain.com>
 Date: Tue, 10 Jun 2014 14:51:10 +0200
 Message-ID: <CAGA-+RScZe0tqmG4rbPTSrSCKT8BmkNAGBUOgvCOT5ywycZzZA@mail.gmail.com>
 Subject: Fwd: Hello My Dearest, please I need your help!
-To: testuser@testdatabase.com
+To: anotherUser@testdatabase.com
 Content-Type: multipart/alternative; boundary=089e011770cb6d402304fb7ac9ff
 
 --089e011770cb6d402304fb7ac9ff

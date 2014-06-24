@@ -63,7 +63,6 @@ Contains rules that will match documents and actions to do on them
         "match_totalSizeValue" : 100485760,
         "match_withAttachment" : false,
         "match_withHtml" : false,
-        "match_withSizeLimit" : false
         "match_sizeRuleType" : "GreaterThan",
         "match_bodyText" : [
                 "XXXBODYMATCHXXX"
@@ -81,7 +80,6 @@ Contains rules that will match documents and actions to do on them
         "action_neverSpam" : false,
         "action_noInbox" : false,
         "action_setSpam" : false,
-        "action_tagFavorite" : false,
 }
 
 

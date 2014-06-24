@@ -1,15 +1,6 @@
 TESTS
 
-testdb:
-    emails
-    envelope 
-    conversation 
-
 db.d:
-    domainHasDefaultUser => dbDomain, dbUser
-    getAddressFilters => dbUserrule, dbUser
-    addressIsLocal => dbDomain, dbUser
-    jsonizeField 
     getEmailIdByMessageId => dbEmail
     getOrCreateConversationId => dbConversation, dbUser, dbEmail
     storeEnvelope => dbEnvelope
