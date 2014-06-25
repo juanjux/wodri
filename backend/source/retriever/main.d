@@ -72,7 +72,6 @@ void saveAndLogRejectedEmail(IncomingEmail email, bool isValid, bool tooBig,
 }
 
 
-// XXX add unittest when I've the testing dB
 string[] localReceivers(IncomingEmail email)
 {
     string[] allAddresses;
@@ -89,7 +88,7 @@ string[] localReceivers(IncomingEmail email)
 }
 
 
-// XXX test
+// XXX test when I've the full cicle tests
 void processEmailForAddress(string destination, IncomingEmail email, string emailId)
 {
     // Create the email=>user envelope

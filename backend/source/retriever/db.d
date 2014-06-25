@@ -2,8 +2,11 @@ module retriever.db;
 
 import std.stdio;
 import std.string;
+import std.array;
+import std.json;
 import std.path;
 import std.algorithm;
+import std.file;
 
 import vibe.db.mongo.mongo;
 import vibe.core.log;
@@ -23,16 +26,41 @@ alias bsonBool     = deserializeBson!bool;
 alias bsonStrArray = deserializeBson!(string[]);
 alias bsonStrHash  = deserializeBson!(string[string]);
 
-// FIXME: read db config from file
+version(db_test) version = db_usetestdb;
+
+/**
+ * Read the /etc/dbconnect.json file, check for missing keys and connect
+ */
 static this()
 {
+    auto mandatoryKeys = ["host", "name",  "password", "port", "testname", "type", "user"];
+    sort(mandatoryKeys);
+
+    auto dbData = parseJSON(readText("/etc/webmail/dbconnect.json"));
+    auto sortedKeys = dbData.object.keys.dup;
+    sort(sortedKeys);
+
+    auto keysDiff = setDifference(sortedKeys, mandatoryKeys).array;
+    enforce(!keysDiff.length, "Mandatory keys missing on dbconnect.json config file: %s" 
+                              ~ to!string(keysDiff));
+    enforce(dbData["type"].str == "mongodb", "Only MongoDB is currently supported");
+    string connectStr = format("mongodb://%s:%s@%s:%s/%s",
+                               dbData["user"].str,
+                               dbData["password"].str,
+                               dbData["host"].str,
+                               dbData["port"].integer,
+                               "admin");
+
+    auto client = connectMongoDB(connectStr);
     version(db_usetestdb)
     {
-        mongoDB = connectMongoDB("localhost").getDatabase("testwebmail");
+        mongoDB = client.getDatabase(dbData["testname"].str);
         insertTestSettings();
     }
     else
-        mongoDB = connectMongoDB("localhost").getDatabase("webmail");
+    {
+        mongoDB = client.getDatabase(dbData["name"].str);
+    }
     config = getInitialConfig();
 }
 
@@ -444,7 +472,6 @@ version(db_usetestdb)
 
     void recreateTestDb()
     {
-        import std.file;
         foreach(string collection; ["envelope", "email", "conversation", "domain", "user", "userrule"])
             mongoDB[collection].remove();
 
@@ -464,7 +491,7 @@ version(db_usetestdb)
         {
             auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
             email.loadFromFile(buildPath(backendTestEmailsDir, mailname), false);
-            assert(email.isValid);
+            assert(email.isValid, "Email is not valid");
             auto destination = email.getHeader("to").addresses[0];
             auto emailId = storeEmail(email);
             auto userId = getUserIdFromAddress(destination);
@@ -476,12 +503,15 @@ version(db_usetestdb)
                                       emailId, userId);
         }
     }
+}
 
+version(db_test)
+{
     unittest // domainHasDefaultUser
     {
         recreateTestDb();
-        assert(domainHasDefaultUser("testdatabase.com"));
-        assert(!domainHasDefaultUser("anotherdomain.com"));
+        assert(domainHasDefaultUser("testdatabase.com"), "domainHasDefaultUser1");
+        assert(!domainHasDefaultUser("anotherdomain.com"), "domainHasDefaultUser2");
     }
 
     unittest // getAddressFilters
@@ -819,7 +849,7 @@ version(userrule_test) unittest
     Action action8;
     action8.forwardTo = ["juanjux@yahoo.es"];
     envelope = reInstance(match8, action8);
-    assert(envelope.forwardTo[0] == ["juanjux@yahoo.es"]);
+    assert(envelope.forwardTo[0] == "juanjux@yahoo.es");
 
     // Dont match SizeSmallerTham
     Match match9;

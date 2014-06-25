@@ -22,7 +22,7 @@
 	    },
 	    {
 	        "name": "incomingmail_allemailstest",
-	        "versions": ["incomingemail_allemailstest"],
+	        "versions": ["incomingemail_allemailstest", "db_usetestdb"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
@@ -30,7 +30,7 @@
 	    },
 	    {
 	        "name": "incomingemail_singletest",
-	        "versions": ["incomingemail_singletest"],
+	        "versions": ["incomingemail_singletest", "db_usetestdb"],
 	        "buildOptions": ["debugMode"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
@@ -39,7 +39,7 @@
 	    },
 	    {
 	        "name": "incomingemail_createtestemails",
-	        "versions": ["incomingemail_createtestdata"],
+	        "versions": ["incomingemail_createtestdata", "db_usetestdb"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
@@ -47,7 +47,7 @@
 	    },
 	    {
 	        "name": "incomingemail_createtestdata",
-	        "versions": ["incomingemail_regeneratetestdata"],
+	        "versions": ["incomingemail_regeneratetestdata", "db_usetestdb"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
@@ -63,7 +63,7 @@
 	    },
 	    {
 	        "name": "db_test",
-	        "versions": ["db_usetestdb"],
+	        "versions": ["db_test"],
 	        "mainSourceFile": "db.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
 	        "dflags": ["-main", "-unittest"], 
@@ -79,7 +79,7 @@
 	    },
 	    {
 	        "name": "main_test",
-	        "versions": ["maintest"],
+	        "versions": ["maintest", "db_usetestdb"],
 	        "mainSourceFile": "main.d",
 	        "excludedSourceFiles": ["test.d"],
 	        "dflags": ["-main", "-unittest"], 

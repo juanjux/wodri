@@ -1,30 +1,6 @@
-TESTS
-
-db.d:
-    emailAlreadyOnDb => dbEmail
-
-main.d:
-    localReceivers => dbDomain, dbUser
-    processEmailForAddress => testemails, dbAll
-
-
 Backend-Retriever:
-
-    - Move unittests at the correct section
-
-    - Look like IncomingEmail.parseFromFile doesnt parse the References correctly if 
-      separated by space
-
-    - Test what happens if we insert an email with references to another one and THEN
-      we insert the referenced one. Should keep a single conversation with both emails
-      (1: multipart_mixed_blabla, 2: simple_alternative_noattach)
-
-    - main.d: configure DB name and connection data from a config file
-
     - Think about what to do with messages without Message-ID field: 
       generate one for them? 
-
-    - Function to create and populate a DB por unittesting
 
     - When the message failed to enter (validation error, or error on save) generate a rebound
       using our message sending system (when implemented)
@@ -37,14 +13,14 @@ Backend-Retriever:
 
     - Exception classes for the different parts (and use them)
 
-    - Const, immutable, pure, nothrow, in, out, safe et all
-
     - Retriever's full test, use a Python script with the mail & smtp modules to parse
       the test mails collection changing the receiver from [myRealAddr] to [mongoTestAddr]
       before delivering to Postfix, create a MongoDB database "webmailtest", populate it,
       check that we receive every email, check that that the isValidAddress check is fine,
       check that the filters of the test DB apply correctly, check searches with the indexer, 
       et cetera.
+
+    - Const, immutable, pure, nothrow, in, out, safe et all
 
     - Sent the new changes in characterencodings.d to ruppe
 

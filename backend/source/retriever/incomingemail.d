@@ -73,10 +73,10 @@ struct HeaderValue
 }
 
 
-final class IncomingEmail 
-{ 
-    string attachmentStore; 
-    string rawEmailStore; 
+final class IncomingEmail
+{
+    string attachmentStore;
+    string rawEmailStore;
 
     DictionaryList!(HeaderValue, false) headers; // Note: keys are case insensitive
     MIMEPart rootPart;
@@ -208,8 +208,8 @@ final class IncomingEmail
             string destFilePath;
             do
             {
-                destFilePath = buildPath(this.rawEmailStore, 
-                                         format("%d_%d", stdTimeToUnixTime(Clock.currStdTime), 
+                destFilePath = buildPath(this.rawEmailStore,
+                                         format("%d_%d", stdTimeToUnixTime(Clock.currStdTime),
                                                 uniform(0, 100000)));
             } while(destFilePath.exists);
 
@@ -299,7 +299,7 @@ final class IncomingEmail
 
     DateTime parseDate(string strDate)
     {
-        // Default to current time so we've some date if 
+        // Default to current time so we've some date if
         // the format is broken
         DateTime ldate = to!DateTime(Clock.currTime);
         auto tokDate = strip(strDate).split(' ').filter!(a => !a.empty).array;
@@ -313,7 +313,7 @@ final class IncomingEmail
             if (tokDate.length >= 5)
             {
                 // like: Tue, 18 Mar 2014 16:09:36 +0100
-                if (tokDate.length >= 6 && 
+                if (tokDate.length >= 6 &&
                     among(tokDate[0][0..3], "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
                     ++posAdjust;
                 // else like: 4 Jan 2005 07:04:19 -0000
@@ -326,7 +326,7 @@ final class IncomingEmail
                 auto minute    = to!int(hmsTokens[1]);
                 int second = hmsTokens.length > 2? to!int(hmsTokens[2]):0;
                 string tz      = tokDate[4+posAdjust];
-                ldate = DateTime(Date(year, month, day), 
+                ldate = DateTime(Date(year, month, day),
                                      TimeOfDay(hour, minute, second));
 
                 // The date is saved on UTC, so we add/substract the TZ
@@ -731,8 +731,6 @@ version(unittest)
 
 unittest
 {
-    // #unittest start here
-    // FIXME XXX: read connection data and DB name from text config file
     version(anyincomingmailtest)
     {
         string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
@@ -821,19 +819,9 @@ unittest
     else version(incomingemail_singletest)
     {
 
-        // Specific tests
-        // 22668 => multipart base64
-        // 1973  => text/plain UTF-8 quoted-printable
-        // 10000 => text/plain UTF-8 7bit
-        // 36004 => mixed, alternative: plain us-ascii&html quoted-printable, adjunto message/rfc822
-        // 40000 => multipart/alternative ISO8859-1 quoted-printable
-        // 40398 => muchos adjuntos png referenciados en el html
-        // 50000 => multipart/alternative, text/plain sin encoding 7 bit y fuera de parte, text/html ISO8859-1 base64
-        // 60000 => multipart/alternative Windows-1252 quoted-printable
-        // 80000 => multipart/alternative ISO8859-1 quoted-printable
         writeln("Starting single email test...");
         auto filenumber = 30509;
-        auto emailFile = File(format("%s/%d", origEmailDir, filenumber), "r"); // text/plain UTF-8 quoted-printable
+        auto emailFile = File(format("%s/%d", origEmailDir, filenumber), "r"); 
         auto email      = new IncomingEmail(rawEmailStore, attachmentStore);
         email.loadFromFile(emailFile, true);
 
@@ -841,7 +829,14 @@ unittest
         foreach(MIMEPart part; email.textualParts)
             writeln(part.ctype.name, ":", part.toHash());
 
-        //assert("Date" in email.headers);
+        assert("date" in email.headers);
+        email.headers.removeAll("references");
+        email.addHeader("References: <30140609205429.01E5AC000035B@1xj.tpn.terra.com>\r\n");
+        assert(email.headers["references"].addresses.length == 1, "must have one reference");
+
+        email.headers.removeAll("references");
+        email.addHeader("References: <20140609205429.01E5AC000035B@1xj.tpn.terra.com> <otracosa@algo.cosa.com>");
+        assert(email.headers["references"].addresses.length == 2, "must have two referneces");
         //auto f2 = File("/home/juanjux/webmail/backend/test/dates.txt");
         //while(!f2.eof)
         //{

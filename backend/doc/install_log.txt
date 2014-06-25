@@ -1,7 +1,7 @@
 DMD & Vibed
     - Install DMD from DigitalMars (Ubuntu package)
     - Download dub
-    - dub init XXXvibed
+    - dub init vibed
     - dub fetch libevent2
 
 POSTFIX & SPAMASSASSIN:
@@ -59,7 +59,7 @@ POSTFIX & SPAMASSASSIN:
 
 MONGODB:
     - sudo apt-get install mongodb mongodb-clients mongodb-server
-    - edit (as root) /etC/mongodb.conf, change these settings (change WEBMAILDIR for the package
+    - edit (as root) /etc/mongodb.conf, change these settings (change WEBMAILDIR for the package
       (directory on your system).
         # Where to store the data.
         dbpath=WEBMAILDIR/backend/mongodb/data
@@ -76,7 +76,7 @@ MONGODB:
       use webmail
       myuser = 
         {
-                "loginname": "MYLOGINNAME",
+                "loginName": "MYLOGINNAME",
                 "name": "MYNAME",
                 "surname": "MYSURNAME",
                 "admin": true,
@@ -88,7 +88,7 @@ MONGODB:
       mydomain = 
         {   
                 "name": "MYDOMAIN",
-                "postmaster": userid,
+                "postMaster": userid,
                 "defaultUser": userid,
                 "domainAdmin": userid
         }
@@ -100,12 +100,42 @@ MONGODB:
                 "module" : "retriever",
                 "mainDir" : "/home/juanjux/webmail",
                 "ownDomain" : ObjectId("539977b104ac3d27431d0668"),
-                "rawMailStore" : "store/rawmails",
+                "rawEmailStore" : "store/rawmails",
                 "attachmentStore" : "store/attachment",
                 "incomingMessageLimit" : 15728640
+                "smtpEncription" : 0,
+                "smtpPass" : "smtpRelayPass",
+                "smtpPort" : 25,
+                "smtpServer" : "smtpRelayHostName",
+                "smtpUser" : "smtpRelayUserName"
         }
       db.settings.insert(retriever_config)
    
+CONFIG DIRECTORY AND MONGO DB USER
+    - sudo mkdir /etc/webmail
+    - sudo chown USUARIO:GRUPO /etc/webmail
+    - sudo chmod 700 /etc/webmail
+    - vim /etc/webmail/dbconnect.json:
+        {
+            type: "mongodb",
+            host: "localhost",
+            port: 27017,
+            name: "webmail",
+            testname: "testwebmail",
+            user: "webmaildbuser",
+            password: "SomePassword"
+        }
+    - Open the mongo console (mongo) and write:
+        use admin;
+        db.addUser("webmaildbuser", "SomePassword");
+        db.shutdownServer();
+        exit
+
+    - Edit /etc/mongodb.conf and set the auth option to true (usually commented)
+    - sudo service mongodb restart
+    (Now for opening the mongo console: mongo localhost:27017/admin -u webmaildbuser -p SomePassword)
+
+
   TODO XXX
 
 - Eliminar todos los procesos de Postfix que sean innecesarios
