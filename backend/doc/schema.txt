@@ -43,10 +43,7 @@ User information.
         "name" : "John",
         "surname" : "Smith",
         "admin" : false,
-        "addresses" : [
-                "johnsmith@foo.com",
-                "secretmail@foo.com",
-        ]
+        "addresses" : [ "johnsmith@foo.com", "secretmail@foo.com" ]
 }
 
 USERRULE
@@ -56,24 +53,14 @@ Contains rules that will match documents and actions to do on them
 {
         "_id" : "<ThisDocumentId>", 
         "userId" : "<rule owner user Id>",
-        "destinationAccounts" : [
-                "john@foo.com",
-                "secretmail@foo.com"
-        ],
+        "destinationAccounts" : [ "john@foo.com", "secretmail@foo.com" ],
         "match_totalSizeValue" : 100485760,
         "match_withAttachment" : false,
         "match_withHtml" : false,
         "match_sizeRuleType" : "GreaterThan",
-        "match_bodyText" : [
-                "XXXBODYMATCHXXX"
-        ],
-        "match_headers" : {
-                "From" : "somedude@gmail.com"
-        },
-        "action_addTags" : [
-                "sometag1",
-                "sometag2"
-        ],
+        "match_bodyText" : [ "XXXBODYMATCHXXX" ],
+        "match_headers" : { "From" : "somedude@gmail.com" },
+        "action_addTags" : [ "sometag1", "sometag2" ],
         "action_delete" : false,
         "action_forwardTo" : "",
         "action_markAsRead" : true,
@@ -92,10 +79,7 @@ to two address he owns, he'll have two envelopes but a single email).
 
 {
         "emailId" : "<email Id>",
-        "tags" : [
-                "inbox",
-                "<OtherTags>",
-        ],
+        "tags" : [ "inbox", "<OtherTags>", ],
         "_id" : "<ThisDocumentId>",
         "userId" : "<user Id>",
         "destinationAddress" : "email@foo.com",
@@ -111,14 +95,30 @@ recovery process).  Only a single copy of every email is stored in the DB, even
 if the email is addresses for several users of the system; see the description
 for the Envelope document.
 
+Note: email["headers"] will contain all the headers except Message-ID and From because 
+they're outside the headers subdoc (for easier indexing by MongoDB). A header entry
+is a list because some fields like "received" can be repeated several times; each
+list item was an additional header entry in the original email.
+
 
 {
+        "_id" : "<ThisDocumentId>",
+        "message-id" : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
         "rawEmailPath" : "/path/to/the/original/email/somenumbers_5534534534",
-        "references" : [
-                "ffa77066-3d52-4a90-bc24-fdaf309b6dec@p73g2000hsd.googlegroups.com",
-                "8CA51F67883FE3B-1098-5552@mblk-d27.sysops.aol.com"
-        ],
-        "subject" : "some subject",
+        "isodate" : "2008-03-12T17:45:49Z",
+        "from" : {
+                "rawValue" : "Some Guy Name <someguy@gmail.com>",
+                "addresses" : [ "someguy@gmail.com" ]
+        },
+        "receivers" : {
+                "content" : " NodLogin <nodlogin@googlegroups.com>",
+                "addresses" : [ "nodlogin@googlegroups.com" ]
+        },
+        "textParts" : [ {
+                        "content" : "Text content, plain or html (see contenttype for every part), already decoded into UTF-8",
+                        "contentType" : "text/plain"
+                }
+        ]
         "attachments" : [ {
                 "contentType": "mime/jpeg",
                 "realPath": "/path/to/file/2342342343.jpg",
@@ -127,29 +127,19 @@ for the Envelope document.
                 "filename": "somefile.jpg"
                 },
         ],
-        "messageId" : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
-        "_id" : "<ThisDocumentId>",
-        "from" : {
-                "content" : "Some Guy Name <someguy@gmail.com>",
-                "addresses" : [
-                        "someguy@gmail.com"
+        "headers": {
+                "to": [ {
+                    "rawValue": " NodLogin <nodlogin@googlegroups.com>",
+                    "addresses": ["nodlogin@googlegroups.com"]
+                    ],
+                },
+                "received": [
+                        {"rawValue" : " by testdatabase.com (Postfix, from userid 1002)\n\tid 174541848D5; Tue, 10 Jun 2014 14:51:47 +0200 (CEST)\n"},
+                        {"rawValue" : " by mail-la0-f43.google.com with SMTP id mc6so3975006lab.30\n        for <anotherUser@testdatabase.com>; Tue, 10 Jun 2014 05:51:30 -0700 (PDT)\n"},
+                        {"rawValue" : " by 10.152.21.135 with HTTP; Tue, 10 Jun 2014 05:51:10 -0700 (PDT)\n"}
                 ]
-        },
-        "date" : " Wed, 12 Mar 2008 11:45:49 -0700 (PDT)",
-        "inReplyTo" : " <8CA51F67883FE3B-1098-5552@mblk-d27.sysops.aol.com>",
-        "isodate" : "2008-03-12T17:45:49Z",
-        "to" : {
-                "content" : " NodLogin <nodlogin@googlegroups.com>",
-                "addresses" : [
-                        "nodlogin@googlegroups.com"
-                ]
-        },
-        "textParts" : [
-                {
-                        "content" : "Text content, plain or html (see contenttype for every part), already decoded into UTF-8",
-                        "contentType" : "text/plain"
-                }
-        ]
+                # ..etc..
+        }
 }
 
 

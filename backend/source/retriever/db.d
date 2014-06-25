@@ -227,7 +227,7 @@ string jsonizeHeader(IncomingEmail email, string headerName, bool removeQuotes =
 
 string getEmailIdByMessageId(string messageId)
 {
-    auto jsonFind = parseJsonString(format(`{"messageId": "%s"}`, messageId));
+    auto jsonFind = parseJsonString(format(`{"message-id": "%s"}`, messageId));
     auto res = mongoDB["email"].findOne(jsonFind);
     if (!res.isNull)
         return bsonStr(res["_id"]);
@@ -241,7 +241,7 @@ string upsertConversation(string[] references, string messageId, string emailDbI
     string conversationId;
     char[][] reversed = to!(char[][])(references ~ messageId);
     reverse(reversed);
-    auto jsonFindStr = format(`{"userId": "%s", "links.messageId": {"$in": %s}}`, userId, reversed);
+    auto jsonFindStr = format(`{"userId": "%s", "links.message-id": {"$in": %s}}`, userId, reversed);
     auto convFind    = mongoDB["conversation"].findOne(parseJsonString(jsonFindStr));
 
     if (!convFind.isNull)
@@ -255,7 +255,7 @@ string upsertConversation(string[] references, string messageId, string emailDbI
         foreach(entry; convFind["links"])
         {
             idx++;
-            if (bsonStr(entry["messageId"]) == messageId)
+            if (bsonStr(entry["message-id"]) == messageId)
             {
                 // Found ourselves in the Conversation document; update the
                 // (empty) emailId with our own
@@ -266,7 +266,7 @@ string upsertConversation(string[] references, string messageId, string emailDbI
 
         if (!jsonUpdateStr.length)
             // Found conversation without this message id, add it to the conversation
-            jsonUpdateStr = format(`{"$push": {"links": {"messageId": "%s", "emailId": "%s"}}}`, messageId, emailDbId);
+            jsonUpdateStr = format(`{"$push": {"links": {"message-id": "%s", "emailId": "%s"}}}`, messageId, emailDbId);
 
         conversationId = bsonStr(convFind["_id"]);
         mongoDB["conversation"].update(["_id": conversationId], parseJsonString(jsonUpdateStr));
@@ -282,10 +282,10 @@ string upsertConversation(string[] references, string messageId, string emailDbI
         foreach(reference; references)
         {
             referenceEmailId = getEmailIdByMessageId(reference); // empty string if not found and that's ok here
-            linksAppender.put(format(`{"messageId": "%s", "emailId": "%s"},`, reference, referenceEmailId));
+            linksAppender.put(format(`{"message-id": "%s", "emailId": "%s"},`, reference, referenceEmailId));
         }
         // me too! 
-        linksAppender.put(format(`{"messageId": "%s", "emailId": "%s"}`, messageId, emailDbId));
+        linksAppender.put(format(`{"message-id": "%s", "emailId": "%s"}`, messageId, emailDbId));
         auto convIdNew = BsonObjectID.generate();
         auto jsonInsert = parseJsonString(format(`{"_id": "%s", "userId": "%s", "links": [%s]}`,
                                                  convIdNew, userId, linksAppender.data));
@@ -331,28 +331,27 @@ string getUserIdFromAddress(string address)
 
 string storeEmail(IncomingEmail email)
 {
+    // json for the text parts
     auto partAppender = appender!string;
     foreach(idx, part; email.textualParts)
     {
-        partAppender.put("{\n");
-        partAppender.put("\"contentType\": " ~ Json(part.ctype.name).toString() ~ ",\n");
-        partAppender.put("\"content\": " ~ Json(part.textContent).toString() ~ "\n");
-        partAppender.put("},\n");
+        partAppender.put("{\"contentType\": " ~ Json(part.ctype.name).toString() ~ ","
+                          "\"content\": "     ~ Json(part.textContent).toString() ~ "},");
     }
     string textPartsJsonStr = partAppender.data;
     partAppender.clear();
 
+    // json for the attachments
     foreach(attach; email.attachments)
     {
-        partAppender.put("{\n");
-        partAppender.put(`"contentType": `    ~ Json(attach.ctype).toString()     ~ `,`);
-        partAppender.put(` "realPath": `      ~ Json(attach.realPath).toString()  ~ `,`);
-        partAppender.put(` "size": `          ~ Json(attach.size).toString()      ~ `,`);
+        partAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString()     ~ `,` ~
+                         ` "realPath": `      ~ Json(attach.realPath).toString()  ~ `,` ~
+                         ` "size": `          ~ Json(attach.size).toString()      ~ `,`);
         if (attach.contentId.length)
             partAppender.put(` "contentId": ` ~ Json(attach.contentId).toString() ~ `,`);
         if (attach.filename.length)
             partAppender.put(` "fileName": `  ~ Json(attach.filename).toString()  ~ `,`);
-        partAppender.put("},\n");
+        partAppender.put("},");
     }
     string attachmentsJsonStr = partAppender.data();
     partAppender.clear();
@@ -374,34 +373,61 @@ string storeEmail(IncomingEmail email)
     realReceiverRawValue  = email.jsonizeHeader(realReceiverField, false, true);
     realReceiverAddresses = to!string(email.headers[realReceiverField].addresses);
 
+    // Json for the headers
+    // (see the schema.txt doc)
+    bool[string] alreadyDone;
+    partAppender.put("{");
+    foreach(headerName, headerValue; email.headers)
+    {
+        if (among(toLower(headerName), "from", "message-id"))
+            // these are outside headers because they're indexed
+            continue;
+
+        // email.headers can have several values per key and thus be repeated
+        // in the foreach iteration but we extract all the first time
+        if (headerName in alreadyDone)
+            continue;
+        alreadyDone[headerName] = true;
+
+        auto allValues = email.headers.getAll(headerName);
+        partAppender.put(format(`"%s": [`, toLower(headerName)));
+        foreach(hv; allValues)
+        {
+            partAppender.put(format(`{"rawValue": %s`, Json(hv.rawValue).toString));
+            if (hv.addresses.length)
+                partAppender.put(format(`,"addresses": %s`, to!string(hv.addresses)));
+            partAppender.put("},"); 
+        }
+        partAppender.put("],");
+        //partAppender.put(format(`"%s": %s` ~ ",\n", capitalize(headerName), 
+                                 //Json(headerValue.rawValue).toString()));
+    }
+    partAppender.put("}");
+    string rawHeadersStr = partAppender.data();
+    partAppender.clear();
+
     auto messageId = BsonObjectID.generate();
-    auto emailInsertJson = format(`{"_id": "%s",
-                                   "rawEmailPath": "%s",
-                                   "messageId": "%s",
-                                   "isodate": "%s",
-                                   "references": %s,
-                                   "from": { "content": %s "addresses": %s },
-                                   "to": { "content": %s "addresses": %s },
-                                    %s %s %s %s %s
-                                   "textParts": [ %s ],
-                                   "attachments": [ %s ] }`,
+    auto emailInsertJson = format(`{"_id": "%s",` ~ 
+                                  `"rawEmailPath": "%s",` ~
+                                  `"message-id": "%s",`    ~
+                                  `"isodate": "%s",`      ~
+                                  `"from": { "rawValue": %s "addresses": %s },` ~
+                                  `"receivers": { "rawValue": %s "addresses": %s },`   ~
+                                  `"headers": %s, `    ~
+                                  `"textParts": [ %s ], ` ~
+                                  `"attachments": [ %s ] }`,
                                         messageId,
                                         email.rawEmailPath,
                                         email.getHeader("message-id").addresses[0],
                                         BsonDate(email.date).toString,
-                                        to!string(email.getHeader("references").addresses),
                                         email.jsonizeHeader("from", false, true),
                                         to!string(email.getHeader("from").addresses),
                                         realReceiverRawValue,
                                         realReceiverAddresses,
-                                        email.jsonizeHeader("date", true),
-                                        email.jsonizeHeader("subject"),
-                                        email.jsonizeHeader("cc"),
-                                        email.jsonizeHeader("bcc"),
-                                        email.jsonizeHeader("inReplyTo"),
+                                        rawHeadersStr,
                                         textPartsJsonStr,
                                         attachmentsJsonStr);
-
+    //writeln(emailInsertJson);
     auto parsedJson = parseJsonString(emailInsertJson);
     mongoDB["email"].insert(parsedJson);
     return messageId.toString();
@@ -417,14 +443,16 @@ bool emailAlreadyOnDb(IncomingEmail email)
     if (!incomingMsgId.rawValue.length)
         return false;
 
-    auto emailInDb = mongoDB["email"].findOne(["messageId": incomingMsgId.addresses[0]]);
+    auto emailInDb = mongoDB["email"].findOne(["message-id": incomingMsgId.addresses[0]]);
     if (emailInDb.isNull)
         return false;
 
-    if (email.getHeader("subject").rawValue != bsonStr(emailInDb["subject"])       ||
-        email.getHeader("from").rawValue    != bsonStr(emailInDb["from"]["content"]) ||
-        email.getHeader("to").rawValue      != bsonStr(emailInDb["to"]["content"])   ||
-        email.getHeader("date").rawValue    != bsonStr(emailInDb["date"]))
+    // XXX mejorar, sacar subject de los headers
+    if (
+        //email.getHeader("subject").rawValue != bsonStr(emailInDb["subject"])       ||
+        email.getHeader("from").rawValue    != bsonStr(emailInDb["from"]["rawValue"]) ||
+        email.getHeader("to").rawValue      != bsonStr(emailInDb["receivers"]["rawValue"]))
+        //email.getHeader("date").rawValue    != bsonStr(emailInDb["date"]))
         return false;
     return true;
 }
@@ -595,7 +623,7 @@ version(db_test)
         assert(bsonStr(convDoc["userId"]) == userId);
         assert(convDoc["links"].type == Bson.Type.array);
         assert(convDoc["links"].length == 1);
-        assert(bsonStr(convDoc["links"][0]["messageId"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc["links"][0]["message-id"]) == email.getHeader("message-id").addresses[0]);
         assert(bsonStr(convDoc["links"][0]["emailId"]) == emailId);
 
         // test2: insert as a msgid of a reference already on a conversation, check that the right
@@ -613,7 +641,7 @@ version(db_test)
         assert(bsonStr(convDoc["userId"]) == userId);
         assert(convDoc["links"].type == Bson.Type.array);
         assert(convDoc["links"].length == 3);
-        assert(bsonStr(convDoc["links"][1]["messageId"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc["links"][1]["message-id"]) == email.getHeader("message-id").addresses[0]);
         assert(bsonStr(convDoc["links"][1]["emailId"]) == emailId);
 
         // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
@@ -632,7 +660,7 @@ version(db_test)
         assert(bsonStr(convDoc["userId"]) == userId);
         assert(convDoc["links"].type == Bson.Type.array);
         assert(convDoc["links"].length == 2);
-        assert(bsonStr(convDoc["links"][1]["messageId"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc["links"][1]["message-id"]) == email.getHeader("message-id").addresses[0]);
         assert(bsonStr(convDoc["links"][1]["emailId"]) == emailId);
     }
 
@@ -659,16 +687,17 @@ version(db_test)
 
     unittest // storeEmail
     {
+        // XXX mejorar
         recreateTestDb();
         auto cursor = mongoDB["email"].find();
         assert(!cursor.empty);
         auto emailDoc = cursor.front;
-        assert(emailDoc["references"].length == 1);
-        assert(bsonStr(emailDoc["references"][0]) == "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
-        assert(bsonStr(emailDoc["subject"]) == " Fwd: Se ha evitado un inicio de sesión sospechoso");
+        assert(emailDoc["headers"]["references"][0]["addresses"].length == 1);
+        assert(bsonStr(emailDoc["headers"]["references"][0]["addresses"][0]) == "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
+        //assert(bsonStr(emailDoc["subject"]) == " Fwd: Se ha evitado un inicio de sesión sospechoso");
         assert(emailDoc["attachments"].length == 2);
         assert(bsonStr(emailDoc["isodate"]) == "2013-05-27T03:42:30Z");
-        assert(bsonStr(emailDoc["to"]["addresses"][0]) == "testuser@testdatabase.com");
+        assert(bsonStr(emailDoc["receivers"]["addresses"][0]) == "testuser@testdatabase.com");
         assert(bsonStr(emailDoc["from"]["addresses"][0]) == "someuser@somedomain.com");
         assert(emailDoc["textParts"].length == 2);
     }

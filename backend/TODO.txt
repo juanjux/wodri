@@ -1,4 +1,14 @@
 Backend-Retriever:
+    - Clean the email doc and update the schema.txt
+
+    - CapitalizeHeader in incomingemail.d (capitalize both parts of a -, MIME, DKIM, SPF uppercase, etc)
+
+    - Test for mongo doc rawHeaders
+
+    - Save the indexing document with one of the text parts for related (use a 
+      little heuristics) or both if not related. When only an HTML part exists, 
+      strip the HTML, create the $text index in Mongo, test the $search times.
+
     - Think about what to do with messages without Message-ID field: 
       generate one for them? 
 
@@ -6,10 +16,6 @@ Backend-Retriever:
       using our message sending system (when implemented)
 
     - Convert main.d to a class? and db.d?
-
-    - Install and configure the indexer
-
-    - Make the retriever index a copy of the message
 
     - Exception classes for the different parts (and use them)
 
