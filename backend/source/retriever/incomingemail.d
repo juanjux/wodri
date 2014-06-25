@@ -30,6 +30,42 @@ auto EMAIL_REGEX = ctRegex!(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b"
 auto MSGID_REGEX = ctRegex!(r"[\w@.=%+\-!#\$&'\*/\?\^`\{\}\|~]*\b", "g");
 string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+/**
+ * Try to normalize headers to the most common capitalizations
+ * RFC 2822 specifies that headers are case insensitive, but better
+ * to be safe than sorry 
+ */
+pure string capitalizeHeader(string name)
+{
+    string res = toLower(name);
+    switch(name)
+    {
+        case "domainkey-signature": return "DomainKey-Signature";
+        case "x-spam-setspamtag": return "X-Spam-SetSpamTag";
+        default:
+    }
+    auto tokens = split(res, "-");
+    string newres;
+    foreach(idx, tok; tokens)
+    {
+        if (among(tok, "mime", "dkim", "id", "spf"))
+            newres ~= toUpper(tok);
+        else
+            newres ~= capitalize(tok);
+        if (idx < tokens.length-1)
+            newres ~= "-";
+    }
+
+    return newres;
+}
+    unittest
+    {
+        assert(capitalizeHeader("mime-version")   == "MIME-Version");
+        assert(capitalizeHeader("subject")        == "Subject");
+        assert(capitalizeHeader("received-spf")   == "Received-SPF");
+        assert(capitalizeHeader("dkim-signature") == "DKIM-Signature");
+        assert(capitalizeHeader("message-id")     == "Message-ID");
+    }
 
 final class MIMEPart // #mimepart
 {

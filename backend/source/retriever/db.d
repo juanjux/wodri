@@ -117,17 +117,17 @@ RetrieverConfig getInitialConfig()
     }
 
     // If the db path starts with '/' interpret it as absolute
-    config.mainDir              = bsonStr(dbConfig["mainDir"]);
-    config.smtpServer           = bsonStr(dbConfig["smtpServer"]);
-    config.smtpUser             = bsonStr(dbConfig["smtpUser"]);
-    config.smtpPass             = bsonStr(dbConfig["smtpPass"]);
-    config.smtpEncription       = to!uint(bsonNumber(dbConfig["smtpEncription"]));
-    config.smtpPort             = to!ulong(bsonNumber(dbConfig["smtpPort"]));
-    auto dbPath                 = bsonStr(dbConfig["rawEmailStore"]);
+    config.mainDir              = bsonStr(dbConfig.mainDir);
+    config.smtpServer           = bsonStr(dbConfig.smtpServer);
+    config.smtpUser             = bsonStr(dbConfig.smtpUser);
+    config.smtpPass             = bsonStr(dbConfig.smtpPass);
+    config.smtpEncription       = to!uint(bsonNumber(dbConfig.smtpEncription));
+    config.smtpPort             = to!ulong(bsonNumber(dbConfig.smtpPort));
+    auto dbPath                 = bsonStr(dbConfig.rawEmailStore);
     config.rawEmailStore        = dbPath.startsWith(dirSeparator)? dbPath: buildPath(config.mainDir, dbPath);
-    auto attachPath             = bsonStr(dbConfig["attachmentStore"]);
+    auto attachPath             = bsonStr(dbConfig.attachmentStore);
     config.attachmentStore      = attachPath.startsWith(dirSeparator)? attachPath: buildPath(config.mainDir, attachPath);
-    config.incomingMessageLimit = to!ulong(bsonNumber(dbConfig["incomingMessageLimit"]));
+    config.incomingMessageLimit = to!ulong(bsonNumber(dbConfig.incomingMessageLimit));
     return config;
 }
 
@@ -136,8 +136,8 @@ bool domainHasDefaultUser(string domainName)
 {
     auto domain = mongoDB["domain"].findOne(["name": domainName]);
     if (!domain.isNull &&
-        !domain["defaultUser"].isNull &&
-        bsonStr(domain["defaultUser"]).length)
+        !domain.defaultUser.isNull &&
+        bsonStr(domain.defaultUser).length)
         return true;
     return false;
 }
@@ -155,7 +155,7 @@ UserFilter[] getAddressFilters(string address)
         Action action;
         try
         {
-            auto sizeRule = bsonStr(rule["match_sizeRuleType"]);
+            auto sizeRule = bsonStr(rule.match_sizeRuleType);
             switch(sizeRule)
             {
                 case "None":
@@ -169,18 +169,18 @@ UserFilter[] getAddressFilters(string address)
                     logError(err);
                     throw new Exception(err);
             }
-            match.withAttachment = bsonBool      (rule["match_withAttachment"]);
-            match.withHtml       = bsonBool      (rule["match_withHtml"]);
-            match.totalSizeValue = to!ulong(bsonNumber(rule["match_totalSizeValue"]));
-            match.bodyMatches    = bsonStrArray  (rule["match_bodyText"]);
-            match.headerMatches  = bsonStrHash   (rule["match_headers"]);
-            action.noInbox       = bsonBool      (rule["action_noInbox"]);
-            action.markAsRead    = bsonBool      (rule["action_markAsRead"]);
-            action.deleteIt      = bsonBool      (rule["action_delete"]);
-            action.neverSpam     = bsonBool      (rule["action_neverSpam"]);
-            action.setSpam       = bsonBool      (rule["action_setSpam"]);
-            action.forwardTo     = bsonStrArray  (rule["action_forwardTo"]);
-            action.addTags       = bsonStrArray  (rule["action_addTags"]);
+            match.withAttachment = bsonBool      (rule.match_withAttachment);
+            match.withHtml       = bsonBool      (rule.match_withHtml);
+            match.totalSizeValue = to!ulong(bsonNumber(rule.match_totalSizeValue));
+            match.bodyMatches    = bsonStrArray  (rule.match_bodyText);
+            match.headerMatches  = bsonStrHash   (rule.match_headers);
+            action.noInbox       = bsonBool      (rule.action_noInbox);
+            action.markAsRead    = bsonBool      (rule.action_markAsRead);
+            action.deleteIt      = bsonBool      (rule.action_delete);
+            action.neverSpam     = bsonBool      (rule.action_neverSpam);
+            action.setSpam       = bsonBool      (rule.action_setSpam);
+            action.forwardTo     = bsonStrArray  (rule.action_forwardTo);
+            action.addTags       = bsonStrArray  (rule.action_addTags);
 
             res ~= new UserFilter(match, action);
         } catch (Exception e)
@@ -325,7 +325,7 @@ string getUserIdFromAddress(string address)
     auto userResult = mongoDB["user"].findOne(parseJsonString(userFindJson));
     if (userResult.isNull)
         return "";
-    return bsonStr(userResult["_id"]);
+    return bsonStr(userResult._id);
 }
 
 
@@ -447,12 +447,11 @@ bool emailAlreadyOnDb(IncomingEmail email)
     if (emailInDb.isNull)
         return false;
 
-    // XXX mejorar, sacar subject de los headers
     if (
-        //email.getHeader("subject").rawValue != bsonStr(emailInDb["subject"])       ||
-        email.getHeader("from").rawValue    != bsonStr(emailInDb["from"]["rawValue"]) ||
-        email.getHeader("to").rawValue      != bsonStr(emailInDb["receivers"]["rawValue"]))
-        //email.getHeader("date").rawValue    != bsonStr(emailInDb["date"]))
+        email.getHeader("subject").rawValue != bsonStr(emailInDb.headers.subject[0].rawValue) ||
+        email.getHeader("from").rawValue    != bsonStr(emailInDb.from.rawValue)               ||
+        email.getHeader("to").rawValue      != bsonStr(emailInDb.receivers.rawValue)          ||
+        email.getHeader("date").rawValue    != bsonStr(emailInDb.headers.date[0].rawValue))
         return false;
     return true;
 }
@@ -620,11 +619,11 @@ version(db_test)
                                          emailId, userId);
         auto convDoc = mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
-        assert(bsonStr(convDoc["userId"]) == userId);
-        assert(convDoc["links"].type == Bson.Type.array);
-        assert(convDoc["links"].length == 1);
-        assert(bsonStr(convDoc["links"][0]["message-id"]) == email.getHeader("message-id").addresses[0]);
-        assert(bsonStr(convDoc["links"][0]["emailId"]) == emailId);
+        assert(bsonStr(convDoc.userId) == userId);
+        assert(convDoc.links.type == Bson.Type.array);
+        assert(convDoc.links.length == 1);
+        assert(bsonStr(convDoc.links[0]["message-id"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc.links[0].emailId) == emailId);
 
         // test2: insert as a msgid of a reference already on a conversation, check that the right
         // conversationId is returned and the emailId added to its entry in the conversation.links
@@ -638,11 +637,11 @@ version(db_test)
                                          emailId, userId);
         convDoc = mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
-        assert(bsonStr(convDoc["userId"]) == userId);
-        assert(convDoc["links"].type == Bson.Type.array);
-        assert(convDoc["links"].length == 3);
-        assert(bsonStr(convDoc["links"][1]["message-id"]) == email.getHeader("message-id").addresses[0]);
-        assert(bsonStr(convDoc["links"][1]["emailId"]) == emailId);
+        assert(bsonStr(convDoc.userId) == userId);
+        assert(convDoc.links.type == Bson.Type.array);
+        assert(convDoc.links.length == 3);
+        assert(bsonStr(convDoc.links[1]["message-id"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc.links[1].emailId) == emailId);
 
         // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
         // is added to that conversation
@@ -657,11 +656,11 @@ version(db_test)
                                          emailId, userId);
         convDoc = mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
-        assert(bsonStr(convDoc["userId"]) == userId);
-        assert(convDoc["links"].type == Bson.Type.array);
-        assert(convDoc["links"].length == 2);
-        assert(bsonStr(convDoc["links"][1]["message-id"]) == email.getHeader("message-id").addresses[0]);
-        assert(bsonStr(convDoc["links"][1]["emailId"]) == emailId);
+        assert(bsonStr(convDoc.userId) == userId);
+        assert(convDoc.links.type == Bson.Type.array);
+        assert(convDoc.links.length == 2);
+        assert(bsonStr(convDoc.links[1]["message-id"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc.links[1].emailId) == emailId);
     }
 
     unittest // storeEnvelope
@@ -675,31 +674,30 @@ version(db_test)
         cursor.popFront; cursor.front;
         cursor.popFront;
         assert(collectException!AssertError(cursor.popFront));
-        assert(envDoc["forwardTo"].type == Bson.Type.array);
+        assert(envDoc.forwardTo.type == Bson.Type.array);
         auto userId = getUserIdFromAddress("testuser@testdatabase.com");
-        assert(bsonStr(envDoc["userId"]) == userId);
-        assert(envDoc["tags"].type == Bson.Type.array);
-        assert(envDoc["tags"].length == 1);
-        assert(bsonStr(envDoc["tags"][0]) == "inbox");
+        assert(bsonStr(envDoc.userId) == userId);
+        assert(envDoc.tags.type == Bson.Type.array);
+        assert(envDoc.tags.length == 1);
+        assert(bsonStr(envDoc.tags[0]) == "inbox");
         auto emailId = getEmailIdByMessageId("CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
-        assert(bsonStr(envDoc["emailId"]) == emailId);
+        assert(bsonStr(envDoc.emailId) == emailId);
     }
 
     unittest // storeEmail
     {
-        // XXX mejorar
         recreateTestDb();
         auto cursor = mongoDB["email"].find();
         assert(!cursor.empty);
         auto emailDoc = cursor.front;
-        assert(emailDoc["headers"]["references"][0]["addresses"].length == 1);
-        assert(bsonStr(emailDoc["headers"]["references"][0]["addresses"][0]) == "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
-        //assert(bsonStr(emailDoc["subject"]) == " Fwd: Se ha evitado un inicio de sesión sospechoso");
-        assert(emailDoc["attachments"].length == 2);
-        assert(bsonStr(emailDoc["isodate"]) == "2013-05-27T03:42:30Z");
-        assert(bsonStr(emailDoc["receivers"]["addresses"][0]) == "testuser@testdatabase.com");
-        assert(bsonStr(emailDoc["from"]["addresses"][0]) == "someuser@somedomain.com");
-        assert(emailDoc["textParts"].length == 2);
+        assert(emailDoc.headers.references[0].addresses.length == 1);
+        assert(bsonStr(emailDoc.headers.references[0].addresses[0]) == "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
+        assert(bsonStr(emailDoc.headers.subject[0].rawValue) == " Fwd: Se ha evitado un inicio de sesión sospechoso");
+        assert(emailDoc.attachments.length == 2);
+        assert(bsonStr(emailDoc.isodate) == "2013-05-27T03:42:30Z");
+        assert(bsonStr(emailDoc.receivers.addresses[0]) == "testuser@testdatabase.com");
+        assert(bsonStr(emailDoc.from.addresses[0]) == "someuser@somedomain.com");
+        assert(emailDoc.textParts.length == 2);
     }
 
     unittest // emailAlreadyOnDb
