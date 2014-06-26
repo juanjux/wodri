@@ -1,10 +1,12 @@
 module retriever.userrule;
 
 import std.string;
+import std.algorithm;
 import vibe.core.log;
 import vibe.data.bson;
 import retriever.envelope;
 import retriever.incomingemail;
+version(unittest)import std.stdio;
 
 
 enum SizeRuleType
@@ -72,13 +74,13 @@ class UserFilter
         }
 
         foreach(string matchHeaderName, string matchHeaderFilter; this.match.headerMatches)
-            if (indexOf(envelope.email.getHeader(matchHeaderName).rawValue, matchHeaderFilter) == -1)
+            if (countUntil(envelope.email.getHeader(matchHeaderName).rawValue, matchHeaderFilter) == -1)
                 return false;
 
         foreach(MIMEPart part; envelope.email.textualParts)
         {
             foreach(string bodyMatch; this.match.bodyMatches)
-                if (indexOf(part.textContent, bodyMatch) == -1)
+                if (countUntil(part.textContent, bodyMatch) == -1)
                     return false;
         }
 
@@ -87,10 +89,14 @@ class UserFilter
             auto emailSize = envelope.email.computeSize();
             if (this.match.totalSizeType == SizeRuleType.GreaterThan &&
                 emailSize < this.match.totalSizeValue)
+            {
                 return false;
+            }
             else if (this.match.totalSizeType == SizeRuleType.SmallerThan &&
                 emailSize > this.match.totalSizeValue)
+            {
                 return false;
+            }
         }
         return true;
     }

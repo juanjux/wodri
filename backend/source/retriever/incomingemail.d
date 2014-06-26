@@ -5,6 +5,7 @@ import std.stdio;
 import std.path;
 import std.regex;
 import std.file;
+import std.range;
 import std.conv;
 import std.algorithm;
 import std.string;
@@ -35,7 +36,7 @@ string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", 
  * RFC 2822 specifies that headers are case insensitive, but better
  * to be safe than sorry 
  */
-pure string capitalizeHeader(string name)
+private pure string capitalizeHeader(string name)
 {
     string res = toLower(name);
     switch(name)
@@ -66,6 +67,27 @@ pure string capitalizeHeader(string name)
         assert(capitalizeHeader("dkim-signature") == "DKIM-Signature");
         assert(capitalizeHeader("message-id")     == "Message-ID");
     }
+
+
+private string randomString(uint length)
+{
+    return iota(length).map!(_ => lowercase[uniform(0, $)]).array; 
+}
+
+
+private string randomFileName(string directory, string extension="")
+{
+    string destPath;
+    do
+    {
+        destPath = format("%d_%s%s", 
+                          stdTimeToUnixTime(Clock.currStdTime), 
+                          randomString(6),
+                          extension);
+    } while (destPath.exists);
+    return buildPath(directory, destPath);
+}
+
 
 final class MIMEPart // #mimepart
 {
@@ -137,7 +159,7 @@ final class IncomingEmail
     @property bool isValid()
     {
         // From and Message-ID and at least one of to/cc/bcc/delivered-to
-        return ((getHeader("from").addresses.length && getHeader("message-id").rawValue.length) &&
+        return (getHeader("from").addresses.length &&
                 (getHeader("to").addresses.length        ||
                 getHeader("cc").addresses.length         ||
                 getHeader("bcc").addresses.length        ||
@@ -168,15 +190,10 @@ final class IncomingEmail
 
     void loadFromFile(File emailFile, bool copyRaw=true)
     {
-        enum ParseState
-        {
-            NotStarted, InHeader, InBody
-        }
-        ParseState parseState = ParseState.NotStarted;
-
         string currentLine;
         bool bodyHasParts          = false;
-        bool inputIsStdInput       = false; // Need to know if reading from stdin/stderr for the rawCopy
+        // Need to know if reading from stdin/stderr for the rawCopy:
+        bool inputIsStdInput       = false; 
         Appender!string stdinLines = null;
         auto partialBuffer         = appender!string;
 
@@ -241,13 +258,7 @@ final class IncomingEmail
         // (the user of the class is responsible for deleting the original)
         if (copyRaw && this.rawEmailStore.length)
         {
-            string destFilePath;
-            do
-            {
-                destFilePath = buildPath(this.rawEmailStore,
-                                         format("%d_%d", stdTimeToUnixTime(Clock.currStdTime),
-                                                uniform(0, 100000)));
-            } while(destFilePath.exists);
+            auto destFilePath = randomFileName(this.rawEmailStore);
 
             if (inputIsStdInput)
             {
@@ -279,9 +290,22 @@ final class IncomingEmail
     }
 
 
+    void generateMessageId(string domain="")
+    {
+        // FIXME: check domain
+        this.headers.removeAll("message-id");
+        if (!domain.length)
+            domain = randomString(30) ~ ".com";
+
+        addHeader("Message-ID: <" ~ to!string(stdTimeToUnixTime(Clock.currStdTime)) ~ 
+                                            randomString(50) ~ "@" ~ 
+                                            domain ~ "> " ~ this.lineSep);
+    }
+
+
     void addHeader(string raw)
     {
-        auto idxSeparator = indexOf(raw, ":");
+        auto idxSeparator = countUntil(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
             return; // Not header, probably mbox indicator or broken header
 
@@ -421,7 +445,8 @@ final class IncomingEmail
                 return;
 
             MIMEPart thisPart = new MIMEPart();
-            // parsePartHeaders modifies thisPart by reference and returns the real content start index
+            // parsePartHeaders modifies thisPart by reference and returns the
+            // real content start index
             int contentStart  = startIndex + parsePartHeaders(thisPart,
                                                               lines[startIndex..endIndex]);
             parent.subparts  ~= thisPart;
@@ -435,9 +460,9 @@ final class IncomingEmail
                 setTextPart(thisPart, join(lines[contentStart..endIndex], this.lineSep));
                 debug
                 {
-                    writeln("========= DESPUES PARSEPARTS, CONTENT: ======", thisPart.ctype.name);
+                    writeln("========= AFTER PARSEPARTS, CONTENT: ======", thisPart.ctype.name);
                     write(thisPart.textContent);
-                    writeln("=============================================");
+                    writeln("===========================================");
                 }
             }
             else if (among(thisPart.disposition.name, "attachment", "inline"))
@@ -456,10 +481,12 @@ final class IncomingEmail
             part.ctype.fields["charset"] = "latin1";
 
         if (part.cTransferEncoding == "quoted-printable")
-            newtext = convertToUtf8Lossy(decodeQuotedPrintable(text), part.ctype.fields["charset"]);
+            newtext = convertToUtf8Lossy(decodeQuotedPrintable(text), 
+                                         part.ctype.fields["charset"]);
 
         else if (part.cTransferEncoding == "base64")
-            newtext = convertToUtf8Lossy(decodeBase64Stubborn(text), part.ctype.fields["charset"]);
+            newtext = convertToUtf8Lossy(decodeBase64Stubborn(text), 
+                                         part.ctype.fields["charset"]);
 
         else
             newtext = text;
@@ -498,17 +525,13 @@ final class IncomingEmail
         if (!origFileName.length) // wild shot, but sometimes it is like that
             origFileName = part.ctype.fields.get("name", "");
 
-        do {
-            attachFileName = format("%d_%d%s", stdTimeToUnixTime(Clock.currStdTime), uniform(0, 100000), extension(origFileName));
-        } while(attachFileName.exists);
-
-        string attachFullPath = buildPath(this.attachmentStore, attachFileName);
+        auto attachFullPath = randomFileName(this.attachmentStore, origFileName.extension);
         auto f = File(attachFullPath, "w");
         f.rawWrite(attContent);
         f.close();
 
         Attachment att;
-        att.realPath   = buildPath(this.attachmentStore, attachFileName);
+        att.realPath   = attachFullPath;
         att.ctype      = part.ctype.name;
         att.filename   = origFileName;
         att.size       = att.realPath.getSize;
@@ -543,7 +566,7 @@ final class IncomingEmail
             foreach(string param; valueTokens[1..$])
             {
                 param        = strip(removechars(param, "\""));
-                auto eqIndex = indexOf(param, "=");
+                auto eqIndex = countUntil(param, "=");
                 if (eqIndex == -1)
                     continue;
 
@@ -558,7 +581,7 @@ final class IncomingEmail
     {
         void addPartHeader(string text)
         {
-            auto idxSeparator = indexOf(text, ":");
+            auto idxSeparator = countUntil(text, ":");
             if (idxSeparator == -1 || (idxSeparator+1 > text.length))
                 // Some email generators dont put a CRLF
                 // after the part header in the text/plain part but
@@ -667,17 +690,22 @@ final class IncomingEmail
 /*
  * HOW TO TEST:
  *
- * Since I'm not putting my personal email collection inside the unittests dirs, here's how to do it yourself:
- * - Get all your emails (or the emails you want to test) into a single mbox file. For example, Gmail exports
- *   all your email in that format with Google Takeout (https://www.google.com/settings/takeout/custom/gmail)
+ * Since I'm not putting my personal email collection inside the unittests dirs,
+ * here's how to do it yourself:
+ *
+ * - Get all your emails (or the emails you want to test) into a single mbox file.
+ *   For example, Gmail exports all your email in that format with Google Takeout
+ *   (https://www.google.com/settings/takeout/custom/gmail)
  *
  * - Split that mbox in single emails running:
  *      rdmd --main -unittest -version=createtestemails incomingemail.d
  *      (you only need to do this once)
  *
- * - With a stable version (that is, before your start to hack the code), generate the mime info files with:
+ * - With a stable version (that is, before your start to hack the code), generate
+ *   the mime info files with:
  *      rdmd --main -unittest -version=generatetestdata
-*       (you only need to do this once, unless you change the mimeinfo format in the function createPartInfoText)
+*       (you only need to do this once, unless you change the mimeinfo format in
+*       the function createPartInfoText)
  *
  * Once you have the single emails and the test data you can do:
  *      rdmd --main -unittest => run all the tests on all emails
@@ -884,7 +912,8 @@ unittest
     else version(incomingemail_allmailstest) // normal huge test with all the emails in
     {
         writeln("Starting all emails test...");
-        int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,]; // broken emails, no newline after headers or parts, etc
+        // broken emails, no newline after headers or parts, etc:
+        int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,]; 
 
         // Not broken, but for putting emails that need to be skipped for some reaso
         //int[string] skipMails  = ["41051":0, "41112":0];

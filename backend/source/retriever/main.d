@@ -122,7 +122,7 @@ int main()
 
     bool isValid        = email.isValid;
     auto localReceivers = removeDups(localReceivers(email));
-    bool tooBig         = email.computeSize() > config.incomingMessageLimit;
+    bool tooBig         = (email.computeSize() > config.incomingMessageLimit);
     bool alreadyOnDb    = email.emailAlreadyOnDb;
 
     if (!tooBig && isValid && localReceivers.length && !alreadyOnDb)
