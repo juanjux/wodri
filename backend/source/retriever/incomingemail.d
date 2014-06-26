@@ -20,7 +20,7 @@ import retriever.characterencodings;
 version(incomingemail_createtestdata) version     = anyincomingmailtest;
 version(incomingemail_regeneratetestdata) version = anyincomingmailtest;
 version(incomingemail_singletest) version         = anyincomingmailtest;
-version(incomingemail_allmailstest) version       = anyincomingmailtest;
+version(incomingemail_allemailstest) version       = anyincomingmailtest;
 version(anyincomingmailtest)
 {
     import retriever.db: getConfig;
@@ -700,7 +700,10 @@ final class IncomingEmail
  * - Split that mbox in single emails running:
  *      rdmd --main -unittest -version=createtestemails incomingemail.d
  *      (you only need to do this once)
- *
+ * - Replace, for example with "sed", all your real address for testuser@testdatabase.com:
+ *   sed -i 's/myrealemail@gmail.com/testuser@testdatabase.com/g' *
+ * - If you want, remove the chats (gmail gives you chat messages as emails and the tests
+ *   will fail with them because the to: address is not always yours)
  * - With a stable version (that is, before your start to hack the code), generate
  *   the mime info files with:
  *      rdmd --main -unittest -version=generatetestdata
@@ -909,7 +912,7 @@ unittest
         //}
     }
 
-    else version(incomingemail_allmailstest) // normal huge test with all the emails in
+    else version(incomingemail_allemailstest) // normal huge test with all the emails in
     {
         writeln("Starting all emails test...");
         // broken emails, no newline after headers or parts, etc:
@@ -1036,7 +1039,7 @@ unittest
         }
     }
 
-    version(incomingemail_allmailstest)
+    version(incomingemail_allemailstest)
     {
         // Clean the attachment and rawEmail dirs
         system(format("rm -f %s/*", attachmentStore));

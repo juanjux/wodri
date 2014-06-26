@@ -209,6 +209,22 @@ bool addressIsLocal(string address)
 }
 
 
+string[] localReceivers(IncomingEmail email)
+{
+    string[] allAddresses;
+    string[] localAddresses;
+
+    foreach(headerName; ["to", "cc", "bcc", "delivered-to"])
+        allAddresses ~= email.getHeader(headerName).addresses;
+
+    foreach(addr; allAddresses)
+        if (addressIsLocal(addr))
+            localAddresses ~= addr;
+
+    return localAddresses;
+}
+
+
 string jsonizeHeader(IncomingEmail email, string headerName,
                      bool removeQuotes = false, bool onlyValue=false)
 {
@@ -763,19 +779,30 @@ version(db_insertalltest) unittest
         if (baseName(e.name) in brokenEmails)
             continue;
         auto email = new IncomingEmail(rawEmailStore, attachmentStore);
-        auto email_withcopy = new IncomingEmail(rawEmailStore, attachmentStore);
 
         sw.start();
         email.loadFromFile(File(e.name), false);
         sw.stop(); writeln("loadFromFile time: ", sw.peek().usecs); sw.reset();
 
-        sw.start();
-        email_withcopy.loadFromFile(File(e.name), true);
-        sw.stop(); writeln("loadFromFile_withCopy time: ", sw.peek().usecs); sw.reset();
 
         sw.start();
-        auto envelope = Envelope(email, email.getHeader("to").addresses[0]);
+        auto localReceivers = localReceivers(email);
+        if (!localReceivers.length)
+        {
+            writeln("SKIPPING, not local receivers");
+            continue; // probably a message from the "sent" folder
+        }
+
+        //auto email_withcopy = new IncomingEmail(rawEmailStore, attachmentStore);
+        //sw.start();
+        //email_withcopy.loadFromFile(File(e.name), true);
+        //sw.stop(); writeln("loadFromFile_withCopy time: ", sw.peek().usecs); sw.reset();
+
+        auto envelope = Envelope(email, localReceivers[0]);
         envelope.userId = getUserIdFromAddress(envelope.destination);
+        assert(envelope.userId.length,
+              "Please replace the destination in the test emails, not: " ~
+              envelope.destination);
         envelope.tags["inbox"] = true;
         sw.stop(); writeln("getUserIdFromAddress time: ", sw.peek().usecs); sw.reset();
 
@@ -798,7 +825,9 @@ version(db_insertalltest) unittest
             sw.stop();
             writeln("Conversation: ", convId, " time: ", sw.peek().usecs);
             sw.reset();
-        }
+        } 
+        else
+            writeln("SKIPPING, invalid email");
 
         totalSw.stop();
         if (email.isValid)
@@ -808,6 +837,7 @@ version(db_insertalltest) unittest
             ++count;
             writeln("Total time for this email: ", emailTime);
         }
+        writeln("Valid emails until now: ", count); writeln;
         totalSw.reset();
     }
 

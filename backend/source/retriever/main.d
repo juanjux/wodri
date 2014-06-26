@@ -72,22 +72,6 @@ void saveAndLogRejectedEmail(IncomingEmail email, bool isValid, bool tooBig,
 }
 
 
-string[] localReceivers(IncomingEmail email)
-{
-    string[] allAddresses;
-    string[] localAddresses;
-
-    foreach(headerName; ["to", "cc", "bcc", "delivered-to"])
-        allAddresses ~= email.getHeader(headerName).addresses;
-
-    foreach(addr; allAddresses)
-        if (addressIsLocal(addr))
-            localAddresses ~= addr;
-
-    return localAddresses;
-}
-
-
 // XXX test when I've the full cicle tests
 void processEmailForAddress(string destination, IncomingEmail email, string emailId)
 {

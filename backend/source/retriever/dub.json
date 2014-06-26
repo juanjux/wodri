@@ -21,7 +21,7 @@
             "platforms": ["posix"],
 	    },
 	    {
-	        "name": "incomingmail_allemailstest",
+	        "name": "incomingemail_allemailstest",
 	        "versions": ["incomingemail_allemailstest", "db_usetestdb"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
