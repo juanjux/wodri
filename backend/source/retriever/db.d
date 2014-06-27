@@ -179,6 +179,7 @@ UserFilter[] getAddressFilters(string address)
             match.totalSizeValue = to!ulong      (bsonNumber(rule.match_totalSizeValue));
             match.bodyMatches    = bsonStrArray  (rule.match_bodyText);
             match.headerMatches  = bsonStrHash   (rule.match_headers);
+
             action.noInbox       = bsonBool      (rule.action_noInbox);
             action.markAsRead    = bsonBool      (rule.action_markAsRead);
             action.deleteIt      = bsonBool      (rule.action_delete);
