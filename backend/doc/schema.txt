@@ -6,11 +6,11 @@ not owned by an user. The domainAdmin will be able to change the domain
 settings. The postMaster will receive warnings and errors.
 
 {
-        "_id" : "<ThisDocumentId>",
-        "defaultUser" : "<user Id>",
-        "domainAdmin" : "<user Id>",
-        "name" : "foo.com",
-        "postMaster" : "<user Id>"
+    "_id"         : "<ThisDocumentId>",
+    "defaultUser" : "<user Id>",
+    "domainAdmin" : "<user Id>",
+    "name"        : "foo.com",
+    "postMaster"  : "<user Id>"
 }
 
 SETTINGS
@@ -20,17 +20,17 @@ be absolute (starting with a "/") or relative. If relative, they'll be appended
 to the "maindir" setting. The incomingMessageLimit is in bytes.
 
 {
-        "_id" : "<ThisDocumentId>",
-        "attachmentStore" : "path/for/attachments",
-        "incomingMessageLimit" : 15728640,
-        "mainDir" : "/opt/mainSystemDir",
-        "module" : "retriever",
-        "rawEmailStore" : "path/for/rawemails",
-        "smtpEncription" : 0,
-        "smtpPass" : "somePasswordForTheOutgoingSMTPRelay",
-        "smtpPort" : 25,
-        "smtpServer" : "someSMTP.server.com",
-        "smtpUser" : "someUserForTheOutgoingSMTPRelay"
+    "_id"                  : "<ThisDocumentId>",
+    "attachmentStore"      : "path/for/attachments",
+    "incomingMessageLimit" : 15728640,
+    "mainDir"              : "/opt/mainSystemDir",
+    "module"               : "retriever",
+    "rawEmailStore"        : "path/for/rawemails",
+    "smtpEncription"       : 0,
+    "smtpPass"             : "somePasswordForTheOutgoingSMTPRelay",
+    "smtpPort"             : 25,
+    "smtpServer"           : "someSMTP.server.com",
+    "smtpUser"             : "someUserForTheOutgoingSMTPRelay"
 }
 
 USER
@@ -38,12 +38,12 @@ USER
 User information. 
 
 {
-        "_id" : "<ThisDocumentId>",
-        "loginName" : "someUserLoginName",
-        "name" : "John",
-        "surname" : "Smith",
-        "admin" : false,
-        "addresses" : [ "johnsmith@foo.com", "secretmail@foo.com" ]
+    "_id"       : "<ThisDocumentId>",
+    "addresses" : ["johnsmith@foo.com", "secretmail@foo.com"],
+    "admin"     : false,
+    "loginName" : "someUserLoginName",
+    "name"      : "John",
+    "surname"   : "Smith"
 }
 
 USERRULE
@@ -51,22 +51,22 @@ USERRULE
 Contains rules that will match documents and actions to do on them
 
 {
-        "_id" : "<ThisDocumentId>", 
-        "userId" : "<rule owner user Id>",
-        "destinationAccounts" : [ "john@foo.com", "secretmail@foo.com" ],
-        "match_totalSizeValue" : 100485760,
-        "match_withAttachment" : false,
-        "match_withHtml" : false,
-        "match_sizeRuleType" : "GreaterThan",
-        "match_bodyText" : [ "XXXBODYMATCHXXX" ],
-        "match_headers" : { "From" : "somedude@gmail.com" },
-        "action_addTags" : [ "sometag1", "sometag2" ],
-        "action_delete" : false,
-        "action_forwardTo" : "",
-        "action_markAsRead" : true,
-        "action_neverSpam" : false,
-        "action_noInbox" : false,
-        "action_setSpam" : false,
+    "_id"                  : "<ThisDocumentId>",
+    "action_addTags"       : ["sometag1", "sometag2"],
+    "action_delete"        : false,
+    "action_forwardTo"     : "",
+    "action_markAsRead"    : true,
+    "action_neverSpam"     : false,
+    "action_noInbox"       : false,
+    "action_setSpam"       : false,
+    "destinationAccounts"  : ["john@foo.com", "secretmail@foo.com"],
+    "match_bodyText"       : ["XXXBODYMATCHXXX"],
+    "match_headers"        : {"From"                                 : "somedude@gmail.com"},
+    "match_sizeRuleType"   : "GreaterThan",
+    "match_totalSizeValue" : 100485760,
+    "match_withAttachment" : false,
+    "match_withHtml"       : false,
+    "userId"               : "<rule owner user Id>"
 }
 
 
@@ -78,12 +78,12 @@ Envelopes are one copy for every receiving address (so if a user get an email
 to two address he owns, he'll have two envelopes but a single email).
 
 {
-        "emailId" : "<email Id>",
-        "tags" : [ "inbox", "<OtherTags>", ],
-        "_id" : "<ThisDocumentId>",
-        "userId" : "<user Id>",
-        "destinationAddress" : "email@foo.com",
-        "forwardTo" : ["someotheremail@foo.com", ]
+    "_id"                : "<ThisDocumentId>",
+    "destinationAddress" : "email@foo.com",
+    "emailId"            : "<email Id>",
+    "forwardTo"          : ["someotheremail@foo.com"],
+    "tags"               : ["inbox", "<OtherTags>"],
+    "userId"             : "<user Id>"
 }
 
 EMAIL
@@ -102,16 +102,16 @@ list item was an additional header entry in the original email.
 
 
 {
-        "_id" : "<ThisDocumentId>",
-        "message-id" : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
+        "_id"          : "<ThisDocumentId>",
+        "message-id"   : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
         "rawEmailPath" : "/path/to/the/original/email/somenumbers_5534534534",
-        "isodate" : "2008-03-12T17:45:49Z",
+        "isodate"      : "2008-03-12T17                                                       : 45 : 49Z",
         "from" : {
-                "rawValue" : "Some Guy Name <someguy@gmail.com>",
+                "rawValue"  : "Some Guy Name <someguy@gmail.com>",
                 "addresses" : [ "someguy@gmail.com" ]
         },
         "receivers" : {
-                "content" : " NodLogin <nodlogin@googlegroups.com>",
+                "content"   : " NodLogin <nodlogin@googlegroups.com>",
                 "addresses" : [ "nodlogin@googlegroups.com" ]
         },
         "textParts" : [ {
@@ -120,17 +120,17 @@ list item was an additional header entry in the original email.
                 }
         ]
         "attachments" : [ {
-                "contentType": "mime/jpeg",
-                "realPath": "/path/to/file/2342342343.jpg",
-                "size": 3423432432,
-                "contentId": "some-file-content-id",
-                "filename": "somefile.jpg"
+                "contentType" : "mime/jpeg",
+                "realPath"    : "/path/to/file/2342342343.jpg",
+                "size"        : 3423432432,
+                "contentId"   : "some-file-content-id",
+                "filename"    : "somefile.jpg"
                 },
         ],
         "headers": {
                 "to": [ {
-                    "rawValue": " NodLogin <nodlogin@googlegroups.com>",
-                    "addresses": ["nodlogin@googlegroups.com"]
+                    "rawValue"  : " NodLogin <nodlogin@googlegroups.com>",
+                    "addresses" : ["nodlogin@googlegroups.com"]
                     ],
                 },
                 "received": [
@@ -138,7 +138,6 @@ list item was an additional header entry in the original email.
                         {"rawValue" : " by mail-la0-f43.google.com with SMTP id mc6so3975006lab.30\n        for <anotherUser@testdatabase.com>; Tue, 10 Jun 2014 05:51:30 -0700 (PDT)\n"},
                         {"rawValue" : " by 10.152.21.135 with HTTP; Tue, 10 Jun 2014 05:51:10 -0700 (PDT)\n"}
                 ]
-                # ..etc..
         }
 }
 
@@ -152,22 +151,22 @@ document in the email collection (could be missing if there is a reference to
 an email not in the database).
 
 {
-        "_id" : "<ThisDocumentId>",
-        "links" : [
-                {
-                        "messageId" : "CAGA-+RQDsMTnFegb_FYeiyHOFeSQc3cSw9uRY1a41L+vWEBB3g@mail.gmail.com",
-                        "emailId" : "<some email id>"
-                },
-                {
-                        "messageId" : "DUB117-W199FD472475A8034B1A715A8870@phx.gbl",
-                        "emailId" : "<another email id>"
-                },
-                {
-                        "messageId" : "CAGA-+RTYnkF6OA-tzT+vBP4eL5LS_+gou7yVC0rZyVLCieQ_ng@mail.gmail.com",
-                        "emailId" : "<third email in the conversation id>"
-                }
-        ],
-        "userId" : "<user id>"
+    "_id": "<ThisDocumentId>",
+    "links": [
+        {
+            "emailId"   : "<some email id>",
+            "messageId" : "CAGA-+RQDsMTnFegb_FYeiyHOFeSQc3cSw9uRY1a41L+vWEBB3g@mail.gmail.com"
+        },
+        {
+            "emailId"   : "<another email id>",
+            "messageId" : "DUB117-W199FD472475A8034B1A715A8870@phx.gbl"
+        },
+        {
+            "emailId"   : "<third email in the conversation id>",
+            "messageId" : "CAGA-+RTYnkF6OA-tzT+vBP4eL5LS_+gou7yVC0rZyVLCieQ_ng@mail.gmail.com"
+        }
+    ],
+    "userId": "<user id>"
 }
 
 

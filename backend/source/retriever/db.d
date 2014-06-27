@@ -176,7 +176,7 @@ UserFilter[] getAddressFilters(string address)
             }
             match.withAttachment = bsonBool      (rule.match_withAttachment);
             match.withHtml       = bsonBool      (rule.match_withHtml);
-            match.totalSizeValue = to!ulong(bsonNumber(rule.match_totalSizeValue));
+            match.totalSizeValue = to!ulong      (bsonNumber(rule.match_totalSizeValue));
             match.bodyMatches    = bsonStrArray  (rule.match_bodyText);
             match.headerMatches  = bsonStrHash   (rule.match_headers);
             action.noInbox       = bsonBool      (rule.action_noInbox);
@@ -534,12 +534,12 @@ version(db_usetestdb)
 
         // Fill the test DB
         string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", "test", "testdb");
-        string[string] jsonfile2collection = ["user1.json": "user",
-                                              "user2.json": "user",
-                                              "domain1.json": "domain",
-                                              "domain2.json": "domain",
-                                              "userrule1.json": "userrule",
-                                              "userrule2.json": "userrule",];
+        string[string] jsonfile2collection = ["user1.json"     : "user",
+                                              "user2.json"     : "user",
+                                              "domain1.json"   : "domain",
+                                              "domain2.json"   : "domain",
+                                              "userrule1.json" : "userrule",
+                                              "userrule2.json" : "userrule",];
         foreach(file_, collection; jsonfile2collection)
             mongoDB[collection].insert(parseJsonString(readText(buildPath(backendTestDataDir_, file_))));
 
@@ -549,10 +549,10 @@ version(db_usetestdb)
             auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
             email.loadFromFile(buildPath(backendTestEmailsDir, mailname), false);
             assert(email.isValid, "Email is not valid");
-            auto destination = email.getHeader("to").addresses[0];
-            auto emailId = storeEmail(email);
-            auto userId = getUserIdFromAddress(destination);
-            auto envelope = Envelope(email, destination, userId, emailId);
+            auto destination       = email.getHeader("to").addresses[0];
+            auto emailId           = storeEmail(email);
+            auto userId            = getUserIdFromAddress(destination);
+            auto envelope          = Envelope(email, destination, userId, emailId);
             envelope.tags["inbox"] = true;
             storeEnvelope(envelope);
             upsertConversation(email.getHeader("references").addresses,
@@ -578,10 +578,10 @@ version(db_test)
         assert(filters.length == 1);
         assert(!filters[0].match.withAttachment);
         assert(!filters[0].match.withHtml);
-        assert(filters[0].match.totalSizeType == SizeRuleType.GreaterThan);
-        assert(filters[0].match.totalSizeValue == 100485760);
-        assert(filters[0].match.bodyMatches.length == 1);
-        assert(filters[0].match.bodyMatches[0] == "XXXBODYMATCHXXX");
+        assert(filters[0].match.totalSizeType        == SizeRuleType.GreaterThan);
+        assert(filters[0].match.totalSizeValue       == 100485760);
+        assert(filters[0].match.bodyMatches.length   == 1);
+        assert(filters[0].match.bodyMatches[0]       == "XXXBODYMATCHXXX");
         assert(filters[0].match.headerMatches.length == 1);
         assert("From" in filters[0].match.headerMatches);
         assert(filters[0].match.headerMatches["From"] == "juanjo@juanjoalvarez.net");
@@ -613,8 +613,8 @@ version(db_test)
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
         email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), false);
-        assert(email.jsonizeHeader("from") == `"from": " Test Sender <someuser@insomedomain.com>",`);
-        assert(email.jsonizeHeader("to") == `"to": " Test User2 <testuser@testdatabase.com>",`);
+        assert(email.jsonizeHeader("from")             == `"from": " Test Sender <someuser@insomedomain.com>",`);
+        assert(email.jsonizeHeader("to")               == `"to": " Test User2 <testuser@testdatabase.com>",`);
         assert(email.jsonizeHeader("Date", true, true) == `" Sat, 25 Dec 2010 13:31:57 +0100",`);
     }
 
@@ -650,10 +650,10 @@ version(db_test)
         auto convDoc = mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
-        assert(convDoc.links.type == Bson.Type.array);
-        assert(convDoc.links.length == 1);
+        assert(convDoc.links.type      == Bson.Type.array);
+        assert(convDoc.links.length    == 1);
         assert(bsonStr(convDoc.links[0]["message-id"]) == email.getHeader("message-id").addresses[0]);
-        assert(bsonStr(convDoc.links[0].emailId) == emailId);
+        assert(bsonStr(convDoc.links[0].emailId)       == emailId);
 
         // test2: insert as a msgid of a reference already on a conversation, check that the right
         // conversationId is returned and the emailId added to its entry in the conversation.links
