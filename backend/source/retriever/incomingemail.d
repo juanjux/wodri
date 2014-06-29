@@ -88,6 +88,11 @@ private string randomFileName(string directory, string extension="")
     return buildPath(directory, destPath);
 }
 
+struct ContentData
+{
+    string name;
+    string[string] fields;
+}
 
 final class MIMEPart // #mimepart
 {
@@ -102,11 +107,6 @@ final class MIMEPart // #mimepart
 }
 
 
-struct ContentData
-{
-    string name;
-    string[string] fields;
-}
 
 
 struct Attachment // #attach
@@ -142,12 +142,12 @@ final class IncomingEmail
     Attachment[] attachments;
     DateTime date;
     bool dateSet = false;
-    string[] fromAddrs;
-    string[] toAddrs;
-    string[] ccAddrs;
-    string[] bccAddrs;
-    string rawEmailPath;
-    string lineSep = "\r\n";
+    string[]   fromAddrs;
+    string[]   toAddrs;
+    string[]   ccAddrs;
+    string[]   bccAddrs;
+    string     rawEmailPath;
+    string     lineSep         =   "\r\n";
 
     this(string rawEmailStore, string attachmentStore)
     {

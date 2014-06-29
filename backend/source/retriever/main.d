@@ -87,11 +87,14 @@ void processEmailForAddress(string destination, IncomingEmail email, string emai
     auto userFilters = getAddressFilters(destination);
     foreach(filter; userFilters)
         filter.apply(envelope);
-    storeEnvelope(envelope);
 
+    storeEnvelope(envelope);
     upsertConversation(email.getHeader("references").addresses, 
                               email.headers["message-id"].addresses[0],
                               emailId, userId);
+
+    if (getConfig.storeTextIndex)
+        storeTextIndex(email, emailId);
 }
 
 // XXX test when I've the full cycle tests 

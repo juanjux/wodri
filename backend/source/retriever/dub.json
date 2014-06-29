@@ -11,7 +11,6 @@
 	"importPaths": ["."],
 	"buildRequirements": ["requireBoundsCheck"],
 	"versions": ["VibeCustomMain", "VibeDisableCommandLineParsing"],
-
 	"subConfigurations": {"smtp": "ssl"},
 
 	"configurations": [
