@@ -18,7 +18,7 @@
 	correctly read files from the internet. You should be able to
 	get characterencodings.d from the same place you got this file.
 */
-module retriever.dom;
+module arsd.dom;
 
 version(with_arsd_jsvar)
 	import arsd.jsvar;
@@ -54,7 +54,7 @@ import std.string;
 
 // the reason this is separated is so I can plug it into D->JS as well, which uses a different base Element class
 
-import retriever.dom;
+import arsd.dom;
 
 mixin template DomConvenienceFunctions() {
 
@@ -707,7 +707,7 @@ string camelCase(string a) {
 
 // I need to maintain compatibility with the way it is now too.
 
-import retriever.characterencodings;
+import arsd.characterencodings;
 
 import std.string;
 import std.exception;

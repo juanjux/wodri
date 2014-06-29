@@ -44,7 +44,7 @@
 
     This module currently makes no attempt to look at control characters.
 */
-module retriever.characterencodings;
+module arsd.characterencodings;
 
 import std.base64;
 import std.string;

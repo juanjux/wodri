@@ -15,7 +15,7 @@ import std.base64;
 import std.random;
 import std.datetime;
 import vibe.utils.dictionarylist;
-import retriever.characterencodings;
+import arsd.characterencodings;
 
 version(incomingemail_createtestdata) version     = anyincomingmailtest;
 version(incomingemail_regeneratetestdata) version = anyincomingmailtest;

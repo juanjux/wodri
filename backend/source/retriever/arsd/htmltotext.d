@@ -1,6 +1,6 @@
-module retriever.htmltotext;
+module arsd.htmltotext;
 
-import retriever.dom;
+//import arsd.dom;
 import std.string;
 import std.array : replace;
 
