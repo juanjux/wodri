@@ -34,7 +34,7 @@ string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", 
 /**
  * Try to normalize headers to the most common capitalizations
  * RFC 2822 specifies that headers are case insensitive, but better
- * to be safe than sorry 
+ * to be safe than sorry
  */
 private pure string capitalizeHeader(string name)
 {
@@ -71,7 +71,7 @@ private pure string capitalizeHeader(string name)
 
 private string randomString(uint length)
 {
-    return iota(length).map!(_ => lowercase[uniform(0, $)]).array; 
+    return iota(length).map!(_ => lowercase[uniform(0, $)]).array;
 }
 
 
@@ -80,8 +80,8 @@ private string randomFileName(string directory, string extension="")
     string destPath;
     do
     {
-        destPath = format("%d_%s%s", 
-                          stdTimeToUnixTime(Clock.currStdTime), 
+        destPath = format("%d_%s%s",
+                          stdTimeToUnixTime(Clock.currStdTime),
                           randomString(6),
                           extension);
     } while (destPath.exists);
@@ -193,7 +193,7 @@ final class IncomingEmail
         string currentLine;
         bool bodyHasParts          = false;
         // Need to know if reading from stdin/stderr for the rawCopy:
-        bool inputIsStdInput       = false; 
+        bool inputIsStdInput       = false;
         Appender!string stdinLines = null;
         auto partialBuffer         = appender!string;
 
@@ -297,8 +297,8 @@ final class IncomingEmail
         if (!domain.length)
             domain = randomString(30) ~ ".com";
 
-        addHeader("Message-ID: <" ~ to!string(stdTimeToUnixTime(Clock.currStdTime)) ~ 
-                                            randomString(50) ~ "@" ~ 
+        addHeader("Message-ID: <" ~ to!string(stdTimeToUnixTime(Clock.currStdTime)) ~
+                                            randomString(50) ~ "@" ~
                                             domain ~ "> " ~ this.lineSep);
     }
 
@@ -481,11 +481,11 @@ final class IncomingEmail
             part.ctype.fields["charset"] = "latin1";
 
         if (part.cTransferEncoding == "quoted-printable")
-            newtext = convertToUtf8Lossy(decodeQuotedPrintable(text), 
+            newtext = convertToUtf8Lossy(decodeQuotedPrintable(text),
                                          part.ctype.fields["charset"]);
 
         else if (part.cTransferEncoding == "base64")
-            newtext = convertToUtf8Lossy(decodeBase64Stubborn(text), 
+            newtext = convertToUtf8Lossy(decodeBase64Stubborn(text),
                                          part.ctype.fields["charset"]);
 
         else
@@ -888,7 +888,7 @@ unittest
 
         writeln("Starting single email test...");
         auto filenumber = 30509;
-        auto emailFile = File(format("%s/%d", origEmailDir, filenumber), "r"); 
+        auto emailFile = File(format("%s/%d", origEmailDir, filenumber), "r");
         auto email      = new IncomingEmail(rawEmailStore, attachmentStore);
         email.loadFromFile(emailFile, true);
 
@@ -916,7 +916,7 @@ unittest
     {
         writeln("Starting all emails test...");
         // broken emails, no newline after headers or parts, etc:
-        int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,]; 
+        int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,];
 
         // Not broken, but for putting emails that need to be skipped for some reaso
         //int[string] skipMails  = ["41051":0, "41112":0];

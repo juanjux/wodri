@@ -1,32 +1,26 @@
 Backend-Retriever:
-    - See how to configure dub.json to include the arsd object files
-    - Implement storeTextIndexMongo
-    - Move characterencodings.d back to arsd?
+    - See why test emails 3 and 4 are not being indexed
 
-    - Save the indexing document with one of the text parts for related (use a 
-      little heuristics) or both if not related. When only an HTML part exists, 
-      strip the HTML, create the $text index in Mongo, test the $search times.
+    - Text the full text search performance with some thousands of emails loaded
 
-    - When the message failed to enter (validation error, or error on save) generate a rebound
-      using our message sending system (when implemented)
-
-    - Convert db.d to a class?
+    - When the message failed to enter (validation error, or error on save)
+      generate a rebound using our message sending system (when implemented)
 
     - Exception classes for the different parts (and use them)
 
-    - Retriever's full test, use a Python script with the mail & smtp modules to parse
-      the test mails collection changing the receiver from [myRealAddr] to [mongoTestAddr]
-      before delivering to Postfix, create a MongoDB database "webmailtest", populate it,
-      check that we receive every email, check that that the isValidAddress check is fine,
-      check that the filters of the test DB apply correctly, check searches with the indexer, 
-      et cetera.
+    - Retriever's full test, use a Python script with the mail & smtp modules to
+      parse the test mails collection changing the receiver from [myRealAddr] to
+      [mongoTestAddr] before delivering to Postfix, create a MongoDB database
+      "webmailtest", populate it, check that we receive every email, check that
+      that the isValidAddress check is fine, check that the filters of the test DB
+      apply correctly, check searches with the indexer, et cetera.
 
     - Const, immutable, pure, nothrow, in, out, safe et all
 
     - Sent the new changes in characterencodings.d to ruppe
 
-    - See how to get around Mongo's 16MB document limit (GridFS?) Check is some email of my
-      collection is bigger than 16MB without attachments (=> no)
+    - See how to get around Mongo's 16MB document limit (GridFS?) Check is some
+      email of my collection is bigger than 16MB without attachments (=> no)
 
 
 Backend-API:

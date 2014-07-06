@@ -24,7 +24,7 @@
 	        "versions": ["incomingemail_allemailstest", "db_usetestdb"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
-	        "dflags": ["-main", "-unittest"], 
+	        "dflags": ["-main", "-unittest"],
 	        "targetName": "test",
 	    },
 	    {
@@ -33,7 +33,7 @@
 	        "buildOptions": ["debugMode"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
-	        "dflags": ["-main", "-unittest"], 
+	        "dflags": ["-main", "-unittest"],
 	        "targetName": "test",
 	    },
 	    {
@@ -41,7 +41,7 @@
 	        "versions": ["incomingemail_createtestdata", "db_usetestdb"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
-	        "dflags": ["-main", "-unittest"], 
+	        "dflags": ["-main", "-unittest"],
 	        "targetName": "test",
 	    },
 	    {
@@ -49,7 +49,7 @@
 	        "versions": ["incomingemail_regeneratetestdata", "db_usetestdb"],
 	        "mainSourceFile": "incomingemail.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
-	        "dflags": ["-main", "-unittest"], 
+	        "dflags": ["-main", "-unittest"],
 	        "targetName": "test",
 	    },
 	    {
@@ -57,7 +57,7 @@
 	        "versions": ["userrule_test", "db_usetestdb"],
 	        "mainSourceFile": "userrule.d",
 	        "excludedSourceFiles": ["test.d", "main.d", "characterencoding.d"],
-	        "dflags": ["-main", "-unittest"], 
+	        "dflags": ["-main", "-unittest"],
 	        "targetName": "test",
 	    },
 	    {
@@ -65,7 +65,7 @@
 	        "versions": ["db_test"],
 	        "mainSourceFile": "db.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
-	        "dflags": ["-main", "-unittest"], 
+	        "dflags": ["-main", "-unittest"],
 	        "targetName": "test",
 	    },
 	    {
@@ -73,7 +73,7 @@
 	        "versions": ["db_usetestdb", "db_insertalltest"],
 	        "mainSourceFile": "db.d",
 	        "excludedSourceFiles": ["test.d", "main.d"],
-	        "dflags": ["-main", "-unittest"], 
+	        "dflags": ["-main", "-unittest"],
 	        "targetName": "test",
 	    },
 	    {
@@ -81,7 +81,7 @@
 	        "versions": ["maintest", "db_usetestdb"],
 	        "mainSourceFile": "main.d",
 	        "excludedSourceFiles": ["test.d"],
-	        "dflags": ["-main", "-unittest"], 
+	        "dflags": ["-main", "-unittest"],
 	        "targetName": "test",
 	    },
     ]

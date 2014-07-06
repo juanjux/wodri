@@ -1,6 +1,6 @@
 module arsd.htmltotext;
 
-//import arsd.dom;
+import arsd.dom;
 import std.string;
 import std.array : replace;
 

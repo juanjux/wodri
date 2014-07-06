@@ -58,8 +58,10 @@ POSTFIX & SPAMASSASSIN:
                         /usr/sbin/sendmail -oi -f ${sender} ${recipient}
 
 MONGODB:
-    - sudo apt-get install mongodb mongodb-clients mongodb-server
-    - edit (as root) /etc/mongodb.conf, change these settings (change WEBMAILDIR for the package
+    - Add Mongo repositories and install Mongo's metapackage, follow instructions from:
+        http://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/
+        (NOTE: Developed with Mongo 2.6, Mongo 2.4 or older wont work)
+    - edit (as root) /etc/mongod.conf, change these settings (change WEBMAILDIR for the package
       (directory on your system).
         # Where to store the data.
         dbpath=WEBMAILDIR/backend/mongodb/data
@@ -103,6 +105,7 @@ MONGODB:
                 "rawEmailStore" : "store/rawmails",
                 "attachmentStore" : "store/attachment",
                 "incomingMessageLimit" : 15728640
+                "storeTextIndex": true,
                 "smtpEncription" : 0,
                 "smtpPass" : "smtpRelayPass",
                 "smtpPort" : 25,
@@ -131,7 +134,7 @@ CONFIG DIRECTORY AND MONGO DB USER
         db.shutdownServer();
         exit
 
-    - Edit /etc/mongodb.conf and set the auth option to true (usually commented)
+    - Edit /etc/mongod.conf and set the auth option to true (usually commented)
     - sudo service mongodb restart
     (Now for opening the mongo console: mongo localhost:27017/admin -u webmaildbuser -p SomePassword)
 

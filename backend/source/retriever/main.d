@@ -89,7 +89,7 @@ void processEmailForAddress(string destination, IncomingEmail email, string emai
         filter.apply(envelope);
 
     storeEnvelope(envelope);
-    upsertConversation(email.getHeader("references").addresses, 
+    upsertConversation(email.getHeader("references").addresses,
                               email.headers["message-id"].addresses[0],
                               emailId, userId);
 
@@ -97,7 +97,7 @@ void processEmailForAddress(string destination, IncomingEmail email, string emai
         storeTextIndex(email, emailId);
 }
 
-// XXX test when I've the full cycle tests 
+// XXX test when I've the full cycle tests
 version(not_maintest)
 int main()
 {
