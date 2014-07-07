@@ -74,6 +74,7 @@ MONGODB:
 
     (Note: on your distribution mongodb could be running under a different user/group, if 
     in doubt: ls -l the original data and log dirs of mongo and check the permission)
+
     - Run the mongo command and run these commands changing WEBMAILDIR for the full path to real directory:
       use webmail
       myuser = 
@@ -113,6 +114,13 @@ MONGODB:
                 "smtpUser" : "smtpRelayUserName"
         }
       db.settings.insert(retriever_config)
+
+    - Create the email index (unneded if storeTextIndex is false):
+        use webmail
+        db.emailIndexContents.ensureIndex({text: "text"})
+        use testwebmail
+        db.emailIndexContents.ensureIndex({text: "text"})
+
    
 CONFIG DIRECTORY AND MONGO DB USER
     - sudo mkdir /etc/webmail
@@ -145,4 +153,3 @@ CONFIG DIRECTORY AND MONGO DB USER
 - Ver que más opciones de configuración tiene Postfix que puedan interesar (seguridad, etc)
 - Pensar tests involucrando Postfix y el retriever
 - Ver que hay que hacer para que gmail y otros acepten los emails salientes, SPK? DKIM?
-- Comprobar que spamd se sigue ejecutando después de un reinicio

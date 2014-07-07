@@ -1,8 +1,4 @@
 Backend-Retriever:
-    - See why test emails 3 and 4 are not being indexed
-
-    - Text the full text search performance with some thousands of emails loaded
-
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)
 
@@ -17,7 +13,7 @@ Backend-Retriever:
 
     - Const, immutable, pure, nothrow, in, out, safe et all
 
-    - Sent the new changes in characterencodings.d to ruppe
+    - Sent the new changes in characterencodings.d to Ruppe
 
     - See how to get around Mongo's 16MB document limit (GridFS?) Check is some
       email of my collection is bigger than 16MB without attachments (=> no)

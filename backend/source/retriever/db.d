@@ -46,7 +46,7 @@ static this()
     enforce(!keysDiff.length, "Mandatory keys missing on dbconnect.json config file: %s"
                               ~ to!string(keysDiff));
     enforce(dbData["type"].str == "mongodb", "Only MongoDB is currently supported");
-    string connectStr = format("mongodb://%s:%s@%s:%s/%s",
+    string connectStr = format("mongodb://%s:%s@%s:%s/%s?safe=true",
                                dbData["user"].str,
                                dbData["password"].str,
                                dbData["host"].str,
@@ -474,7 +474,6 @@ string storeTextIndexMongo(string content, string emailDbId)
                                           "text": content,
                                           "emailDbId": emailDbId,
                                          ]);
-    mongoDB["emailIndexContents"].ensureIndex(["text": 0]);
     return docId.toString;
 }
 
@@ -802,6 +801,29 @@ version(db_test)
             assert(emailAlreadyOnDb(email));
         }
 
+    }
+
+    unittest // storeTextIndex && storeTextIndexMongo
+    {
+        recreateTestDb();
+        auto findJson = format(`{"$text": {"$search": "DOESNTEXISTS"}}`);
+        auto cursor = mongoDB["emailIndexContents"].find(parseJsonString(findJson));
+        assert(cursor.empty);
+
+        findJson = format(`{"$text": {"$search": "text inside"}}`);
+        cursor = mongoDB["emailIndexContents"].find(parseJsonString(findJson));
+        assert(!cursor.empty); 
+        string res = cursor.front.text.toString;
+        assert(countUntil(res, "text inside") == 10);
+
+        findJson = format(`{"$text": {"$search": "email"}}`);
+        cursor = mongoDB["emailIndexContents"].find(parseJsonString(findJson));
+        assert(!cursor.empty);
+        assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
+        cursor.popFront;
+        assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
+        cursor.popFront;
+        assert(cursor.empty);
     }
 }
 
