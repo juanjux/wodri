@@ -2,6 +2,7 @@
 module retriever.main;
 
 import std.stdio;
+import std.typecons;
 import std.path;
 import std.file;
 import std.string;
@@ -61,10 +62,10 @@ void saveAndLogRejectedEmail(IncomingEmail email, Flag!"IsValidEmail" isValid, b
 {
     auto failedEmailPath = saveRejectedEmail(email);
     auto f = File(failedEmailPath, "a");
-    f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", isValid == Flag!"IsValidEmail".no? "\nInvalid headers":"",
+    f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", isValid == No.IsValidEmail? "\nInvalid headers":"",
                                                    !localReceivers.length? "\nInvalid destination":"",
                                                    tooBig? "\nMessage too big":"",
-                                                   alreadyOnDb == Flag!"emailAlreadyOnDb".yes? "\nAlready on DB": "");
+                                                   alreadyOnDb == Yes.AlreadyOnDb? "\nAlready on DB": "");
     logInfo(format("Message denied from SMTP. ValidHeaders:%s"~
                    "#localReceivers:%s SizeTooBig:%s. AlreadyOnDb: %s" ~
                    "Message copy stored at %s",
@@ -113,9 +114,9 @@ int main()
     auto alreadyOnDb    = email.emailAlreadyOnDb;
 
     if (!tooBig 
-        && isValid == Flag!"IsValidEmail".yes 
+        && isValid == Yes.IsValidEmail
         && localReceivers.length 
-        && alreadyOnDb == Flag!"AlreadyOnDb".no)
+        && alreadyOnDb == No.AlreadyOnDb)
     {
         try
         {

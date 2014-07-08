@@ -2,7 +2,7 @@
 module retriever.incomingemail;
 
 import std.stdio;
-import std.typecons: Flag;
+import std.typecons;
 import std.path;
 import std.regex;
 import std.file;
@@ -165,8 +165,8 @@ final class IncomingEmail
                 getHeader("cc").addresses.length         ||
                 getHeader("bcc").addresses.length        ||
                 getHeader("delivered-to").addresses.length))
-            return Flag!"IsValidEmail".yes;
-        return Flag!"IsValidEmail".no;
+            return Yes.IsValidEmail;
+        return No.IsValidEmail;
     }
 
 
@@ -184,14 +184,14 @@ final class IncomingEmail
     }
 
 
-    void loadFromFile(string emailPath, Flag!"CopyRaw" copyRaw = Flag!"CopyRaw".yes)
+    void loadFromFile(string emailPath, Flag!"CopyRaw" copyRaw = Yes.CopyRaw)
     {
         auto f = File(emailPath);
             loadFromFile(f);
     }
 
 
-    void loadFromFile(File emailFile, Flag!"CopyRaw" copyRaw = Flag!"CopyRaw".yes)
+    void loadFromFile(File emailFile, Flag!"CopyRaw" copyRaw = Yes.CopyRaw)
     {
         string currentLine;
         bool bodyHasParts          = false;
@@ -276,7 +276,7 @@ final class IncomingEmail
     }
 
 
-    string printHeaders(Flag!"AsString" asString = Flag!"AsString".no)
+    string printHeaders(Flag!"AsString" asString = No.AsString)
     {
         auto textheaders = appender!string;
         foreach(string name, ref HeaderValue value; this.headers)
@@ -874,7 +874,7 @@ unittest
             email.loadFromFile(File(e.name));
 
             auto headerFile = File(buildPath(testDir, "header.txt"), "w");
-            headerFile.write(email.printHeaders(Flag!"AsString".yes));
+            headerFile.write(email.printHeaders(Yes.AsString));
             headerFile.close();
 
             auto ap = appender!string;
@@ -942,7 +942,7 @@ unittest
                 assert(0);
 
             auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
-            string headersStr = email.printHeaders(Flag!"AsString".yes);
+            string headersStr = email.printHeaders(Yes.AsString);
             auto refTextAppender = appender!string;
             while(!fRef.eof)
                 refTextAppender.put(fRef.readln());
