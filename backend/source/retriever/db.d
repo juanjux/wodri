@@ -139,14 +139,14 @@ RetrieverConfig getInitialConfig()
 }
 
 
-bool domainHasDefaultUser(string domainName)
+Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
 {
     auto domain = mongoDB["domain"].findOne(["name": domainName]);
     if (!domain.isNull &&
         !domain.defaultUser.isNull &&
         bsonStr(domain.defaultUser).length)
-        return true;
-    return false;
+        return Flag!"HasDefaultUser".yes;
+    return Flag!"HasDefaultUser".no;
 }
 
 
@@ -156,7 +156,7 @@ UserFilter[] getAddressFilters(string address)
     auto userRuleFindJson = format(`{"destinationAccounts": {"$in": ["%s"]}}`, address);
     auto userRuleCursor   = mongoDB["userrule"].find(parseJsonString(userRuleFindJson));
 
-    foreach(rule; userRuleCursor)
+    foreach(ref rule; userRuleCursor)
     {
         Match match;
         Action action;
@@ -204,7 +204,7 @@ bool addressIsLocal(string address)
     if (!address.length)
         return false;
 
-    if (domainHasDefaultUser(address.split("@")[1]))
+    if (domainHasDefaultUser(address.split("@")[1]) == Flag!"HasDefaultUser".yes)
         return true;
 
     auto jsonStr    = `{"addresses": {"$in": ["` ~ address ~ `"]}}`;
@@ -230,7 +230,8 @@ string[] localReceivers(IncomingEmail email)
 
 
 string jsonizeHeader(IncomingEmail email, string headerName,
-                     bool removeQuotes = false, bool onlyValue=false)
+                     Flag!"RemoveQuotes" removeQuotes = Flag!"RemoveQuotes".no,
+                     Flag!"OnlyValue" onlyValue       = Flag!"OnlyValue".no)
 {
     string ret;
     auto hdr = email.getHeader(headerName);
@@ -377,7 +378,7 @@ string storeEmail(IncomingEmail email)
     partAppender.clear();
 
     // json for the attachments
-    foreach(attach; email.attachments)
+    foreach(ref attach; email.attachments)
     {
         partAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString()     ~ `,` ~
                          ` "realPath": `      ~ Json(attach.realPath).toString()  ~ `,` ~
@@ -405,14 +406,16 @@ string storeEmail(IncomingEmail email)
         logError(err);
         throw new Exception(err);
     }
-    realReceiverRawValue  = email.jsonizeHeader(realReceiverField, false, true);
+    realReceiverRawValue  = email.jsonizeHeader(realReceiverField, 
+                                                Flag!"RemoveQuotes".no, 
+                                                Flag!"OnlyValue".yes);
     realReceiverAddresses = to!string(email.headers[realReceiverField].addresses);
 
     // Json for the headers
     // (see the schema.txt doc)
     bool[string] alreadyDone;
     partAppender.put("{");
-    foreach(headerName, headerValue; email.headers)
+    foreach(headerName, ref headerValue; email.headers)
     {
         if (among(toLower(headerName), "from", "message-id"))
             // these are outside headers because they're indexed
@@ -426,7 +429,7 @@ string storeEmail(IncomingEmail email)
 
         auto allValues = email.headers.getAll(headerName);
         partAppender.put(format(`"%s": [`, toLower(headerName)));
-        foreach(hv; allValues)
+        foreach(ref hv; allValues)
         {
             partAppender.put(format(`{"rawValue": %s`, Json(hv.rawValue).toString));
             if (hv.addresses.length)
@@ -453,7 +456,8 @@ string storeEmail(IncomingEmail email)
                                         email.rawEmailPath,
                                         email.getHeader("message-id").addresses[0],
                                         BsonDate(email.date).toString,
-                                        email.jsonizeHeader("from", false, true),
+                                        email.jsonizeHeader("from", Flag!"RemoveQuotes".no,
+                                                            Flag!"OnlyValue".yes),
                                         to!string(email.getHeader("from").addresses),
                                         realReceiverRawValue,
                                         realReceiverAddresses,
@@ -518,23 +522,23 @@ void storeTextIndex(IncomingEmail email, string emailDbId)
 /**
     Search for an equal email on the DB, comparing all relevant fields
 */
-bool emailAlreadyOnDb(IncomingEmail email)
+Flag!"AlreadyOnDb" emailAlreadyOnDb(IncomingEmail email)
 {
     auto incomingMsgId = email.getHeader("message-id");
     if (!incomingMsgId.rawValue.length)
-        return false;
+        return Flag!"AlreadyOnDb".no;
 
     auto emailInDb = mongoDB["email"].findOne(["message-id": incomingMsgId.addresses[0]]);
     if (emailInDb.isNull)
-        return false;
+        return Flag!"AlreadyOnDb".no;
 
     if (
         email.getHeader("subject").rawValue != bsonStr(emailInDb.headers.subject[0].rawValue) ||
         email.getHeader("from").rawValue    != bsonStr(emailInDb.from.rawValue)               ||
         email.getHeader("to").rawValue      != bsonStr(emailInDb.receivers.rawValue)          ||
         email.getHeader("date").rawValue    != bsonStr(emailInDb.headers.date[0].rawValue))
-        return false;
-    return true;
+        return Flag!"AlreadyOnDb".no;
+    return Flag!"AlreadyOnDb".yes;
 }
 
 
@@ -600,7 +604,7 @@ version(db_usetestdb)
         foreach(mailname; TEST_EMAILS)
         {
             auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
-            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), false);
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), Flag!"CopyRaw".no);
             assert(email.isValid, "Email is not valid");
             auto destination       = email.getHeader("to").addresses[0];
             auto emailId           = storeEmail(email);
@@ -621,8 +625,8 @@ version(db_test)
     unittest // domainHasDefaultUser
     {
         recreateTestDb();
-        assert(domainHasDefaultUser("testdatabase.com"), "domainHasDefaultUser1");
-        assert(!domainHasDefaultUser("anotherdomain.com"), "domainHasDefaultUser2");
+        assert(domainHasDefaultUser("testdatabase.com")  == Flag!"HasDefaultUser".yes, "domainHasDefaultUser1");
+        assert(domainHasDefaultUser("anotherdomain.com") == Flag!"HasDefaultUser".no, "domainHasDefaultUser2");
     }
 
     unittest // getAddressFilters
@@ -666,10 +670,10 @@ version(db_test)
     {
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
-        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), false);
-        assert(email.jsonizeHeader("from")             == `"from": " Test Sender <someuser@insomedomain.com>",`);
-        assert(email.jsonizeHeader("to")               == `"to": " Test User2 <testuser@testdatabase.com>",`);
-        assert(email.jsonizeHeader("Date", true, true) == `" Sat, 25 Dec 2010 13:31:57 +0100",`);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), Flag!"CopyRaw".no);
+        assert(email.jsonizeHeader("from") == `"from": " Test Sender <someuser@insomedomain.com>",`);
+        assert(email.jsonizeHeader("to")   == `"to": " Test User2 <testuser@testdatabase.com>",`);
+        assert(email.jsonizeHeader("Date", Flag!"RemoveQuotes".yes, Flag!"OnlyValue".yes) == `" Sat, 25 Dec 2010 13:31:57 +0100",`);
     }
 
     unittest // getEmailIdByMessageId
@@ -694,7 +698,7 @@ version(db_test)
         recreateTestDb();
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), false);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), Flag!"CopyRaw".no);
         auto userId = getUserIdFromAddress(email.getHeader("to").addresses[0]);
         // test1: insert as is, should create a new conversation with this email as single member
         auto emailId = storeEmail(email);
@@ -713,7 +717,7 @@ version(db_test)
         // conversationId is returned and the emailId added to its entry in the conversation.links
         recreateTestDb();
         email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), false);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), Flag!"CopyRaw".no);
         email.headers["message-id"].addresses[0] = "testreference@blabla.testdomain.com";
         emailId = storeEmail(email);
         convId = upsertConversation(email.getHeader("references").addresses,
@@ -731,7 +735,7 @@ version(db_test)
         // is added to that conversation
         recreateTestDb();
         email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), false);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), Flag!"CopyRaw".no);
         string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
         email.addHeader(refHeader);
         emailId = storeEmail(email);
@@ -797,7 +801,7 @@ version(db_test)
         foreach(mailname; TEST_EMAILS[0..$-1])
         {
             auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
-            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), false);
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), Flag!"CopyRaw".no);
             assert(emailAlreadyOnDb(email));
         }
 
@@ -812,7 +816,7 @@ version(db_test)
 
         findJson = format(`{"$text": {"$search": "text inside"}}`);
         cursor = mongoDB["emailIndexContents"].find(parseJsonString(findJson));
-        assert(!cursor.empty); 
+        assert(!cursor.empty);
         string res = cursor.front.text.toString;
         assert(countUntil(res, "text inside") == 10);
 
@@ -846,7 +850,7 @@ version(db_insertalltest) unittest
     ulong totalTime = 0;
     ulong count = 0;
 
-    foreach (DirEntry e; getSortedEmailFilesList(origEmailDir))
+    foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
     {
         //if (indexOf(e, "62877") == -1) continue; // For testing a specific email
         //if (to!int(e.name.baseName) < 62879) continue; // For testing from some email forward
@@ -858,7 +862,7 @@ version(db_insertalltest) unittest
         auto email = new IncomingEmail(rawEmailStore, attachmentStore);
 
         sw.start();
-        email.loadFromFile(File(e.name), false);
+        email.loadFromFile(File(e.name), Flag!"CopyRaw".no);
         sw.stop(); writeln("loadFromFile time: ", sw.peek().usecs); sw.reset();
 
 
@@ -883,7 +887,7 @@ version(db_insertalltest) unittest
         envelope.tags["inbox"] = true;
         sw.stop(); writeln("getUserIdFromAddress time: ", sw.peek().usecs); sw.reset();
 
-        if (email.isValid)
+        if (email.isValid == Flag!"IsValidEmail".yes)
         {
             writeln("Subject: ", email.getHeader("subject").rawValue);
 
@@ -910,7 +914,7 @@ version(db_insertalltest) unittest
             writeln("SKIPPING, invalid email");
 
         totalSw.stop();
-        if (email.isValid)
+        if (email.isValid == Flag!"IsValidEmail".yes)
         {
             auto emailTime = totalSw.peek().usecs;
             totalTime += emailTime;

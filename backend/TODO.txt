@@ -15,8 +15,9 @@ Backend-Retriever:
 
     - Sent the new changes in characterencodings.d to Ruppe
 
-    - See how to get around Mongo's 16MB document limit (GridFS?) Check is some
-      email of my collection is bigger than 16MB without attachments (=> no)
+    - See how to get around Mongo's 16MB document limit for bigger emails
+      (GridFS?) Check is some email of my collection is bigger than 16MB without
+      attachments (=> no)
 
 
 Backend-API:

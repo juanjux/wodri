@@ -56,15 +56,15 @@ string saveRejectedEmail(IncomingEmail email)
 
 
 // XXX test when I've the full cicle tests
-void saveAndLogRejectedEmail(IncomingEmail email, bool isValid, bool tooBig,
-                            string[] localReceivers, bool alreadyOnDb)
+void saveAndLogRejectedEmail(IncomingEmail email, Flag!"IsValidEmail" isValid, bool tooBig,
+                            string[] localReceivers, Flag!"AlreadyOnDb" alreadyOnDb)
 {
     auto failedEmailPath = saveRejectedEmail(email);
     auto f = File(failedEmailPath, "a");
-    f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", !isValid? "\nInvalid headers":"",
+    f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", isValid == Flag!"IsValidEmail".no? "\nInvalid headers":"",
                                                    !localReceivers.length? "\nInvalid destination":"",
                                                    tooBig? "\nMessage too big":"",
-                                                   alreadyOnDb? "\nAlready on DB": "");
+                                                   alreadyOnDb == Flag!"emailAlreadyOnDb".yes? "\nAlready on DB": "");
     logInfo(format("Message denied from SMTP. ValidHeaders:%s"~
                    "#localReceivers:%s SizeTooBig:%s. AlreadyOnDb: %s" ~
                    "Message copy stored at %s",
@@ -107,12 +107,15 @@ int main()
     auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
     email.loadFromFile(std.stdio.stdin);
 
-    bool isValid        = email.isValid;
+    auto isValid        = email.isValid;
     auto localReceivers = removeDups(localReceivers(email));
     bool tooBig         = (email.computeSize() > config.incomingMessageLimit);
-    bool alreadyOnDb    = email.emailAlreadyOnDb;
+    auto alreadyOnDb    = email.emailAlreadyOnDb;
 
-    if (!tooBig && isValid && localReceivers.length && !alreadyOnDb)
+    if (!tooBig 
+        && isValid == Flag!"IsValidEmail".yes 
+        && localReceivers.length 
+        && alreadyOnDb == Flag!"AlreadyOnDb".no)
     {
         try
         {

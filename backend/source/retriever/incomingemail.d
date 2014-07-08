@@ -2,6 +2,7 @@
 module retriever.incomingemail;
 
 import std.stdio;
+import std.typecons: Flag;
 import std.path;
 import std.regex;
 import std.file;
@@ -47,7 +48,7 @@ private pure string capitalizeHeader(string name)
     }
     auto tokens = split(res, "-");
     string newres;
-    foreach(idx, tok; tokens)
+    foreach(idx, ref tok; tokens)
     {
         if (among(tok, "mime", "dkim", "id", "spf"))
             newres ~= toUpper(tok);
@@ -156,14 +157,16 @@ final class IncomingEmail
         this.rootPart        = new MIMEPart();
     }
 
-    @property bool isValid()
+    @property Flag!"IsValidEmail" isValid()
     {
         // From and Message-ID and at least one of to/cc/bcc/delivered-to
-        return (getHeader("from").addresses.length &&
+        if (getHeader("from").addresses.length &&
                 (getHeader("to").addresses.length        ||
                 getHeader("cc").addresses.length         ||
                 getHeader("bcc").addresses.length        ||
-                getHeader("delivered-to").addresses.length));
+                getHeader("delivered-to").addresses.length))
+            return Flag!"IsValidEmail".yes;
+        return Flag!"IsValidEmail".no;
     }
 
 
@@ -181,14 +184,14 @@ final class IncomingEmail
     }
 
 
-    void loadFromFile(string emailPath, bool copyRaw=true)
+    void loadFromFile(string emailPath, Flag!"CopyRaw" copyRaw = Flag!"CopyRaw".yes)
     {
         auto f = File(emailPath);
             loadFromFile(f);
     }
 
 
-    void loadFromFile(File emailFile, bool copyRaw=true)
+    void loadFromFile(File emailFile, Flag!"CopyRaw" copyRaw = Flag!"CopyRaw".yes)
     {
         string currentLine;
         bool bodyHasParts          = false;
@@ -273,10 +276,10 @@ final class IncomingEmail
     }
 
 
-    string printHeaders(bool asString=false)
+    string printHeaders(Flag!"AsString" asString = Flag!"AsString".no)
     {
         auto textheaders = appender!string;
-        foreach(string name, HeaderValue value; this.headers)
+        foreach(string name, ref HeaderValue value; this.headers)
         {
             if (asString)
             {
@@ -330,7 +333,7 @@ final class IncomingEmail
             case "delivered-to":
             case "x-forwarded-to":
             case "x-forwarded-for":
-                 foreach(c; match(value.rawValue, EMAIL_REGEX))
+                 foreach(ref c; match(value.rawValue, EMAIL_REGEX))
                  {
                     tmpValue = c.hit;
                     if (tmpValue.length)
@@ -341,7 +344,7 @@ final class IncomingEmail
                 value.addresses = [match(value.rawValue, MSGID_REGEX).hit];
                 break;
             case "references":
-                 foreach(c; match(value.rawValue, MSGID_REGEX))
+                 foreach(ref c; match(value.rawValue, MSGID_REGEX))
                  {
                     tmpValue = c.hit;
                     if (tmpValue.length)
@@ -664,7 +667,7 @@ final class IncomingEmail
         ulong totalSize;
         totalSize += computeBodySize();
 
-        foreach(Attachment attachment; this.attachments)
+        foreach(ref attachment; this.attachments)
             totalSize += attachment.size;
         return totalSize;
     }
@@ -673,7 +676,7 @@ final class IncomingEmail
     ulong computeBodySize()
     {
         ulong totalSize;
-        foreach(MIMEPart textualPart; this.textualParts)
+        foreach(textualPart; this.textualParts)
             totalSize += textualPart.textContent.length;
         return totalSize;
     }
@@ -730,7 +733,7 @@ version(unittest)
         writeln("Object hash: "         , part.toHash());
         writeln("===========");
 
-        foreach(MIMEPart subpart; part.subparts)
+        foreach(subpart; part.subparts)
             visitParts(subpart);
     }
 
@@ -738,7 +741,7 @@ version(unittest)
     DirEntry[] getSortedEmailFilesList(string emailsDir)
     {
         DirEntry[] emailFiles;
-        foreach(DirEntry e; dirEntries(emailsDir, SpanMode.shallow))
+        foreach(ref e; dirEntries(emailsDir, SpanMode.shallow))
             if (!e.isDir) emailFiles ~= e;
 
         bool intFileComp(DirEntry x, DirEntry y)
@@ -790,7 +793,7 @@ version(unittest)
         }
 
         ++level;
-        foreach(MIMEPart subpart; part.subparts)
+        foreach(subpart; part.subparts)
             createPartInfoText(subpart, ap, level);
     }
 }
@@ -849,7 +852,7 @@ unittest
         // these. Obviously, it's very important to regenerate these files only with Good and Tested versions :)
         writeln("Generating test data, make sure to do this with a stable version");
         auto sortedFiles = getSortedEmailFilesList(origEmailDir);
-        foreach(DirEntry e; sortedFiles)
+        foreach(ref DirEntry e; sortedFiles)
         {
             // parsear email e.name
             // sacar info de partes desde la principal
@@ -868,10 +871,10 @@ unittest
                 mkdir(testAttachDir);
 
             auto email = new IncomingEmail(rawEmailStore, attachmentStore);
-            email.loadFromFile(File(e.name), true);
+            email.loadFromFile(File(e.name));
 
             auto headerFile = File(buildPath(testDir, "header.txt"), "w");
-            headerFile.write(email.printHeaders(true));
+            headerFile.write(email.printHeaders(Flag!"AsString".yes));
             headerFile.close();
 
             auto ap = appender!string;
@@ -890,10 +893,10 @@ unittest
         auto filenumber = 30509;
         auto emailFile = File(format("%s/%d", origEmailDir, filenumber), "r");
         auto email      = new IncomingEmail(rawEmailStore, attachmentStore);
-        email.loadFromFile(emailFile, true);
+        email.loadFromFile(emailFile);
 
         visitParts(email.rootPart);
-        foreach(MIMEPart part; email.textualParts)
+        foreach(part; email.textualParts)
             writeln(part.ctype.name, ":", part.toHash());
 
         assert("date" in email.headers);
@@ -923,7 +926,7 @@ unittest
         int[string] skipEmails;
         bool copyEmail = true;
 
-        foreach (DirEntry e; getSortedEmailFilesList(origEmailDir))
+        foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
         {
             //if (indexOf(e, "62877") == -1) continue; // For testing a specific email
             //if (to!int(e.name.baseName) < 32000) continue; // For testing from some email forward
@@ -939,7 +942,7 @@ unittest
                 assert(0);
 
             auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
-            string headersStr = email.printHeaders(true);
+            string headersStr = email.printHeaders(Flag!"AsString".yes);
             auto refTextAppender = appender!string;
             while(!fRef.eof)
                 refTextAppender.put(fRef.readln());
@@ -990,7 +993,7 @@ unittest
             auto bufBase64  = new ubyte[1024*1024*2]; // 2MB
             auto bufOurfile = new ubyte[1024*1024*2];
 
-            foreach (Attachment att; email.attachments)
+            foreach (ref Attachment att; email.attachments)
             {
                 // FIXME: this only text the base64-encoded attachments
                 if (!att.wasEncoded)
@@ -1032,7 +1035,7 @@ unittest
             writeln("\t...attachments ok!");
 
             // clean the attachment files and the rawemail
-            foreach(Attachment att; email.attachments)
+            foreach(ref Attachment att; email.attachments)
                 std.file.remove(att.realPath);
             if (copyEmail)
                 std.file.remove(email.rawEmailPath);
