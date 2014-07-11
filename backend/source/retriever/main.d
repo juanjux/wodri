@@ -79,20 +79,20 @@ void processEmailForAddress(string destination, IncomingEmail email, string emai
     // Create the email=>user envelope
     auto userId            = getUserIdFromAddress(destination);
     auto envelope          = Envelope(email, destination, userId, emailId);
-    envelope.tags["inbox"] = true;
+    bool[string] tags = ["inbox": true];
 
     if ("x-spam-setspamtag" in email.headers)
-        envelope.tags["spam"] = true;
+        tags["spam"] = true;
 
     // Apply the user-defined filters (if any)
     auto userFilters = getAddressFilters(destination);
     foreach(filter; userFilters)
-        filter.apply(envelope);
+        filter.apply(envelope, tags);
 
-    storeEnvelope(envelope);
+    envelope.store();
     upsertConversation(email.getHeader("references").addresses,
                               email.headers["message-id"].addresses[0],
-                              emailId, userId);
+                              emailId, userId, tags);
 
     if (getConfig.storeTextIndex)
         storeTextIndex(email, emailId);
@@ -120,7 +120,7 @@ int main()
     {
         try
         {
-            auto emailId = storeEmail(email);
+            auto emailId = email.store();
             foreach(destination; localReceivers)
                 processEmailForAddress(destination, email, emailId);
         } catch (Exception e)

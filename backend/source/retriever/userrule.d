@@ -52,10 +52,10 @@ class UserFilter
     }
 
 
-    void apply(ref Envelope envelope)
+    void apply(ref Envelope envelope, ref bool[string] convTags)
     {
-        if (checkMatch(envelope))
-            applyAction(envelope);
+        if (checkMatch(envelope)) 
+            applyAction(envelope, convTags);
     }
 
     bool checkMatch(ref Envelope envelope)
@@ -73,7 +73,7 @@ class UserFilter
                 return false;
         }
 
-        foreach(string matchHeaderName, string matchHeaderFilter; this.match.headerMatches)
+        foreach(matchHeaderName, matchHeaderFilter; this.match.headerMatches)
             if (countUntil(envelope.email.getHeader(matchHeaderName).rawValue, matchHeaderFilter) == -1)
                 return false;
 
@@ -102,30 +102,30 @@ class UserFilter
     }
 
 
-    void applyAction(ref Envelope envelope)
+    void applyAction(ref Envelope envelope, ref bool[string] convTags)
     {
         // email.tags == false actually mean to the rest of the retriever
         // processes: "it doesnt have the tag and please dont add it after this point"
         if (this.action.noInbox)
-            envelope.tags["inbox"] = false;
+            convTags["inbox"] = false;
 
-        if (this.action.markAsRead)
-            envelope.tags["unread"] = false;
+        if (this.action.markAsRead) 
+            convTags["unread"] = false;
 
         if (this.action.deleteIt)
-            envelope.tags["deleted"] = true;
+            convTags["deleted"] = true;
 
         if (this.action.neverSpam)
-            envelope.tags["spam"] = false;
+            convTags["spam"] = false;
 
         if (this.action.setSpam)
-            envelope.tags["spam"] = true;
+            convTags["spam"] = true;
 
         foreach(string tag; this.action.addTags)
         {
             tag = toLower(tag);
-            if (tag !in envelope.tags)
-                envelope.tags[tag] = true;
+            if (tag !in convTags)
+                convTags[tag] = true;
         }
 
         if (this.action.forwardTo.length)

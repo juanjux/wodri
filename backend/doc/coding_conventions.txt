@@ -1,4 +1,5 @@
-I don't feel strongly about these styles but I do about having some uniformity in the code.
+I don't feel strongly about these styles but I do about having some uniformity in
+the code.
 
 - camelCase in code and mongo fields but not for paths (paths are all lowecase)
 
@@ -21,6 +22,9 @@ I don't feel strongly about these styles but I do about having some uniformity i
             ewrw;
         }
     }
+    But:
+        - Single statements after if, foreach, etc without braces (except if they're hard
+          wrapped and you think they look better / clearer with braces).
 
 - "id" like in "userId" goes at the end both for code and DB fields. Inside
   camelized words is "someId" not "someID"
@@ -33,3 +37,6 @@ I don't feel strongly about these styles but I do about having some uniformity i
 
 - The IncomingMail.header member DictionaryList object is case insensitive, but
   please use lowercase for keys.
+
+- unittests should print a "Testing bla" message at the start where "bla" should
+  briefly describe the test purpose

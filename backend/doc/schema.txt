@@ -1,9 +1,9 @@
 DOMAIN
 
-Information about a domain managed by this email system. The optional
-defaultUser will receive all the email that goes to any address on the domain
-not owned by an user. The domainAdmin will be able to change the domain
-settings. The postMaster will receive warnings and errors.
+Information about a domain managed by this email system. The optional defaultUser
+will receive all the email that goes to any address on the domain not owned by an
+user. The domainAdmin will be able to change the domain settings. The postMaster
+will receive warnings and errors.
 
 {
     "_id"         : "<ThisDocumentId>",
@@ -35,7 +35,7 @@ to the "maindir" setting. The incomingMessageLimit is in bytes.
 
 USER
 
-User information. 
+User information.
 
 {
     "_id"       : "<ThisDocumentId>",
@@ -82,7 +82,6 @@ to two address he owns, he'll have two envelopes but a single email).
     "destinationAddress" : "email@foo.com",
     "emailId"            : "<email Id>",
     "forwardTo"          : ["someotheremail@foo.com"],
-    "tags"               : ["inbox", "<OtherTags>"],
     "userId"             : "<user Id>"
 }
 
@@ -95,7 +94,7 @@ recovery process).  Only a single copy of every email is stored in the DB, even
 if the email is addresses for several users of the system; see the description
 for the Envelope document.
 
-Note: email["headers"] will contain all the headers except Message-ID and From because 
+Note: email["headers"] will contain all the headers except Message-ID and From because
 they're outside the headers subdoc (for easier indexing by MongoDB). A header entry
 is a list because some fields like "received" can be repeated several times; each
 list item was an additional header entry in the original email.
@@ -150,8 +149,11 @@ every message, the message-id (as in the email heder), and the ID of the
 document in the email collection (could be missing if there is a reference to
 an email not in the database).
 
+Tags are stored in conversations.
+
 {
     "_id": "<ThisDocumentId>",
+    "tags"              : ["inbox", "<OtherTags>"],
     "links": [
         {
             "emailId"   : "<some email id>",

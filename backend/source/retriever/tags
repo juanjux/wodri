@@ -1425,8 +1425,8 @@ appendToFront	/home/juanjux/webmail/backend/source/arsd.bak/png.d	/^	void append
 apply	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^	void apply(Document document) {$/;"	f	class:Element::StyleSheet
 apply	/home/juanjux/webmail/backend/source/arsd.bak/jsvar.d	/^	public var apply(var _this, var[] args) {$/;"	f	struct:var
 apply	/home/juanjux/webmail/backend/source/retriever/arsd/dom.d	/^	void apply(Document document) {$/;"	f	class:Element::StyleSheet
-apply	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    void apply(ref Envelope envelope)$/;"	f	class:UserFilter
-applyAction	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    void applyAction(ref Envelope envelope)$/;"	f	class:UserFilter
+apply	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    void apply(ref Envelope envelope, ref bool[string] convTags)$/;"	f	class:UserFilter
+applyAction	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    void applyAction(ref Envelope envelope, ref bool[string] convTags)$/;"	f	class:UserFilter
 applyToElement	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^	Element applyToElement(Element e) {$/;"	f	struct:Element::FormFieldOptions
 applyToElement	/home/juanjux/webmail/backend/source/retriever/arsd/dom.d	/^	Element applyToElement(Element e) {$/;"	f	struct:Element::FormFieldOptions
 arc	/home/juanjux/webmail/backend/source/arsd.bak/screen.d	/^	void arc(Point center, int radius, float start, float end, Color color){$/;"	f	class:Painter
@@ -2002,7 +2002,7 @@ doVariableProcessing	/home/juanjux/webmail/backend/source/arsd.bak/querygenerato
 doXNextEvent	/home/juanjux/webmail/backend/source/arsd.bak/simpledisplay.d	/^	bool doXNextEvent(Display* display) {$/;"	f
 documentPostProcessors	/home/juanjux/webmail/backend/source/arsd.bak/web.d	/^	private void delegate(Document d)[] documentPostProcessors;$/;"	m	class:ApiProvider	file:
 domain	/home/juanjux/webmail/backend/source/arsd.bak/http2.d	/^	string domain;$/;"	m	struct:HttpCookie	file:
-domainHasDefaultUser	/home/juanjux/webmail/backend/source/retriever/db.d	/^bool domainHasDefaultUser(string domainName)$/;"	f
+domainHasDefaultUser	/home/juanjux/webmail/backend/source/retriever/db.d	/^Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)$/;"	f
 domainName	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^	@property string domainName() {$/;"	f	class:Element::Link
 domainName	/home/juanjux/webmail/backend/source/retriever/arsd/dom.d	/^	@property string domainName() {$/;"	f	class:Element::Link
 down	/home/juanjux/webmail/backend/source/arsd.bak/engine.d	/^		up = 13, down = 14, left = 15, right = 16,  \/\/ dpad and left stick$/;"	e	enum:__anon65	file:
@@ -2776,7 +2776,7 @@ isSignatureValid	/home/juanjux/webmail/backend/source/arsd.bak/oauth.d	/^bool is
 isStruct	/home/juanjux/webmail/backend/source/arsd.bak/web.d	/^		enum bool isStruct = false;$/;"	m	template:__anon13	typeref:enum:__anon13::	file:
 isStruct	/home/juanjux/webmail/backend/source/arsd.bak/web.d	/^		enum bool isStruct = true;$/;"	m	template:__anon13	typeref:enum:__anon13::	file:
 isStruct	/home/juanjux/webmail/backend/source/arsd.bak/web.d	/^	enum bool isStruct = false;$/;"	m	template:__anon14	typeref:enum:__anon14::	file:
-isValid	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property bool isValid()$/;"	f	class:IncomingEmail
+isValid	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property Flag!"IsValidEmail" isValid()$/;"	f	class:IncomingEmail
 isValidEventListener	/home/juanjux/webmail/backend/source/arsd.bak/eventloop.d	/^	enum bool isValidEventListener = isCallable!T && ParameterTypeTuple!(T).length == 1;$/;"	m	typeref:enum:	file:
 isValidEventListener	/home/juanjux/webmail/backend/source/arsd.bak/eventloop.d	/^template isValidEventListener(T) {$/;"	T	file:
 isValidFileEventDispatcherHandler	/home/juanjux/webmail/backend/source/arsd.bak/eventloop.d	/^		enum bool isValidFileEventDispatcherHandler = true;$/;"	m	typeref:enum:	file:
@@ -2905,8 +2905,8 @@ literal	/home/juanjux/webmail/backend/source/arsd.bak/script.d	/^	real literal;$
 literal	/home/juanjux/webmail/backend/source/arsd.bak/script.d	/^	string literal;$/;"	m	class:StringLiteralExpression	file:
 load	/home/juanjux/webmail/backend/source/arsd.bak/stb_truetype.d	/^	void load(in ubyte[] data) {$/;"	f	struct:TtfFont
 loadFont	/home/juanjux/webmail/backend/source/arsd.bak/screen.d	/^	void loadFont(in char[] font, int size = 12, int index = 0){$/;"	f	class:FontEngine
-loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void loadFromFile(File emailFile, bool copyRaw=true)$/;"	f	class:IncomingEmail
-loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void loadFromFile(string emailPath, bool copyRaw=true)$/;"	f	class:IncomingEmail
+loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void loadFromFile(File emailFile, Flag!"CopyRaw" copyRaw = Yes.CopyRaw)$/;"	f	class:IncomingEmail
+loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void loadFromFile(string emailPath, Flag!"CopyRaw" copyRaw = Yes.CopyRaw)$/;"	f	class:IncomingEmail
 loca	/home/juanjux/webmail/backend/source/arsd.bak/stb_truetype.d	/^   int loca,head,glyf,hhea,hmtx,kern; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	file:
 localReceivers	/home/juanjux/webmail/backend/source/retriever/db.d	/^string[] localReceivers(IncomingEmail email)$/;"	f
 location	/home/juanjux/webmail/backend/source/arsd.bak/http.d	/^	@property Url location() {$/;"	f	class:HttpClient
@@ -3540,7 +3540,6 @@ preventDefault	/home/juanjux/webmail/backend/source/retriever/arsd/dom.d	/^	void
 previousSibling	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^	@property Element previousSibling(string tagName = null) {$/;"	f	class:Element
 previousSibling	/home/juanjux/webmail/backend/source/retriever/arsd/dom.d	/^	@property Element previousSibling(string tagName = null) {$/;"	f	class:Element
 primitives	/home/juanjux/webmail/backend/source/arsd.bak/mangle.d	/^static immutable string[23] primitives = [$/;"	v	file:
-printHeaders	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string printHeaders(bool asString=false)$/;"	f	class:IncomingEmail
 privatePaint	/home/juanjux/webmail/backend/source/arsd.bak/minigui.d	/^	protected void privatePaint(ScreenPainter painter, int lox, int loy) {$/;"	f	class:Widget
 proceed	/home/juanjux/webmail/backend/source/arsd.bak/netman.d	/^	bool proceed(int timeout = 0){$/;"	f	class:NetworkManager
 processString	/home/juanjux/webmail/backend/source/arsd.bak/querygenerator.d	/^string processString(ref string data, string buf) {$/;"	f
@@ -4150,7 +4149,6 @@ tagNameFilter	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^		string tag
 tagNameFilter	/home/juanjux/webmail/backend/source/retriever/arsd/dom.d	/^		string tagNameFilter; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
 tags	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^			ubyte tags; \/\/\/.$/;"	m	struct:Element::CssStyle::Specificity::__anon39	file:
 tags	/home/juanjux/webmail/backend/source/retriever/arsd/dom.d	/^			ubyte tags; \/\/\/.$/;"	m	struct:Element::CssStyle::Specificity::__anon72	file:
-tags	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    bool[string] tags;$/;"	m	struct:Envelope	file:
 target	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^	Element target;$/;"	m	struct:Element::DomMutationEvent	file:
 target	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^	alias srcElement target;$/;"	t	class:Element::Event	file:
 target	/home/juanjux/webmail/backend/source/arsd.bak/minigui.d	/^	alias srcElement target;$/;"	t	class:Event	file:
@@ -4352,7 +4350,7 @@ updateNativeObject	/home/juanjux/webmail/backend/source/arsd.bak/jsvar.d	/^	void
 updateQueryString	/home/juanjux/webmail/backend/source/arsd.bak/dom.d	/^	\/*private*\/ void updateQueryString(string[string] vars) {$/;"	f	class:Element::Link
 updateQueryString	/home/juanjux/webmail/backend/source/retriever/arsd/dom.d	/^	\/*private*\/ void updateQueryString(string[string] vars) {$/;"	f	class:Element::Link
 update_crc	/home/juanjux/webmail/backend/source/arsd.bak/png.d	/^uint update_crc(in uint crc, in ubyte[] buf){$/;"	f
-upsertConversation	/home/juanjux/webmail/backend/source/retriever/db.d	/^string upsertConversation(string[] references, string messageId, string emailDbId, string userId)$/;"	f
+upsertConversation	/home/juanjux/webmail/backend/source/retriever/db.d	/^string upsertConversation(string[] references, string messageId, $/;"	f
 uri	/home/juanjux/webmail/backend/source/arsd.bak/http.d	/^	string uri;$/;"	m	class:HttpClient	file:
 uri	/home/juanjux/webmail/backend/source/arsd.bak/http.d	/^	string uri;$/;"	m	struct:HttpRequestParameters	file:
 uri	/home/juanjux/webmail/backend/source/arsd.bak/http2.d	/^	string uri;$/;"	m	struct:HttpRequestParameters	file:

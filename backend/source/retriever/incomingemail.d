@@ -18,10 +18,10 @@ import std.datetime;
 import vibe.utils.dictionarylist;
 import arsd.characterencodings;
 
-version(incomingemail_createtestdata) version     = anyincomingmailtest;
+version(incomingemail_createtestdata)     version = anyincomingmailtest;
 version(incomingemail_regeneratetestdata) version = anyincomingmailtest;
-version(incomingemail_singletest) version         = anyincomingmailtest;
-version(incomingemail_allemailstest) version       = anyincomingmailtest;
+version(incomingemail_singletest)         version = anyincomingmailtest;
+version(incomingemail_allemailstest)      version = anyincomingmailtest;
 version(anyincomingmailtest)
 {
     import retriever.db: getConfig;
