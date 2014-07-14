@@ -108,8 +108,6 @@ final class MIMEPart // #mimepart
 }
 
 
-
-
 struct Attachment // #attach
 {
     string realPath;

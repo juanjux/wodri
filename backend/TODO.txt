@@ -1,4 +1,11 @@
+Backend-API:
+    - Check how to create an API using Vibed and test
+
 Backend-Retriever:
+    - Mongo DB indexes, ensure()
+
+    - import only the symbols really used
+
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)
 
@@ -20,8 +27,6 @@ Backend-Retriever:
       attachments (=> no)
 
 
-Backend-API:
-    - Create the Vibe.d project
 
 Frontend:
 

@@ -1,0 +1,13 @@
+{
+    "name": "webbackend",
+    "description": "Webmail HTTP server and API",
+    "copyright": "Copyright © 2014, Juanjo Alvarez Martinez",
+    "authors": ["juanjux"],
+    "importPaths": [".", ".."],
+    "sourcePaths": [".", ".."],
+    "excludedSourceFiles": ["../retriever/main.d", "../retriever/test.d"],
+    "dependencies": {
+        "vibe-d": "~master"
+    },
+    "versions": ["VibeDefaultMain"]
+}

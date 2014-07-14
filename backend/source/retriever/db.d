@@ -119,7 +119,22 @@ RetrieverConfig getInitialConfig()
         throw new Exception(err);
     }
 
-    // If the db path starts with '/' interpret it as absolute
+    void checkNotNull(string[] keys)
+    {
+        string[] missingKeys = [];
+        foreach(key; keys)
+            if (dbConfig[key] == Bson(null))
+                missingKeys ~= key;
+
+        if (missingKeys.length)
+            throw new Exception("Missing keys in retriever DB config collection: " ~ 
+                                 to!string(missingKeys));
+    }
+
+    checkNotNull(["mainDir", "smtpServer", "smtpUser", "smtpPass", 
+                  "smtpEncription", "smtpPort", "rawEmailStore", 
+                  "attachmentStore", "incomingMessageLimit", "storeTextIndex"]);
+
     config.mainDir              = bsonStr(dbConfig.mainDir);
     config.smtpServer           = bsonStr(dbConfig.smtpServer);
     config.smtpUser             = bsonStr(dbConfig.smtpUser);
@@ -127,6 +142,7 @@ RetrieverConfig getInitialConfig()
     config.smtpEncription       = to!uint(bsonNumber(dbConfig.smtpEncription));
     config.smtpPort             = to!ulong(bsonNumber(dbConfig.smtpPort));
     auto dbPath                 = bsonStr(dbConfig.rawEmailStore);
+    // If the db path starts with '/' interpret it as absolute
     config.rawEmailStore        = dbPath.startsWith(dirSeparator)?
                                                            dbPath:
                                                            buildPath(config.mainDir, dbPath);

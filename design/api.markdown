@@ -11,7 +11,6 @@ attachments) can be loaded without reloading what we already have.
 - From
 - Date
 - Attachment filenames
-- Tags
 - First words of the text
 - Author avatar icon URL
 
