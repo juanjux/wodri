@@ -185,7 +185,7 @@ final class IncomingEmail
     void loadFromFile(string emailPath, Flag!"CopyRaw" copyRaw = Yes.CopyRaw)
     {
         auto f = File(emailPath);
-            loadFromFile(f);
+        loadFromFile(f, copyRaw);
     }
 
 
@@ -237,6 +237,12 @@ final class IncomingEmail
                 break;
             }
             currentLine = emailFile.readln();
+        }
+
+        if (!this.dateSet)
+        {
+            this.date = parseDate("NOW"); // will put current time
+            this.dateSet = true;
         }
 
         // === Body=== (read all into the buffer, the parsing is done outside the loop)
@@ -324,7 +330,7 @@ final class IncomingEmail
         string tmpValue;
         switch(lowname)
         {
-			case "from":
+            case "from":
             case "to":
             case "cc":
             case "bcc":
@@ -351,6 +357,7 @@ final class IncomingEmail
                 break;
             case "date":
                 this.date = parseDate(value.rawValue);
+                this.dateSet = true;
                 break;
             default:
         }
@@ -360,8 +367,7 @@ final class IncomingEmail
 
     DateTime parseDate(string strDate)
     {
-        // Default to current time so we've some date if
-        // the format is broken
+        // Default to current time so we've some date if the format is broken
         DateTime ldate = to!DateTime(Clock.currTime);
         auto tokDate = strip(strDate).split(' ').filter!(a => !a.empty).array;
 
@@ -387,8 +393,7 @@ final class IncomingEmail
                 auto minute    = to!int(hmsTokens[1]);
                 int second = hmsTokens.length > 2? to!int(hmsTokens[2]):0;
                 string tz      = tokDate[4+posAdjust];
-                ldate = DateTime(Date(year, month, day),
-                                     TimeOfDay(hour, minute, second));
+                ldate = DateTime(Date(year, month, day), TimeOfDay(hour, minute, second));
 
                 // The date is saved on UTC, so we add/substract the TZ
                 if (tz.length == 5 && tz[1..$] != "0000")
@@ -922,8 +927,8 @@ unittest
         // Not broken, but for putting emails that need to be skipped for some reaso
         //int[string] skipMails  = ["41051":0, "41112":0];
         int[string] skipEmails;
-        bool copyEmail = true;
 
+        auto copyEmail = Yes.CopyRaw;
         foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
         {
             //if (indexOf(e, "62877") == -1) continue; // For testing a specific email
@@ -1035,7 +1040,7 @@ unittest
             // clean the attachment files and the rawemail
             foreach(ref Attachment att; email.attachments)
                 std.file.remove(att.realPath);
-            if (copyEmail)
+            if (copyEmail == Yes.CopyRaw)
                 std.file.remove(email.rawEmailPath);
         }
     }

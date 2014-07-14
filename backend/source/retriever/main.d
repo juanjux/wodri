@@ -90,10 +90,7 @@ void processEmailForAddress(string destination, IncomingEmail email, string emai
         filter.apply(envelope, tags);
 
     envelope.store();
-    upsertConversation(email.getHeader("references").addresses,
-                              email.headers["message-id"].addresses[0],
-                              emailId, userId, tags);
-
+    upsertConversation(email, emailId, userId, tags);
     if (getConfig.storeTextIndex)
         storeTextIndex(email, emailId);
 }

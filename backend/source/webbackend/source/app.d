@@ -2,6 +2,8 @@ import vibe.d;
 import std.stdio;
 import apiobjects;
 
+version(apitest) version = db_usetestdb;
+
 shared static this()
 {
     auto router = new URLRouter;
@@ -15,14 +17,10 @@ shared static this()
     listenHTTP(settings, router);
 }
 
-// XXX convert to unittest
-shared static this()
+version(apitest)
+unittest
 {
-    // create a client to talk to the API implementation over the REST interface
-    runTask({
-        auto apiClient = new RestInterfaceClient!Api("http://127.0.0.1:8080");
-        auto conversations = apiClient.getTag("inbox", 50);
-        writeln(conversations);
-        //logInfo("Conversations: %s", conversations);
-    });
+    auto apiClient = new RestInterfaceClient!Api("http://127.0.0.1:8080");
+    auto conversations = apiClient.getTag("inbox", 50);
+    logInfo("Conversations: %s", conversations);
 }

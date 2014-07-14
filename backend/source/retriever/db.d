@@ -3,6 +3,7 @@ module retriever.db;
 import std.stdio;
 import std.typecons;
 import std.string;
+import std.datetime: SysTime, TimeZone;
 import std.array;
 import std.range;
 import std.json;
@@ -127,12 +128,12 @@ RetrieverConfig getInitialConfig()
                 missingKeys ~= key;
 
         if (missingKeys.length)
-            throw new Exception("Missing keys in retriever DB config collection: " ~ 
+            throw new Exception("Missing keys in retriever DB config collection: " ~
                                  to!string(missingKeys));
     }
 
-    checkNotNull(["mainDir", "smtpServer", "smtpUser", "smtpPass", 
-                  "smtpEncription", "smtpPort", "rawEmailStore", 
+    checkNotNull(["mainDir", "smtpServer", "smtpUser", "smtpPass",
+                  "smtpEncription", "smtpPort", "rawEmailStore",
                   "attachmentStore", "incomingMessageLimit", "storeTextIndex"]);
 
     config.mainDir              = bsonStr(dbConfig.mainDir);
@@ -279,15 +280,19 @@ string getEmailIdByMessageId(string messageId)
 }
 
 
-string upsertConversation(string[] references, string messageId, 
-                          string emailDbId, string userId, bool[string] tags)
+string upsertConversation(IncomingEmail email, string emailDbId,
+                          string userId, bool[string] tags)
 {
+    auto references = email.getHeader("references").addresses;
+    auto messageId  = email.headers["message-id"].addresses[0];
+    auto date = BsonDate(SysTime(email.date, TimeZone.getTimeZone("GMT"))).toString;
+
     // Search for a conversation with one of these references
     string conversationId;
     char[][] reversed = to!(char[][])(references ~ messageId);
     reverse(reversed);
 
-    auto jsonFindStr = format(`{"userId": "%s", "links.message-id": {"$in": %s}}`, 
+    auto jsonFindStr = format(`{"userId": "%s", "links.message-id": {"$in": %s}}`,
                               userId, reversed);
     auto convFind    = mongoDB["conversation"].findOne(parseJsonString(jsonFindStr));
 
@@ -295,10 +300,9 @@ string upsertConversation(string[] references, string messageId,
     {
         // conversation with these references or msgid exists: update it
         int idx = -1;
-        string linksUpdateStr;
-        string tagsUpdateStr;
+        string linksUpdateStr, tagsUpdateStr, dateUpdateStr;
         bool[string] mergedTags;
-        auto docTags = bsonStrArray(convFind["tags"]);
+        auto docTags = bsonStrArray(convFind.tags);
 
         // merge tags and docTags
         foreach(tagName, tagValue; tags)
@@ -314,19 +318,18 @@ string upsertConversation(string[] references, string messageId,
         // which can happend if an email referring to this one entered the
         // system before this email, in that case update the conversation with
         // the EmailId
-        foreach(entry; convFind["links"])
+        foreach(entry; convFind.links)
         {
             idx++;
             if (bsonStr(entry["message-id"]) == messageId)
             {
                 // Found ourselves in the Conversation document; update the
                 // (empty) emailId with our own
-                linksUpdateStr = format(`{"$set": {"links.%d.emailId": "%s"}}`, 
+                linksUpdateStr = format(`{"$set": {"links.%d.emailId": "%s"}}`,
                                        idx, emailDbId);
                 break;
             }
         }
-    
 
         if (!linksUpdateStr.length)
             // Found conversation without this message id, add it to the conversation
@@ -334,10 +337,16 @@ string upsertConversation(string[] references, string messageId,
                                    messageId, emailDbId);
 
         conversationId = bsonStr(convFind["_id"]);
-        mongoDB["conversation"].update(["_id": conversationId], 
+        mongoDB["conversation"].update(["_id": conversationId],
                                        parseJsonString(linksUpdateStr));
-        mongoDB["conversation"].update(["_id": conversationId], 
+        mongoDB["conversation"].update(["_id": conversationId],
                                         parseJsonString(tagsUpdateStr));
+
+        if (convFind.lastDate == Bson(null) || bsonStr(convFind.lastDate) < date)
+        {
+            dateUpdateStr = format(`{"$set": {"lastDate": "%s"}}`, date);
+            mongoDB["conversation"].update(["_id": conversationId], dateUpdateStr);
+        }
     }
     else
     {
@@ -363,13 +372,15 @@ string upsertConversation(string[] references, string messageId,
         foreach(tagName, tagValue; tags)
             if (tagValue)
                 trueTags ~= tagName;
-            
+
         auto jsonInsert = parseJsonString(format(`{"_id": "%s",` ~
                                                    `"userId": "%s",` ~
+                                                   `"lastDate": "%s",` ~
                                                    `"tags": %s,` ~
                                                    `"links": [%s]}`,
-                                                 convIdNew, 
+                                                 convIdNew,
                                                  userId,
+                                                 date,
                                                  to!string(trueTags),
                                                  linksAppender.data));
         mongoDB["conversation"].insert(jsonInsert);
@@ -453,7 +464,7 @@ string store(IncomingEmail email)
         logError(err);
         throw new Exception(err);
     }
-    realReceiverRawValue  = email.jsonizeHeader(realReceiverField, 
+    realReceiverRawValue  = email.jsonizeHeader(realReceiverField,
                                                 No.RemoveQuotes,
                                                 Yes.OnlyValue);
     realReceiverAddresses = to!string(email.headers[realReceiverField].addresses);
@@ -489,6 +500,7 @@ string store(IncomingEmail email)
     string rawHeadersStr = partAppender.data();
     partAppender.clear();
 
+    auto date = BsonDate(SysTime(email.date, TimeZone.getTimeZone("GMT"))).toString;
     auto documentId = BsonObjectID.generate();
     auto emailInsertJson = format(`{"_id": "%s",` ~
                                   `"rawEmailPath": "%s",` ~
@@ -502,7 +514,7 @@ string store(IncomingEmail email)
                                         documentId,
                                         email.rawEmailPath,
                                         email.getHeader("message-id").addresses[0],
-                                        BsonDate(email.date).toString,
+                                        date,
                                         email.jsonizeHeader("from", No.RemoveQuotes,
                                                             Yes.OnlyValue),
                                         to!string(email.getHeader("from").addresses),
@@ -657,10 +669,11 @@ version(db_usetestdb)
             auto emailId           = email.store();
             auto userId            = getUserIdFromAddress(destination);
             auto envelope          = Envelope(email, destination, userId, emailId);
+            auto date              = BsonDate(SysTime(email.date,
+                                                      TimeZone.getTimeZone("GMT"))).toString;
+
             envelope.store();
-            upsertConversation(email.getHeader("references").addresses,
-                                      email.headers["message-id"].addresses[0],
-                                      emailId, userId, ["inbox": true]);
+            upsertConversation(email, emailId, userId, ["inbox": true]);
             storeTextIndex(email, emailId);
         }
     }
@@ -752,13 +765,15 @@ version(db_test)
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
         email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), No.CopyRaw);
+        auto emailObjectDate = BsonDate(SysTime(email.date,
+                                                TimeZone.getTimeZone("GMT")))
+                                               .toString;
+
         auto userId = getUserIdFromAddress(email.getHeader("to").addresses[0]);
         bool[string] tags = ["inbox": true, "dontstore": false];
         // test1: insert as is, should create a new conversation with this email as single member
         auto emailId = email.store();
-        auto convId = upsertConversation(email.getHeader("references").addresses,
-                                         email.getHeader("message-id").addresses[0],
-                                         emailId, userId, tags);
+        auto convId = upsertConversation(email, emailId, userId, tags);
         auto convDoc = mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
@@ -769,6 +784,7 @@ version(db_test)
         assert(convDoc.tags.type == Bson.Type.Array);
         assert(convDoc.tags.length == 1);
         assert(bsonStrArray(convDoc.tags)[0] == "inbox");
+        assert(bsonStr(convDoc.lastDate) == emailObjectDate);
 
 
         // test2: insert as a msgid of a reference already on a conversation, check that the right
@@ -778,9 +794,7 @@ version(db_test)
         email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), No.CopyRaw);
         email.headers["message-id"].addresses[0] = "testreference@blabla.testdomain.com";
         emailId = email.store();
-        convId = upsertConversation(email.getHeader("references").addresses,
-                                         email.getHeader("message-id").addresses[0],
-                                         emailId, userId, tags);
+        convId = upsertConversation(email, emailId, userId, tags);
         convDoc = mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
@@ -788,6 +802,7 @@ version(db_test)
         assert(convDoc.links.length == 3);
         assert(bsonStr(convDoc.links[1]["message-id"]) == email.getHeader("message-id").addresses[0]);
         assert(bsonStr(convDoc.links[1].emailId) == emailId);
+        assert(bsonStr(convDoc.lastDate) != emailObjectDate);
 
         // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
         // is added to that conversation
@@ -797,9 +812,7 @@ version(db_test)
         string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
         email.addHeader(refHeader);
         emailId = email.store();
-        convId = upsertConversation(email.getHeader("references").addresses,
-                                         email.getHeader("message-id").addresses[0],
-                                         emailId, userId, tags);
+        convId = upsertConversation(email, emailId, userId, tags);
         convDoc = mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
@@ -807,11 +820,12 @@ version(db_test)
         assert(convDoc.links.length == 2);
         assert(bsonStr(convDoc.links[1]["message-id"]) == email.getHeader("message-id").addresses[0]);
         assert(bsonStr(convDoc.links[1].emailId) == emailId);
+        assert(bsonStr(convDoc.lastDate) != emailObjectDate);
     }
 
     unittest // envelope.store()
     {
-        writeln("Testing envelope.store()");
+        writeln("Testing envelope.store");
         import std.exception;
         import core.exception;
         recreateTestDb();
@@ -828,9 +842,9 @@ version(db_test)
         assert(bsonStr(envDoc.emailId) == emailId);
     }
 
-    unittest // email.store() 
+    unittest // email.store()
     {
-        writeln("Testing email.store()");
+        writeln("Testing email.store");
         recreateTestDb();
         auto cursor = mongoDB["email"].find();
         cursor.sort(parseJsonString(`{"_id": 1}`));
@@ -840,7 +854,7 @@ version(db_test)
         assert(bsonStr(emailDoc.headers.references[0].addresses[0]) == "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
         assert(bsonStr(emailDoc.headers.subject[0].rawValue) == " Fwd: Se ha evitado un inicio de sesión sospechoso");
         assert(emailDoc.attachments.length == 2);
-        assert(bsonStr(emailDoc.isodate) == "2013-05-27T03:42:30Z");
+        assert(bsonStr(emailDoc.isodate) == "2013-05-27T05:42:30Z");
         assert(bsonStr(emailDoc.receivers.addresses[0]) == "testuser@testdatabase.com");
         assert(bsonStr(emailDoc.from.addresses[0]) == "someuser@somedomain.com");
         assert(emailDoc.textParts.length == 2);
@@ -958,9 +972,10 @@ version(db_insertalltest) unittest
             sw.stop(); writeln("envelope.store(): ", sw.peek().usecs); sw.reset();
 
             sw.start();
-            auto convId = upsertConversation(email.getHeader("references").addresses,
-                                                    email.headers["message-id"].addresses[0],
-                                                    envelope.emailId, envelope.userId, ["inbox": true]);
+            auto convId = upsertConversation(email, envelope.emailId, envelope.userId,
+                    ["inbox": true]);
+
+
             sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().usecs); sw.reset();
 
             sw.start();
