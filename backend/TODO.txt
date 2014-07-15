@@ -7,6 +7,10 @@ Backend-API:
     - Const, immutable, pure, nothrow, in, out, safe et all
 
 Backend-Retriever:
+    - Envelope.asJsonString and use it on db.d
+
+    - Conversation.updateLastDate => validate the date!
+
     - Privatize IncomingEmail and interface
 
     - Mongo DB indexes, ensure()

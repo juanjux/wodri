@@ -130,23 +130,43 @@ struct HeaderValue
 }
 
 
-final class IncomingEmail
+final interface IncomingEmail
 {
-    string attachmentStore;
-    string rawEmailStore;
+    ref DictionaryList!(HeaderValue, false) headers();
+    HeaderValue      getHeader(string name);
+    DateTime         date();
+    void             generateMessageId(string domain="");
+    ref MIMEPart[]   textualParts();
+    ref Attachment[] attachments();
+    string           rawEmailPath();
+    ulong            computeSize();
+    ulong            computeAttachmentsSize();
+    ulong            computeTextualBodySize();
+    void             loadFromFile(string emailPath, Flag!"CopyRaw" copyRaw = Yes.CopyRaw);
+    void             loadFromFile(File emailFile, Flag!"CopyRaw" copyRaw = Yes.CopyRaw);
+    string           printHeaders(Flag!"AsString" asString = No.AsString);
+}
 
-    DictionaryList!(HeaderValue, false) headers; // Note: keys are case insensitive
-    MIMEPart rootPart;
-    MIMEPart[] textualParts; // shortcut to the textual (text or html) parts in display
-    Attachment[] attachments;
-    DateTime date;
-    bool dateSet = false;
-    string[]   fromAddrs;
-    string[]   toAddrs;
-    string[]   ccAddrs;
-    string[]   bccAddrs;
-    string     rawEmailPath;
-    string     lineSep         =   "\r\n";
+
+final class IncomingEmailImpl : IncomingEmail
+{
+    private
+    {
+        DictionaryList!(HeaderValue, false) m_headers; // Note: keys are case insensitive
+        bool dateSet = false;
+        DateTime     m_date;
+        MIMEPart[]   m_textualParts; // shortcut to the textual (text or html) parts in display
+        Attachment[] m_attachments;
+        string       attachmentStore;
+        string       rawEmailStore;
+        MIMEPart     rootPart;
+        string[]     fromAddrs;
+        string[]     toAddrs;
+        string[]     ccAddrs;
+        string[]     bccAddrs;
+        string       m_rawEmailPath;
+        string       lineSep = "\r\n";
+    }
 
     this(string rawEmailStore, string attachmentStore)
     {
@@ -166,7 +186,11 @@ final class IncomingEmail
             return Yes.IsValidEmail;
         return No.IsValidEmail;
     }
-
+    @property ref DictionaryList!(HeaderValue, false) headers() { return m_headers; }
+    @property DateTime         date() { return m_date; }
+    @property ref MIMEPart[]   textualParts() { return m_textualParts; }
+    @property ref Attachment[] attachments() { return m_attachments; }
+    @property string           rawEmailPath() { return m_rawEmailPath; }
 
     /**
         Return the header if it exists. If not, returns an empty HeaderValue.
@@ -174,8 +198,8 @@ final class IncomingEmail
     */
     HeaderValue getHeader(string name)
     {
-        if (name in this.headers)
-            return this.headers[name];
+        if (name in m_headers)
+            return m_headers[name];
 
         HeaderValue hv;
         return hv;
@@ -241,7 +265,7 @@ final class IncomingEmail
 
         if (!this.dateSet)
         {
-            this.date = parseDate("NOW"); // will put current time
+            parseDate("NOW"); // will put current time
             this.dateSet = true;
         }
 
@@ -275,7 +299,7 @@ final class IncomingEmail
             else
                 copy(emailFile.name, destFilePath);
 
-            this.rawEmailPath = destFilePath;
+            m_rawEmailPath = destFilePath;
         }
     }
 
@@ -283,7 +307,7 @@ final class IncomingEmail
     string printHeaders(Flag!"AsString" asString = No.AsString)
     {
         auto textheaders = appender!string;
-        foreach(string name, ref HeaderValue value; this.headers)
+        foreach(string name, ref HeaderValue value; m_headers)
         {
             if (asString)
             {
@@ -300,7 +324,7 @@ final class IncomingEmail
     void generateMessageId(string domain="")
     {
         // FIXME: check domain
-        this.headers.removeAll("message-id");
+        m_headers.removeAll("message-id");
         if (!domain.length)
             domain = randomString(30) ~ ".com";
 
@@ -310,7 +334,7 @@ final class IncomingEmail
     }
 
 
-    void addHeader(string raw)
+    package void addHeader(string raw)
     {
         auto idxSeparator = countUntil(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
@@ -356,23 +380,26 @@ final class IncomingEmail
                  }
                 break;
             case "date":
-                this.date = parseDate(value.rawValue);
+                parseDate(value.rawValue);
                 this.dateSet = true;
                 break;
             default:
         }
-        this.headers.addField(name, value);
+        m_headers.addField(name, value);
     }
 
 
-    DateTime parseDate(string strDate)
+    private void parseDate(string strDate)
     {
         // Default to current time so we've some date if the format is broken
         DateTime ldate = to!DateTime(Clock.currTime);
         auto tokDate = strip(strDate).split(' ').filter!(a => !a.empty).array;
 
         if (!tokDate.length)
-            return ldate;
+        {
+            m_date = ldate;
+            return;
+        }
 
         try
         {
@@ -405,7 +432,7 @@ final class IncomingEmail
             }
         } catch(std.conv.ConvException e) { /* Broken date, use default */}
 
-        return ldate;
+        m_date = ldate;
     }
 
 
@@ -497,8 +524,8 @@ final class IncomingEmail
         else
             newtext = text;
 
-        part.textContent = newtext;
-        textualParts    ~= part;
+        part.textContent   = newtext;
+        m_textualParts    ~= part;
 
         debug
         {
@@ -550,7 +577,7 @@ final class IncomingEmail
         }
 
         part.attachment   = att;
-        this.attachments ~= att;
+        m_attachments ~= att;
     }
 
 
@@ -651,13 +678,13 @@ final class IncomingEmail
 
     private void getRootContentInfo(MIMEPart part)
     {
-        if ("content-type" in this.headers)
+        if ("content-type" in m_headers)
             parseContentHeader(part.ctype, headers["content-type"].rawValue);
 
-        if ("content-disposition" in this.headers)
+        if ("content-disposition" in m_headers)
             parseContentHeader(part.disposition, headers["content-disposition"].rawValue);
 
-        if ("content-transfer-encoding" in this.headers)
+        if ("content-transfer-encoding" in m_headers)
             part.cTransferEncoding = toLower(strip(removechars(headers["content-transfer-encoding"].rawValue, "\"")));
 
         if (!part.ctype.name.startsWith("multipart") && "charset" !in part.ctype.fields)
@@ -667,19 +694,23 @@ final class IncomingEmail
 
     ulong computeSize()
     {
-        ulong totalSize;
-        totalSize += computeBodySize();
+        return computeTextualBodySize() + computeAttachmentsSize();
+    }
 
-        foreach(ref attachment; this.attachments)
+    
+    ulong computeAttachmentsSize()
+    {
+        ulong totalSize;
+        foreach(ref attachment; m_attachments)
             totalSize += attachment.size;
         return totalSize;
     }
 
 
-    ulong computeBodySize()
+    ulong computeTextualBodySize()
     {
         ulong totalSize;
-        foreach(textualPart; this.textualParts)
+        foreach(textualPart; m_textualParts)
             totalSize += textualPart.textContent.length;
         return totalSize;
     }
@@ -941,7 +972,7 @@ unittest
             auto email = new IncomingEmail(rawEmailStore, attachmentStore);
             email.loadFromFile(File(e.name), copyEmail);
 
-            if (email.computeBodySize() > 16*1024*1024)
+            if (email.computeTextualBodySize() > 16*1024*1024)
                 assert(0);
 
             auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
