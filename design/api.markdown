@@ -21,22 +21,32 @@ Same fields as the MessageSummary plus:
 - BodyPlain
 - Attachment URLs
 
-## Conversation
-These are the entries shown on a tag list (Inbox, Sent, etc). It has:
+## ConversationSummary
+These are the entries shown on a tag list.
 
-- Sumaries: list of MessageSummary objects ordered by date
-- Date of the last message
+- NumMessages
+- Authors
+- Attachment filenames
 - Subject
 - Tags
-- Attachment filenames
+- Date of the last message
 
-Clicking on a MessageSummary  will display a ConversationList. This object
-will have:
+## Conversation
+These are show when the user click on a conversation summary on the tag list. 
 
-- One MessageSummary for every message in the conversation.
-- One or more FullMessage snormal ConversationList will have the last
-  message as a FullMessage, a ConversationList clicked from a search result will
-  have all the messages matching the search as FullMessages
+- Messages: list of MessageSummary and/or Message objects ordered by date.
+- Subject
+- Tags
+
+The messages list will contain messages and/or messagessummaries (identified by
+its "MessageType" field in the JSON data). Usually, the last message of the
+Conversation will be a full Message and the rest will be MessageSummary, but
+sometimes, for example when the Conversation is the result of a search, other
+messages will be full Messages too.
+
+Clicking on a MessageSummary will trigger the load of the full Message. If the
+user clicks on the "expand" link, all the messages will be fully loaded.
+
 
 ## Tag
 - name

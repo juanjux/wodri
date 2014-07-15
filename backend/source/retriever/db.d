@@ -19,6 +19,7 @@ import arsd.htmltotext;
 import retriever.userrule: Match, Action, UserFilter, SizeRuleType;
 import retriever.incomingemail;
 import retriever.envelope;
+import retriever.conversation;
 
 MongoDatabase mongoDB;
 RetrieverConfig config;
@@ -279,6 +280,34 @@ string getEmailIdByMessageId(string messageId)
     return "";
 }
 
+/**
+ * Return the first Conversation that has ANY of the references contained in its
+ * links
+ */
+// XXX unittest
+Conversation findOneConversationByReferences(string userId, string[] references)
+{
+    Conversation ret;
+    string[] reversed = references.dup;
+    reverse(reversed);
+
+    auto jsonFindStr = format(`{"userId": "%s", "links.message-id": {"$in": %s}}`,
+                              userId, reversed);
+    auto convDoc    = mongoDB["conversation"].findOne(parseJsonString(jsonFindStr));
+    if (!convDoc.isNull)
+    {
+        ret.dbId = bsonStr(convDoc._id);
+        ret.userDbId = userId;
+        ret.lastDate = bsonStr(convDoc.lastDate);
+        ret.tags = bsonStrArray(convDoc.tags);
+
+        foreach(link; convDoc.links)
+        {
+            ret.addLink(bsonStr(link["message-id"]), bsonStr(link["emailId"]));
+        }
+    }
+    return ret;
+}
 
 string upsertConversation(IncomingEmail email, string emailDbId,
                           string userId, bool[string] tags)
@@ -289,7 +318,7 @@ string upsertConversation(IncomingEmail email, string emailDbId,
 
     // Search for a conversation with one of these references
     string conversationId;
-    char[][] reversed = to!(char[][])(references ~ messageId);
+    string[] reversed = to!(string[])(references ~ messageId);
     reverse(reversed);
 
     auto jsonFindStr = format(`{"userId": "%s", "links.message-id": {"$in": %s}}`,
@@ -599,8 +628,6 @@ Flag!"AlreadyOnDb" emailAlreadyOnDb(IncomingEmail email)
         return No.AlreadyOnDb;
     return Yes.AlreadyOnDb;
 }
-
-
 
 
 

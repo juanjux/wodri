@@ -21,6 +21,6 @@ version(apitest)
 unittest
 {
     auto apiClient = new RestInterfaceClient!Api("http://127.0.0.1:8080");
-    auto conversations = apiClient.getTag("inbox", 50);
+    auto conversations = apiClient.getTag("inbox", 50, 0);
     logInfo("Conversations: %s", conversations);
 }

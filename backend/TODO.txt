@@ -1,7 +1,14 @@
 Backend-API:
-    - Check how to create an API using Vibed and test
+    - /tag?name="inbox"&limit=50: 
+        - Return the conversations with these parameters: 
+         cursor = db.conversation.find({"tags": {"$in": ["inbox"]}}).sort({lastDate: -1})
+        - Generate the Conversation with the MessageSummaries, subject, etc.
+
+    - Const, immutable, pure, nothrow, in, out, safe et all
 
 Backend-Retriever:
+    - Privatize IncomingEmail and interface
+
     - Mongo DB indexes, ensure()
 
     - import only the symbols really used
