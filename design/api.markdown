@@ -58,38 +58,48 @@ user clicks on the "expand" link, all the messages will be fully loaded.
 # REST API
 
 ## /tag
-`get: /tag/name[/page]`
-    Get the last  objects for that tagname. The number of
+`get: /tag/?name=tagname&limit=50&page=0`
+    Get the last ConversationSummary objects for that tagname. The number of
     ConversationSummaries returned would depend on the user configuration.
-`post: /tag/name (Tag)`
+
+    GET Parameters: name: tagname
+                     limit: max results to return
+                     page: skip (limit * this) elements
+
+`(MISSING) post: /tag/create (Tag)`
     Create a new tag name with an optional description and color.
 
+    POST Parameters: name: new tag name
+                     description: tag description
+                     color: tag color
+        
+
 ## /conversation
-`get: /conversation/id`
+`(MISSING) get: /conversation/id`
     Get a Conversation with the specified id
-`delete: /conversation/id`
+`(MISSING) delete: /conversation/id`
     Delete the conversation (internally: tag all messages as deleted)
-`post: /conversation/tags`
+`(MISSING) post: /conversation/tags`
     Add tags to the conversation
-`delete: /conversation/tags`
+`(MISSING) delete: /conversation/tags`
     Remove tags from the conversation
-`post: /conversation/search`
+`(MISSING) post: /conversation/search`
     Search
 
 ## /message
-`get: /message/id`
+`(MISSING) get: /message/:id`
     Get the full Message
-`get: /message/id/attachments/name`
+`(MISSING) get: /message/:id/attachments/name`
     Get an attachment
-`get: /message/id/raw`
+`(MISSING) get: /message/:id/raw`
     Get the original raw message
-`post: /message/id/reply`
+`(MISSING) post: /message/:id/reply`
     Create a new draft as reply of the message specified (doesnt send)
-`post: /message/id/send`
+`(MISSING) post: /message/:id/send`
     Send the message (must have been created as a draft before)
-`post: /message/new`
+`(MISSING) post: /message/new`
     Create a new draft
-`delete: /message/id`
+`(MISSING) delete: /message/:id`
     Put the "trash" tag to the message or delete from DB and filesystem if
     already on the trash
 

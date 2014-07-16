@@ -1,4 +1,5 @@
 {
+    "_comment": "FIXME XXX: remove version db_usertestdb in not testing environment",
     "name": "webbackend",
     "description": "Webmail HTTP server and API",
     "copyright": "Copyright © 2014, Juanjo Alvarez Martinez",
@@ -9,7 +10,7 @@
     "dependencies": {
         "vibe-d": "~master"
     },
-    "versions": ["VibeDefaultMain"],
+    "versions": ["VibeDefaultMain", "db_usetestdb"],
     "configurations": [
         {
             "name": "default",

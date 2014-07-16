@@ -84,7 +84,7 @@ struct RetrieverConfig
 }
 
 
-struct MessageSummary
+struct EmailSummary
 {
     string dbId;
     string subject;
@@ -158,12 +158,12 @@ RetrieverConfig getInitialConfig()
     // If the db path starts with '/' interpret it as absolute
     config.rawEmailStore        = dbPath.startsWith(dirSeparator)?
                                                            dbPath:
-                                                           buildPath(config.mainDir, 
+                                                           buildPath(config.mainDir,
                                                                      dbPath);
     auto attachPath             = bsonStr(dbConfig.attachmentStore);
     config.attachmentStore      = attachPath.startsWith(dirSeparator)?
                                                                attachPath:
-                                                               buildPath(config.mainDir, 
+                                                               buildPath(config.mainDir,
                                                                          attachPath);
     config.incomingMessageLimit = to!ulong(bsonNumber(dbConfig.incomingMessageLimit));
     config.storeTextIndex       = bsonBool(dbConfig.storeTextIndex);
@@ -294,9 +294,9 @@ string getEmailIdByMessageId(string messageId)
 }
 
 
-MessageSummary getEmailSummary(string dbId)
+EmailSummary getEmailSummary(string dbId)
 {
-    MessageSummary res;
+    EmailSummary res;
     auto emailDoc = mongoDB["email"].findOne(["_id": dbId]);
     if (!emailDoc.isNull)
     {
@@ -305,7 +305,7 @@ MessageSummary getEmailSummary(string dbId)
         if (!emailDoc.headers.subject.isNull &&
             !emailDoc.headers.subject[0].rawValue.isNull)
             res.subject = bsonStr(emailDoc.headers.subject[0].rawValue);
-        if (!emailDoc.headers.date.isNull && 
+        if (!emailDoc.headers.date.isNull &&
             !emailDoc.headers.date[0].rawValue.isNull)
             res.date = bsonStr(emailDoc.headers.date[0].rawValue);
         if (!emailDoc.from.rawValue.isNull)
@@ -314,27 +314,8 @@ MessageSummary getEmailSummary(string dbId)
             res.isoDate = bsonStr(emailDoc.isodate);
 
         foreach(attach; emailDoc.attachments)
-        {
             if (!attach.fileName.isNull)
                 res.attachFileNames ~= bsonStr(attach.fileName);
-        }
-
-        if (!emailDoc.textParts.isNull    &&
-            emailDoc.textParts.length     &&
-            !emailDoc.textParts[0].isNull &&
-            !emailDoc.textParts[0].content.isNull)
-        {
-            // XXX decodificar HTML si textParts[0].contentType == "text/html"
-            string content;
-            if (bsonStr(emailDoc.textParts[0].contentType) == "text/html")
-                content = htmlToText(bsonStr(emailDoc.textParts[0].content));
-            else
-                content = bsonStr(emailDoc.textParts[0].content);
-
-            auto maxRange = min(100, content.length);
-            res.introText = bsonStr(emailDoc.textParts[0].content)
-                            [0..min(100, content.length)];
-        }
     }
     return res;
 }
@@ -359,6 +340,8 @@ Conversation conversationDocToObject(Bson convDoc)
 
 Conversation[] getConversationsByTag(string tagName, int limit, int page)
 {
+    writeln("XXX getConversationsByTag, tagName: ", tagName, " limit: ", limit, " page: ", page);
+             
     Conversation[] ret;
 
     auto jsonFindStr = format(`{"tags": {"$in": ["%s"]}}`, tagName);
@@ -390,7 +373,7 @@ Conversation getConversationByReferences(string userId, string[] references)
 }
 
 
-/** 
+/**
  * Insert or update a conversation with this email messageId, references, tags
  * and date
 */
@@ -415,7 +398,7 @@ string upsertConversation(IncomingEmail email, string emailDbId,
     foreach(reference; references)
         conv.addLink(reference, getEmailIdByMessageId(reference));
 
-    bool wasInConversation = false; 
+    bool wasInConversation = false;
     if (conv.dbId.length)
     {
         // conversation with these references or msgid exists: see if this
@@ -436,9 +419,9 @@ string upsertConversation(IncomingEmail email, string emailDbId,
         conv.dbId = BsonObjectID.generate().toString;
 
     if (!wasInConversation)
-        conv.addLink(messageId, emailDbId); 
+        conv.addLink(messageId, emailDbId);
 
-    mongoDB["conversation"].update(["_id": conv.dbId], 
+    mongoDB["conversation"].update(["_id": conv.dbId],
                                    parseJsonString(conv.asJsonString),
                                    UpdateFlags.Upsert);
     return conv.dbId;
@@ -648,8 +631,8 @@ Flag!"AlreadyOnDb" emailAlreadyOnDb(IncomingEmail email)
 
     if (
        email.getHeader("subject").rawValue != bsonStr(emailInDb.headers.subject[0].rawValue)
-      || email.getHeader("from").rawValue != bsonStr(emailInDb.from.rawValue)               
-      || email.getHeader("to").rawValue   != bsonStr(emailInDb.receivers.rawValue)          
+      || email.getHeader("from").rawValue != bsonStr(emailInDb.from.rawValue)
+      || email.getHeader("to").rawValue   != bsonStr(emailInDb.receivers.rawValue)
       || email.getHeader("date").rawValue    != bsonStr(emailInDb.headers.date[0].rawValue))
         return No.AlreadyOnDb;
     return Yes.AlreadyOnDb;
@@ -814,10 +797,10 @@ version(db_test)
     {
         writeln("Testing upsertConversation");
         recreateTestDb();
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", 
+        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test",
                                                "testemails");
         auto email = new IncomingEmailImpl();
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), 
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                                      config.attachmentStore);
         auto emailObjectDate = BsonDate(SysTime(email.date,
                                                 TimeZone.getTimeZone("GMT")))
@@ -846,7 +829,7 @@ version(db_test)
         // conversationId is returned and the emailId added to its entry in the conversation.links
         recreateTestDb();
         email = new IncomingEmailImpl();
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), 
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                            config.attachmentStore);
         email.headers["message-id"].addresses[0] = "testreference@blabla.testdomain.com";
         emailId = email.store();

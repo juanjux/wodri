@@ -1,10 +1,7 @@
 Backend-API:
-    - /tag?name="inbox"&limit=50: 
-        - ConversationSummary: load subject, authors, attachmentFileNames from emails
-                    - shortAuthor
-                    - Attachment filenames
-                    - First words of the first textPart?
-
+    - getTagConversations:
+        - Test with CURL and more tests
+        - Return sorted by date
     - Const, immutable, pure, nothrow, in, out, safe et all
 
 Backend-Retriever:
@@ -41,5 +38,10 @@ Backend-Retriever:
 
 
 Frontend:
+
+Contacts:
+    - When a message is received and the email is not found on the Contacts collection,
+      store as a new contact with Name, Surname, Email, Tags and put the tag "autoinserted".
+    - Use it for getting the shortnames in the ConversationSummary object.
 
 Installation/Configuration system:

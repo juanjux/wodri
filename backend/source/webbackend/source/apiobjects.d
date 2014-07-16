@@ -1,6 +1,9 @@
 import std.algorithm;
+import std.array;
 import std.conv;
+import std.stdio;
 import vibe.web.common;
+import vibe.http.common;
 import retriever.db;
 import retriever.conversation;
 import webbackend.conversationsummary;
@@ -14,25 +17,38 @@ struct Attachment
     ulong  size;
 }
 
+//void getTagConversations(HTTPServerRequest req, HTTPServerResponse res)
+//{
+    //string name = req["name"];
+    //string limit = req["limit"];
+    //string page = req["page"];
+    //ConversationSummary[] ret;
+
+    //auto dbConversations = getConversationsByTag(name, limit, page);
+    //foreach(dbConv; dbConversations)
+        //ret ~=  ConversationSummary(dbConv);
+    //logInfo(to!string(ret));
+//}
 
 @rootPathFromName
 interface Api
 {
-    ConversationSummary[] getTag(string name = "inbox", int limit = 50, int page=0);
+    @method(HTTPMethod.GET) @path("tag/")
+    ConversationSummary[] getTagConversations(string name, int limit=50, int page=0);
 }
 
 
 class ApiImpl: Api
 {
     override:
-        ConversationSummary[] getTag(string name = "inbox", int limit = 50, int page=0)
+        ConversationSummary[] getTagConversations(string name, int limit=50, int page=0)
         {
             ConversationSummary[] ret;
-            
+
             auto dbConversations = getConversationsByTag(name, limit, page);
             foreach(dbConv; dbConversations)
                 ret ~=  ConversationSummary(dbConv);
-            return ret;
+            return array(sort!("a.lastDate > b.lastDate")(ret));
         }
 }
 
@@ -75,4 +91,3 @@ struct Conversation
         }
     }
 }
-
