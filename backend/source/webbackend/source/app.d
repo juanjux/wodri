@@ -2,14 +2,12 @@ import vibe.d;
 import std.stdio;
 import apiobjects;
 
-version(apitest) version = db_usetestdb;
-
 shared static this()
 {
     auto router = new URLRouter;
     router.registerRestInterface(new ApiImpl);
     auto routes = router.getAllRoutes();
-    writeln(routes);
+    writeln("XXX routes: ", routes);
 
     auto settings = new HTTPServerSettings;
     settings.port = 8080;

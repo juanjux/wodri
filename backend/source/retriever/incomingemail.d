@@ -30,7 +30,8 @@ version(anyincomingmailtest)
 
 auto EMAIL_REGEX = ctRegex!(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b", "g");
 auto MSGID_REGEX = ctRegex!(r"[\w@.=%+\-!#\$&'\*/\?\^`\{\}\|~]*\b", "g");
-string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+                        "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
  * Try to normalize headers to the most common capitalizations
@@ -132,18 +133,18 @@ struct HeaderValue
 
 final interface IncomingEmail
 {
+    void loadFromFile(string emailPath, string attachStore, string rawEmailStore = "");
+    void loadFromFile(File emailFile,   string attachStore, string rawEmailStore = "");
     ref DictionaryList!(HeaderValue, false) headers();
     HeaderValue      getHeader(string name);
     DateTime         date();
-    void             generateMessageId(string domain="");
     ref MIMEPart[]   textualParts();
     ref Attachment[] attachments();
     string           rawEmailPath();
+    void             generateMessageId(string domain="");
     ulong            computeSize();
     ulong            computeAttachmentsSize();
     ulong            computeTextualBodySize();
-    void             loadFromFile(string emailPath, Flag!"CopyRaw" copyRaw = Yes.CopyRaw);
-    void             loadFromFile(File emailFile, Flag!"CopyRaw" copyRaw = Yes.CopyRaw);
     string           printHeaders(Flag!"AsString" asString = No.AsString);
 }
 
@@ -157,22 +158,14 @@ final class IncomingEmailImpl : IncomingEmail
         DateTime     m_date;
         MIMEPart[]   m_textualParts; // shortcut to the textual (text or html) parts in display
         Attachment[] m_attachments;
-        string       attachmentStore;
-        string       rawEmailStore;
         MIMEPart     rootPart;
-        string[]     fromAddrs;
-        string[]     toAddrs;
-        string[]     ccAddrs;
-        string[]     bccAddrs;
         string       m_rawEmailPath;
         string       lineSep = "\r\n";
     }
 
-    this(string rawEmailStore, string attachmentStore)
+    this()
     {
-        this.attachmentStore = attachmentStore;
-        this.rawEmailStore    = rawEmailStore;
-        this.rootPart        = new MIMEPart();
+        this.rootPart = new MIMEPart();
     }
 
     @property Flag!"IsValidEmail" isValid()
@@ -206,14 +199,14 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    void loadFromFile(string emailPath, Flag!"CopyRaw" copyRaw = Yes.CopyRaw)
+    void loadFromFile(string emailPath, string attachStore, string rawEmailStore="")
     {
         auto f = File(emailPath);
-        loadFromFile(f, copyRaw);
+        loadFromFile(f, attachStore, rawEmailStore);
     }
 
 
-    void loadFromFile(File emailFile, Flag!"CopyRaw" copyRaw = Yes.CopyRaw)
+    void loadFromFile(File emailFile, string attachStore, string rawEmailStore = "")
     {
         string currentLine;
         bool bodyHasParts          = false;
@@ -222,7 +215,7 @@ final class IncomingEmailImpl : IncomingEmail
         Appender!string stdinLines = null;
         auto partialBuffer         = appender!string;
 
-        if (copyRaw && among(emailFile, std.stdio.stdin, std.stdio.stderr))
+        if (rawEmailStore.length && among(emailFile, std.stdio.stdin, std.stdio.stderr))
         {
             inputIsStdInput = true;
             stdinLines = appender!string;
@@ -281,15 +274,15 @@ final class IncomingEmailImpl : IncomingEmail
         }
 
         if (this.rootPart.ctype.name.startsWith("multipart"))
-            parseParts(split(partialBuffer.data, this.lineSep), this.rootPart);
+            parseParts(split(partialBuffer.data, this.lineSep), this.rootPart, attachStore);
         else
             setTextPart(this.rootPart, partialBuffer.data);
 
         // Finally, copy the email to rawEmailPath
         // (the user of the class is responsible for deleting the original)
-        if (copyRaw && this.rawEmailStore.length)
+        if (rawEmailStore.length)
         {
-            auto destFilePath = randomFileName(this.rawEmailStore);
+            auto destFilePath = randomFileName(rawEmailStore);
 
             if (inputIsStdInput)
             {
@@ -336,7 +329,7 @@ final class IncomingEmailImpl : IncomingEmail
 
     package void addHeader(string raw)
     {
-        auto idxSeparator = countUntil(raw, ":");
+        immutable idxSeparator = countUntil(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
             return; // Not header, probably mbox indicator or broken header
 
@@ -436,7 +429,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    private void parseParts(string[] lines, MIMEPart parent)
+    private void parseParts(string[] lines, MIMEPart parent, string attachStore)
     {
         int startIndex = -1;
         string boundaryPart = format("--%s", parent.ctype.fields["boundary"]);
@@ -486,7 +479,7 @@ final class IncomingEmailImpl : IncomingEmail
             thisPart.parent   = parent;
 
             if (thisPart.ctype.name.startsWith("multipart"))
-                parseParts(lines[startIndex..endIndex], thisPart);
+                parseParts(lines[startIndex..endIndex], thisPart, attachStore);
 
             if (among(thisPart.ctype.name, "text/plain", "text/html"))
             {
@@ -499,7 +492,7 @@ final class IncomingEmailImpl : IncomingEmail
                 }
             }
             else if (among(thisPart.disposition.name, "attachment", "inline"))
-                setAttachmentPart(thisPart, lines[contentStart..endIndex]);
+                setAttachmentPart(thisPart, lines[contentStart..endIndex], attachStore);
 
             startIndex = endIndex+1;
             ++globalIndex;
@@ -539,7 +532,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    private void setAttachmentPart(MIMEPart part, string[] lines)
+    private void setAttachmentPart(MIMEPart part, string[] lines, string attachStore)
     {
         immutable(ubyte)[] attContent;
         version(unittest) bool wasEncoded = false;
@@ -558,7 +551,7 @@ final class IncomingEmailImpl : IncomingEmail
         if (!origFileName.length) // wild shot, but sometimes it is like that
             origFileName = part.ctype.fields.get("name", "");
 
-        auto attachFullPath = randomFileName(this.attachmentStore, origFileName.extension);
+        auto attachFullPath = randomFileName(attachStore, origFileName.extension);
         auto f = File(attachFullPath, "w");
         f.rawWrite(attContent);
         f.close();
@@ -576,8 +569,8 @@ final class IncomingEmailImpl : IncomingEmail
             att.origEncodedContent = join(lines);
         }
 
-        part.attachment   = att;
-        m_attachments ~= att;
+        part.attachment = att;
+        m_attachments  ~= att;
     }
 
 
@@ -697,7 +690,7 @@ final class IncomingEmailImpl : IncomingEmail
         return computeTextualBodySize() + computeAttachmentsSize();
     }
 
-    
+
     ulong computeAttachmentsSize()
     {
         ulong totalSize;
@@ -838,9 +831,9 @@ unittest
     version(anyincomingmailtest)
     {
         string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
-        string origEmailDir     = buildPath(backendTestDir, "emails", "single_emails");
-        string rawEmailStore    = buildPath(backendTestDir, "rawemails");
-        string attachmentStore = buildPath(backendTestDir, "attachments");
+        string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
+        string rawEmailStore   = buildPath(backendTestDir, "rawemails");
+        string attachStore = buildPath(backendTestDir, "attachments");
         string base64Dir       = buildPath(backendTestDir, "base64_test");
     }
 
@@ -904,8 +897,8 @@ unittest
             if (!testAttachDir.exists)
                 mkdir(testAttachDir);
 
-            auto email = new IncomingEmail(rawEmailStore, attachmentStore);
-            email.loadFromFile(File(e.name));
+            auto email = new IncomingEmail(rawEmailStore);
+            email.loadFromFile(File(e.name), attachStore);
 
             auto headerFile = File(buildPath(testDir, "header.txt"), "w");
             headerFile.write(email.printHeaders(Yes.AsString));
@@ -925,9 +918,9 @@ unittest
 
         writeln("Starting single email test...");
         auto filenumber = 30509;
-        auto emailFile = File(format("%s/%d", origEmailDir, filenumber), "r");
-        auto email      = new IncomingEmail(rawEmailStore, attachmentStore);
-        email.loadFromFile(emailFile);
+        auto emailFile  = File(format("%s/%d", origEmailDir, filenumber), "r");
+        auto email      = new IncomingEmailImpl();
+        email.loadFromFile(emailFile, attachStore, rawEmailStore);
 
         visitParts(email.rootPart);
         foreach(part; email.textualParts)
@@ -959,7 +952,7 @@ unittest
         //int[string] skipMails  = ["41051":0, "41112":0];
         int[string] skipEmails;
 
-        auto copyEmail = Yes.CopyRaw;
+        auto emailStore = rawEmailStore; // put to "" to avoid copying in the test
         foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
         {
             //if (indexOf(e, "62877") == -1) continue; // For testing a specific email
@@ -969,8 +962,8 @@ unittest
             if (baseName(e.name) in brokenEmails || baseName(e.name) in skipEmails)
                 continue;
 
-            auto email = new IncomingEmail(rawEmailStore, attachmentStore);
-            email.loadFromFile(File(e.name), copyEmail);
+            auto email = new IncomingEmailImpl();
+            email.loadFromFile(File(e.name), attachStore, emailStore);
 
             if (email.computeTextualBodySize() > 16*1024*1024)
                 assert(0);
@@ -1071,7 +1064,7 @@ unittest
             // clean the attachment files and the rawemail
             foreach(ref Attachment att; email.attachments)
                 std.file.remove(att.realPath);
-            if (copyEmail == Yes.CopyRaw)
+            if (emailStore.length)
                 std.file.remove(email.rawEmailPath);
         }
     }
@@ -1079,7 +1072,7 @@ unittest
     version(incomingemail_allemailstest)
     {
         // Clean the attachment and rawEmail dirs
-        system(format("rm -f %s/*", attachmentStore));
+        system(format("rm -f %s/*", attachStore));
         system(format("rm -f %s/*", rawEmailStore));
     }
 }

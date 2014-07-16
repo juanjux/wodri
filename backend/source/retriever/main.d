@@ -102,8 +102,8 @@ int main()
     auto config = getConfig();
     setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), LogLevel.info);
 
-    auto email = new IncomingEmail(config.rawEmailStore, config.attachmentStore);
-    email.loadFromFile(std.stdio.stdin);
+    auto email = new IncomingEmailImpl();
+    email.loadFromFile(std.stdio.stdin, config.rawEmailStore, config.attachmentStore);
 
     auto isValid        = email.isValid;
     auto localReceivers = removeDups(localReceivers(email));

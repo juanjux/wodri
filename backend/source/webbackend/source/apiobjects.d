@@ -2,6 +2,8 @@ import std.algorithm;
 import std.conv;
 import vibe.web.common;
 import retriever.db;
+import retriever.conversation;
+import webbackend.conversationsummary;
 
 struct Attachment
 {
@@ -12,36 +14,25 @@ struct Attachment
     ulong  size;
 }
 
-struct Author
-{
-    string fullName;
-    string email;
-    string avatarUrl;
-}
-
-struct ConversationSummary
-{
-    uint      numMessages;
-    Author[] authors;
-    string[]  attachmentsFilenames;
-    string[]  tags;
-}
 
 @rootPathFromName
 interface Api
 {
-    string[] getTag(string name = "inbox", uint limit = 50, uint page=0);
+    ConversationSummary[] getTag(string name = "inbox", int limit = 50, int page=0);
 }
 
 
 class ApiImpl: Api
 {
     override:
-        string[] getTag(string name = "inbox", uint limit = 50, uint page=0)
+        ConversationSummary[] getTag(string name = "inbox", int limit = 50, int page=0)
         {
-            //return [name, to!string(limit), "uno", "dos", "tres"];
-            auto dbConversations = findConversations(name, limit, page);
-            auto convSummaryList = dbConversations.map!(x => ConversationSummary(x));
+            ConversationSummary[] ret;
+            
+            auto dbConversations = getConversationsByTag(name, limit, page);
+            foreach(dbConv; dbConversations)
+                ret ~=  ConversationSummary(dbConv);
+            return ret;
         }
 }
 

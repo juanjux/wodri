@@ -84,6 +84,17 @@ struct RetrieverConfig
 }
 
 
+struct MessageSummary
+{
+    string dbId;
+    string subject;
+    string from;
+    string isoDate;
+    string date;
+    string[] attachFileNames;
+    string introText;
+}
+
 double bsonNumber(Bson input)
 {
     switch(input.type)
@@ -125,7 +136,7 @@ RetrieverConfig getInitialConfig()
     {
         string[] missingKeys = [];
         foreach(key; keys)
-            if (dbConfig[key] == Bson(null))
+            if (dbConfig[key].isNull)
                 missingKeys ~= key;
 
         if (missingKeys.length)
@@ -282,6 +293,85 @@ string getEmailIdByMessageId(string messageId)
     return "";
 }
 
+
+MessageSummary getEmailSummary(string dbId)
+{
+    MessageSummary res;
+    auto emailDoc = mongoDB["email"].findOne(["_id": dbId]);
+    if (!emailDoc.isNull)
+    {
+        res.dbId = dbId;
+
+        if (!emailDoc.headers.subject.isNull &&
+            !emailDoc.headers.subject[0].rawValue.isNull)
+            res.subject = bsonStr(emailDoc.headers.subject[0].rawValue);
+        if (!emailDoc.headers.date.isNull && 
+            !emailDoc.headers.date[0].rawValue.isNull)
+            res.date = bsonStr(emailDoc.headers.date[0].rawValue);
+        if (!emailDoc.from.rawValue.isNull)
+            res.from = bsonStr(emailDoc.from.rawValue);
+        if (!emailDoc.isodate.isNull)
+            res.isoDate = bsonStr(emailDoc.isodate);
+
+        foreach(attach; emailDoc.attachments)
+        {
+            if (!attach.fileName.isNull)
+                res.attachFileNames ~= bsonStr(attach.fileName);
+        }
+
+        if (!emailDoc.textParts.isNull    &&
+            emailDoc.textParts.length     &&
+            !emailDoc.textParts[0].isNull &&
+            !emailDoc.textParts[0].content.isNull)
+        {
+            // XXX decodificar HTML si textParts[0].contentType == "text/html"
+            string content;
+            if (bsonStr(emailDoc.textParts[0].contentType) == "text/html")
+                content = htmlToText(bsonStr(emailDoc.textParts[0].content));
+            else
+                content = bsonStr(emailDoc.textParts[0].content);
+
+            auto maxRange = min(100, content.length);
+            res.introText = bsonStr(emailDoc.textParts[0].content)
+                            [0..min(100, content.length)];
+        }
+    }
+    return res;
+}
+
+
+Conversation conversationDocToObject(Bson convDoc)
+{
+    Conversation ret;
+    if (!convDoc.isNull)
+    {
+        ret.dbId     = bsonStr(convDoc._id);
+        ret.userDbId = bsonStr(convDoc.userId);
+        ret.lastDate = bsonStr(convDoc.lastDate);
+        ret.tags     = bsonStrArray(convDoc.tags);
+
+        foreach(link; convDoc.links)
+            ret.addLink(bsonStr(link["message-id"]), bsonStr(link["emailId"]));
+    }
+    return ret;
+}
+
+
+Conversation[] getConversationsByTag(string tagName, int limit, int page)
+{
+    Conversation[] ret;
+
+    auto jsonFindStr = format(`{"tags": {"$in": ["%s"]}}`, tagName);
+    auto cursor = mongoDB["conversation"].find(parseJsonString(jsonFindStr),
+                                                Bson(null), // returnFieldSelector
+                                                QueryFlags.None,
+                                                page > 0? ((page-1)*limit): 0); // skip
+    cursor.limit(limit);
+    foreach(doc; cursor)
+        ret ~= conversationDocToObject(doc);
+    return ret;
+}
+
 /**
  * Return the first Conversation that has ANY of the references contained in its
  * links
@@ -294,19 +384,11 @@ Conversation getConversationByReferences(string userId, string[] references)
 
     auto jsonFindStr = format(`{"userId": "%s", "links.message-id": {"$in": %s}}`,
                               userId, reversed);
-    auto convDoc    = mongoDB["conversation"].findOne(parseJsonString(jsonFindStr));
-    if (!convDoc.isNull)
-    {
-        ret.dbId     = bsonStr(convDoc._id);
-        ret.userDbId = userId;
-        ret.lastDate = bsonStr(convDoc.lastDate);
-        ret.tags     = bsonStrArray(convDoc.tags);
-
-        foreach(link; convDoc.links)
-            ret.addLink(bsonStr(link["message-id"]), bsonStr(link["emailId"]));
-    }
-    return ret;
+    return conversationDocToObject(
+            mongoDB["conversation"].findOne(parseJsonString(jsonFindStr))
+    );
 }
+
 
 /** 
  * Insert or update a conversation with this email messageId, references, tags
@@ -373,8 +455,8 @@ void store(Envelope envelope)
                                     "destinationAddress": "%s",
                                     "forwardTo": %s}`,
                                       envelopeId,
-                                      BsonObjectID.fromString(envelope.emailId),
-                                      BsonObjectID.fromString(envelope.userId),
+                                      envelope.emailId,
+                                      envelope.userId,
                                       envelope.destination,
                                       to!string(envelope.forwardTo));
     mongoDB["envelope"].insert(parseJsonString(envelopeInsertJson));
@@ -633,8 +715,8 @@ version(db_usetestdb)
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         foreach(mailname; TEST_EMAILS)
         {
-            auto email = new IncomingEmailImpl(config.rawEmailStore, config.attachmentStore);
-            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), No.CopyRaw);
+            auto email = new IncomingEmailImpl();
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), config.attachmentStore);
             assert(email.isValid, "Email is not valid");
             auto destination       = email.getHeader("to").addresses[0];
             auto emailId           = email.store();
@@ -703,8 +785,8 @@ version(db_test)
     {
         writeln("Testing jsonizeHeader");
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
-        auto email = new IncomingEmailImpl(config.rawEmailStore, config.attachmentStore);
-        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), No.CopyRaw);
+        auto email = new IncomingEmailImpl();
+        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), config.attachmentStore);
         assert(email.jsonizeHeader("from") == `"from": " Test Sender <someuser@insomedomain.com>",`);
         assert(email.jsonizeHeader("to")   == `"to": " Test User2 <testuser@testdatabase.com>",`);
         assert(email.jsonizeHeader("Date", Yes.RemoveQuotes, Yes.OnlyValue) == `" Sat, 25 Dec 2010 13:31:57 +0100",`);
@@ -732,9 +814,11 @@ version(db_test)
     {
         writeln("Testing upsertConversation");
         recreateTestDb();
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
-        auto email = new IncomingEmailImpl(config.rawEmailStore, config.attachmentStore);
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), No.CopyRaw);
+        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", 
+                                               "testemails");
+        auto email = new IncomingEmailImpl();
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), 
+                                     config.attachmentStore);
         auto emailObjectDate = BsonDate(SysTime(email.date,
                                                 TimeZone.getTimeZone("GMT")))
                                                .toString;
@@ -761,8 +845,9 @@ version(db_test)
         // test2: insert as a msgid of a reference already on a conversation, check that the right
         // conversationId is returned and the emailId added to its entry in the conversation.links
         recreateTestDb();
-        email = new IncomingEmailImpl(config.rawEmailStore, config.attachmentStore);
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), No.CopyRaw);
+        email = new IncomingEmailImpl();
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), 
+                           config.attachmentStore);
         email.headers["message-id"].addresses[0] = "testreference@blabla.testdomain.com";
         emailId = email.store();
         convId = upsertConversation(email, emailId, userId, tags);
@@ -778,8 +863,9 @@ version(db_test)
         // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
         // is added to that conversation
         recreateTestDb();
-        email = new IncomingEmailImpl(config.rawEmailStore, config.attachmentStore);
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"), No.CopyRaw);
+        email = new IncomingEmailImpl();
+        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
+                           config.attachmentStore);
         string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
         email.addHeader(refHeader);
         emailId = email.store();
@@ -874,11 +960,10 @@ version(db_test)
         // ignore the nomsgid email (last one) since it cant be checked to be on DB
         foreach(mailname; TEST_EMAILS[0..$-1])
         {
-            auto email = new IncomingEmailImpl(config.rawEmailStore, config.attachmentStore);
-            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), No.CopyRaw);
+            auto email = new IncomingEmailImpl();
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), config.attachmentStore);
             assert(emailAlreadyOnDb(email));
         }
-
     }
 
     unittest // storeTextIndex && storeTextIndexMongo
@@ -937,7 +1022,7 @@ version(db_insertalltest) unittest
         auto email = new IncomingEmail(rawEmailStore, attachmentStore);
 
         sw.start();
-        email.loadFromFile(File(e.name), No.CopyRaw);
+        email.loadFromFile(File(e.name));
         sw.stop(); writeln("loadFromFile time: ", sw.peek().usecs); sw.reset();
 
 

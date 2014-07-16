@@ -18,8 +18,8 @@
         },
         {
             "name": "apitest",
-            "versions": ["apitest"],
-            "dflags": ["-unittest"],
+            "versions": ["apitest", "db_usetestdb"],
+            "dflags": ["-unittest", "-debug"],
             "targetName": "test",
             "targetType": "executable",
             "platforms": ["posix"],

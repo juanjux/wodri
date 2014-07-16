@@ -1,8 +1,9 @@
 Backend-API:
     - /tag?name="inbox"&limit=50: 
-        - Return the conversations with these parameters: 
-         cursor = db.conversation.find({"tags": {"$in": ["inbox"]}}).sort({lastDate: -1})
-        - Generate the Conversation with the MessageSummaries, subject, etc.
+        - ConversationSummary: load subject, authors, attachmentFileNames from emails
+                    - shortAuthor
+                    - Attachment filenames
+                    - First words of the first textPart?
 
     - Const, immutable, pure, nothrow, in, out, safe et all
 
