@@ -1,7 +1,11 @@
 Backend-API:
-    - getTagConversations:
-        - Test with CURL and more tests
-        - Return sorted by date
+    - Implement -/conversation/:id
+
+    - Move unittest to apiobjects.d
+
+    - Script to compile and run with unittest, run the server with dbtest
+      and rdmd-run apilivetests.d
+
     - Const, immutable, pure, nothrow, in, out, safe et all
 
 Backend-Retriever:

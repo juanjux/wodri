@@ -6,11 +6,11 @@
     "authors": ["juanjux"],
     "importPaths": [".", ".."],
     "sourcePaths": [".", ".."],
-    "excludedSourceFiles": ["../retriever/main.d", "../retriever/test.d"],
+    "excludedSourceFiles": ["../retriever/main.d", "../retriever/test.d", "livetests.d"],
     "dependencies": {
         "vibe-d": "~master"
     },
-    "versions": ["VibeDefaultMain", "db_usetestdb"],
+    "versions": ["VibeDefaultMain"],
     "configurations": [
         {
             "name": "default",
@@ -18,8 +18,14 @@
             "platforms": ["posix"],
         },
         {
+            "name": "withtestdb",
+            "targetType": "executable",
+            "platforms": ["posix"],
+            "versions": ["db_usetestdb"],
+        },
+        {
             "name": "apitest",
-            "versions": ["apitest", "db_usetestdb", "curl_tests"],
+            "versions": ["apitest", "db_usetestdb"],
             "dflags": ["-unittest", "-debug"],
             "targetName": "test",
             "targetType": "executable",

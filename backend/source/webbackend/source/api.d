@@ -1,3 +1,5 @@
+module api;
+
 import std.algorithm;
 import std.array;
 import std.conv;
@@ -7,6 +9,7 @@ import vibe.http.common;
 import retriever.db;
 import retriever.conversation;
 import webbackend.conversationsummary;
+
 
 struct Attachment
 {
@@ -36,7 +39,7 @@ class ApiImpl: Api
             auto dbConversations = getConversationsByTag(name, limit, page);
             foreach(dbConv; dbConversations)
                 ret ~=  ConversationSummary(dbConv);
-            return array(sort!("a.lastDate > b.lastDate")(ret));
+            return ret;
         }
 }
 

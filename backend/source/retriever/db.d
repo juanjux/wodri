@@ -346,12 +346,14 @@ Conversation[] getConversationsByTag(string tagName, int limit, int page)
     auto cursor = mongoDB["conversation"].find(parseJsonString(jsonFindStr),
                                                 Bson(null), // returnFieldSelector
                                                 QueryFlags.None,
-                                                page > 0? ((page-1)*limit): 0); // skip
+                                                page > 0? page*limit: 0) // skip
+                                                .sort(parseJsonString(`{"lastDate": -1}`));
     cursor.limit(limit);
     foreach(doc; cursor)
         ret ~= conversationDocToObject(doc);
     return ret;
 }
+
 
 /**
  * Return the first Conversation that has ANY of the references contained in its
