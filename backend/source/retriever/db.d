@@ -340,8 +340,6 @@ Conversation conversationDocToObject(Bson convDoc)
 
 Conversation[] getConversationsByTag(string tagName, int limit, int page)
 {
-    writeln("XXX getConversationsByTag, tagName: ", tagName, " limit: ", limit, " page: ", page);
-             
     Conversation[] ret;
 
     auto jsonFindStr = format(`{"tags": {"$in": ["%s"]}}`, tagName);

@@ -19,7 +19,7 @@
         },
         {
             "name": "apitest",
-            "versions": ["apitest", "db_usetestdb"],
+            "versions": ["apitest", "db_usetestdb", "curl_tests"],
             "dflags": ["-unittest", "-debug"],
             "targetName": "test",
             "targetType": "executable",

@@ -17,18 +17,6 @@ struct Attachment
     ulong  size;
 }
 
-//void getTagConversations(HTTPServerRequest req, HTTPServerResponse res)
-//{
-    //string name = req["name"];
-    //string limit = req["limit"];
-    //string page = req["page"];
-    //ConversationSummary[] ret;
-
-    //auto dbConversations = getConversationsByTag(name, limit, page);
-    //foreach(dbConv; dbConversations)
-        //ret ~=  ConversationSummary(dbConv);
-    //logInfo(to!string(ret));
-//}
 
 @rootPathFromName
 interface Api
