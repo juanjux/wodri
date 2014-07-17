@@ -61,14 +61,14 @@ private pure string capitalizeHeader(string name)
 
     return newres;
 }
-    unittest
-    {
-        assert(capitalizeHeader("mime-version")   == "MIME-Version");
-        assert(capitalizeHeader("subject")        == "Subject");
-        assert(capitalizeHeader("received-spf")   == "Received-SPF");
-        assert(capitalizeHeader("dkim-signature") == "DKIM-Signature");
-        assert(capitalizeHeader("message-id")     == "Message-ID");
-    }
+unittest // capitalizeHeader
+{
+    assert(capitalizeHeader("mime-version")   == "MIME-Version");
+    assert(capitalizeHeader("subject")        == "Subject");
+    assert(capitalizeHeader("received-spf")   == "Received-SPF");
+    assert(capitalizeHeader("dkim-signature") == "DKIM-Signature");
+    assert(capitalizeHeader("message-id")     == "Message-ID");
+}
 
 
 private string randomString(uint length)
@@ -135,17 +135,23 @@ final interface IncomingEmail
 {
     void loadFromFile(string emailPath, string attachStore, string rawEmailStore = "");
     void loadFromFile(File emailFile,   string attachStore, string rawEmailStore = "");
+
+    // XXX implement a range for this object and remove headers()
     ref DictionaryList!(HeaderValue, false) headers();
-    HeaderValue      getHeader(string name);
-    DateTime         date();
-    ref MIMEPart[]   textualParts();
-    ref Attachment[] attachments();
-    string           rawEmailPath();
-    void             generateMessageId(string domain="");
-    ulong            computeSize();
-    ulong            computeAttachmentsSize();
-    ulong            computeTextualBodySize();
-    string           printHeaders(Flag!"AsString" asString = No.AsString);
+
+    const(HeaderValue)  getHeader(string name) const;
+    void                removeHeader(string name); // removes ALL even if repeated
+    void                addHeader(string rawHeader);
+    bool                hasHeader(string name) const;
+    ref const(DateTime) date() const;
+    const(MIMEPart[])   textualParts() const;
+    const(Attachment[]) attachments() const;
+    string              rawEmailPath() const;
+    void                generateMessageId(string domain="");
+    pure ulong          computeSize();
+    pure ulong          computeAttachmentsSize() const;
+    pure ulong          computeTextualBodySize() const;
+    string              printHeaders(Flag!"AsString" asString = No.AsString);
 }
 
 
@@ -180,22 +186,35 @@ final class IncomingEmailImpl : IncomingEmail
         return No.IsValidEmail;
     }
     @property ref DictionaryList!(HeaderValue, false) headers() { return m_headers; }
-    @property DateTime         date() { return m_date; }
-    @property ref MIMEPart[]   textualParts() { return m_textualParts; }
-    @property ref Attachment[] attachments() { return m_attachments; }
-    @property string           rawEmailPath() { return m_rawEmailPath; }
+    @property const(Attachment[]) attachments() const { return m_attachments; }
+    @property ref const(DateTime)     date()         const { return m_date; }
+    @property string              rawEmailPath() const { return m_rawEmailPath; }
+    @property const(MIMEPart[])   textualParts() const { return m_textualParts; } 
 
     /**
         Return the header if it exists. If not, returns an empty HeaderValue.
         Useful when you want a default empty value.
     */
-    HeaderValue getHeader(string name)
+    const(HeaderValue) getHeader(string name) const
     {
         if (name in m_headers)
             return m_headers[name];
 
-        HeaderValue hv;
-        return hv;
+        return HeaderValue("", []);
+    }
+
+
+    void removeHeader(string name)
+    {
+        m_headers.removeAll(name);
+    }
+
+
+    bool hasHeader(string name) const
+    {
+        if (name in m_headers)
+            return true;
+        return false;
     }
 
 
@@ -262,6 +281,9 @@ final class IncomingEmailImpl : IncomingEmail
             this.dateSet = true;
         }
 
+        if (!hasHeader("message-id"))
+            generateMessageId();
+
         // === Body=== (read all into the buffer, the parsing is done outside the loop)
         while (currentLine.length && !emailFile.eof())
         {
@@ -316,7 +338,6 @@ final class IncomingEmailImpl : IncomingEmail
 
     void generateMessageId(string domain="")
     {
-        // FIXME: check domain
         m_headers.removeAll("message-id");
         if (!domain.length)
             domain = randomString(30) ~ ".com";
@@ -327,7 +348,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    package void addHeader(string raw)
+    void addHeader(string raw)
     {
         immutable idxSeparator = countUntil(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
@@ -685,13 +706,13 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    ulong computeSize()
+    pure ulong computeSize() const
     {
         return computeTextualBodySize() + computeAttachmentsSize();
     }
 
 
-    ulong computeAttachmentsSize()
+    pure ulong computeAttachmentsSize() const
     {
         ulong totalSize;
         foreach(ref attachment; m_attachments)
@@ -700,7 +721,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    ulong computeTextualBodySize()
+    pure ulong computeTextualBodySize() const
     {
         ulong totalSize;
         foreach(textualPart; m_textualParts)
@@ -924,7 +945,7 @@ unittest
 
         visitParts(email.rootPart);
         foreach(part; email.textualParts)
-            writeln(part.ctype.name, ":", part.toHash());
+            writeln(part.ctype.name, ":", &part);
 
         assert("date" in email.headers);
         email.headers.removeAll("references");

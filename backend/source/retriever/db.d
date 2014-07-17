@@ -21,9 +21,8 @@ import retriever.incomingemail;
 import retriever.envelope;
 import retriever.conversation;
 
-MongoDatabase mongoDB;
-RetrieverConfig config;
-bool connected = false;
+private MongoDatabase g_mongoDB;
+private RetrieverConfig g_config;
 
 alias bsonStr      = deserializeBson!string;
 alias bsonId       = deserializeBson!BsonObjectID;
@@ -38,14 +37,15 @@ version(db_test) version = db_usetestdb;
  */
 static this()
 {
-    auto mandatoryKeys = ["host", "name",  "password", "port", "testname", "type", "user"];
+    auto mandatoryKeys = ["host", "name",  "password", "port", 
+                               "testname", "type", "user"];
     sort(mandatoryKeys);
 
     auto dbData = parseJSON(readText("/etc/webmail/dbconnect.json"));
     auto sortedKeys = dbData.object.keys.dup;
     sort(sortedKeys);
 
-    auto keysDiff = setDifference(sortedKeys, mandatoryKeys).array;
+    const keysDiff = setDifference(sortedKeys, mandatoryKeys).array;
     enforce(!keysDiff.length, "Mandatory keys missing on dbconnect.json config file: %s"
                               ~ to!string(keysDiff));
     enforce(dbData["type"].str == "mongodb", "Only MongoDB is currently supported");
@@ -58,14 +58,14 @@ static this()
 
     version(db_usetestdb)
     {
-        mongoDB = connectMongoDB(connectStr).getDatabase(dbData["testname"].str);
+        g_mongoDB = connectMongoDB(connectStr).getDatabase(dbData["testname"].str);
         insertTestSettings();
     }
     else
     {
-        mongoDB = connectMongoDB(connectStr).getDatabase(dbData["name"].str);
+        g_mongoDB = connectMongoDB(connectStr).getDatabase(dbData["name"].str);
     }
-    config = getInitialConfig();
+    g_config = getInitialConfig();
 }
 
 
@@ -95,7 +95,8 @@ struct EmailSummary
     string introText;
 }
 
-double bsonNumber(Bson input)
+
+double bsonNumber(const Bson input)
 {
     switch(input.type)
     {
@@ -114,17 +115,17 @@ double bsonNumber(Bson input)
 }
 
 
-ref RetrieverConfig getConfig()
+ref const(RetrieverConfig) getConfig()
 {
-    return config;
+    return g_config;
 }
 
 
-RetrieverConfig getInitialConfig()
+const(RetrieverConfig) getInitialConfig()
 {
-    RetrieverConfig config;
-    auto dbConfig = mongoDB["settings"].findOne(["module": "retriever"]);
-    if (dbConfig.isNull)
+    RetrieverConfig _config;
+    immutable dbconfig = g_mongoDB["settings"].findOne(["module": "retriever"]);
+    if (dbconfig.isNull)
     {
         auto err = "Could not retrieve config database, collection:settings,"~
                    " module=retriever";
@@ -136,7 +137,7 @@ RetrieverConfig getInitialConfig()
     {
         string[] missingKeys = [];
         foreach(key; keys)
-            if (dbConfig[key].isNull)
+            if (dbconfig[key].isNull)
                 missingKeys ~= key;
 
         if (missingKeys.length)
@@ -148,32 +149,32 @@ RetrieverConfig getInitialConfig()
                   "smtpEncription", "smtpPort", "rawEmailStore",
                   "attachmentStore", "incomingMessageLimit", "storeTextIndex"]);
 
-    config.mainDir              = bsonStr(dbConfig.mainDir);
-    config.smtpServer           = bsonStr(dbConfig.smtpServer);
-    config.smtpUser             = bsonStr(dbConfig.smtpUser);
-    config.smtpPass             = bsonStr(dbConfig.smtpPass);
-    config.smtpEncription       = to!uint(bsonNumber(dbConfig.smtpEncription));
-    config.smtpPort             = to!ulong(bsonNumber(dbConfig.smtpPort));
-    auto dbPath                 = bsonStr(dbConfig.rawEmailStore);
+    _config.mainDir              = bsonStr(dbconfig.mainDir);
+    _config.smtpServer           = bsonStr(dbconfig.smtpServer);
+    _config.smtpUser             = bsonStr(dbconfig.smtpUser);
+    _config.smtpPass             = bsonStr(dbconfig.smtpPass);
+    _config.smtpEncription       = to!uint(bsonNumber(dbconfig.smtpEncription));
+    _config.smtpPort             = to!ulong(bsonNumber(dbconfig.smtpPort));
+    auto dbPath                  = bsonStr(dbconfig.rawEmailStore);
     // If the db path starts with '/' interpret it as absolute
-    config.rawEmailStore        = dbPath.startsWith(dirSeparator)?
+    _config.rawEmailStore        = dbPath.startsWith(dirSeparator)?
                                                            dbPath:
-                                                           buildPath(config.mainDir,
+                                                           buildPath(_config.mainDir,
                                                                      dbPath);
-    auto attachPath             = bsonStr(dbConfig.attachmentStore);
-    config.attachmentStore      = attachPath.startsWith(dirSeparator)?
+    auto attachPath              = bsonStr(dbconfig.attachmentStore);
+    _config.attachmentStore      = attachPath.startsWith(dirSeparator)?
                                                                attachPath:
-                                                               buildPath(config.mainDir,
+                                                               buildPath(_config.mainDir,
                                                                          attachPath);
-    config.incomingMessageLimit = to!ulong(bsonNumber(dbConfig.incomingMessageLimit));
-    config.storeTextIndex       = bsonBool(dbConfig.storeTextIndex);
-    return config;
+    _config.incomingMessageLimit = to!ulong(bsonNumber(dbconfig.incomingMessageLimit));
+    _config.storeTextIndex       = bsonBool(dbconfig.storeTextIndex);
+    return _config;
 }
 
 
 Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
 {
-    auto domain = mongoDB["domain"].findOne(["name": domainName]);
+    auto domain = g_mongoDB["domain"].findOne(["name": domainName]);
     if (!domain.isNull &&
         !domain.defaultUser.isNull &&
         bsonStr(domain.defaultUser).length)
@@ -182,11 +183,11 @@ Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
 }
 
 
-UserFilter[] getAddressFilters(string address)
+const(UserFilter[]) getAddressFilters(string address)
 {
     UserFilter[] res;
     auto userRuleFindJson = format(`{"destinationAccounts": {"$in": ["%s"]}}`, address);
-    auto userRuleCursor   = mongoDB["userrule"].find(parseJsonString(userRuleFindJson));
+    auto userRuleCursor   = g_mongoDB["userrule"].find(parseJsonString(userRuleFindJson));
 
     foreach(ref rule; userRuleCursor)
     {
@@ -240,12 +241,12 @@ bool addressIsLocal(string address)
         return true;
 
     auto jsonStr    = `{"addresses": {"$in": ["` ~ address ~ `"]}}`;
-    auto userRecord = mongoDB["user"].findOne(parseJsonString(jsonStr));
+    auto userRecord = g_mongoDB["user"].findOne(parseJsonString(jsonStr));
     return !userRecord.isNull;
 }
 
 
-string[] localReceivers(IncomingEmail email)
+const(string[]) localReceivers(const IncomingEmail email)
 {
     string[] allAddresses;
     string[] localAddresses;
@@ -261,7 +262,7 @@ string[] localReceivers(IncomingEmail email)
 }
 
 
-string jsonizeHeader(IncomingEmail email, string headerName,
+string jsonizeHeader(const IncomingEmail email, string headerName,
                      Flag!"RemoveQuotes" removeQuotes = No.RemoveQuotes,
                      Flag!"OnlyValue" onlyValue       = No.OnlyValue)
 {
@@ -286,18 +287,18 @@ string jsonizeHeader(IncomingEmail email, string headerName,
 
 string getEmailIdByMessageId(string messageId)
 {
-    auto jsonFind = parseJsonString(format(`{"message-id": "%s"}`, messageId));
-    auto res = mongoDB["email"].findOne(jsonFind);
+    const res = g_mongoDB["email"].findOne(parseJsonString(format(`{"message-id": "%s"}`,
+                                                           messageId)));
     if (!res.isNull)
         return bsonStr(res["_id"]);
     return "";
 }
 
 
-EmailSummary getEmailSummary(string dbId)
+const(EmailSummary) getEmailSummary(string dbId)
 {
     EmailSummary res;
-    auto emailDoc = mongoDB["email"].findOne(["_id": dbId]);
+    const emailDoc = g_mongoDB["email"].findOne(["_id": dbId]);
     if (!emailDoc.isNull)
     {
         res.dbId = dbId;
@@ -313,7 +314,7 @@ EmailSummary getEmailSummary(string dbId)
         if (!emailDoc.isodate.isNull)
             res.isoDate = bsonStr(emailDoc.isodate);
 
-        foreach(attach; emailDoc.attachments)
+        foreach(ref attach; emailDoc.attachments)
             if (!attach.fileName.isNull)
                 res.attachFileNames ~= bsonStr(attach.fileName);
     }
@@ -321,7 +322,7 @@ EmailSummary getEmailSummary(string dbId)
 }
 
 
-Conversation conversationDocToObject(Bson convDoc)
+Conversation conversationDocToObject(const ref Bson convDoc)
 {
     Conversation ret;
     if (!convDoc.isNull)
@@ -338,18 +339,18 @@ Conversation conversationDocToObject(Bson convDoc)
 }
 
 
-Conversation[] getConversationsByTag(string tagName, int limit, int page)
+const(Conversation[]) getConversationsByTag(string tagName, int limit, int page)
 {
-    Conversation[] ret;
+    const(Conversation)[] ret;
 
     auto jsonFindStr = format(`{"tags": {"$in": ["%s"]}}`, tagName);
-    auto cursor = mongoDB["conversation"].find(parseJsonString(jsonFindStr),
+    auto cursor = g_mongoDB["conversation"].find(parseJsonString(jsonFindStr),
                                                 Bson(null), // returnFieldSelector
                                                 QueryFlags.None,
                                                 page > 0? page*limit: 0) // skip
                                                 .sort(parseJsonString(`{"lastDate": -1}`));
     cursor.limit(limit);
-    foreach(doc; cursor)
+    foreach(ref doc; cursor)
         ret ~= conversationDocToObject(doc);
     return ret;
 }
@@ -359,17 +360,17 @@ Conversation[] getConversationsByTag(string tagName, int limit, int page)
  * Return the first Conversation that has ANY of the references contained in its
  * links
  */
-Conversation getConversationByReferences(string userId, string[] references)
+Conversation getConversationByReferences(string userId, const string[] references)
 {
-    Conversation ret;
     string[] reversed = references.dup;
     reverse(reversed);
 
-    auto jsonFindStr = format(`{"userId": "%s", "links.message-id": {"$in": %s}}`,
-                              userId, reversed);
-    return conversationDocToObject(
-            mongoDB["conversation"].findOne(parseJsonString(jsonFindStr))
+    auto convDoc = g_mongoDB["conversation"].findOne(
+        parseJsonString(
+            format(`{"userId": "%s", "links.message-id": {"$in": %s}}`, userId, reversed)
+        )
     );
+    return conversationDocToObject(convDoc);
 }
 
 
@@ -377,12 +378,12 @@ Conversation getConversationByReferences(string userId, string[] references)
  * Insert or update a conversation with this email messageId, references, tags
  * and date
 */
-string upsertConversation(IncomingEmail email, string emailDbId,
-                          string userId, bool[string] tags)
+string upsertConversation(const IncomingEmail email, string emailDbId,
+                          string userId, const bool[string] tags)
 {
-    auto references = email.getHeader("references").addresses;
-    auto messageId  = email.headers["message-id"].addresses[0];
-
+    const references = email.getHeader("references").addresses;
+    const messageId  = email.getHeader("message-id").addresses[0];
+    
     auto conv = getConversationByReferences(userId, references ~ messageId);
     conv.userDbId = userId;
 
@@ -421,48 +422,44 @@ string upsertConversation(IncomingEmail email, string emailDbId,
     if (!wasInConversation)
         conv.addLink(messageId, emailDbId);
 
-    mongoDB["conversation"].update(["_id": conv.dbId],
+    g_mongoDB["conversation"].update(["_id": conv.dbId],
                                    parseJsonString(conv.asJsonString),
                                    UpdateFlags.Upsert);
     return conv.dbId;
 }
 
 
-void store(Envelope envelope)
+void store(const ref Envelope envelope)
 {
-    auto envelopeId = BsonObjectID.generate();
-
-    auto envelopeInsertJson = format(`{"_id": "%s",
-                                    "emailId": "%s",
-                                    "userId": "%s",
-                                    "destinationAddress": "%s",
-                                    "forwardTo": %s}`,
-                                      envelopeId,
-                                      envelope.emailId,
-                                      envelope.userId,
-                                      envelope.destination,
-                                      to!string(envelope.forwardTo));
-    mongoDB["envelope"].insert(parseJsonString(envelopeInsertJson));
+    g_mongoDB["envelope"].insert(
+            parseJsonString(
+                format(`{"_id": "%s",
+                      "emailId": "%s",
+                      "userId": "%s",
+                      "destinationAddress": "%s",
+                      "forwardTo": %s}`,
+                      BsonObjectID.generate(),
+                      envelope.emailId,
+                      envelope.userId,
+                      envelope.destination,
+                      to!string(envelope.forwardTo)
+                )
+            )
+    );
 }
 
 
 string getUserIdFromAddress(string address)
 {
-    auto userFindJson = format(`{"addresses": {"$in": ["%s"]}}`, address);
-    auto userResult = mongoDB["user"].findOne(parseJsonString(userFindJson));
-    if (userResult.isNull)
-        return "";
-    return bsonStr(userResult._id);
+    auto userResult = g_mongoDB["user"].findOne(
+            parseJsonString(format(`{"addresses": {"$in": ["%s"]}}`, address))
+    );
+    return userResult.isNull? "": bsonStr(userResult._id);
 }
 
 
 string store(IncomingEmail email)
 {
-    // Our conversation finding code needs msgid so add it if the email is
-    // missing one
-    if (!email.getHeader("message-id").rawValue.length)
-        email.generateMessageId();
-
     // json for the text parts
     auto partAppender = appender!string;
     foreach(idx, part; email.textualParts)
@@ -470,31 +467,31 @@ string store(IncomingEmail email)
         partAppender.put("{\"contentType\": " ~ Json(part.ctype.name).toString() ~ ","
                           "\"content\": "     ~ Json(part.textContent).toString() ~ "},");
     }
-    string textPartsJsonStr = partAppender.data;
+    string textPartsJsonStr = partAppender.data.idup;
     partAppender.clear();
 
     // json for the attachments
     foreach(ref attach; email.attachments)
     {
-        partAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString()     ~ `,` ~
-                         ` "realPath": `      ~ Json(attach.realPath).toString()  ~ `,` ~
-                         ` "size": `          ~ Json(attach.size).toString()      ~ `,`);
+        partAppender.put(`{"contentType": ` ~ Json(attach.ctype).toString()     ~ `,` ~
+                         ` "realPath": `    ~ Json(attach.realPath).toString()  ~ `,` ~
+                         ` "size": `        ~ Json(attach.size).toString()      ~ `,`);
         if (attach.contentId.length)
             partAppender.put(` "contentId": ` ~ Json(attach.contentId).toString() ~ `,`);
         if (attach.filename.length)
             partAppender.put(` "fileName": `  ~ Json(attach.filename).toString()  ~ `,`);
         partAppender.put("},");
     }
-    string attachmentsJsonStr = partAppender.data();
+    string attachmentsJsonStr = partAppender.data().idup;
     partAppender.clear();
 
-    // Some emails doesnt have a "To:" header but a "Delivered-To:". Really.
+    // Some emails doesnt have a "To:" header but a "Delivered-To:". Really!
     string realReceiverField, realReceiverRawValue, realReceiverAddresses;
-    if ("to" in email.headers)
-        realReceiverField = "To";
-    else if ("bcc" in email.headers)
-        realReceiverField = "Bcc";
-    else if ("delivered-to" in email.headers)
+    if (email.hasHeader("to"))
+        realReceiverField = "to";
+    else if (email.hasHeader("bcc"))
+        realReceiverField = "bcc";
+    else if (email.hasHeader("delivered-to"))
         realReceiverField = "delivered-to";
     else
     {
@@ -502,10 +499,10 @@ string store(IncomingEmail email)
         logError(err);
         throw new Exception(err);
     }
-    realReceiverRawValue  = email.jsonizeHeader(realReceiverField,
-                                                No.RemoveQuotes,
-                                                Yes.OnlyValue);
-    realReceiverAddresses = to!string(email.headers[realReceiverField].addresses);
+    realReceiverRawValue = email.jsonizeHeader(realReceiverField,
+                                               No.RemoveQuotes,
+                                               Yes.OnlyValue);
+    realReceiverAddresses = to!string(email.getHeader(realReceiverField).addresses);
 
     // Json for the headers
     // (see the schema.txt doc)
@@ -538,72 +535,69 @@ string store(IncomingEmail email)
     string rawHeadersStr = partAppender.data();
     partAppender.clear();
 
-    auto date = BsonDate(SysTime(email.date, TimeZone.getTimeZone("GMT"))).toString;
-    auto documentId = BsonObjectID.generate();
-    auto emailInsertJson = format(`{"_id": "%s",` ~
-                                  `"rawEmailPath": "%s",` ~
-                                  `"message-id": "%s",`    ~
-                                  `"isodate": "%s",`      ~
-                                  `"from": { "rawValue": %s "addresses": %s },` ~
-                                  `"receivers": { "rawValue": %s "addresses": %s },`   ~
-                                  `"headers": %s, `    ~
-                                  `"textParts": [ %s ], ` ~
-                                  `"attachments": [ %s ] }`,
-                                        documentId,
-                                        email.rawEmailPath,
-                                        email.getHeader("message-id").addresses[0],
-                                        date,
-                                        email.jsonizeHeader("from", No.RemoveQuotes,
-                                                            Yes.OnlyValue),
-                                        to!string(email.getHeader("from").addresses),
-                                        realReceiverRawValue,
-                                        realReceiverAddresses,
-                                        rawHeadersStr,
-                                        textPartsJsonStr,
-                                        attachmentsJsonStr);
-    //writeln(emailInsertJson);
-    auto parsedJson = parseJsonString(emailInsertJson);
-    mongoDB["email"].insert(parsedJson);
-    return documentId.toString();
+    const documentId = BsonObjectID.generate().toString;
+    auto emailInsertJson = format(
+          `{"_id": "%s",` ~
+          `"rawEmailPath": "%s",` ~
+          `"message-id": "%s",`    ~
+          `"isodate": "%s",`      ~
+          `"from": { "rawValue": %s "addresses": %s },` ~
+          `"receivers": { "rawValue": %s "addresses": %s },`   ~
+          `"headers": %s, `    ~
+          `"textParts": [ %s ], ` ~
+          `"attachments": [ %s ] }`,
+            documentId,
+            email.rawEmailPath,
+            email.getHeader("message-id").addresses[0],
+            BsonDate(SysTime(email.date, TimeZone.getTimeZone("GMT"))).toString,
+            email.jsonizeHeader("from", No.RemoveQuotes, Yes.OnlyValue),
+            to!string(email.getHeader("from").addresses),
+            realReceiverRawValue,
+            realReceiverAddresses,
+            rawHeadersStr,
+            textPartsJsonStr,
+            attachmentsJsonStr
+    );
+    g_mongoDB["email"].insert(parseJsonString(emailInsertJson));
+    return documentId;
 }
 
 
 string storeTextIndexMongo(string content, string emailDbId)
 {
-    auto docId = BsonObjectID.generate();
-    mongoDB["emailIndexContents"].insert(["_id": docId.toString,
+    auto docId = BsonObjectID.generate().toString;
+    g_mongoDB["emailIndexContents"].insert(["_id": docId,
                                           "text": content,
                                           "emailDbId": emailDbId,
                                          ]);
-    return docId.toString;
+    return docId;
 }
 
 
 /**
  * Store a document with the relevant textual part of the message body.
  */
-void storeTextIndex(IncomingEmail email, string emailDbId)
+void storeTextIndex(const IncomingEmail email, string emailDbId)
 {
     if (!email.textualParts.length)
         return;
 
     auto partAppender = appender!string;
-    auto tParts       = email.textualParts;
 
-    if (tParts.length == 2 &&
-        tParts[0].ctype.name != tParts[1].ctype.name &&
-        among(tParts[0].ctype.name, "text/plain", "text/html") &&
-        among(tParts[1].ctype.name, "text/plain", "text/html"))
+    if (email.textualParts.length == 2 &&
+        email.textualParts[0].ctype.name != email.textualParts[1].ctype.name &&
+        among(email.textualParts[0].ctype.name, "text/plain", "text/html") &&
+        among(email.textualParts[1].ctype.name, "text/plain", "text/html"))
     {
         // one html and one plain part, almost certainly related, store the plain one
-        partAppender.put(tParts[0].ctype.name == "text/plain"?
-                                                tParts[0].textContent:
-                                                tParts[1].textContent);
+        partAppender.put(email.textualParts[0].ctype.name == "text/plain"?
+                                                email.textualParts[0].textContent:
+                                                email.textualParts[1].textContent);
     }
     else
     {
         // append and store all parts
-        foreach(part; tParts)
+        foreach(part; email.textualParts)
         {
             if (part.ctype.name == "text/html")
                 partAppender.put(htmlToText(part.textContent));
@@ -612,28 +606,27 @@ void storeTextIndex(IncomingEmail email, string emailDbId)
         }
     }
 
-    if (std.string.strip(partAppender.data).length != 0)
+    if (strip(partAppender.data).length)
         storeTextIndexMongo(partAppender.data, emailDbId);
 }
+
 
 /**
     Search for an equal email on the DB, comparing all relevant fields
 */
-Flag!"AlreadyOnDb" emailAlreadyOnDb(IncomingEmail email)
+Flag!"AlreadyOnDb" emailAlreadyOnDb(const IncomingEmail email)
 {
-    auto incomingMsgId = email.getHeader("message-id");
-    if (!incomingMsgId.rawValue.length)
-        return No.AlreadyOnDb;
-
-    auto emailInDb = mongoDB["email"].findOne(["message-id": incomingMsgId.addresses[0]]);
+    const emailInDb = g_mongoDB["email"].findOne(
+            ["message-id": email.getHeader("message-id").addresses[0]]
+    );
     if (emailInDb.isNull)
         return No.AlreadyOnDb;
 
     if (
        email.getHeader("subject").rawValue != bsonStr(emailInDb.headers.subject[0].rawValue)
-      || email.getHeader("from").rawValue != bsonStr(emailInDb.from.rawValue)
-      || email.getHeader("to").rawValue   != bsonStr(emailInDb.receivers.rawValue)
-      || email.getHeader("date").rawValue    != bsonStr(emailInDb.headers.date[0].rawValue))
+      || email.getHeader("from").rawValue  != bsonStr(emailInDb.from.rawValue)
+      || email.getHeader("to").rawValue    != bsonStr(emailInDb.receivers.rawValue)
+      || email.getHeader("date").rawValue  != bsonStr(emailInDb.headers.date[0].rawValue))
         return No.AlreadyOnDb;
     return Yes.AlreadyOnDb;
 }
@@ -658,7 +651,7 @@ version(db_usetestdb)
 {
     void insertTestSettings()
     {
-        mongoDB["settings"].remove();
+        g_mongoDB["settings"].remove();
         string settingsJsonStr = format(`
         {
                 "_id" : "5399793904ac3d27431d0669",
@@ -674,7 +667,7 @@ version(db_usetestdb)
                 "smtpServer" : "localhost",
                 "smtpUser" : "smtpUser"
         }`);
-        mongoDB["settings"].insert(parseJsonString(settingsJsonStr));
+        g_mongoDB["settings"].insert(parseJsonString(settingsJsonStr));
     }
 
 
@@ -682,7 +675,7 @@ version(db_usetestdb)
     {
         foreach(string collection; ["envelope", "email", "emailIndexContents",
                                     "conversation", "domain", "user", "userrule"])
-            mongoDB[collection].remove();
+            g_mongoDB[collection].remove();
 
         // Fill the test DB
         string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", "test", "testdb");
@@ -693,13 +686,14 @@ version(db_usetestdb)
                                               "userrule1.json" : "userrule",
                                               "userrule2.json" : "userrule",];
         foreach(file_, collection; jsonfile2collection)
-            mongoDB[collection].insert(parseJsonString(readText(buildPath(backendTestDataDir_, file_))));
+            g_mongoDB[collection].insert(parseJsonString(readText(buildPath(backendTestDataDir_, file_))));
 
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         foreach(mailname; TEST_EMAILS)
         {
             auto email = new IncomingEmailImpl();
-            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), config.attachmentStore);
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), 
+                                         getConfig().attachmentStore);
             assert(email.isValid, "Email is not valid");
             auto destination       = email.getHeader("to").addresses[0];
             auto emailId           = email.store();
@@ -747,10 +741,10 @@ version(db_test)
         assert(filters[0].action.neverSpam);
         assert(!filters[0].action.setSpam);
         assert(filters[0].action.addTags == ["testtag1", "testtag2"]);
-        filters = getAddressFilters("anotherUser@anotherdomain.com");
-        assert(filters[0].action.addTags == ["testtag3", "testtag4"]);
+        auto filters2 = getAddressFilters("anotherUser@anotherdomain.com");
+        assert(filters2[0].action.addTags == ["testtag3", "testtag4"]);
         auto newfilters = getAddressFilters("anotherUser@testdatabase.com");
-        assert(filters[0].action.addTags == newfilters[0].action.addTags);
+        assert(filters2[0].action.addTags == newfilters[0].action.addTags);
     }
 
     unittest // addressIsLocal
@@ -769,7 +763,8 @@ version(db_test)
         writeln("Testing jsonizeHeader");
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         auto email = new IncomingEmailImpl();
-        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), config.attachmentStore);
+        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), 
+                           getConfig().attachmentStore);
         assert(email.jsonizeHeader("from") == `"from": " Test Sender <someuser@insomedomain.com>",`);
         assert(email.jsonizeHeader("to")   == `"to": " Test User2 <testuser@testdatabase.com>",`);
         assert(email.jsonizeHeader("Date", Yes.RemoveQuotes, Yes.OnlyValue) == `" Sat, 25 Dec 2010 13:31:57 +0100",`);
@@ -801,7 +796,7 @@ version(db_test)
                                                "testemails");
         auto email = new IncomingEmailImpl();
         email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
-                                     config.attachmentStore);
+                                     getConfig().attachmentStore);
         auto emailObjectDate = BsonDate(SysTime(email.date,
                                                 TimeZone.getTimeZone("GMT")))
                                                .toString;
@@ -811,7 +806,7 @@ version(db_test)
         // test1: insert as is, should create a new conversation with this email as single member
         auto emailId = email.store();
         auto convId = upsertConversation(email, emailId, userId, tags);
-        auto convDoc = mongoDB["conversation"].findOne(["_id": convId]);
+        auto convDoc = g_mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
         assert(convDoc.links.type      == Bson.Type.array);
@@ -830,11 +825,11 @@ version(db_test)
         recreateTestDb();
         email = new IncomingEmailImpl();
         email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
-                           config.attachmentStore);
+                           getConfig().attachmentStore);
         email.headers["message-id"].addresses[0] = "testreference@blabla.testdomain.com";
         emailId = email.store();
         convId = upsertConversation(email, emailId, userId, tags);
-        convDoc = mongoDB["conversation"].findOne(["_id": convId]);
+        convDoc = g_mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
         assert(convDoc.links.type == Bson.Type.array);
@@ -848,12 +843,12 @@ version(db_test)
         recreateTestDb();
         email = new IncomingEmailImpl();
         email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
-                           config.attachmentStore);
+                           getConfig().attachmentStore);
         string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
         email.addHeader(refHeader);
         emailId = email.store();
         convId = upsertConversation(email, emailId, userId, tags);
-        convDoc = mongoDB["conversation"].findOne(["_id": convId]);
+        convDoc = g_mongoDB["conversation"].findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
         assert(convDoc.links.type == Bson.Type.array);
@@ -900,7 +895,7 @@ version(db_test)
         import std.exception;
         import core.exception;
         recreateTestDb();
-        auto cursor = mongoDB["envelope"].find(["destinationAddress": "testuser@testdatabase.com"]);
+        auto cursor = g_mongoDB["envelope"].find(["destinationAddress": "testuser@testdatabase.com"]);
         assert(!cursor.empty);
         auto envDoc = cursor.front;
         cursor.popFrontExactly(2);
@@ -917,7 +912,7 @@ version(db_test)
     {
         writeln("Testing email.store");
         recreateTestDb();
-        auto cursor = mongoDB["email"].find();
+        auto cursor = g_mongoDB["email"].find();
         cursor.sort(parseJsonString(`{"_id": 1}`));
         assert(!cursor.empty);
         auto emailDoc = cursor.front; // email 0
@@ -939,32 +934,34 @@ version(db_test)
     {
         writeln("Testing emailAlreadyOnDb");
         recreateTestDb();
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
+        string backendTestEmailsDir = buildPath(getConfig().mainDir, 
+                                                "backend", "test", "testemails");
         // ignore the nomsgid email (last one) since it cant be checked to be on DB
         foreach(mailname; TEST_EMAILS[0..$-1])
         {
             auto email = new IncomingEmailImpl();
-            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), config.attachmentStore);
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), 
+                                         getConfig().attachmentStore);
             assert(emailAlreadyOnDb(email));
         }
     }
 
-    unittest // storeTextIndex && storeTextIndexMongo
+    unittest // storeTextIndex 
     {
         writeln("Testing storeTextIndexMongo");
         recreateTestDb();
         auto findJson = format(`{"$text": {"$search": "DOESNTEXISTS"}}`);
-        auto cursor = mongoDB["emailIndexContents"].find(parseJsonString(findJson));
+        auto cursor = g_mongoDB["emailIndexContents"].find(parseJsonString(findJson));
         assert(cursor.empty);
 
         findJson = format(`{"$text": {"$search": "text inside"}}`);
-        cursor = mongoDB["emailIndexContents"].find(parseJsonString(findJson));
+        cursor = g_mongoDB["emailIndexContents"].find(parseJsonString(findJson));
         assert(!cursor.empty);
         string res = cursor.front.text.toString;
         assert(countUntil(res, "text inside") == 10);
 
         findJson = format(`{"$text": {"$search": "email"}}`);
-        cursor = mongoDB["emailIndexContents"].find(parseJsonString(findJson));
+        cursor = g_mongoDB["emailIndexContents"].find(parseJsonString(findJson));
         assert(!cursor.empty);
         assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
         cursor.popFront;
@@ -1002,10 +999,10 @@ version(db_insertalltest) unittest
         totalSw.start();
         if (baseName(e.name) in brokenEmails)
             continue;
-        auto email = new IncomingEmail(rawEmailStore, attachmentStore);
+        auto email = new IncomingEmailImpl();
 
         sw.start();
-        email.loadFromFile(File(e.name));
+        email.loadFromFile(File(e.name), attachmentStore);
         sw.stop(); writeln("loadFromFile time: ", sw.peek().usecs); sw.reset();
 
 
@@ -1017,7 +1014,7 @@ version(db_insertalltest) unittest
             continue; // probably a message from the "sent" folder
         }
 
-        //auto email_withcopy = new IncomingEmail(rawEmailStore, attachmentStore);
+        //auto email_withcopy = new IncomingEmailImpl(rawEmailStore, attachmentStore);
         //sw.start();
         //email_withcopy.loadFromFile(File(e.name), true);
         //sw.stop(); writeln("loadFromFile_withCopy time: ", sw.peek().usecs); sw.reset();
@@ -1089,9 +1086,9 @@ version(userrule_test) unittest
 
     Envelope reInstance(Match match, Action action)
     {
-        auto email = new IncomingEmail(buildPath(testDir, "rawemails"),
-                                       buildPath(testDir, "attachments"));
-        email.loadFromFile(buildPath(testEmailDir, "with_2megs_attachment"));
+        auto email = new IncomingEmailImpl();
+        email.loadFromFile(buildPath(testEmailDir, "with_2megs_attachment"),
+                           buildPath(testDir, "attachments"));
         auto envelope = Envelope(email, "foo@foo.com");
         auto filter   = new UserFilter(match, action);
         tags = ["inbox": true];

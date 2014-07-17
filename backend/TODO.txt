@@ -3,10 +3,9 @@ Backend-API:
 
     - Move unittest to apiobjects.d
 
-    - Script to compile and run with unittest, run the server with dbtest
-      and rdmd-run apilivetests.d
+    - Script to compile and run with unittest && run the server with dbtest
+      && rdmd-run apilivetests.d
 
-    - Const, immutable, pure, nothrow, in, out, safe et all
 
 Backend-Retriever:
     - Envelope.asJsonString and use it on db.d
@@ -15,14 +14,10 @@ Backend-Retriever:
 
     - Privatize IncomingEmail and interface
 
-    - Mongo DB indexes, ensure()
-
-    - import only the symbols really used
-
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)
 
-    - Exception classes for the different parts (and use them)
+    - Exception classes for the different parts. 
 
     - Retriever's full test, use a Python script with the mail & smtp modules to
       parse the test mails collection changing the receiver from [myRealAddr] to
@@ -31,14 +26,7 @@ Backend-Retriever:
       that the isValidAddress check is fine, check that the filters of the test DB
       apply correctly, check searches with the indexer, et cetera.
 
-    - Const, immutable, pure, nothrow, in, out, safe et all
-
     - Sent the new changes in characterencodings.d to Ruppe
-
-    - See how to get around Mongo's 16MB document limit for bigger emails
-      (GridFS?) Check is some email of my collection is bigger than 16MB without
-      attachments (=> no)
-
 
 
 Frontend:
@@ -47,5 +35,13 @@ Contacts:
     - When a message is received and the email is not found on the Contacts collection,
       store as a new contact with Name, Surname, Email, Tags and put the tag "autoinserted".
     - Use it for getting the shortnames in the ConversationSummary object.
+
+All:
+    - Import cleanup (only imports and symbols really used)
+    - Const, immutable, pure, nothrow, in, out, safe et all
+    - Mongo DB indexes, ensure()
+    - See how to get around Mongo's 16MB document limit for bigger emails
+      (GridFS?) Check is some email of my collection is bigger than 16MB without
+      attachments (=> no)
 
 Installation/Configuration system:

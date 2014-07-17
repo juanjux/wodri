@@ -66,7 +66,7 @@ class UserFilter
         if (this.match.withHtml)
         {
             bool hasHtml = false;
-            foreach(MIMEPart subpart; envelope.email.textualParts)
+            foreach(const MIMEPart subpart; envelope.email.textualParts)
                 if (subpart.ctype.name == "text/html")
                     hasHtml = true;
             if (!hasHtml)
@@ -77,7 +77,7 @@ class UserFilter
             if (countUntil(envelope.email.getHeader(matchHeaderName).rawValue, matchHeaderFilter) == -1)
                 return false;
 
-        foreach(MIMEPart part; envelope.email.textualParts)
+        foreach(const MIMEPart part; envelope.email.textualParts)
         {
             foreach(string bodyMatch; this.match.bodyMatches)
                 if (countUntil(part.textContent, bodyMatch) == -1)

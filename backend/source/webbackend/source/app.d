@@ -10,7 +10,6 @@ shared static this()
     router.registerRestInterface(new ApiImpl);
     auto routes = router.getAllRoutes();
     //router.get("/tag/:name/limit/:limit/page/:page", &getTagConversations);
-    writeln("XXX routes: ", routes);
 
     auto settings = new HTTPServerSettings;
     settings.port = 8080;

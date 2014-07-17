@@ -47,10 +47,8 @@ struct Conversation
     {
         auto linksApp = appender!string;
         foreach(link; this.links)
-        {
             linksApp.put(format(`{"message-id": "%s", "emailId": "%s"},`, 
                                 link.messageId, link.emailDbId));
-        }
         return format(`
         {
             "_id": "%s",

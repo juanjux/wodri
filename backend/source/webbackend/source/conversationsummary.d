@@ -16,15 +16,15 @@ auto NAME_CLEAN_REGEX = ctRegex!(r"[<>]", "g");
 
 struct ConversationSummary
 {
-    string   dbId;
-    ulong    numMessages;
-    string   lastDate;
-    string   subject;
-    string[] shortAuthors;
-    string[] attachFileNames;
-    string[] tags;
+    string         dbId;
+    ulong          numMessages;
+    string         lastDate;
+    string         subject;
+    string[]       shortAuthors;
+    string[]       attachFileNames;
+    const string[] tags;
 
-    this (Conversation conv)
+    this (const Conversation conv)
     {
         this.dbId = conv.dbId;
         this.numMessages = conv.links.length;

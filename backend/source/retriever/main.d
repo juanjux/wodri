@@ -81,7 +81,7 @@ void processEmailForAddress(string destination, IncomingEmail email, string emai
     auto envelope          = Envelope(email, destination, userId, emailId);
     bool[string] tags = ["inbox": true];
 
-    if ("x-spam-setspamtag" in email.headers)
+    if (email.hasHeader("x-spam-setspamtag"))
         tags["spam"] = true;
 
     // Apply the user-defined filters (if any)

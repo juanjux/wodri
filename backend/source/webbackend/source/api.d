@@ -20,36 +20,12 @@ struct Attachment
     ulong  size;
 }
 
-
-@rootPathFromName
-interface Api
-{
-    @method(HTTPMethod.GET) @path("tag/")
-    ConversationSummary[] getTagConversations(string name, int limit=50, int page=0);
-}
-
-
-class ApiImpl: Api
-{
-    override:
-        ConversationSummary[] getTagConversations(string name, int limit=50, int page=0)
-        {
-            ConversationSummary[] ret;
-
-            auto dbConversations = getConversationsByTag(name, limit, page);
-            foreach(dbConv; dbConversations)
-                ret ~=  ConversationSummary(dbConv);
-            return ret;
-        }
-}
-
-
 struct MessageSummary
 {
     string subject;
     string from;
     string date;
-    string[] attachmentsFilenames;
+    string[] attachFileNames;
     string bodyPeak;
     string avatarUrl;
 }
@@ -69,16 +45,47 @@ struct Conversation
     string lastMessageDate;
     string subject;
     string[] tags;
-    string[] attachmentsFilenames;
+    string[] attachFileNames;
 
-    this(string subject, string[] tags, ref MessageSummary[] summaries)
+    this(string subject, string[] tags, MessageSummary[] summaries)
     {
+        this.subject = subject; // XXX clean it?
         this.summaries = summaries;
 
+        string lastDate;
+        string[] attFileNames;
         foreach(msgSummary; summaries)
         {
-            this.lastMessageDate = max(this.lastMessageDate, msgSummary.date);
-            attachmentsFilenames ~= msgSummary.attachmentsFilenames;
+            lastDate = max(this.lastMessageDate, msgSummary.date);
+            attFileNames ~= msgSummary.attachFileNames;
         }
+        this.lastMessageDate = lastDate;
+        this.attachFileNames = attFileNames;
     }
 }
+
+
+@rootPathFromName
+interface Api
+{
+    @method(HTTPMethod.GET) @path("tag/")
+    ConversationSummary[] getTagConversations(string name, int limit=50, int page=0);
+}
+
+
+class ApiImpl: Api
+{
+    override:
+        ConversationSummary[] getTagConversations(string name, 
+                                                  int limit=50, 
+                                                  int page=0)
+        {
+            ConversationSummary[] ret;
+            auto dbConversations = getConversationsByTag(name, limit, page);
+            foreach(dbConv; dbConversations)
+                ret ~=  ConversationSummary(dbConv);
+            return ret;
+        }
+}
+
+

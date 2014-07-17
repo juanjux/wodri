@@ -6,7 +6,7 @@
     "authors": ["juanjux"],
     "importPaths": [".", ".."],
     "sourcePaths": [".", ".."],
-    "excludedSourceFiles": ["../retriever/main.d", "../retriever/test.d", "livetests.d"],
+    "excludedSourceFiles": ["../retriever/main.d", "../retriever/test.d", "livetests.d", "test.d"],
     "dependencies": {
         "vibe-d": "~master"
     },
