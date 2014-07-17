@@ -9,7 +9,7 @@ import retriever.incomingemail: IncomingEmail;
 
 struct Envelope
 {
-    IncomingEmail email;
+    const IncomingEmail email;
     string destination;
     string userId;
     string emailId;

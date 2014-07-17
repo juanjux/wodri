@@ -45,8 +45,8 @@ struct ConversationSummary
                                     .pre.translate(['<': ' ', '>': ' ']).strip();
 
                 if (emailSummary.attachFileNames.length)
-                    this.attachFileNames = array(uniq(this.attachFileNames ~
-                                                      emailSummary.attachFileNames).array());
+                    this.attachFileNames = uniq(this.attachFileNames ~
+                                                emailSummary.attachFileNames).array();
             }
         }
     }

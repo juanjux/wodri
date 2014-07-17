@@ -42,8 +42,11 @@ struct Action
 
 class UserFilter
 {
-    Match match;
-    Action action;
+    package
+    {
+        Match match;
+        Action action;
+    }
 
     this(ref Match match, ref Action action)
     {
@@ -52,13 +55,14 @@ class UserFilter
     }
 
 
-    void apply(ref Envelope envelope, ref bool[string] convTags)
+    void apply(ref Envelope envelope, ref bool[string] convTags) const
     {
         if (checkMatch(envelope)) 
             applyAction(envelope, convTags);
     }
 
-    bool checkMatch(ref Envelope envelope)
+
+    private bool checkMatch(ref Envelope envelope) const
     {
         if (this.match.withAttachment && !envelope.email.attachments.length)
             return false;
@@ -102,7 +106,7 @@ class UserFilter
     }
 
 
-    void applyAction(ref Envelope envelope, ref bool[string] convTags)
+    private void applyAction(ref Envelope envelope, ref bool[string] convTags) const
     {
         // email.tags == false actually mean to the rest of the retriever
         // processes: "it doesnt have the tag and please dont add it after this point"

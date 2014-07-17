@@ -151,7 +151,7 @@ final interface IncomingEmail
     const(Attachment[]) attachments() const;
     string              rawEmailPath() const;
     void                generateMessageId(string domain="");
-    ulong               computeSize();
+    ulong               computeSize() const;
     ulong               computeAttachmentsSize() const;
     ulong               computeTextualBodySize() const;
     string              printHeaders(Flag!"AsString" asString = No.AsString);
