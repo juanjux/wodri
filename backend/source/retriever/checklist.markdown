@@ -5,6 +5,8 @@ Function signature:
 * Can be pure?
 
 Function body:
+* strings and structs that will be initialized later can be 
+  declared == null
 * Can some local vars be immutable or const?
 * Can I remove pointless local vars?
 * If a foreach iterates over a list of structs, use ref

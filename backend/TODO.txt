@@ -8,11 +8,11 @@ Backend-API:
 
 
 Backend-Retriever:
+    - Regenerate unittest files
+
     - Envelope.asJsonString and use it on db.d
 
     - Conversation.updateLastDate => validate the date!
-
-    - Privatize IncomingEmail and interface
 
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)

@@ -15,7 +15,7 @@ AttributeSet	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^struct Attri
 B	/home/juanjux/webmail/backend/source/webbackend/test.d	/^struct B$/;"	s	file:
 BangInstruction	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^class BangInstruction : SpecialElement {$/;"	c	class:Element	file:
 ContentData	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^struct ContentData$/;"	s	file:
-Conversation	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^class Conversation$/;"	c	file:
+Conversation	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^struct Conversation$/;"	s	file:
 Conversation	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^struct Conversation$/;"	s	file:
 ConversationSummary	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^struct ConversationSummary$/;"	s	file:
 CssStyle	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^class CssStyle {$/;"	c	class:Element	file:
@@ -66,7 +66,7 @@ JavascriptStyleDispatch	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^m
 KOI8_R	/home/juanjux/webmail/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] KOI8_R = [$/;"	v
 KOI8_R_Lower	/home/juanjux/webmail/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] KOI8_R_Lower = [$/;"	v
 Link	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^class Link : Element {$/;"	c	class:Element	file:
-MIMEPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^final class MIMEPart \/\/ #mimepart$/;"	c	file:
+MIMEPart	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^final struct MIMEPart \/\/ #mimepart$/;"	s	file:
 MONTH_CODES	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",$/;"	v
 MarkupException	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^class MarkupException : Exception {$/;"	c	class:Element	file:
 Match	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^struct Match$/;"	s	file:
@@ -123,9 +123,9 @@ addEventListener	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void ad
 addField	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	override Element addField(string label, string name, FormFieldOptions fieldOptions) {$/;"	f	class:Element::Form
 addField	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	override Element addField(string label, string name, string type = "text", FormFieldOptions fieldOptions = FormFieldOptions.none) {$/;"	f	class:Element::Form
 addField	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	override Element addField(string label, string name, string[string] options, FormFieldOptions fieldOptions = FormFieldOptions.none) {$/;"	f	class:Element::Form
-addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    package void addHeader(string raw)$/;"	f	class:IncomingEmailImpl
+addHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void addHeader(string raw)$/;"	f	class:IncomingEmailImpl
 addInput	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element addInput(string name, string value, string type = "hidden") {$/;"	f	class:Element::Form
-addLink	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    void addLink(string messageId, string emailDbId)$/;"	f	class:Conversation
+addLink	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    void addLink(string messageId, string emailDbId)$/;"	f	struct:Conversation
 addSibling	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element addSibling(Element e) {$/;"	f
 addTags	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string[] addTags;$/;"	m	struct:Action	file:
 addValueArray	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void addValueArray(string key, string[] arrayOfValues) {$/;"	f	class:Element::Form
@@ -156,14 +156,14 @@ arr	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	private T[] arr;$/;"
 arsd.characterencodings	/home/juanjux/webmail/backend/source/libs/arsd/characterencodings.d	/^module arsd.characterencodings;$/;"	M
 arsd.dom	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^module arsd.dom;$/;"	M
 arsd.htmltotext	/home/juanjux/webmail/backend/source/libs/arsd/htmltotext.d	/^module arsd.htmltotext;$/;"	M
-asJsonString	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string asJsonString()$/;"	f	class:Conversation
+asJsonString	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string asJsonString()$/;"	f	struct:Conversation
 attachFileNames	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string[] attachFileNames;$/;"	m	struct:EmailSummary	file:
 attachFileNames	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string[] attachFileNames;$/;"	m	struct:Conversation	file:
 attachFileNames	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string[] attachFileNames;$/;"	m	struct:MessageSummary	file:
-attachFileNames	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string[] attachFileNames;$/;"	m	struct:ConversationSummary	file:
-attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    Attachment attachment;$/;"	m	class:MIMEPart	file:
+attachFileNames	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string[]       attachFileNames;$/;"	m	struct:ConversationSummary	file:
+attachment	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    Attachment attachment;$/;"	m	struct:MIMEPart	file:
 attachmentStore	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string attachmentStore;$/;"	m	struct:RetrieverConfig	file:
-attachments	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property const(Attachment[]) attachments() { return m_attachments; }$/;"	f	class:IncomingEmailImpl
+attachments	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property const(Attachment[]) attachments() const { return m_attachments; }$/;"	f	class:IncomingEmailImpl
 attachments	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    Attachment[] attachments;$/;"	m	struct:Message	file:
 attributes	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	string[string] attributes;$/;"	m	class:Element	file:
 attributesEndsWith	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		string[2][] attributesEndsWith; \/\/\/ [attr$=value]$/;"	m	struct:Element::SelectorPart	file:
@@ -189,7 +189,7 @@ bsonStrArray	/home/juanjux/webmail/backend/source/retriever/db.d	/^alias bsonStr
 bsonStrHash	/home/juanjux/webmail/backend/source/retriever/db.d	/^alias bsonStrHash  = deserializeBson!(string[string]);$/;"	t	file:
 bubblingEventHandlers	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	EventHandler[][string] bubblingEventHandlers;$/;"	m	class:Element	file:
 button	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	int button;$/;"	m	class:Element::Event	file:
-cTransferEncoding	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string cTransferEncoding;$/;"	m	class:MIMEPart	file:
+cTransferEncoding	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string cTransferEncoding;$/;"	m	struct:MIMEPart	file:
 camelCase	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^string camelCase(string a) {$/;"	s	file:
 capitalizeHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^private pure string capitalizeHeader(string name)$/;"	f
 caption	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property string caption() {$/;"	f	class:Element::Table
@@ -217,19 +217,19 @@ computeAttachmentsSize	/home/juanjux/webmail/backend/source/retriever/incomingem
 computeSize	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    pure ulong computeSize() const$/;"	f	class:IncomingEmailImpl
 computeTextualBodySize	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    pure ulong computeTextualBodySize() const$/;"	f	class:IncomingEmailImpl
 computedStyle	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property CssStyle computedStyle() {$/;"	f	class:Element
-contentId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	class:MIMEPart	file:
 contentId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	struct:Attachment	file:
+contentId	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	struct:MIMEPart	file:
 contentId	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string contentId;$/;"	m	struct:Attachment	file:
 contentType	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property string contentType(string mimeType) {$/;"	f	class:Element::Document
 contentType	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	override @property string contentType() const {$/;"	f	class:Element::Document
 contents	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	string contents;$/;"	m	class:Element::TextNode	file:
-conversationDocToObject	/home/juanjux/webmail/backend/source/retriever/db.d	/^Conversation conversationDocToObject(Bson convDoc)$/;"	f
+conversationDocToObject	/home/juanjux/webmail/backend/source/retriever/db.d	/^Conversation conversationDocToObject(const ref Bson convDoc)$/;"	f
 createElement	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element createElement(string name) {$/;"	f	class:Element::Document
 createFragment	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element createFragment() {$/;"	f	class:Element::Document
 createPartInfoText	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)$/;"	f
 createTextNode	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element createTextNode(string content) {$/;"	f	class:Element::Document
 cssUrl	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^string cssUrl(string url) {$/;"	c	class:Element	file:
-ctype	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    ContentData ctype;$/;"	m	class:MIMEPart	file:
+ctype	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    ContentData ctype;$/;"	m	struct:MIMEPart	file:
 ctype	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string ctype;$/;"	m	struct:Attachment	file:
 ctype	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string ctype;$/;"	m	struct:Attachment	file:
 current	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Current current;$/;"	m	class:Element::ElementStream	typeref:struct:Element::ElementStream::Current	file:
@@ -237,11 +237,11 @@ currentKilled	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void curre
 data	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		string data;$/;"	m	class:Element::Utf8Stream	file:
 dataset	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property DataSet dataset() {$/;"	f	class:Element
 date	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string date;$/;"	m	struct:EmailSummary	file:
-date	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property const(DateTime)     date()         const { return m_date; }$/;"	f	class:IncomingEmailImpl
+date	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property ref const(DateTime)     date()         const { return m_date; }$/;"	f	class:IncomingEmailImpl
 date	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string date;$/;"	m	struct:MessageSummary	file:
-dbId	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string dbId;$/;"	m	class:Conversation	file:
+dbId	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string dbId;$/;"	m	struct:Conversation	file:
 dbId	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string dbId;$/;"	m	struct:EmailSummary	file:
-dbId	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string   dbId;$/;"	m	struct:ConversationSummary	file:
+dbId	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string         dbId;$/;"	m	struct:ConversationSummary	file:
 decodeBase64Stubborn	/home/juanjux/webmail/backend/source/libs/arsd/characterencodings.d	/^immutable(ubyte)[] decodeBase64Stubborn(string input)$/;"	f
 decodeEncodedWord	/home/juanjux/webmail/backend/source/libs/arsd/characterencodings.d	/^string decodeEncodedWord(string data) {$/;"	f
 decodeQuotedPrintable	/home/juanjux/webmail/backend/source/libs/arsd/characterencodings.d	/^immutable(ubyte)[] decodeQuotedPrintable(string text) {$/;"	f
@@ -253,7 +253,7 @@ directText	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property str
 directText	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property void directText(string text) {$/;"	f
 dispatch	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void dispatch() {$/;"	f	class:Element::Event
 dispatchMutationEvent	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void dispatchMutationEvent(DomMutationEvent e) {$/;"	f	class:Element::Document
-disposition	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    ContentData disposition;$/;"	m	class:MIMEPart	file:
+disposition	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    ContentData disposition;$/;"	m	struct:MIMEPart	file:
 domainHasDefaultUser	/home/juanjux/webmail/backend/source/retriever/db.d	/^Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)$/;"	f
 domainName	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property string domainName() {$/;"	f	class:Element::Link
 dropFront	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		void dropFront(int bytes) {$/;"	f	class:Element::Utf8Stream
@@ -301,8 +301,8 @@ get	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	string get(string na
 getAddressFilters	/home/juanjux/webmail/backend/source/retriever/db.d	/^const(UserFilter[]) getAddressFilters(string address)$/;"	f
 getAttribute	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	string getAttribute(string name) const {$/;"	f	class:Element
 getConfig	/home/juanjux/webmail/backend/source/retriever/db.d	/^ref const(RetrieverConfig) getConfig()$/;"	f
-getConversationByReferences	/home/juanjux/webmail/backend/source/retriever/db.d	/^Conversation getConversationByReferences(string userId, string[] references)$/;"	f
-getConversationsByTag	/home/juanjux/webmail/backend/source/retriever/db.d	/^Conversation[] getConversationsByTag(string tagName, int limit, int page)$/;"	f
+getConversationByReferences	/home/juanjux/webmail/backend/source/retriever/db.d	/^Conversation getConversationByReferences(string userId, const string[] references)$/;"	f
+getConversationsByTag	/home/juanjux/webmail/backend/source/retriever/db.d	/^const(Conversation[]) getConversationsByTag(string tagName, int limit, int page)$/;"	f
 getData	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	override immutable(ubyte)[] getData() const {$/;"	f	class:Element::Document
 getElementById	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element getElementById(string id) {$/;"	f	class:Element
 getElementById	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element getElementById(string id) {$/;"	f	class:Element::Document
@@ -337,9 +337,10 @@ givenExplicitly	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		bool gi
 handleDataEncoding	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Utf8Stream handleDataEncoding(in string rawdata, string dataEncoding, bool strict) {$/;"	f	class:Element::Document
 hasAttribute	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	bool hasAttribute(string name) {$/;"	f	class:Element
 hasClass	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	bool hasClass(string c) {$/;"	f
+hasHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    bool hasHeader(string name) const$/;"	f	class:IncomingEmailImpl
 hasMore	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		bool hasMore() {$/;"	f	class:Element::Utf8Stream
 hasMoreHelper	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		bool delegate() hasMoreHelper;$/;"	m	class:Element::Utf8Stream	file:
-haveLink	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    private bool haveLink(string messageId, string emailDbId)$/;"	f	class:Conversation	file:
+haveLink	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    private bool haveLink(string messageId, string emailDbId)$/;"	f	struct:Conversation	file:
 haystack	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^sizediff_t indexOfBytes(immutable(ubyte)[] haystack, immutable(ubyte)[] needle) {$/;"	m	class:Element	typeref:class:Element::ElementStream	file:
 headerMatches	/home/juanjux/webmail/backend/source/retriever/userrule.d	/^    string[string]   headerMatches;$/;"	m	struct:Match	file:
 headers	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property ref DictionaryList!(HeaderValue, false) headers() { return m_headers; }$/;"	f	class:IncomingEmailImpl
@@ -368,13 +369,13 @@ jsonizeHeader	/home/juanjux/webmail/backend/source/retriever/db.d	/^string jsoni
 justSawDash	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	bool justSawDash = false;$/;"	m	struct:camelCase	file:
 lastChild	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		bool lastChild; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
 lastChild	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property Element lastChild() {$/;"	f	class:Element
-lastDate	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string lastDate;$/;"	m	class:Conversation	file:
-lastDate	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string   lastDate;$/;"	m	struct:ConversationSummary	file:
+lastDate	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string lastDate;$/;"	m	struct:Conversation	file:
+lastDate	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string         lastDate;$/;"	m	struct:ConversationSummary	file:
 lastIdx	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		size_t lastIdx;$/;"	m	class:Element::Utf8Stream	file:
 lastMessageDate	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string lastMessageDate;$/;"	m	struct:Conversation	file:
 length	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		@property final size_t length() {$/;"	f	class:Element::Utf8Stream
 lexSelector	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	string[] lexSelector(string selector) {$/;"	f	class:Element
-links	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    MessageLink[] links;$/;"	m	class:Conversation	file:
+links	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    MessageLink[] links;$/;"	m	struct:Conversation	file:
 loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void loadFromFile(File emailFile, string attachStore, string rawEmailStore = "")$/;"	f	class:IncomingEmailImpl
 loadFromFile	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void loadFromFile(string emailPath, string attachStore, string rawEmailStore="")$/;"	f	class:IncomingEmailImpl
 localReceivers	/home/juanjux/webmail/backend/source/retriever/db.d	/^const(string[]) localReceivers(const IncomingEmail email)$/;"	f
@@ -411,7 +412,7 @@ nodeValue	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	override strin
 nodeValue	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	override string nodeValue() const {$/;"	f	class:Element::TextNode
 none	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property static FormFieldOptions none() {$/;"	f	struct:Element::FormFieldOptions
 numItems	/home/juanjux/webmail/backend/source/webbackend/test.d	/^    const ulong numItems;$/;"	m	struct:B	file:
-numMessages	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    ulong    numMessages;$/;"	m	struct:ConversationSummary	file:
+numMessages	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    ulong          numMessages;$/;"	m	struct:ConversationSummary	file:
 oddChild	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		bool oddChild; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
 offsetHeight	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		int offsetHeight; \/\/\/ditto$/;"	v
 offsetLeft	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		int offsetLeft; \/\/\/ditto$/;"	v
@@ -436,7 +437,7 @@ outerHTML	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property Elem
 outerHTML	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property string outerHTML() {$/;"	f	class:Element
 outerText	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property void outerText(string text) {$/;"	f	class:Element
 outerText	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	string outerText() const {$/;"	f	class:Element
-parent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    MIMEPart parent = null;$/;"	m	class:MIMEPart	file:
+parent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    MIMEPart *parent = null;$/;"	m	struct:MIMEPart	file:
 parentDocument	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Document parentDocument;$/;"	m	class:Element	file:
 parentNode	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element parentNode;$/;"	m	class:Element	file:
 parse	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void parse(in string rawdata, bool caseSensitive = false, bool strict = false, string dataEncoding = "UTF-8") {$/;"	f	class:Element::Document
@@ -446,7 +447,7 @@ parseDate	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    p
 parseEntity	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^dchar parseEntity(in dchar[] entity) {$/;"	c	class:Element	file:
 parseGarbage	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void parseGarbage(string data) {$/;"	f	class:Element::Document
 parsePartHeaders	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private int parsePartHeaders(MIMEPart part, string[] lines)$/;"	f	class:IncomingEmailImpl	file:
-parseParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private void parseParts(string[] lines, MIMEPart parent, string attachStore)$/;"	f	class:IncomingEmailImpl	file:
+parseParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    private void parseParts(string[] lines, const MIMEPart *parent, string attachStore)$/;"	f	class:IncomingEmailImpl	file:
 parseSawAspCode	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	bool delegate(string) parseSawAspCode;$/;"	m	class:Element::Document	file:
 parseSawBangInstruction	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	bool delegate(string) parseSawBangInstruction;$/;"	m	class:Element::Document	file:
 parseSawComment	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	bool delegate(string) parseSawComment;$/;"	m	class:Element::Document	file:
@@ -493,6 +494,7 @@ removeChild	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	removeChild,
 removeClass	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element removeClass(string c) {$/;"	f
 removeDuplicates	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^Element[] removeDuplicates(Element[] input) {$/;"	f	class:Element
 removeField	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void removeField(string name) {$/;"	f	class:Element::Form
+removeHeader	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    void removeHeader(string name)$/;"	f	class:IncomingEmailImpl
 removeValue	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void removeValue(string name) {$/;"	f	class:Element::Link
 reparentTreeDocuments	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	private void reparentTreeDocuments() {$/;"	f	class:Element	file:
 repeat	/home/juanjux/webmail/backend/source/libs/arsd/htmltotext.d	/^string repeat(string s, ulong num) {$/;"	f
@@ -538,7 +540,7 @@ setValue	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	override void s
 setValue	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	string setValue(string name, string value, Specificity newSpecificity, bool explicit = true) {$/;"	f	class:Element::CssStyle
 setValue	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void setValue(string field, string value) { }$/;"	f	class:Element
 setValue	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void setValue(string field, string value, bool makeNew) {$/;"	f	class:Element::Form
-shortAuthors	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string[] shortAuthors;$/;"	m	struct:ConversationSummary	file:
+shortAuthors	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string[]       shortAuthors;$/;"	m	struct:ConversationSummary	file:
 shortcut	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	bool shortcut = true;$/;"	m	class:Element::htmlEntitiesEncode	file:
 size	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    ulong size;$/;"	m	struct:Attachment	file:
 size	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    ulong  size;$/;"	m	struct:Attachment	file:
@@ -561,27 +563,27 @@ stack	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Stack!(Current) st
 start	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	auto start = output.data.length;$/;"	m	class:Element::htmlEntitiesEncode	file:
 stopPropagation	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void stopPropagation() {$/;"	f	class:Element::Event
 store	/home/juanjux/webmail/backend/source/retriever/db.d	/^string store(IncomingEmail email)$/;"	f
-store	/home/juanjux/webmail/backend/source/retriever/db.d	/^void store(Envelope envelope)$/;"	f
+store	/home/juanjux/webmail/backend/source/retriever/db.d	/^void store(const ref Envelope envelope)$/;"	f
 storeTextIndex	/home/juanjux/webmail/backend/source/retriever/db.d	/^    bool   storeTextIndex;$/;"	m	struct:RetrieverConfig	file:
 style	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property ElementStyle style() {$/;"	f	class:Element
 style	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property ElementStyle style(string s) {$/;"	f	class:Element
 subject	/home/juanjux/webmail/backend/source/retriever/db.d	/^    string subject;$/;"	m	struct:EmailSummary	file:
 subject	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string subject;$/;"	m	struct:Conversation	file:
 subject	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string subject;$/;"	m	struct:MessageSummary	file:
-subject	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string   subject;$/;"	m	struct:ConversationSummary	file:
+subject	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string         subject;$/;"	m	struct:ConversationSummary	file:
 submit	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	void submit() {$/;"	f	class:Element::Form
-subparts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    MIMEPart[] subparts;$/;"	m	class:MIMEPart	file:
+subparts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    MIMEPart[] subparts;$/;"	m	struct:MIMEPart	file:
 summaries	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    MessageSummary[] summaries;$/;"	m	struct:Conversation	file:
 tagName	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	string tagName;$/;"	m	class:Element	file:
 tagNameFilter	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		string tagNameFilter; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
 tags	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^			ubyte tags; \/\/\/.$/;"	m	struct:Element::CssStyle::Specificity::__anon4	file:
-tags	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string[] tags;$/;"	m	class:Conversation	file:
+tags	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string[] tags;$/;"	m	struct:Conversation	file:
 tags	/home/juanjux/webmail/backend/source/webbackend/source/api.d	/^    string[] tags;$/;"	m	struct:Conversation	file:
-tags	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    string[] tags;$/;"	m	struct:ConversationSummary	file:
+tags	/home/juanjux/webmail/backend/source/webbackend/source/conversationsummary.d	/^    const string[] tags;$/;"	m	struct:ConversationSummary	file:
 target	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	Element target;$/;"	m	struct:Element::DomMutationEvent	file:
 target	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	alias srcElement target;$/;"	t	class:Element::Event	file:
 targetSansQuery	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property string targetSansQuery() {$/;"	f	class:Element::Link
-textContent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string textContent;$/;"	m	class:MIMEPart	file:
+textContent	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    string textContent;$/;"	m	struct:MIMEPart	file:
 textualParts	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    @property const(MIMEPart[])   textualParts() const { return m_textualParts; } $/;"	f	class:IncomingEmailImpl
 title	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property string title() {$/;"	f	class:Element::Document
 title	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	@property void title(string t) {$/;"	f	class:Element::Document
@@ -597,10 +599,10 @@ txt	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	txt = txt.strip().to
 unCamelCase	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^string unCamelCase(string a) {$/;"	s	file:
 unittest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^    version(unittest)$/;"	V	file:
 unittest	/home/juanjux/webmail/backend/source/retriever/incomingemail.d	/^version(unittest)$/;"	V	file:
-updateLastDate	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    void updateLastDate(string newIsoDate)$/;"	f	class:Conversation
+updateLastDate	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    void updateLastDate(string newIsoDate)$/;"	f	struct:Conversation
 updateQueryString	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	\/*private*\/ void updateQueryString(string[string] vars) {$/;"	f	class:Element::Link
 upsertConversation	/home/juanjux/webmail/backend/source/retriever/db.d	/^string upsertConversation(const IncomingEmail email, string emailDbId,$/;"	f
-userDbId	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string userDbId;$/;"	m	class:Conversation	file:
+userDbId	/home/juanjux/webmail/backend/source/retriever/conversation.d	/^    string userDbId;$/;"	m	struct:Conversation	file:
 userId	/home/juanjux/webmail/backend/source/retriever/envelope.d	/^    string userId;$/;"	m	struct:Envelope	file:
 value	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^		string value; \/\/\/.$/;"	m	struct:Element::CssStyle::Property	file:
 variablesHash	/home/juanjux/webmail/backend/source/libs/arsd/dom.d	/^	private string[string] variablesHash() {$/;"	f	class:Element::Link	file:
