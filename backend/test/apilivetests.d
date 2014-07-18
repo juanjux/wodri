@@ -22,7 +22,7 @@ void testGetTagConversations()
             "Content-Type: application/json", 
             "http://127.0.0.1:8080/api/tag/?name=inbox&limit=20&page=0");
     auto retCurl = executeShell(curlCmd);
-    assert(retCurl.status == 0);
+    assert(retCurl.status == 0, "CURL didnt return 0");
     assert(retCurl.output.length);
 
     JSONValue conversations;

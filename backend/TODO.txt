@@ -3,10 +3,6 @@ Backend-API:
 
     - Move unittest to apiobjects.d
 
-    - Script to compile and run with unittest && run the server with dbtest
-      && rdmd-run apilivetests.d
-
-
 Backend-Retriever:
     - Regenerate unittest files
 

@@ -101,7 +101,7 @@ struct ContentData
     string[string] fields;
 }
 
-final class MIMEPart 
+final class MIMEPart
 {
     MIMEPart parent;
     MIMEPart[] subparts;
@@ -114,7 +114,7 @@ final class MIMEPart
 }
 
 
-struct Attachment 
+struct Attachment
 {
     string realPath;
     string ctype;
@@ -164,7 +164,7 @@ final class IncomingEmailImpl : IncomingEmail
     {
         DictionaryList!(HeaderValue, false) m_headers; // Note: keys are case insensitive
         DateTime     m_date;
-        MIMEPart[]   m_textualParts; 
+        MIMEPart[]   m_textualParts;
         Attachment[] m_attachments;
         MIMEPart     rootPart;
         string       m_rawEmailPath;
@@ -191,7 +191,7 @@ final class IncomingEmailImpl : IncomingEmail
     @property const(Attachment[]) attachments()  const { return m_attachments; }
     @property ref const(DateTime) date()         const { return m_date; }
     @property string              rawEmailPath() const { return m_rawEmailPath; }
-    @property const(MIMEPart[])   textualParts() const { return m_textualParts; } 
+    @property const(MIMEPart[])   textualParts() const { return m_textualParts; }
 
     /**
         Return the header if it exists. If not, returns an empty HeaderValue.
@@ -227,8 +227,8 @@ final class IncomingEmailImpl : IncomingEmail
         Appender!string partialBuffer;
         string currentLine;
 
-        bool inputIsStdInput = (rawEmailStore.length && 
-                                among(emailFile, 
+        bool inputIsStdInput = (rawEmailStore.length &&
+                                among(emailFile,
                                 std.stdio.stdin, std.stdio.stderr));
 
         // === Header ===
@@ -267,7 +267,7 @@ final class IncomingEmailImpl : IncomingEmail
         }
 
         if (!hasHeader("date"))
-            parseDate("NOW"); 
+            parseDate("NOW");
 
         if (!hasHeader("message-id"))
             generateMessageId();
@@ -284,7 +284,8 @@ final class IncomingEmailImpl : IncomingEmail
         }
 
         if (this.rootPart.ctype.name.startsWith("multipart"))
-            parseParts(split(partialBuffer.data, this.lineSep), this.rootPart, attachStore);
+            parseParts(split(partialBuffer.data, this.lineSep),
+                       this.rootPart, attachStore);
         else
             setTextPart(this.rootPart, partialBuffer.data);
 
@@ -392,7 +393,7 @@ final class IncomingEmailImpl : IncomingEmail
                 {
                     // like: Tue, 18 Mar 2014 16:09:36 +0100
                     if (tokDate.length >= 6 &&
-                        among(tokDate[0][0..3], 
+                        among(tokDate[0][0..3],
                               "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
                         ++posAdjust;
                     // else like: 4 Jan 2005 07:04:19 -0000
@@ -403,7 +404,7 @@ final class IncomingEmailImpl : IncomingEmail
                     auto hmsTokens = tokDate[3+posAdjust].split(":");
                     auto hour      = to!int(hmsTokens[0]);
                     auto minute    = to!int(hmsTokens[1]);
-                    int second = hmsTokens.length > 2? to!int(hmsTokens[2]):0;
+                    int second     = hmsTokens.length > 2? to!int(hmsTokens[2]):0;
                     string tz      = tokDate[4+posAdjust];
                     ldate = DateTime(Date(year, month, day), TimeOfDay(hour, minute, second));
 
@@ -536,7 +537,8 @@ final class IncomingEmailImpl : IncomingEmail
             attContent = decodeBase64Stubborn(join(lines));
             version(unittest) wasEncoded = true;
         }
-        else // binary, 7bit, 8bit, no need to decode... I think...
+        else
+            // binary, 7bit, 8bit, no need to decode... I think...
             attContent = cast(immutable(ubyte)[]) join(lines, this.lineSep);
 
         string origFileName = part.disposition.fields.get("filename", "");
@@ -671,7 +673,7 @@ final class IncomingEmailImpl : IncomingEmail
         if (hasHeader("content-transfer-encoding"))
             part.cTransferEncoding = lowStrip(
                                        removechars(
-                                         headers["content-transfer-encoding"].rawValue, 
+                                         headers["content-transfer-encoding"].rawValue,
                                          "\""
                                      ));
 

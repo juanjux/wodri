@@ -108,8 +108,8 @@ class UserFilter
 
     private void applyAction(ref Envelope envelope, ref bool[string] convTags) const
     {
-        // email.tags == false actually mean to the rest of the retriever
-        // processes: "it doesnt have the tag and please dont add it after this point"
+        // email.tags == false actually mean to the rest of the retriever processes: "it
+        // doesnt have the tag and please dont add it after this point"
         if (this.action.noInbox)
             convTags["inbox"] = false;
 
