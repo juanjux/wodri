@@ -10,7 +10,7 @@
     "dependencies": {
         "vibe-d": "~master"
     },
-    "versions": ["VibeDefaultMain"],
+    "versions": ["VibeDefaultMain", "db_usetestdb"],
     "configurations": [
         {
             "name": "default",

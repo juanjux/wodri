@@ -92,11 +92,12 @@ struct EmailSummary
     string isoDate;
     string date;
     string[] attachFileNames;
-    string introText;
+    string bodyPeek;
+    string avatarUrl;
 }
 
 
-double bsonNumber(const Bson input)
+private double bsonNumber(const Bson input)
 {
     switch(input.type)
     {
@@ -121,7 +122,7 @@ ref const(RetrieverConfig) getConfig()
 }
 
 
-const(RetrieverConfig) getInitialConfig()
+private const(RetrieverConfig) getInitialConfig()
 {
     RetrieverConfig _config;
     immutable dbconfig = g_mongoDB["settings"].findOne(["module": "retriever"]);
@@ -174,7 +175,9 @@ const(RetrieverConfig) getInitialConfig()
 
 Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
 {
-    auto domain = g_mongoDB["domain"].findOne(["name": domainName]);
+    auto domain = g_mongoDB["domain"].findOne(["name": domainName],
+                                              ["defaultUser": 1],
+                                              QueryFlags.None);
     if (!domain.isNull &&
         !domain.defaultUser.isNull &&
         bsonStr(domain.defaultUser).length)
@@ -186,8 +189,10 @@ Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
 const(UserFilter[]) getAddressFilters(string address)
 {
     UserFilter[] res;
-    auto userRuleFindJson = format(`{"destinationAccounts": {"$in": ["%s"]}}`, address);
-    auto userRuleCursor   = g_mongoDB["userrule"].find(parseJsonString(userRuleFindJson));
+    auto userRuleFindJson = parseJsonString(
+            format(`{"destinationAccounts": {"$in": ["%s"]}}`, address)
+    );
+    auto userRuleCursor   = g_mongoDB["userrule"].find(userRuleFindJson);
 
     foreach(ref rule; userRuleCursor)
     {
@@ -240,8 +245,8 @@ bool addressIsLocal(string address)
     if (domainHasDefaultUser(address.split("@")[1]) == Yes.HasDefaultUser)
         return true;
 
-    auto jsonStr    = `{"addresses": {"$in": ["` ~ address ~ `"]}}`;
-    auto userRecord = g_mongoDB["user"].findOne(parseJsonString(jsonStr));
+    auto selector   = parseJsonString(`{"addresses": {"$in": ["` ~ address ~ `"]}}`);
+    auto userRecord = g_mongoDB["user"].findOne(selector);
     return !userRecord.isNull;
 }
 
@@ -262,7 +267,7 @@ const(string[]) localReceivers(const IncomingEmail email)
 }
 
 
-string jsonizeHeader(const IncomingEmail email, string headerName,
+private string jsonizeHeader(const IncomingEmail email, string headerName,
                      Flag!"RemoveQuotes" removeQuotes = No.RemoveQuotes,
                      Flag!"OnlyValue" onlyValue       = No.OnlyValue)
 {
@@ -287,18 +292,27 @@ string jsonizeHeader(const IncomingEmail email, string headerName,
 
 string getEmailIdByMessageId(string messageId)
 {
-    const res = g_mongoDB["email"].findOne(parseJsonString(format(`{"message-id": "%s"}`,
-                                                           messageId)));
+    auto findSelector = parseJsonString(format(`{"message-id": "%s"}`, messageId));
+    const res = g_mongoDB["email"].findOne(findSelector, ["_id": 1],
+                                           QueryFlags.None);
     if (!res.isNull)
         return bsonStr(res["_id"]);
     return "";
 }
 
 
-const(EmailSummary) getEmailSummary(string dbId)
+EmailSummary getEmailSummary(string dbId)
 {
     EmailSummary res;
-    const emailDoc = g_mongoDB["email"].findOne(["_id": dbId]);
+    auto fieldSelector = ["from": 1,
+                          "headers": 1,
+                          "isodate": 1, 
+                          "bodyPeek": 1,
+                          "attachments": 1];
+
+    const emailDoc = g_mongoDB["email"].findOne(["_id": dbId], 
+                                                fieldSelector, 
+                                                QueryFlags.None);
     if (!emailDoc.isNull)
     {
         res.dbId = dbId;
@@ -306,13 +320,19 @@ const(EmailSummary) getEmailSummary(string dbId)
         if (!emailDoc.headers.subject.isNull &&
             !emailDoc.headers.subject[0].rawValue.isNull)
             res.subject = bsonStr(emailDoc.headers.subject[0].rawValue);
+
         if (!emailDoc.headers.date.isNull &&
             !emailDoc.headers.date[0].rawValue.isNull)
             res.date = bsonStr(emailDoc.headers.date[0].rawValue);
+
         if (!emailDoc.from.rawValue.isNull)
             res.from = bsonStr(emailDoc.from.rawValue);
+
         if (!emailDoc.isodate.isNull)
             res.isoDate = bsonStr(emailDoc.isodate);
+
+        if (!emailDoc.bodyPeek.isNull)
+            res.bodyPeek = bsonStr(emailDoc.bodyPeek);
 
         foreach(ref attach; emailDoc.attachments)
             if (!attach.fileName.isNull)
@@ -322,7 +342,7 @@ const(EmailSummary) getEmailSummary(string dbId)
 }
 
 
-Conversation conversationDocToObject(const ref Bson convDoc)
+private Conversation conversationDocToObject(ref Bson convDoc)
 {
     Conversation ret;
     if (!convDoc.isNull)
@@ -338,17 +358,26 @@ Conversation conversationDocToObject(const ref Bson convDoc)
     return ret;
 }
 
+// XXX unittest
+Conversation getConversationById(string id)
+{
+    auto convDoc = g_mongoDB["conversation"].findOne(["_id": id]);
+    return conversationDocToObject(convDoc);
+}
+
 
 const(Conversation[]) getConversationsByTag(string tagName, int limit, int page)
 {
     const(Conversation)[] ret;
 
-    auto jsonFindStr = format(`{"tags": {"$in": ["%s"]}}`, tagName);
-    auto cursor = g_mongoDB["conversation"].find(parseJsonString(jsonFindStr),
-                                                Bson(null), // returnFieldSelector
-                                                QueryFlags.None,
-                                                page > 0? page*limit: 0) // skip
-                                                .sort(parseJsonString(`{"lastDate": -1}`));
+    auto jsonFind = parseJsonString(format(`{"tags": {"$in": ["%s"]}}`, tagName));
+    auto cursor   = g_mongoDB["conversation"].find(
+                                                   jsonFind,
+                                                   Bson(null),
+                                                   QueryFlags.None,
+                                                   page > 0? page*limit: 0 // skip
+    ).sort(["lastDate": -1]);
+
     cursor.limit(limit);
     foreach(ref doc; cursor)
         ret ~= conversationDocToObject(doc);
@@ -438,7 +467,7 @@ void store(const ref Envelope envelope)
                       "userId": "%s",
                       "destinationAddress": "%s",
                       "forwardTo": %s}`,
-                      BsonObjectID.generate(),
+                      BsonObjectID.generate().toString ,
                       envelope.emailId,
                       envelope.userId,
                       envelope.destination,
@@ -452,7 +481,9 @@ void store(const ref Envelope envelope)
 string getUserIdFromAddress(string address)
 {
     auto userResult = g_mongoDB["user"].findOne(
-            parseJsonString(format(`{"addresses": {"$in": ["%s"]}}`, address))
+            parseJsonString(format(`{"addresses": {"$in": ["%s"]}}`, address)),
+            ["_id": 1],
+            QueryFlags.None
     );
     return userResult.isNull? "": bsonStr(userResult._id);
 }
@@ -463,10 +494,8 @@ string store(IncomingEmail email)
     // json for the text parts
     auto partAppender = appender!string;
     foreach(idx, part; email.textualParts)
-    {
         partAppender.put("{\"contentType\": " ~ Json(part.ctype.name).toString() ~ ","
                           "\"content\": "     ~ Json(part.textContent).toString() ~ "},");
-    }
     string textPartsJsonStr = partAppender.data.idup;
     partAppender.clear();
 
@@ -535,6 +564,9 @@ string store(IncomingEmail email)
     string rawHeadersStr = partAppender.data();
     partAppender.clear();
 
+    auto relevantPlain = maybeBodyTextPlain(email);
+    auto bodyPeek = relevantPlain.length? relevantPlain[0..min($,100)]: "";
+
     const documentId = BsonObjectID.generate().toString;
     auto emailInsertJson = format(
           `{"_id": "%s",` ~
@@ -545,6 +577,7 @@ string store(IncomingEmail email)
           `"receivers": { "rawValue": %s "addresses": %s },`   ~
           `"headers": %s, `    ~
           `"textParts": [ %s ], ` ~
+          `"bodyPeek": "%s", ` ~ 
           `"attachments": [ %s ] }`,
             documentId,
             email.rawEmailPath,
@@ -556,6 +589,7 @@ string store(IncomingEmail email)
             realReceiverAddresses,
             rawHeadersStr,
             textPartsJsonStr,
+            bodyPeek,
             attachmentsJsonStr
     );
     g_mongoDB["email"].insert(parseJsonString(emailInsertJson));
@@ -563,7 +597,7 @@ string store(IncomingEmail email)
 }
 
 
-string storeTextIndexMongo(string content, string emailDbId)
+private string storeTextIndexMongo(string content, string emailDbId)
 {
     auto docId = BsonObjectID.generate().toString;
     g_mongoDB["emailIndexContents"].insert(["_id": docId,
@@ -574,13 +608,12 @@ string storeTextIndexMongo(string content, string emailDbId)
 }
 
 
-/**
- * Store a document with the relevant textual part of the message body.
+/** Try to guess the relevant part of the email body and return it as plain text
  */
-void storeTextIndex(const IncomingEmail email, string emailDbId)
+string maybeBodyTextPlain(const IncomingEmail email)
 {
     if (!email.textualParts.length)
-        return;
+        return "";
 
     auto partAppender = appender!string;
 
@@ -605,9 +638,21 @@ void storeTextIndex(const IncomingEmail email, string emailDbId)
                 partAppender.put(part.textContent);
         }
     }
+    return strip(partAppender.data);
+}
 
-    if (strip(partAppender.data).length)
-        storeTextIndexMongo(partAppender.data, emailDbId);
+
+/**
+ * Store a document with the relevant textual part of the email body.
+ */
+void storeTextIndex(const IncomingEmail email, string emailDbId)
+{
+    if (!email.textualParts.length)
+        return;
+
+    auto maybeText = maybeBodyTextPlain(email);
+    if (maybeText.length)
+        storeTextIndexMongo(maybeText, emailDbId);
 }
 
 
@@ -617,7 +662,9 @@ void storeTextIndex(const IncomingEmail email, string emailDbId)
 Flag!"AlreadyOnDb" emailAlreadyOnDb(const IncomingEmail email)
 {
     const emailInDb = g_mongoDB["email"].findOne(
-            ["message-id": email.getHeader("message-id").addresses[0]]
+            ["message-id": email.getHeader("message-id").addresses[0]],
+            ["headers": 1, "from": 1, "receivers": 1],
+            QueryFlags.None
     );
     if (emailInDb.isNull)
         return No.AlreadyOnDb;
@@ -958,7 +1005,7 @@ version(db_test)
         cursor = g_mongoDB["emailIndexContents"].find(parseJsonString(findJson));
         assert(!cursor.empty);
         string res = cursor.front.text.toString;
-        assert(countUntil(res, "text inside") == 10);
+        assert(countUntil(res, "text inside") == 6);
 
         findJson = format(`{"$text": {"$search": "email"}}`);
         cursor = g_mongoDB["emailIndexContents"].find(parseJsonString(findJson));

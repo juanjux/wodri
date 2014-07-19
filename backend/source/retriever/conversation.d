@@ -18,6 +18,7 @@ struct Conversation
     string lastDate;
     string[] tags;
     MessageLink[] links;
+    string[] attachFileNames;
 
     private bool haveLink(string messageId, string emailDbId)
     {

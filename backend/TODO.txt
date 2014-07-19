@@ -1,14 +1,23 @@
 Backend-API:
-    - Implement -/conversation/:id
+    - Move ApiConversation to its own file
 
     - Move unittest to apiobjects.d
 
 Backend-Retriever:
-    - Regenerate unittest files
+    - Unittest for getConversationById
+
+    - store(email) unittest => check the bodyPeek
+
+    - When storing a Conversation, store the cleanedSubject of the last message too, 
+      but only if not empty after cleaning
+
+    - Regenerate unittest files and ignore message-id field if it doesnt exists
 
     - Envelope.asJsonString and use it on db.d
 
-    - Conversation.updateLastDate => validate the date!
+    - Conversation.updateLastDate => validate the date
+
+    Later:
 
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)

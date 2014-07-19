@@ -117,7 +117,8 @@ list item was an additional header entry in the original email.
                         "content" : "Text content, plain or html (see contenttype for every part), already decoded into UTF-8",
                         "contentType" : "text/plain"
                 }
-        ]
+        ],
+        "bodyPeek" : "Text content, plain or html...",
         "attachments" : [ {
                 "contentType" : "mime/jpeg",
                 "realPath"    : "/path/to/file/2342342343.jpg",

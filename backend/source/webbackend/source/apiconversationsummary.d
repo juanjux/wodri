@@ -1,4 +1,4 @@
-module webbackend.conversationsummary;
+module webbackend.apiconversationsummary;
 
 import std.regex;
 import std.algorithm;
@@ -10,11 +10,10 @@ import retriever.db;
 import retriever.conversation;
 import retriever.incomingemail: EMAIL_REGEX;
 
-auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$",
-                                    "gi");
+auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 auto NAME_CLEAN_REGEX = ctRegex!(r"[<>]", "g");
 
-struct ConversationSummary
+struct ApiConversationSummary
 {
     string         dbId;
     ulong          numMessages;

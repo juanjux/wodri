@@ -1,6 +1,7 @@
 #!/usr/bin/env rdmd
 import std.process;
 import std.array;
+import std.string;
 import std.stdio;
 import std.json;
 import std.algorithm;
@@ -16,8 +17,8 @@ string[] jsonToArray(JSONValue val)
  */
 void testGetTagConversations()
 {
-    // getTagConversations
     writeln("Testing outside getTagConversations");
+
     auto curlCmd = escapeShellCommand("curl", "-s", "-X", "GET", "-H", 
             "Content-Type: application/json", 
             "http://127.0.0.1:8080/api/tag/?name=inbox&limit=20&page=0");
@@ -63,10 +64,43 @@ void testGetTagConversations()
     assert(retCurl.status == 0);
     assert(retCurl.output.length);
     assert(conversations[1]["lastDate"].str == olderDate);
+}
+
+
+void testGetConversation()
+{
+    writeln("Testing outside testGetConversation");
+
+    auto curlCmd = escapeShellCommand("curl", "-s", "-X", "GET", "-H", 
+            "Content-Type: application/json", 
+            "http://127.0.0.1:8080/api/tag/?name=inbox&limit=20&page=0");
+    auto retCurl = executeShell(curlCmd);
+    assert(retCurl.status == 0, "CURL didnt return 0");
+    assert(retCurl.output.length);
+
+    JSONValue conversations;
+    assertNotThrown(conversations = parseJSON(retCurl.output));
+
+    auto convId1 = conversations[0]["dbId"].str;
+    assert(convId1.length);
+
+    curlCmd = escapeShellCommand(
+                    "curl", "-s", "-X", "GET", "-H", 
+                    "Content-Type: application/json", 
+                    format("http://127.0.0.1:8080/api/%s/conversation/", convId1)
+    );
+    retCurl = executeShell(curlCmd);
+    assert(retCurl.status == 0, "CURL didnt return 0");
+    assert(retCurl.output.length);
+    writeln(retCurl.output);
+    JSONValue conversation;
+    assertNotThrown(conversation = parseJSON(retCurl.output));
 
 }
 
+
 void main()
 {
+    testGetConversation();
     testGetTagConversations();
 }

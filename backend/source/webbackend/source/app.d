@@ -2,13 +2,14 @@ module app;
 
 import vibe.d;
 import std.stdio;
-import api;
+import webbackend.api;
 
 shared static this()
 {
     auto router = new URLRouter;
     router.registerRestInterface(new ApiImpl);
     auto routes = router.getAllRoutes();
+    writeln("XXX ROUTES:"); writeln(routes);
     //router.get("/tag/:name/limit/:limit/page/:page", &getTagConversations);
 
     auto settings = new HTTPServerSettings;

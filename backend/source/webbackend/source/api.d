@@ -1,6 +1,8 @@
-module api;
+module webbackend.api;
 
 import std.algorithm;
+import std.typecons;
+import std.regex; // XXX quitar cuando se saque ApiConversation
 import std.array;
 import std.conv;
 import std.stdio;
@@ -8,10 +10,10 @@ import vibe.web.common;
 import vibe.http.common;
 import retriever.db;
 import retriever.conversation;
-import webbackend.conversationsummary;
+import webbackend.apiconversationsummary;
 
 
-struct Attachment
+struct ApiAttachment
 {
     string Url;
     string ctype;
@@ -20,47 +22,44 @@ struct Attachment
     ulong  size;
 }
 
-struct MessageSummary
+struct ApiEmail
 {
-    string subject;
-    string from;
-    string date;
-    string[] attachFileNames;
-    string bodyPeak;
-    string avatarUrl;
-}
-
-struct Message
-{
-    MessageSummary apiMessageSummary;
-    alias apiMessageSummary this;
+    EmailSummary emailSummary;
+    alias  emailSummary this;
     string bodyHtml;
     string bodyPlain;
-    Attachment[] attachments;
+    ApiAttachment[] attachments;
 }
 
-struct Conversation
+// XXX mover a su propio fichero
+auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
+struct ApiConversation
 {
-    MessageSummary[] summaries;
-    string lastMessageDate;
+    EmailSummary[] summaries;
+    string lastDate;
     string subject;
     string[] tags;
-    string[] attachFileNames;
 
-    this(string subject, string[] tags, MessageSummary[] summaries)
+    this(Conversation conv)
     {
-        this.subject = subject; // XXX clean it?
-        this.summaries = summaries;
+        this.lastDate = conv.lastDate;
+        this.tags = conv.tags;
 
-        string lastDate;
-        string[] attFileNames;
-        foreach(msgSummary; summaries)
+        foreach(link; conv.links)
         {
-            lastDate = max(this.lastMessageDate, msgSummary.date);
-            attFileNames ~= msgSummary.attachFileNames;
+            if (link.emailDbId.length)
+            {
+                auto emailSummary = getEmailSummary(link.emailDbId);
+                auto filteredSubject = replaceAll!(x => "")(emailSummary.subject,
+                                                           SUBJECT_CLEAN_REGEX);
+                if (!this.subject.length && filteredSubject.length)
+                    this.subject = filteredSubject;
+                // some bytes less to send (it's the ApiConv.subject)
+                emailSummary.subject = "";
+                summaries ~= emailSummary;
+            }
         }
-        this.lastMessageDate = lastDate;
-        this.attachFileNames = attFileNames;
+
     }
 }
 
@@ -69,22 +68,30 @@ struct Conversation
 interface Api
 {
     @method(HTTPMethod.GET) @path("tag/")
-    ConversationSummary[] getTagConversations(string name, int limit=50, int page=0);
+    ApiConversationSummary[] getTagConversations(string name, int limit=50, int page=0);
+    @method(HTTPMethod.GET) @path("conversation/")
+    ApiConversation getConversation(string id);
 }
 
 
 class ApiImpl: Api
 {
     override:
-        ConversationSummary[] getTagConversations(string name, 
-                                                  int limit=50, 
-                                                  int page=0)
+        ApiConversationSummary[] getTagConversations(string name,
+                                                     int limit=50,
+                                                     int page=0)
         {
-            ConversationSummary[] ret;
+            ApiConversationSummary[] ret;
             auto dbConversations = getConversationsByTag(name, limit, page);
             foreach(dbConv; dbConversations)
-                ret ~=  ConversationSummary(dbConv);
+                ret ~= ApiConversationSummary(dbConv);
             return ret;
+        }
+
+        
+        ApiConversation getConversation(string id)
+        {
+            return ApiConversation(getConversationById(id));
         }
 }
 

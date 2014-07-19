@@ -1,6 +1,7 @@
 # OBJECTS
 
 ## MessageSummary
+XXX update
 Used to produce a list of messages from a conversation without
 fully loading the mails (all the messages shown as a header when you load a
 conversation, that is all except the last one or the one you click to expand) .
@@ -75,7 +76,7 @@ user clicks on the "expand" link, all the messages will be fully loaded.
         
 
 ## /conversation
-`(MISSING) get: /conversation/id`
+`(MISSING) get: /conversation/:id`/
     Get a Conversation with the specified id
 `(MISSING) delete: /conversation/id`
     Delete the conversation (internally: tag all messages as deleted)
