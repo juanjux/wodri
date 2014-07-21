@@ -37,6 +37,7 @@ interface Api
 {
     @method(HTTPMethod.GET) @path("tag/")
     ApiConversationSummary[] getTagConversations(string name, int limit=50, int page=0);
+
     @method(HTTPMethod.GET) @path("conversation/")
     ApiConversation getConversation(string id);
 }
@@ -49,14 +50,12 @@ class ApiImpl: Api
                                                      int limit=50,
                                                      int page=0)
         {
-            ApiConversationSummary[] ret;
-            auto dbConversations = getConversationsByTag(name, limit, page);
-            foreach(dbConv; dbConversations)
-                ret ~= ApiConversationSummary(dbConv);
-            return ret;
+            // returns an ApiConversationSummary for every Conversation
+            return getConversationsByTag(name, limit, page)
+                   .map!(i => ApiConversationSummary(i)).array;
         }
 
-        
+
         ApiConversation getConversation(string id)
         {
             return ApiConversation(getConversationById(id));

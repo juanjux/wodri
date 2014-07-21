@@ -41,7 +41,7 @@ version(db_test) version = db_usetestdb;
  */
 static this()
 {
-    auto mandatoryKeys = ["host", "name",  "password", "port", 
+    auto mandatoryKeys = ["host", "name",  "password", "port",
                                "testname", "type", "user"];
     sort(mandatoryKeys);
 
@@ -92,7 +92,6 @@ struct RetrieverConfig
 struct EmailSummary
 {
     string dbId;
-    string subject;
     string from;
     string isoDate;
     string date;
@@ -153,7 +152,7 @@ private const(RetrieverConfig) getInitialConfig()
 
     checkNotNull(["mainDir", "smtpServer", "smtpUser", "smtpPass",
                   "smtpEncription", "smtpPort", "rawEmailStore",
-                  "attachmentStore", "incomingMessageLimit", "storeTextIndex", 
+                  "attachmentStore", "incomingMessageLimit", "storeTextIndex",
                   "bodyPeekLength"]);
 
     _config.mainDir              = bsonStr(dbConfig.mainDir);
@@ -313,20 +312,20 @@ EmailSummary getEmailSummary(string dbId)
     EmailSummary res;
     auto fieldSelector = ["from": 1,
                           "headers": 1,
-                          "isodate": 1, 
+                          "isodate": 1,
                           "bodyPeek": 1,
                           "attachments": 1];
 
-    const emailDoc = g_mongoDB["email"].findOne(["_id": dbId], 
-                                                fieldSelector, 
+    const emailDoc = g_mongoDB["email"].findOne(["_id": dbId],
+                                                fieldSelector,
                                                 QueryFlags.None);
     if (!emailDoc.isNull)
     {
         res.dbId = dbId;
 
-        if (!emailDoc.headers.subject.isNull &&
-            !emailDoc.headers.subject[0].rawValue.isNull)
-            res.subject = bsonStr(emailDoc.headers.subject[0].rawValue);
+        //if (!emailDoc.headers.subject.isNull &&
+            //!emailDoc.headers.subject[0].rawValue.isNull)
+            //res.subject = bsonStr(emailDoc.headers.subject[0].rawValue);
 
         if (!emailDoc.headers.date.isNull &&
             !emailDoc.headers.date[0].rawValue.isNull)
@@ -436,12 +435,12 @@ string upsertConversation(const IncomingEmail email, string emailDbId,
 {
     const references = email.getHeader("references").addresses;
     const messageId  = email.getHeader("message-id").addresses[0];
-    
+
     auto conv = getConversationByReferences(userId, references ~ messageId);
     conv.userDbId = userId;
 
     // date: will only be set if newer than lastDate
-    conv.updateLastDate(BsonDate(SysTime(email.date, 
+    conv.updateLastDate(BsonDate(SysTime(email.date,
                                          TimeZone.getTimeZone("GMT"))).toString);
 
     // tags
@@ -593,7 +592,7 @@ string store(IncomingEmail email)
     partAppender.clear();
 
     auto relevantPlain = maybeBodyTextPlain(email);
-    auto bodyPeek = relevantPlain.length? 
+    auto bodyPeek = relevantPlain.length?
                         relevantPlain[0..min($,getConfig().bodyPeekLength)]:
                         "";
 
@@ -607,7 +606,7 @@ string store(IncomingEmail email)
           `"receivers": { "rawValue": %s "addresses": %s },`   ~
           `"headers": %s, `    ~
           `"textParts": [ %s ], ` ~
-          `"bodyPeek": "%s", ` ~ 
+          `"bodyPeek": "%s", ` ~
           `"attachments": [ %s ] }`,
             documentId,
             email.rawEmailPath,
@@ -770,7 +769,7 @@ version(db_usetestdb)
         foreach(mailname; TEST_EMAILS)
         {
             auto email = new IncomingEmailImpl();
-            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), 
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname),
                                          getConfig().attachmentStore);
             assert(email.isValid, "Email is not valid");
             auto destination       = email.getHeader("to").addresses[0];
@@ -841,7 +840,7 @@ version(db_test)
         writeln("Testing jsonizeHeader");
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         auto email = new IncomingEmailImpl();
-        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"), 
+        email.loadFromFile(buildPath(backendTestEmailsDir, "simple_alternative_noattach"),
                            getConfig().attachmentStore);
         assert(email.jsonizeHeader("from") == `"from": " Test Sender <someuser@insomedomain.com>",`);
         assert(email.jsonizeHeader("to")   == `"to": " Test User2 <testuser@testdatabase.com>",`);
@@ -876,19 +875,19 @@ version(db_test)
     {
         writeln("Testing emailAlreadyOnDb");
         recreateTestDb();
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, 
+        string backendTestEmailsDir = buildPath(getConfig().mainDir,
                                                 "backend", "test", "testemails");
         // ignore the nomsgid email (last one) since it cant be checked to be on DB
         foreach(mailname; TEST_EMAILS[0..$-1])
         {
             auto email = new IncomingEmailImpl();
-            email.loadFromFile(buildPath(backendTestEmailsDir, mailname), 
+            email.loadFromFile(buildPath(backendTestEmailsDir, mailname),
                                          getConfig().attachmentStore);
             assert(emailAlreadyOnDb(email));
         }
     }
 
-    unittest // storeTextIndex 
+    unittest // storeTextIndex
     {
         writeln("Testing storeTextIndexMongo");
         recreateTestDb();

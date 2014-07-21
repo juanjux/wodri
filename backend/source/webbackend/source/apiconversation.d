@@ -17,15 +17,8 @@ struct ApiConversation
         this.subject = conv.cleanSubject;
 
         foreach(link; conv.links)
-        {
             if (link.emailDbId.length)
-            {
-                auto emailSummary = getEmailSummary(link.emailDbId);
-                // some bytes less to send (it's the ApiConv.subject)
-                emailSummary.subject = "";
-                summaries ~= emailSummary;
-            }
-        }
+                summaries ~= getEmailSummary(link.emailDbId);
 
     }
 }

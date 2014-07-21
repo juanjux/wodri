@@ -30,17 +30,13 @@ struct ApiConversationSummary
         this.numMessages = conv.links.length;
         this.lastDate = conv.lastDate;
         this.tags = conv.tags;
+        this.subject = conv.cleanSubject;
 
         foreach(link; conv.links)
         {
             if (link.emailDbId.length)
             {
                 auto emailSummary = getEmailSummary(link.emailDbId);
-                auto filteredSubject = replaceAll!(x => "")(emailSummary.subject,
-                                                           SUBJECT_CLEAN_REGEX);
-                if (!this.subject.length && filteredSubject.length)
-                    this.subject = filteredSubject;
-
                 this.shortAuthors ~= match(emailSummary.from, EMAIL_REGEX)
                                     .pre.translate(['<': ' ', '>': ' ']).strip();
 

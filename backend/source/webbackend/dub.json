@@ -11,6 +11,7 @@
         "vibe-d": "~master"
     },
     "versions": ["VibeDefaultMain", "db_usetestdb"],
+    "buildOptions": ["debugMode"],
     "configurations": [
         {
             "name": "default",

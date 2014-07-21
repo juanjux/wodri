@@ -1,5 +1,7 @@
 Backend-API:
-    - Implemente GET /:id/message
+    - ApiConversation unittest: test the subject
+
+    - Implement GET /:id/message
 
     - Move unittest to api.d
 
