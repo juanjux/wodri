@@ -21,6 +21,7 @@ struct Conversation
     string[] tags;
     MessageLink[] links;
     string[] attachFileNames;
+    string cleanSubject;
 
     private bool haveLink(string messageId, string emailDbId)
     {
@@ -56,8 +57,11 @@ struct Conversation
             "_id": "%s",
             "userId": "%s",
             "lastDate": "%s",
+            "cleanSubject": "%s",
             "tags": %s,
             "links": [%s]
-        }`, this.dbId, this.userDbId, this.lastDate, to!string(this.tags), linksApp.data);
+        }`, this.dbId, this.userDbId, 
+            this.lastDate, this.cleanSubject,
+            to!string(this.tags), linksApp.data);
     }
 }

@@ -10,6 +10,7 @@ import std.json;
 import std.path;
 import std.algorithm;
 import std.file;
+import std.regex;
 
 import vibe.db.mongo.mongo;
 import vibe.core.log;
@@ -29,6 +30,9 @@ alias bsonId       = deserializeBson!BsonObjectID;
 alias bsonBool     = deserializeBson!bool;
 alias bsonStrArray = deserializeBson!(string[]);
 alias bsonStrHash  = deserializeBson!(string[string]);
+
+
+auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 
 version(db_test) version = db_usetestdb;
 
@@ -344,16 +348,16 @@ EmailSummary getEmailSummary(string dbId)
     return res;
 }
 
-
 private Conversation conversationDocToObject(ref Bson convDoc)
 {
     Conversation ret;
     if (!convDoc.isNull)
     {
-        ret.dbId     = bsonStr(convDoc._id);
-        ret.userDbId = bsonStr(convDoc.userId);
-        ret.lastDate = bsonStr(convDoc.lastDate);
-        ret.tags     = bsonStrArray(convDoc.tags);
+        ret.dbId         = bsonStr(convDoc._id);
+        ret.userDbId     = bsonStr(convDoc.userId);
+        ret.lastDate     = bsonStr(convDoc.lastDate);
+        ret.tags         = bsonStrArray(convDoc.tags);
+        ret.cleanSubject = bsonStr(convDoc.cleanSubject);
 
         foreach(link; convDoc.links)
         {
@@ -414,6 +418,14 @@ Conversation getConversationByReferences(string userId, const string[] reference
     return conversationDocToObject(convDoc);
 }
 
+/**
+ * From removes variants of "Re:"/"RE:"/"re:" in the subject
+ */
+private string cleanSubject(string subject)
+{
+    return replaceAll!(x => "")(subject, SUBJECT_CLEAN_REGEX);
+}
+
 
 /**
  * Insert or update a conversation with this email messageId, references, tags
@@ -429,24 +441,24 @@ string upsertConversation(const IncomingEmail email, string emailDbId,
     conv.userDbId = userId;
 
     // date: will only be set if newer than lastDate
-    conv.updateLastDate(BsonDate(SysTime(email.date, TimeZone.getTimeZone("GMT"))).toString);
+    conv.updateLastDate(BsonDate(SysTime(email.date, 
+                                         TimeZone.getTimeZone("GMT"))).toString);
 
     // tags
     foreach(tagName, tagValue; tags)
         if (tagValue && countUntil(conv.tags, tagName) == -1)
             conv.tags ~= tagName;
 
-    // add our references; only the new ones will be really added
+    // add our references; addLink() only adds the new ones
     foreach(reference; references)
         conv.addLink(reference, getEmailIdByMessageId(reference));
 
     bool wasInConversation = false;
     if (conv.dbId.length)
     {
-        // conversation with these references or msgid exists: see if this
-        // email msgid is on the conversation links, (can happend if an email
-        // referring to this one entered the system before this email); if so
-        // update the conversation with the EmailId
+        // existing conversation: see if this email msgid is on the conversation links,
+        // (can happen if an email referring to this one entered the system before this
+        // email); if so update the conversation with the EmailId
         foreach(ref entry; conv.links)
         {
             if (entry.messageId == messageId)
@@ -462,6 +474,10 @@ string upsertConversation(const IncomingEmail email, string emailDbId,
 
     if (!wasInConversation)
         conv.addLink(messageId, emailDbId);
+
+    // update the conversation cleaned subject (last one wins)
+    if (email.hasHeader("subject"))
+        conv.cleanSubject = cleanSubject(email.getHeader("subject").rawValue);
 
     g_mongoDB["conversation"].update(["_id": conv.dbId],
                                    parseJsonString(conv.asJsonString),
