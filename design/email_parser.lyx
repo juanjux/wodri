@@ -1,0 +1,255 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Email Parser
+\end_layout
+
+\begin_layout Enumerate
+Divide the message between headers and body (split by first 
+\begin_inset Quotes eld
+\end_inset
+
+
+\backslash
+n
+\backslash
+n
+\begin_inset Quotes erd
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Enumerate
+Parse the headers (split by first 
+\begin_inset Quotes eld
+\end_inset
+
+:
+\begin_inset Quotes erd
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Enumerate
+Decode the headers (Subject, etc)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Encoded-Word syntax: "=?charset?encoding?encoded text?=".
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+charset can be any defined by IANA
+\end_layout
+
+\begin_layout Enumerate
+encoding:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+Q
+\begin_inset Quotes erd
+\end_inset
+
+ for Q-encoding (similar to quoted-printable) 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Quotes eld
+\end_inset
+
+B
+\begin_inset Quotes erd
+\end_inset
+
+ for base64 encoding
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+An encoded-word may not be more than 75 characters long if longer multiple
+ encoded-words separated by 
+\backslash
+r
+\backslash
+nSPACE may be used.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Enumerate
+Parse the body:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Create a data structure containing the MIME parts.
+ Container parts (mixed, alternative, related, report, signed, encrypted)
+ will contain the inside parts.
+\end_layout
+
+\begin_layout Enumerate
+Search for content parts (text/plain & text/html) inside:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+multipart/alternative
+\end_layout
+
+\begin_layout Enumerate
+multipart/digest: XXX ?
+\end_layout
+
+\begin_layout Enumerate
+multipart/message: XXX ?
+\end_layout
+
+\begin_layout Enumerate
+multipart/related
+\end_layout
+
+\begin_layout Enumerate
+multipart/report
+\end_layout
+
+\begin_layout Enumerate
+multipart/encrypted
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Get and decode the attachments (Content-Disposition: attachment)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Read the encoded text
+\end_layout
+
+\begin_layout Enumerate
+Decode using the specified Content-Transfer-Encoding.
+ The encoding can be:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+7bit
+\end_layout
+
+\begin_layout Enumerate
+quoted-printable
+\end_layout
+
+\begin_layout Enumerate
+base64
+\end_layout
+
+\begin_layout Enumerate
+8bit (raro)
+\end_layout
+
+\begin_layout Enumerate
+binary (muy raro)
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Get the filename from the 
+\begin_inset Quotes eld
+\end_inset
+
+filename=
+\begin_inset Quotes erd
+\end_inset
+
+ part of the Content-Disposition
+\end_layout
+
+\begin_layout Enumerate
+Save the attachment to a unique file name in the store
+\end_layout
+
+\begin_layout Enumerate
+Remove in the text the encoded attachment with <<filename>> which 
+\begin_inset Quotes eld
+\end_inset
+
+filename
+\begin_inset Quotes erd
+\end_inset
+
+ being the full path of the stored attachment in the server
+\end_layout
+
+\end_deeper
+\end_deeper
+\end_body
+\end_document

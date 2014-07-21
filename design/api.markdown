@@ -76,19 +76,19 @@ user clicks on the "expand" link, all the messages will be fully loaded.
         
 
 ## /conversation
-`(MISSING) get: /conversation/:id`/
+`get: /:id/conversation/`/
     Get a Conversation with the specified id
-`(MISSING) delete: /conversation/id`
+`(MISSING) delete: /:id/conversation/`
     Delete the conversation (internally: tag all messages as deleted)
-`(MISSING) post: /conversation/tags`
+`(MISSING) post: /:id/conversation/tags`
     Add tags to the conversation
-`(MISSING) delete: /conversation/tags`
+`(MISSING) delete: /:id/conversation/tags`
     Remove tags from the conversation
-`(MISSING) post: /conversation/search`
-    Search
+`(MISSING) post: /search`
+    Search conversations
 
 ## /message
-`(MISSING) get: /message/:id`
+`(MISSING) get: /:id/message/`
     Get the full Message
 `(MISSING) get: /message/:id/attachments/name`
     Get an attachment

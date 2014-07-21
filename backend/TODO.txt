@@ -1,21 +1,15 @@
 Backend-API:
-    - Move ApiConversation to its own file
+    - Implemente GET /:id/message
 
-    - Move unittest to apiobjects.d
+    - Move unittest to api.d
 
 Backend-Retriever:
-    - Unittest for getConversationById
-
-    - store(email) unittest => check the bodyPeek
-
     - When storing a Conversation, store the cleanedSubject of the last message too, 
       but only if not empty after cleaning
 
     - Regenerate unittest files and ignore message-id field if it doesnt exists
 
     - Envelope.asJsonString and use it on db.d
-
-    - Conversation.updateLastDate => validate the date
 
     Later:
 
@@ -33,7 +27,6 @@ Backend-Retriever:
 
     - Sent the new changes in characterencodings.d to Ruppe
 
-
 Frontend:
 
 Contacts:
@@ -42,6 +35,7 @@ Contacts:
     - Use it for getting the shortnames in the ConversationSummary object.
 
 All:
+    - Run dub with code converage option
     - Import cleanup (only imports and symbols really used)
     - Const, immutable, pure, nothrow, in, out, safe et all
     - Mongo DB indexes, ensure()

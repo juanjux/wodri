@@ -2,6 +2,8 @@ module retriever.conversation;
 
 import std.datetime;
 import std.string;
+import std.datetime;
+import core.time: TimeException;
 import vibe.data.bson;
 
 struct MessageLink
@@ -36,7 +38,6 @@ struct Conversation
 
 
     /** Update the lastDate field if the argument is newer */
-    // XXX validate the newIsoDate
     void updateLastDate(string newIsoDate)
     {
         if (!this.lastDate.length || this.lastDate < newIsoDate)

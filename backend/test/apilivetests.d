@@ -12,9 +12,38 @@ string[] jsonToArray(JSONValue val)
     return array(map!(x => x.str)(val.array));
 }
 
-/**
- * rdmd this code with the API server running 
- */
+
+void testGetConversation()
+{
+    writeln("Testing outside testGetConversation");
+
+    auto curlCmd = escapeShellCommand("curl", "-s", "-X", "GET", "-H", 
+            "Content-Type: application/json", 
+            "http://127.0.0.1:8080/api/tag/?name=inbox&limit=20&page=0");
+    auto retCurl = executeShell(curlCmd);
+    assert(retCurl.status == 0, "CURL didnt return 0");
+    assert(retCurl.output.length);
+
+    JSONValue conversations;
+    assertNotThrown(conversations = parseJSON(retCurl.output));
+
+    auto convId1 = conversations[0]["dbId"].str;
+    assert(convId1.length);
+
+    curlCmd = escapeShellCommand(
+                    "curl", "-s", "-X", "GET", "-H", 
+                    "Content-Type: application/json", 
+                    format("http://127.0.0.1:8080/api/%s/conversation/", convId1)
+    );
+    retCurl = executeShell(curlCmd);
+    assert(retCurl.status == 0, "CURL didnt return 0");
+    assert(retCurl.output.length);
+    JSONValue conversation;
+    assertNotThrown(conversation = parseJSON(retCurl.output));
+
+}
+
+
 void testGetTagConversations()
 {
     writeln("Testing outside getTagConversations");
@@ -67,36 +96,6 @@ void testGetTagConversations()
 }
 
 
-void testGetConversation()
-{
-    writeln("Testing outside testGetConversation");
-
-    auto curlCmd = escapeShellCommand("curl", "-s", "-X", "GET", "-H", 
-            "Content-Type: application/json", 
-            "http://127.0.0.1:8080/api/tag/?name=inbox&limit=20&page=0");
-    auto retCurl = executeShell(curlCmd);
-    assert(retCurl.status == 0, "CURL didnt return 0");
-    assert(retCurl.output.length);
-
-    JSONValue conversations;
-    assertNotThrown(conversations = parseJSON(retCurl.output));
-
-    auto convId1 = conversations[0]["dbId"].str;
-    assert(convId1.length);
-
-    curlCmd = escapeShellCommand(
-                    "curl", "-s", "-X", "GET", "-H", 
-                    "Content-Type: application/json", 
-                    format("http://127.0.0.1:8080/api/%s/conversation/", convId1)
-    );
-    retCurl = executeShell(curlCmd);
-    assert(retCurl.status == 0, "CURL didnt return 0");
-    assert(retCurl.output.length);
-    writeln(retCurl.output);
-    JSONValue conversation;
-    assertNotThrown(conversation = parseJSON(retCurl.output));
-
-}
 
 
 void main()
