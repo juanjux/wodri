@@ -944,7 +944,8 @@ unittest
     {
         writeln("Starting all emails test...");
         // broken emails, no newline after headers or parts, etc:
-        int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,];
+        int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,
+                                    "96":0, "373":0, "1080":0, "2016":0, "2480": 0];
 
         // Not broken, but for putting emails that need to be skipped for some reaso
         //int[string] skipMails  = ["41051":0, "41112":0];
@@ -966,6 +967,26 @@ unittest
             if (email.computeTextualBodySize() > 16*1024*1024)
                 assert(0);
 
+            // XXX test that "other" is not loaded with plain text mails (like 16)
+            //uint numPlain = 0;
+            //uint numHtml  = 0;
+            //uint other    = 0;
+            //foreach(part; email.textualParts)
+            //{
+                //switch(lowStrip(part.ctype.name))
+                //{
+                    //case "text/plain": numPlain++; break;
+                    //case "text/html": numHtml++; break;
+                    ////default: other++;
+                    //default: numPlain++;
+                //}
+                //writeln("XXX: ", part.ctype.name);
+            //}
+            //writeln;
+            //assert(numPlain < 2);
+            //assert(numHtml < 2);
+            //assert(other == 0);
+
             auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
             string headersStr = email.printHeaders(Yes.AsString);
             auto refTextAppender = appender!string;
@@ -975,12 +996,16 @@ unittest
             if (headersStr != refTextAppender.data)
             {
                 auto mis = mismatch(headersStr, refTextAppender.data);
-                writeln("UNMATCHED HEADER IN FILE: ", e.name);
-                writeln("---ORIGINAL FOLLOWS FROM UNMATCHING POSITION:");
-                writeln(mis[0]);
-                writeln("---PARSED FOLLOWS FROM UNMATCHING POSITION:");
-                writeln(mis[1]);
-                assert(0);
+                // Ignore mismatchs on message-id only, we regenerate the msgid when missing
+                if (lowStrip(split(mis[0], ":")[0]) != "message-id")
+                {
+                    writeln("UNMATCHED HEADER IN FILE: ", e.name);
+                    writeln("---ORIGINAL FOLLOWS FROM UNMATCHING POSITION:");
+                    writeln(mis[0]);
+                    writeln("---PARSED FOLLOWS FROM UNMATCHING POSITION:");
+                    writeln(mis[1]);
+                    assert(0);
+                }
             }
             writeln("\t\t...headers ok!");
 

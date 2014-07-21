@@ -11,25 +11,7 @@ import retriever.db;
 import retriever.conversation;
 import webbackend.apiconversationsummary;
 import webbackend.apiconversation;
-
-
-struct ApiAttachment
-{
-    string Url;
-    string ctype;
-    string filename;
-    string contentId;
-    ulong  size;
-}
-
-struct ApiEmail
-{
-    EmailSummary emailSummary;
-    alias  emailSummary this;
-    string bodyHtml;
-    string bodyPlain;
-    ApiAttachment[] attachments;
-}
+import webbackend.apiemail;
 
 
 @rootPathFromName
@@ -39,7 +21,10 @@ interface Api
     ApiConversationSummary[] getTagConversations(string name, int limit=50, int page=0);
 
     @method(HTTPMethod.GET) @path("conversation/")
-    ApiConversation getConversation(string id);
+    ApiConversation getConversation_(string id);
+
+    @method(HTTPMethod.GET) @path("email/")
+    ApiEmail getEmail(string id);
 }
 
 
@@ -56,10 +41,14 @@ class ApiImpl: Api
         }
 
 
-        ApiConversation getConversation(string id)
+        ApiConversation getConversation_(string id)
         {
-            return ApiConversation(getConversationById(id));
+            return ApiConversation(getConversation(id));
+        }
+
+
+        ApiEmail getEmail(string id)
+        {
+            return getApiEmail(id);
         }
 }
-
-

@@ -7,7 +7,7 @@ import webbackend.api;
 
 shared static this()
 {
-    //setLogLevel(LogLevel.debugV);
+    setLogLevel(LogLevel.debugV);
     auto router = new URLRouter;
     router.registerRestInterface(new ApiImpl);
     auto routes = router.getAllRoutes();
@@ -69,6 +69,16 @@ version(apitest)
         {
             auto conv1 = apiClient.getConversation(conv.dbId);
         }
+    }
+
+    version(none) // doesnt work, vibed bug? works with cURL
+    unittest // getEmail
+    {
+        logInfo("Testing getEmail");
+        auto apiClient = new RestInterfaceClient!Api("http://127.0.0.1:8080");
+        // XXX pedir conversationes, sacar id de email de conversacion
+        auto email = apiClient.getEmail("53cd89ccbdcce38e6f0000e7");
+        writeln("XXX email: ", email);
     }
 }
 

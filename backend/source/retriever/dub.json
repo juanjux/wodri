@@ -2,7 +2,7 @@
     "targetType": "executable",
     "mainSourceFile": "main.d",
     "license": "LGPL",
-    "sourcePaths": [".", "../libs"],
+    "sourcePaths": [".", "../webbackend/source", "../libs"],
     "excludedSourceFiles": ["test.d", "app.d"],
     "dependencies": { "vibe-d": "~master",
                       "smtp"  : ">=0.2.0"},

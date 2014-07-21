@@ -46,7 +46,7 @@ struct Conversation
     }
 
 
-    string asJsonString()
+    string toJson()
     {
         auto linksApp = appender!string;
         foreach(link; this.links)

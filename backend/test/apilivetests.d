@@ -103,12 +103,16 @@ void testGetTagConversations()
 }
 
 
-
+void testGetEmail()
+{
+    // XXX escribir
+}
 
 void main()
 {
     testGetTagConversations();
     testGetConversation();
+    testGetEmail();
     // This stupid message is needed because sometimes this crashes quietly
     writeln("Ooooooooook, all tests finished");
 }

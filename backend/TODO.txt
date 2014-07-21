@@ -1,24 +1,22 @@
 Backend-API:
-    - ApiConversation unittest: test the subject
-
-    - Implement GET /:id/message
-
-    - Move unittest to api.d
+    - external test getEmail()
 
 Backend-Retriever:
-    - When storing a Conversation, store the cleanedSubject of the last message too, 
-      but only if not empty after cleaning
+    - unittest of db.getApiEmailById
+    - split the upsertConversation unittest
+    - Settings: domain
+    - Generate attach URL from configured domain + configured attach URL path
+      (getApiEmailById)
 
-    - Regenerate unittest files and ignore message-id field if it doesnt exists
-
-    - Envelope.asJsonString and use it on db.d
+    - Some plain text emails without header are not put as plain (Apple Mail, 2016)
+    - Some attachments with ctype text/html are put as textParts (1080)
 
     Later:
 
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)
 
-    - Exception classes for the different parts. 
+    - Exception classes for the different parts.
 
     - Retriever's full test, use a Python script with the mail & smtp modules to
       parse the test mails collection changing the receiver from [myRealAddr] to

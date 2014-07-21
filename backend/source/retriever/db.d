@@ -11,6 +11,7 @@ import std.path;
 import std.algorithm;
 import std.file;
 import std.regex;
+import std.traits;
 
 import vibe.db.mongo.mongo;
 import vibe.core.log;
@@ -21,6 +22,8 @@ import retriever.userrule: Match, Action, UserFilter, SizeRuleType;
 import retriever.incomingemail;
 import retriever.envelope;
 import retriever.conversation;
+import webbackend.apiemail;
+
 
 private MongoDatabase g_mongoDB;
 private RetrieverConfig g_config;
@@ -307,6 +310,18 @@ string getEmailIdByMessageId(string messageId)
 }
 
 
+/** Paranoic retrieval of emailDoc headers */
+private string headerRaw(Bson emailDoc, string headerName)
+{
+    if (!emailDoc.headers.isNull &&
+        !emailDoc.headers[headerName].isNull &&
+        !emailDoc.headers[headerName][0].rawValue.isNull)
+        return bsonStr(emailDoc.headers[headerName][0].rawValue);
+
+    return "";
+}
+
+
 EmailSummary getEmailSummary(string dbId)
 {
     EmailSummary res;
@@ -322,14 +337,7 @@ EmailSummary getEmailSummary(string dbId)
     if (!emailDoc.isNull)
     {
         res.dbId = dbId;
-
-        //if (!emailDoc.headers.subject.isNull &&
-            //!emailDoc.headers.subject[0].rawValue.isNull)
-            //res.subject = bsonStr(emailDoc.headers.subject[0].rawValue);
-
-        if (!emailDoc.headers.date.isNull &&
-            !emailDoc.headers.date[0].rawValue.isNull)
-            res.date = bsonStr(emailDoc.headers.date[0].rawValue);
+        res.date = emailDoc.headerRaw("date");
 
         if (!emailDoc.from.rawValue.isNull)
             res.from = bsonStr(emailDoc.from.rawValue);
@@ -346,6 +354,76 @@ EmailSummary getEmailSummary(string dbId)
     }
     return res;
 }
+
+
+// XXX unittest
+ApiEmail getApiEmail(string dbId)
+{
+    ApiEmail ret;
+    auto fieldSelector = ["from": 1,
+                          "headers": 1,
+                          "isodate": 1,
+                          "attachments": 1];
+
+    const emailDoc = g_mongoDB["email"].findOne(["_id": dbId],
+                                                fieldSelector,
+                                                QueryFlags.None);
+    if (!emailDoc.isNull)
+    {
+        ret.dbId = dbId;
+
+        // Headers
+        if (!emailDoc.headers.isNull)
+        {
+            ret.to      = emailDoc.headerRaw("to");
+            ret.cc      = emailDoc.headerRaw("cc");
+            ret.bcc     = emailDoc.headerRaw("bcc");
+            ret.date    = emailDoc.headerRaw("date");
+            ret.subject = emailDoc.headerRaw("subject");
+        }
+
+        if (!emailDoc.from.rawValue.isNull)
+            ret.from = bsonStr(emailDoc.from.rawValue);
+
+        if (!emailDoc.isodate.isNull)
+            ret.isoDate = bsonStr(emailDoc.isodate);
+
+        // Attachments
+        foreach(ref attach; emailDoc.attachments)
+        {
+            ApiAttachment att;
+            att.size = to!uint(bsonNumber(attach.size));
+            att.ctype = bsonStr(attach.contentType);
+            if (!attach.fileName.isNull)
+                att.filename = bsonStr(attach.fileName);
+            if (!attach.contentId.isNull)
+                att.contentId = bsonStr(attach.contentId);
+            ret.attachments ~= att;
+        }
+
+        // Append all parts of the same type
+        if (!emailDoc.textParts.isNull)
+        {
+            Appender!string bodyPlain;
+            Appender!string bodyHtml;
+            foreach(ref tpart; emailDoc.textParts)
+            {
+                if (!tpart.contentType.isNull)
+                {
+                    auto docCType = bsonStr(tpart.contentType);
+                    if (docCType == "text/html" && !tpart.content.isNull)
+                        bodyHtml.put(bsonStr(tpart.content));
+                    else
+                        bodyPlain.put(bsonStr(tpart.content));
+                }
+            }
+            ret.bodyHtml  = bodyHtml.data;
+            ret.bodyPlain = bodyPlain.data;
+        }
+    }
+    return ret;
+}
+
 
 private Conversation conversationDocToObject(ref Bson convDoc)
 {
@@ -374,7 +452,7 @@ private Conversation conversationDocToObject(ref Bson convDoc)
 }
 
 
-Conversation getConversationById(string id)
+Conversation getConversation(string id)
 {
     auto convDoc = g_mongoDB["conversation"].findOne(["_id": id]);
     return conversationDocToObject(convDoc);
@@ -479,29 +557,16 @@ string upsertConversation(const IncomingEmail email, string emailDbId,
         conv.cleanSubject = cleanSubject(email.getHeader("subject").rawValue);
 
     g_mongoDB["conversation"].update(["_id": conv.dbId],
-                                   parseJsonString(conv.asJsonString),
-                                   UpdateFlags.Upsert);
+                                     parseJsonString(conv.toJson),
+                                     UpdateFlags.Upsert);
     return conv.dbId;
 }
 
 
-void store(const ref Envelope envelope)
+void store(ref Envelope envelope)
 {
-    g_mongoDB["envelope"].insert(
-            parseJsonString(
-                format(`{"_id": "%s",
-                      "emailId": "%s",
-                      "userId": "%s",
-                      "destinationAddress": "%s",
-                      "forwardTo": %s}`,
-                      BsonObjectID.generate().toString ,
-                      envelope.emailId,
-                      envelope.userId,
-                      envelope.destination,
-                      to!string(envelope.forwardTo)
-                )
-            )
-    );
+    envelope.dbId = BsonObjectID.generate().toString;
+    g_mongoDB["envelope"].insert(parseJsonString(envelope.toJson));
 }
 
 
@@ -755,7 +820,8 @@ version(db_usetestdb)
             g_mongoDB[collection].remove();
 
         // Fill the test DB
-        string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", "test", "testdb");
+        string backendTestDataDir_ = 
+            buildPath(getConfig().mainDir, "backend", "test", "testdb");
         string[string] jsonfile2collection = ["user1.json"     : "user",
                                               "user2.json"     : "user",
                                               "domain1.json"   : "domain",
@@ -765,19 +831,20 @@ version(db_usetestdb)
         foreach(file_, collection; jsonfile2collection)
             g_mongoDB[collection].insert(parseJsonString(readText(buildPath(backendTestDataDir_, file_))));
 
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
+        string backendTestEmailsDir = 
+            buildPath(getConfig().mainDir, "backend", "test", "testemails");
         foreach(mailname; TEST_EMAILS)
         {
             auto email = new IncomingEmailImpl();
             email.loadFromFile(buildPath(backendTestEmailsDir, mailname),
                                          getConfig().attachmentStore);
             assert(email.isValid, "Email is not valid");
-            auto destination       = email.getHeader("to").addresses[0];
-            auto emailId           = email.store();
-            auto userId            = getUserIdFromAddress(destination);
-            auto envelope          = Envelope(email, destination, userId, emailId);
-            auto date              = BsonDate(SysTime(email.date,
-                                                      TimeZone.getTimeZone("GMT"))).toString;
+            auto destination = email.getHeader("to").addresses[0];
+            auto emailId     = email.store();
+            auto userId      = getUserIdFromAddress(destination);
+            auto envelope    = Envelope(email, destination, userId, emailId);
+            auto date        = BsonDate(SysTime(email.date,
+                                                TimeZone.getTimeZone("GMT"))).toString;
 
             envelope.store();
             upsertConversation(email, emailId, userId, ["inbox": true]);
@@ -917,7 +984,9 @@ version(db_test)
         import std.exception;
         import core.exception;
         recreateTestDb();
-        auto cursor = g_mongoDB["envelope"].find(["destinationAddress": "testuser@testdatabase.com"]);
+        auto cursor = g_mongoDB["envelope"].find(
+               ["destinationAddress": "testuser@testdatabase.com"]
+        );
         assert(!cursor.empty);
         auto envDoc = cursor.front;
         cursor.popFrontExactly(2);
@@ -948,9 +1017,10 @@ version(db_test)
         assert(count(arr, id4) == 1);
     }
 
-    unittest // upsertConversation/getConversationById/getEmailSummary/conversationDocToObject
+    // XXX move getConversation/getEmailSummary/conversationDoctoObject to another test
+    unittest // upsertConversation/getConversation/getEmailSummary/conversationDocToObject
     {
-        writeln("Testing upsertConversation/getConversationById/getEmailSummary/conversationDocToObject");
+        writeln("Testing upsertConversation/getConversation/getEmailSummary/conversationDocToObject");
         recreateTestDb();
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test",
                                                "testemails");
@@ -979,7 +1049,7 @@ version(db_test)
         assert(bsonStrArray(convDoc.tags)[1] == "anothertag");
         assert(bsonStr(convDoc.lastDate) == emailObjectDate);
 
-        auto convObject = getConversationById(convId);
+        auto convObject = getConversation(convId);
         assert(convObject.dbId == convId);
         assert(convObject.userDbId == userId);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
@@ -1008,7 +1078,7 @@ version(db_test)
         assert(bsonStr(convDoc.links[1].emailId) == emailId);
         assert(bsonStr(convDoc.lastDate) != emailObjectDate);
 
-        convObject = getConversationById(convId);
+        convObject = getConversation(convId);
         assert(convObject.dbId == convId);
         assert(convObject.userDbId == userId);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
@@ -1037,7 +1107,7 @@ version(db_test)
         assert(bsonStr(convDoc.links[1].emailId) == emailId);
         assert(bsonStr(convDoc.lastDate) != emailObjectDate);
 
-        convObject = getConversationById(convId);
+        convObject = getConversation(convId);
         assert(convObject.dbId == convId);
         assert(convObject.userDbId == userId);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
