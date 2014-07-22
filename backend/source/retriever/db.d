@@ -149,8 +149,12 @@ private const(RetrieverConfig) getInitialConfig()
                 missingKeys ~= key;
 
         if (missingKeys.length)
-            throw new Exception("Missing keys in retriever DB config collection: " ~
-                                 to!string(missingKeys));
+        {
+            auto err = "Missing keys in retriever DB config collection: " ~
+                                 to!string(missingKeys);
+            logError(err);
+            throw new Exception(err);
+        }
     }
 
     checkNotNull(["mainDir", "smtpServer", "smtpUser", "smtpPass",
@@ -363,6 +367,7 @@ ApiEmail getApiEmail(string dbId)
     auto fieldSelector = ["from": 1,
                           "headers": 1,
                           "isodate": 1,
+                          "textParts": 1,
                           "attachments": 1];
 
     const emailDoc = g_mongoDB["email"].findOne(["_id": dbId],
@@ -1017,10 +1022,9 @@ version(db_test)
         assert(count(arr, id4) == 1);
     }
 
-    // XXX move getConversation/getEmailSummary/conversationDoctoObject to another test
-    unittest // upsertConversation/getConversation/getEmailSummary/conversationDocToObject
+    unittest // upsertConversation
     {
-        writeln("Testing upsertConversation/getConversation/getEmailSummary/conversationDocToObject");
+        writeln("Testing upsertConversation");
         recreateTestDb();
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test",
                                                "testemails");
@@ -1117,6 +1121,60 @@ version(db_test)
         assert(convObject.links[1].emailDbId == emailId);
         assert(convObject.attachFileNames.length == 1);
         assert(convObject.attachFileNames[0] == "C++ Pocket Reference.pdf");
+    }
+
+    unittest // getConversation/getEmailSummary/conversationDocToObject
+    {
+        writeln("Testing getConversation/getEmailSummary/conversationDocToObject");
+        recreateTestDb();
+
+        auto convs = getConversationsByTag("inbox", 0, 0);
+        auto conv = getConversation(convs[0].dbId);
+        assert(conv.lastDate.length); // this email date is set to NOW
+        assert(conv.tags == ["inbox"]);
+        assert(conv.links.length == 1);
+        assert(!conv.attachFileNames.length);
+        assert(conv.cleanSubject == " Tired of Your Hosting Company?");
+
+        conv = getConversation(convs[1].dbId);
+        assert(conv.lastDate == "2014-06-10T12:51:10Z");
+        assert(conv.tags == ["inbox"]);
+        assert(conv.links.length == 3);
+        assert(!conv.attachFileNames.length);
+        assert(conv.cleanSubject == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
+
+        conv = getConversation(convs[2].dbId);
+        assert(conv.lastDate == "2014-01-21T14:32:20Z");
+        assert(conv.tags == ["inbox"]);
+        assert(conv.links.length == 1);
+        assert(conv.attachFileNames.length == 1);
+        assert(conv.attachFileNames[0] == "C++ Pocket Reference.pdf");
+        assert(conv.cleanSubject == " Attachment test");
+    }
+
+    unittest // getApiEmail
+    {
+        import std.digest.md;
+        writeln("Testing getApiEmail");
+        recreateTestDb();
+
+        auto convs = getConversationsByTag("inbox", 0, 0);
+        auto conv = getConversation(convs[2].dbId);
+        auto apiEmail = getApiEmail(conv.links[0].emailDbId);
+        assert(apiEmail.dbId == conv.links[0].emailDbId);
+        assert(apiEmail.from == " Some Random User <someuser@somedomain.com>");
+        assert(apiEmail.to == " Test User1 <anotherUser@anotherdomain.com>");
+        assert(apiEmail.cc == "");
+        assert(apiEmail.bcc == "");
+        assert(apiEmail.subject == " Attachment test");
+        assert(apiEmail.isoDate == "2014-01-21T14:32:20Z");
+        assert(apiEmail.date == " Tue, 21 Jan 2014 15:32:20 +0100");
+        assert(apiEmail.attachments.length == 1);
+        assert(apiEmail.attachments[0].ctype == "application/pdf");
+        assert(apiEmail.attachments[0].filename == "C++ Pocket Reference.pdf");
+        assert(apiEmail.attachments[0].size == 1363761);
+        assert(toHexString(md5Of(apiEmail.bodyHtml)) == "15232B94D39F8EA5A902BB78100C50A7");
+        assert(toHexString(md5Of(apiEmail.bodyPlain))== "CB492B7DF9B5C170D7C87527940EFF3B");
     }
 
     unittest // getConversationsByTag

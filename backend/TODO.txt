@@ -1,9 +1,6 @@
 Backend-API:
-    - external test getEmail()
 
 Backend-Retriever:
-    - unittest of db.getApiEmailById
-    - split the upsertConversation unittest
     - Settings: domain
     - Generate attach URL from configured domain + configured attach URL path
       (getApiEmailById)

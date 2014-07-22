@@ -3,7 +3,7 @@
     "mainSourceFile": "main.d",
     "license": "LGPL",
     "sourcePaths": [".", "../webbackend/source", "../libs"],
-    "excludedSourceFiles": ["test.d", "app.d"],
+    "excludedSourceFiles": ["test.d", "../webbackend/source/app.d"],
     "dependencies": { "vibe-d": "~master",
                       "smtp"  : ">=0.2.0"},
     "version": "0.0.1",
