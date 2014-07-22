@@ -32,5 +32,13 @@
             "targetType": "executable",
             "platforms": ["posix"],
         },
+        {
+            "name": "curltest",
+            "versions": ["apitest", "db_usetestdb"],
+            "dflags": ["-debug"],
+            "targetName": "test",
+            "targetType": "executable",
+            "platforms": ["posix"],
+        },
     ]
 }

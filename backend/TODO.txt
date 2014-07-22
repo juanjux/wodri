@@ -1,12 +1,12 @@
 Backend-API:
+    - Configure Vibe.d to serve the attachment URLs (AFTER auth)
+
+    - Authentication: scrypt-hashed password on the settings document (depency: libscrypt
+      and scrypt dub package)
 
 Backend-Retriever:
     - Settings: domain
-    - Generate attach URL from configured domain + configured attach URL path
-      (getApiEmailById)
-
-    - Some plain text emails without header are not put as plain (Apple Mail, 2016)
-    - Some attachments with ctype text/html are put as textParts (1080)
+    - Generate attach URL from configured domain + configured attach URL path (getApiEmail)
 
     Later:
 

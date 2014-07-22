@@ -9,7 +9,7 @@ struct ApiConversation
     string lastDate;
     string subject;
     string[] tags;
-
+ 
     this(Conversation conv)
     {
         this.lastDate = conv.lastDate;

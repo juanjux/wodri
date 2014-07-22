@@ -62,18 +62,15 @@ private pure string capitalizeHeader(string name)
 
     return newres;
 }
-unittest // capitalizeHeader
-{
-    assert(capitalizeHeader("mime-version")   == "MIME-Version");
-    assert(capitalizeHeader("subject")        == "Subject");
-    assert(capitalizeHeader("received-spf")   == "Received-SPF");
-    assert(capitalizeHeader("dkim-signature") == "DKIM-Signature");
-    assert(capitalizeHeader("message-id")     == "Message-ID");
-}
 
+// yep, I'm lazy
 private string lowStrip(string input)
 {
     return toLower(strip(input));
+}
+private bool lowStartsWith(string input, string startsw)
+{
+    return lowStrip(input).startsWith(startsw);
 }
 
 private string randomString(uint length)
@@ -170,6 +167,8 @@ final class IncomingEmailImpl : IncomingEmail
         string       m_rawEmailPath;
         string       lineSep = "\r\n";
     }
+    version(anyincomingmailtest) 
+        package bool generatedMessageId = false; 
 
     this()
     {
@@ -270,7 +269,10 @@ final class IncomingEmailImpl : IncomingEmail
             parseDate("NOW");
 
         if (!hasHeader("message-id"))
+        {
             generateMessageId();
+            version(anyincomingmailtest)this.generatedMessageId = true;
+        }
 
         // === Body=== (read all into the buffer, the parsing is done outside the loop)
         while (currentLine.length && !emailFile.eof())
@@ -475,10 +477,17 @@ final class IncomingEmailImpl : IncomingEmail
             parent.subparts ~= thisPart;
             thisPart.parent  = parent;
 
-            if (thisPart.ctype.name.startsWith("multipart"))
+            if (thisPart.ctype.name.lowStartsWith("multipart"))
                 parseParts(lines[startIndex..endIndex], thisPart, attachStore);
 
-            else if (among(thisPart.ctype.name, "text/plain", "text/html"))
+            else if (thisPart.ctype.name.lowStartsWith("message/") ||
+                     thisPart.disposition.name.lowStartsWith("attachment") ||
+                     thisPart.disposition.name.lowStartsWith("inline"))
+                setAttachmentPart(thisPart, lines[contentStart..endIndex], attachStore);
+
+            // startsWith to protect against some broken emails with text/html blabla
+            else if (thisPart.ctype.name.lowStartsWith("text/plain") ||
+                     thisPart.ctype.name.lowStartsWith("text/html"))
             {
                 setTextPart(thisPart, join(lines[contentStart..endIndex], this.lineSep));
                 debug
@@ -488,8 +497,6 @@ final class IncomingEmailImpl : IncomingEmail
                     writeln("===========================================");
                 }
             }
-            else if (among(thisPart.disposition.name, "attachment", "inline"))
-                setAttachmentPart(thisPart, lines[contentStart..endIndex], attachStore);
 
             startIndex = endIndex+1;
             ++globalIndex;
@@ -501,6 +508,9 @@ final class IncomingEmailImpl : IncomingEmail
     {
         if ("charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
+
+        if (!part.ctype.name.length)
+            part.ctype.name = "text/plain";
 
         string newtext;
         if (part.cTransferEncoding == "quoted-printable")
@@ -645,7 +655,7 @@ final class IncomingEmailImpl : IncomingEmail
             return;
         }
 
-        contentData.name = strip(removechars(valueTokens[0], "\""));
+        contentData.name = lowStrip(removechars(valueTokens[0], "\""));
         if (valueTokens.length > 1)
         {
             foreach(string param; valueTokens[1..$])
@@ -706,7 +716,6 @@ final class IncomingEmailImpl : IncomingEmail
         return totalSize;
     }
 }
-
 
 
 //  _    _       _ _   _            _
@@ -895,8 +904,8 @@ unittest
             if (!testAttachDir.exists)
                 mkdir(testAttachDir);
 
-            auto email = new IncomingEmail(rawEmailStore);
-            email.loadFromFile(File(e.name), attachStore);
+            auto email = new IncomingEmailImpl();
+            email.loadFromFile(File(e.name), attachStore, rawEmailStore);
 
             auto headerFile = File(buildPath(testDir, "header.txt"), "w");
             headerFile.write(email.printHeaders(Yes.AsString));
@@ -915,7 +924,7 @@ unittest
     {
 
         writeln("Starting single email test...");
-        auto filenumber = 30509;
+        auto filenumber = 20013;
         auto emailFile  = File(format("%s/%d", origEmailDir, filenumber), "r");
         auto email      = new IncomingEmailImpl();
         email.loadFromFile(emailFile, attachStore, rawEmailStore);
@@ -945,11 +954,10 @@ unittest
         writeln("Starting all emails test...");
         // broken emails, no newline after headers or parts, etc:
         int[string] brokenEmails = ["53290":0, "64773":0, "87900":0, "91208":0, "91210":0,
-                                    "96":0, "373":0, "1080":0, "2016":0, "2480": 0];
+                                    "2312":0];
 
         // Not broken, but for putting emails that need to be skipped for some reaso
-        //int[string] skipMails  = ["41051":0, "41112":0];
-        int[string] skipEmails;
+        int[string] skipEmails  = ["-1":0];
 
         auto emailStore = rawEmailStore; // put to "" to avoid copying in the test
         foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
@@ -967,38 +975,30 @@ unittest
             if (email.computeTextualBodySize() > 16*1024*1024)
                 assert(0);
 
-            // XXX test that "other" is not loaded with plain text mails (like 16)
-            //uint numPlain = 0;
-            //uint numHtml  = 0;
-            //uint other    = 0;
-            //foreach(part; email.textualParts)
-            //{
-                //switch(lowStrip(part.ctype.name))
-                //{
-                    //case "text/plain": numPlain++; break;
-                    //case "text/html": numHtml++; break;
-                    ////default: other++;
-                    //default: numPlain++;
-                //}
-                //writeln("XXX: ", part.ctype.name);
-            //}
-            //writeln;
-            //assert(numPlain < 2);
-            //assert(numHtml < 2);
-            //assert(other == 0);
-
-            auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
-            string headersStr = email.printHeaders(Yes.AsString);
-            auto refTextAppender = appender!string;
-            while(!fRef.eof)
-                refTextAppender.put(fRef.readln());
-
-            if (headersStr != refTextAppender.data)
+            uint numPlain, numHtml, other;
+            foreach(part; email.textualParts)
             {
-                auto mis = mismatch(headersStr, refTextAppender.data);
-                // Ignore mismatchs on message-id only, we regenerate the msgid when missing
-                if (lowStrip(split(mis[0], ":")[0]) != "message-id")
+                auto ls = lowStrip(part.ctype.name);
+                if (ls.startsWith("text/plain")) ++numPlain;
+                else if (ls.startsWith("text/html")) ++numHtml;
+                else if (ls.startsWith("message/")) continue;
+                else ++other;
+            }
+            assert(other == 0);
+
+            // TEST: Headers
+            if (!email.generatedMessageId)
+            {
+                auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
+                string headersStr = email.printHeaders(Yes.AsString);
+                auto refTextAppender = appender!string;
+                while(!fRef.eof)
+                    refTextAppender.put(fRef.readln());
+
+                if (headersStr != refTextAppender.data)
                 {
+                    auto mis = mismatch(headersStr, refTextAppender.data);
+                    // Ignore mismatchs on message-id only, we regenerate the msgid when missing
                     writeln("UNMATCHED HEADER IN FILE: ", e.name);
                     writeln("---ORIGINAL FOLLOWS FROM UNMATCHING POSITION:");
                     writeln(mis[0]);
@@ -1006,8 +1006,8 @@ unittest
                     writeln(mis[1]);
                     assert(0);
                 }
+                writeln("\t\t...headers ok!");
             }
-            writeln("\t\t...headers ok!");
 
             // TEST: Body parts
             auto testFilePath = buildPath(format("%s_t", e.name), "mime_info.txt");
@@ -1100,3 +1100,11 @@ unittest
     }
 }
 
+unittest // capitalizeHeader
+{
+    assert(capitalizeHeader("mime-version")   == "MIME-Version");
+    assert(capitalizeHeader("subject")        == "Subject");
+    assert(capitalizeHeader("received-spf")   == "Received-SPF");
+    assert(capitalizeHeader("dkim-signature") == "DKIM-Signature");
+    assert(capitalizeHeader("message-id")     == "Message-ID");
+}

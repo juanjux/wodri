@@ -88,17 +88,15 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Search conversations
 
 ## /message
-`(MISSING) get: /:id/message/`
+`get: /:id/message/`
     Get the full Message
-`(MISSING) get: /message/:id/attachments/name`
-    Get an attachment
 `(MISSING) get: /message/:id/raw`
     Get the original raw message
 `(MISSING) post: /message/:id/reply`
     Create a new draft as reply of the message specified (doesnt send)
 `(MISSING) post: /message/:id/send`
     Send the message (must have been created as a draft before)
-`(MISSING) post: /message/new`
+`(MISSING) post: /message/draft`
     Create a new draft
 `(MISSING) delete: /message/:id`
     Put the "trash" tag to the message or delete from DB and filesystem if

@@ -5,10 +5,28 @@ import vibe.core.log;
 import std.stdio;
 import webbackend.api;
 
+version(apitest)
+{
+    bool checkAuth(string user, string password)
+    {
+        return user == "admin" && password == "secret";
+    }
+} 
+else
+{
+    // XXX read scrypt user and password from database...
+    bool checkAuth(string user, string password)
+    {
+        return true;
+    }
+}
+
+
 shared static this()
 {
-    setLogLevel(LogLevel.debugV);
+    //setLogLevel(LogLevel.debugV);
     auto router = new URLRouter;
+    router.any("*", performBasicAuth("Site Realm", toDelegate(&checkAuth)));
     router.registerRestInterface(new ApiImpl);
     auto routes = router.getAllRoutes();
     writeln("XXX ROUTES:"); writeln(routes);
@@ -20,7 +38,9 @@ shared static this()
     listenHTTP(settings, router);
 }
 
-version(apitest)
+// The real tests are done from ../../tests/apilivetests.d
+//version(apitest)
+version(none)
 {
     version = db_usetestdb;
     unittest // getTagConversations
@@ -58,7 +78,6 @@ version(apitest)
         assert(conversations[1].lastDate == olderDate);
     }
 
-    version(none) // doesnt work, vibed bug? works with cURL
     unittest // getConversations
     {
         logInfo("Testing getConversation");
@@ -67,18 +86,17 @@ version(apitest)
 
         foreach(conv; conversations)
         {
-            auto conv1 = apiClient.getConversation(conv.dbId);
+            auto conv1 = apiClient.getConversation_(conv.dbId);
         }
     }
 
-    version(none) // doesnt work, vibed bug? works with cURL
     unittest // getEmail
     {
         logInfo("Testing getEmail");
         auto apiClient = new RestInterfaceClient!Api("http://127.0.0.1:8080");
-        // XXX pedir conversationes, sacar id de email de conversacion
-        auto email = apiClient.getEmail("53cd89ccbdcce38e6f0000e7");
-        writeln("XXX email: ", email);
+        auto conversations = apiClient.getTagConversations("inbox", 50, 0);
+        auto conversation = apiClient.getConversation_(conversations[0].dbId);
+        auto email = apiClient.getEmail(conversation.summaries[0].dbId);
     }
 }
 
