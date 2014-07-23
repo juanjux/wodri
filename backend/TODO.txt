@@ -1,8 +1,20 @@
 Backend-API:
-    - Curl unittest: download attachment, check md5
+    - DELETE /api/:id/email?purge=0 => set the "deleted" field of the envelope to true
+    (add a deleted field to the email document, CHECK FILTERS)
+
+    purge=1: remove the envelope from the DB, and if it was the only envelope remove
+    the email
+
+    Deleted: should be considered when displaying conversations in the frontend
+
+    getConversation: check the envelope for that user and email, add the deleted field
+    to the ApiEmail struct before returning it.
+
+    Unittests of all this.
 
 Backend-Retriever:
     Later:
+    - Use log to log more warnings, specially on db.d
 
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)

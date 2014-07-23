@@ -79,28 +79,26 @@ user clicks on the "expand" link, all the messages will be fully loaded.
 `get: /:id/conversation/`/
     Get a Conversation with the specified id
 `(MISSING) delete: /:id/conversation/`
-    Delete the conversation (internally: tag all messages as deleted)
+    Delete the conversation (internally: tag all emails as deleted)
 `(MISSING) post: /:id/conversation/tags`
     Add tags to the conversation
 `(MISSING) delete: /:id/conversation/tags`
     Remove tags from the conversation
-`(MISSING) post: /search`
+`(MISSING) post: /conversation/search`
     Search conversations
 
-## /message
+## /email
 `get: /:id/email/`
     Get the full Email
-`get: /:id/email/?attachment=N`
-    Get the attachment at position N
-`(MISSING) get: /message/:id/raw`
-    Get the original raw message
-`(MISSING) post: /message/:id/reply`
-    Create a new draft as reply of the message specified (doesnt send)
-`(MISSING) post: /message/:id/send`
-    Send the message (must have been created as a draft before)
-`(MISSING) post: /message/draft`
+`get: /:id/raw/`
+    Get the original raw email
+`(MISSING) post: /email/:id/reply`
+    Create a new draft as reply of the email specified (doesnt send)
+`(MISSING) post: /email/:id/send`
+    Send the email (must have been created as a draft before)
+`(MISSING) post: /email/draft`
     Create a new draft
-`(MISSING) delete: /message/:id`
-    Put the "trash" tag to the message or delete from DB and filesystem if
+`(MISSING) delete: /email/:id`
+    Put the "trash" tag to the email or delete from DB and filesystem if
     already on the trash
 

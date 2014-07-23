@@ -1,4 +1,3 @@
-#!/usr/bin/env rdmd
 module retriever.incomingemail;
 
 import std.stdio;
@@ -840,7 +839,7 @@ unittest
         string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
         string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
         string rawEmailStore   = buildPath(backendTestDir, "rawemails");
-        string attachStore = buildPath(backendTestDir, "attachments");
+        string attachStore     = buildPath(backendTestDir, "attachments");
         string base64Dir       = buildPath(backendTestDir, "base64_test");
     }
 
@@ -1015,8 +1014,7 @@ unittest
             auto ap1          = appender!string;
             auto ap2          = appender!string;
 
-            while(!f.eof)
-                ap1.put(f.readln());
+            while(!f.eof) ap1.put(f.readln());
 
             createPartInfoText(email.rootPart, ap2, 0);
 

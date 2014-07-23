@@ -1,6 +1,7 @@
 #!/usr/bin/env rdmd
 import std.digest.md;
 import std.process;
+import std.typecons;
 import std.array;
 import std.string;
 import std.stdio;
@@ -8,6 +9,10 @@ import std.json;
 import std.algorithm;
 import std.exception;
 
+/**
+ * IMPORTANT: run the db.d tests (test_db.sh) before running these tests so the DB
+ * is loaded
+ */
 
 string[] jsonToArray(JSONValue val)
 {
@@ -18,10 +23,11 @@ string[] jsonToArray(JSONValue val)
 JSONValue getConversations(string tag, uint limit, uint page)
 {
 
-    auto curlCmd = escapeShellCommand("curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H", 
-            "Content-Type: application/json", 
-            format("http://127.0.0.1:8080/api/tag/?name=%s&limit=%d&page=%d", 
+    auto curlCmd = escapeShellCommand("curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H",
+            "Content-Type: application/json",
+            format("http://127.0.0.1:8080/api/%s/tag/?limit=%d&page=%d",
             tag, limit, page));
+    writeln("\t" ~ curlCmd);
     auto retCurl = executeShell(curlCmd);
     if (retCurl.status != 0 || !retCurl.output.length)
         throw new Exception("bad curl result");
@@ -34,10 +40,11 @@ JSONValue getConversations(string tag, uint limit, uint page)
 JSONValue getConversationById(string id)
 {
     auto curlCmd = escapeShellCommand(
-                    "curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H", 
-                    "Content-Type: application/json", 
+                    "curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H",
+                    "Content-Type: application/json",
                     format("http://127.0.0.1:8080/api/%s/conversation/", id)
     );
+    writeln("\t" ~ curlCmd);
     auto retCurl = executeShell(curlCmd);
     if (retCurl.status != 0 || !retCurl.output.length)
         throw new Exception("bad curl result");
@@ -47,13 +54,15 @@ JSONValue getConversationById(string id)
 }
 
 
-JSONValue getEmailById(string id)
+JSONValue getEmail(string id, Flag!"GetRaw" raw = No.GetRaw)
 {
+    string name = raw == Yes.GetRaw?"raw":"email";
     auto curlCmd = escapeShellCommand(
-                    "curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H", 
-                    "Content-Type: application/json", 
-                    format("http://127.0.0.1:8080/api/%s/email/", id)
+                    "curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H",
+                    "Content-Type: application/json",
+                    format("http://127.0.0.1:8080/api/%s/%s/", id, name)
     );
+    writeln("\t" ~ curlCmd);
     auto retCurl = executeShell(curlCmd);
     if (retCurl.status != 0 || !retCurl.output.length)
         throw new Exception("bad curl result");
@@ -65,7 +74,7 @@ JSONValue getEmailById(string id)
 
 void testGetConversation()
 {
-    writeln("Testing outside testGetConversation");
+    writeln("Testing /api/:id/conversation/");
     JSONValue conversations;
     conversations = getConversations("inbox", 20, 0);
 
@@ -76,16 +85,19 @@ void testGetConversation()
     enforce(convId1.length);
 
     auto conversation  = getConversationById(convId1);
+    assert(conversation["lastDate"].str == "2014-07-23T16:59:27Z");
+    assert(conversation["subject"].str == " Tired of Your Hosting Company?");
+    assert(jsonToArray(conversation["tags"]) == ["inbox"]);
+
     auto conversation2 = getConversationById(convId2);
     auto conversation3 = getConversationById(convId3);
     auto conversation4 = getConversationById(convId4);
-    // XXX comprobar valores de las conversaciones
 }
 
 
 void testGetTagConversations()
 {
-    writeln("Testing outside getTagConversations");
+    writeln("Testing /api/:name/tag/?limit=%d&page=%d");
 
     JSONValue conversations;
     conversations = getConversations("inbox", 20, 0);
@@ -99,7 +111,7 @@ void testGetTagConversations()
            conversations[2]["numMessages"].integer == 1 &&
            conversations[3]["numMessages"].integer == 2);
 
-    enforce(conversations[0]["lastDate"].str > conversations[1]["lastDate"].str && 
+    enforce(conversations[0]["lastDate"].str > conversations[1]["lastDate"].str &&
            conversations[1]["lastDate"].str > conversations[2]["lastDate"].str &&
            conversations[2]["lastDate"].str > conversations[3]["lastDate"].str);
     auto newerDate = conversations[0]["lastDate"].str;
@@ -118,15 +130,13 @@ void testGetTagConversations()
 
 void testGetEmail()
 {
-    writeln("Testing outside testGetEmail");
+    writeln("Testing /api/:id/email");
 
-    JSONValue conversations;
-    conversations = getConversations("inbox", 20, 0);
-    JSONValue singleConversation;
-    singleConversation = getConversationById(conversations[0]["dbId"].str);
+    auto conversations = getConversations("inbox", 20, 0);
+    auto singleConversation = getConversationById(conversations[0]["dbId"].str);
 
     JSONValue email;
-    email = getEmailById(singleConversation["summaries"][0]["dbId"].str);
+    email = getEmail(singleConversation["summaries"][0]["dbId"].str);
     enforce(email["dbId"].str == singleConversation["summaries"][0]["dbId"].str);
     enforce(strip(email["from"].str) ==  "SupremacyHosting.com Sales <brian@supremacyhosting.com>");
     enforce(strip(email["subject"].str) == "Tired of Your Hosting Company?");
@@ -138,7 +148,7 @@ void testGetEmail()
     enforce(email["attachments"].array.length == 0);
 
     singleConversation = getConversationById(conversations[3]["dbId"].str);
-    email = getEmailById(singleConversation["summaries"][0]["dbId"].str);
+    email = getEmail(singleConversation["summaries"][0]["dbId"].str);
     enforce(email["dbId"].str == singleConversation["summaries"][0]["dbId"].str);
     enforce(strip(email["from"].str) ==  "Test Sender <someuser@insomedomain.com>");
     enforce(strip(email["subject"].str) == "some subject");
@@ -149,7 +159,7 @@ void testGetEmail()
     enforce(toHexString(md5Of(email["bodyHtml"].str)) == "710774126557E2D8219DCE10761B5838");
     enforce(email["attachments"].array.length == 0);
 
-    email = getEmailById(singleConversation["summaries"][1]["dbId"].str);
+    email = getEmail(singleConversation["summaries"][1]["dbId"].str);
     enforce(email["dbId"].str == singleConversation["summaries"][1]["dbId"].str);
     enforce(strip(email["from"].str) ==  "Some User <someuser@somedomain.com>");
     enforce(strip(email["subject"].str) == "Fwd: Se ha evitado un inicio de sesión sospechoso");
@@ -160,17 +170,29 @@ void testGetEmail()
     enforce(toHexString(md5Of(email["bodyHtml"].str)) == "977920E20B2BF801EC56E318564C4770");
     enforce(email["attachments"].array.length == 2);
 
-    enforce(strip(email["attachments"][0]["Url"].str) == "");
     enforce(strip(email["attachments"][0]["contentId"].str) == "<google>");
     enforce(strip(email["attachments"][0]["ctype"].str) == "image/png");
     enforce(strip(email["attachments"][0]["filename"].str) == "google.png");
+    enforce(email["attachments"][0]["Url"].str.startsWith("/attachment"));
+    enforce(email["attachments"][0]["Url"].str.endsWith(".png"));
     enforce(email["attachments"][0]["size"].integer == 6321);
 
-    enforce(strip(email["attachments"][1]["Url"].str) == "");
     enforce(strip(email["attachments"][1]["contentId"].str) == "<profilephoto>");
     enforce(strip(email["attachments"][1]["ctype"].str) == "image/jpeg");
     enforce(strip(email["attachments"][1]["filename"].str) == "profilephoto.jpeg");
+    enforce(email["attachments"][1]["Url"].str.startsWith("/attachment"));
+    enforce(email["attachments"][1]["Url"].str.endsWith(".jpeg"));
     enforce(email["attachments"][1]["size"].integer == 1063);
+}
+
+void testGetRawEmail()
+{
+    writeln("Testing /api/:id/raw");
+    auto conversations = getConversations("inbox", 20, 0);
+    auto singleConversation = getConversationById(conversations[3]["dbId"].str);
+    auto rawText = getEmail(singleConversation["summaries"][1]["dbId"].str, Yes.GetRaw).str;
+    enforce(toHexString(md5Of(rawText)) == "55E0B6D2FCA0C06A886C965DC24D1EBE");
+    enforce(rawText.length == 22516);
 }
 
 
@@ -179,6 +201,7 @@ void main()
     testGetTagConversations();
     testGetConversation();
     testGetEmail();
+    testGetRawEmail();
     // This stupid message is needed because sometimes this crashes quietly
     writeln("Ooooooooook, all tests finished");
 }

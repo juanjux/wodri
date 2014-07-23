@@ -18,25 +18,28 @@ import webbackend.apiemail;
 interface Api
 {
     @method(HTTPMethod.GET) @path("tag/")
-    ApiConversationSummary[] getTagConversations(string name, int limit=50, int page=0);
+    ApiConversationSummary[] getTagConversations(string id, int limit=50, int page=0);
 
     @method(HTTPMethod.GET) @path("conversation/")
     ApiConversation getConversation_(string id);
 
     @method(HTTPMethod.GET) @path("email/")
     ApiEmail getEmail(string id);
+
+    @method(HTTPMethod.GET) @path("raw/")
+    string getRawEmail_(string id);
 }
 
 
 class ApiImpl: Api
 {
     override:
-        ApiConversationSummary[] getTagConversations(string name,
+        ApiConversationSummary[] getTagConversations(string id,
                                                      int limit=50,
                                                      int page=0)
         {
             // returns an ApiConversationSummary for every Conversation
-            return getConversationsByTag(name, limit, page)
+            return getConversationsByTag(id, limit, page)
                    .map!(i => ApiConversationSummary(i)).array;
         }
 
@@ -50,5 +53,10 @@ class ApiImpl: Api
         ApiEmail getEmail(string id)
         {
             return getApiEmail(id);
+        }
+
+        string getRawEmail_(string id)
+        {
+            return getRawEmail(id);
         }
 }

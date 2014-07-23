@@ -25,6 +25,11 @@ import retriever.envelope;
 import retriever.conversation;
 import webbackend.apiemail;
 
+version(unittest)
+{
+    import std.digest.md;
+}
+
 
 private MongoDatabase g_mongoDB;
 private RetrieverConfig g_config;
@@ -94,6 +99,17 @@ struct RetrieverConfig
     uint   bodyPeekLength;
     string URLAttachmentPath;
     string URLStaticPath;
+
+    @property string absAttachmentStore() const
+    {
+        return buildPath(this.mainDir, this.attachmentStore);
+    }
+
+    @property string absRawEmailStore() const
+    {
+        return buildPath(this.mainDir, this.rawEmailStore);
+    }
+
 }
 
 
@@ -128,11 +144,11 @@ private double bsonNumber(const Bson input)
 }
 
 
-ref const(RetrieverConfig) getConfig()
-{
-    return g_config;
+ref const(RetrieverConfig) getConfig() { return g_config; }
+string absAttachmentStore() 
+{ 
+    return buildPath(getConfig.mainDir, getConfig.attachmentStore); 
 }
-
 
 private const(RetrieverConfig) getInitialConfig()
 {
@@ -380,7 +396,6 @@ EmailSummary getEmailSummary(string dbId)
 }
 
 
-// XXX unittest de los attachments
 ApiEmail getApiEmail(string dbId)
 {
     ApiEmail ret;
@@ -424,8 +439,9 @@ ApiEmail getApiEmail(string dbId)
             if (!attach.contentId.isNull)
                 att.contentId = bsonStr(attach.contentId);
             if (!attach.realPath.isNull)
-                att.Url = joinPath(getConfig().URLAttachmentPath,
-                                   baseName(bsonStr(attach.realPath)));
+                att.Url = joinPath("/", 
+                            joinPath(getConfig().URLAttachmentPath, 
+                                     baseName(bsonStr(attach.realPath))));
             ret.attachments ~= att;
         }
 
@@ -450,6 +466,27 @@ ApiEmail getApiEmail(string dbId)
         }
     }
     return ret;
+}
+
+
+string getRawEmail(string dbId)
+{
+    string noMail = "Error: could not get raw email";
+    const emailDoc = g_mongoDB["email"].findOne(["_id": dbId],
+                                                ["rawEmailPath": 1],
+                                                QueryFlags.None);
+    if (!emailDoc.isNull && !emailDoc.rawEmailPath.isNull) 
+    {
+        auto rawPath = bsonStr(emailDoc.rawEmailPath);
+        if (rawPath.length && rawPath.exists)
+        {
+            Appender!string app;
+            auto rawFile = File(rawPath, "r");
+            while(!rawFile.eof) app.put(rawFile.readln());
+            return app.data;
+        }
+    }
+    return noMail;
 }
 
 
@@ -849,8 +886,7 @@ version(db_usetestdb)
             g_mongoDB[collection].remove();
 
         // Fill the test DB
-        string backendTestDataDir_ = 
-            buildPath(getConfig().mainDir, "backend", "test", "testdb");
+        string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", "test", "testdb");
         string[string] jsonfile2collection = ["user1.json"     : "user",
                                               "user2.json"     : "user",
                                               "domain1.json"   : "domain",
@@ -860,13 +896,13 @@ version(db_usetestdb)
         foreach(file_, collection; jsonfile2collection)
             g_mongoDB[collection].insert(parseJsonString(readText(buildPath(backendTestDataDir_, file_))));
 
-        string backendTestEmailsDir = 
-            buildPath(getConfig().mainDir, "backend", "test", "testemails");
+        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         foreach(mailname; TEST_EMAILS)
         {
             auto email = new IncomingEmailImpl();
             email.loadFromFile(buildPath(backendTestEmailsDir, mailname),
-                                         getConfig().attachmentStore);
+                               getConfig.absAttachmentStore,
+                               getConfig.absRawEmailStore);
             assert(email.isValid, "Email is not valid");
             auto destination = email.getHeader("to").addresses[0];
             auto emailId     = email.store();
@@ -1185,13 +1221,13 @@ version(db_test)
 
     unittest // getApiEmail
     {
-        import std.digest.md;
         writeln("Testing getApiEmail");
         recreateTestDb();
 
-        auto convs = getConversationsByTag("inbox", 0, 0);
-        auto conv = getConversation(convs[2].dbId);
+        auto convs    = getConversationsByTag("inbox", 0, 0);
+        auto conv     = getConversation(convs[2].dbId);
         auto apiEmail = getApiEmail(conv.links[0].emailDbId);
+
         assert(apiEmail.dbId == conv.links[0].emailDbId);
         assert(apiEmail.from == " Some Random User <someuser@somedomain.com>");
         assert(apiEmail.to == " Test User1 <anotherUser@anotherdomain.com>");
@@ -1206,8 +1242,22 @@ version(db_test)
         assert(apiEmail.attachments[0].size == 1363761);
         assert(toHexString(md5Of(apiEmail.bodyHtml)) == "15232B94D39F8EA5A902BB78100C50A7");
         assert(toHexString(md5Of(apiEmail.bodyPlain))== "CB492B7DF9B5C170D7C87527940EFF3B");
-        assert(apiEmail.attachments[0].Url.startsWith("attachment/"));
+        assert(apiEmail.attachments[0].Url.startsWith("/attachment/"));
         assert(apiEmail.attachments[0].Url.endsWith(".pdf"));
+    }
+
+    unittest // getRawEmail
+    {
+        writeln("Testing getRawEmail");
+        recreateTestDb();
+
+        auto convs = getConversationsByTag("inbox", 0, 0);
+        auto conv = getConversation(convs[2].dbId);
+        auto apiEmail = getApiEmail(conv.links[0].emailDbId);
+        auto rawText = getRawEmail(conv.links[0].emailDbId);
+
+        assert(toHexString(md5Of(rawText)) == "CFA0B90028C9E6C5130C5526ABB61F1F");
+        assert(rawText.length == 1867294);
     }
 
     unittest // getConversationsByTag
