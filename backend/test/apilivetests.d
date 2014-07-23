@@ -18,7 +18,7 @@ string[] jsonToArray(JSONValue val)
 JSONValue getConversations(string tag, uint limit, uint page)
 {
 
-    auto curlCmd = escapeShellCommand("curl", "-u", "admin:secret", "-s", "-X", "GET", "-H", 
+    auto curlCmd = escapeShellCommand("curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H", 
             "Content-Type: application/json", 
             format("http://127.0.0.1:8080/api/tag/?name=%s&limit=%d&page=%d", 
             tag, limit, page));
@@ -34,7 +34,7 @@ JSONValue getConversations(string tag, uint limit, uint page)
 JSONValue getConversationById(string id)
 {
     auto curlCmd = escapeShellCommand(
-                    "curl", "-u", "admin:secret", "-s", "-X", "GET", "-H", 
+                    "curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H", 
                     "Content-Type: application/json", 
                     format("http://127.0.0.1:8080/api/%s/conversation/", id)
     );
@@ -50,7 +50,7 @@ JSONValue getConversationById(string id)
 JSONValue getEmailById(string id)
 {
     auto curlCmd = escapeShellCommand(
-                    "curl", "-u", "admin:secret", "-s", "-X", "GET", "-H", 
+                    "curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H", 
                     "Content-Type: application/json", 
                     format("http://127.0.0.1:8080/api/%s/email/", id)
     );

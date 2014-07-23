@@ -4,6 +4,9 @@ DMD & Vibed
     - dub init vibed
     - dub fetch libevent2
 
+LIBSCRYPT
+    - sudo apt-get install libscrypt0 libscrypt-dev
+
 POSTFIX & SPAMASSASSIN:
     - Edit (as root) the /etc/hosts file and put 127.0.0.1 host.example.com (or whatever the host is)
     - sudo apt-get install postfix => set as "Internet Site" an input your domain.
@@ -75,44 +78,47 @@ MONGODB:
     (Note: on your distribution mongodb could be running under a different user/group, if 
     in doubt: ls -l the original data and log dirs of mongo and check the permission)
 
-    - Run the mongo command and run these commands changing WEBMAILDIR for the full path to real directory:
+    - Run the mongo command and run these commands changing WEBMAILDIR for the
+      full path to real directory and SOMESALT for some random string:
+
       use webmail
       myuser = 
-        {
-                "loginName": "MYLOGINNAME",
-                "name": "MYNAME",
-                "surname": "MYSURNAME",
-                "admin": true,
-                "adresses": ["juanjux@juanjux.mooo.com", "juanjo.alvarez@juanjux.mooo.com"],
-        }
+      {
+              "loginName": "MYLOGINNAME",
+              "name": "MYNAME",
+              "surname": "MYSURNAME",
+              "admin": true,
+              "adresses": ["juanjux@juanjux.mooo.com", "juanjo.alvarez@juanjux.mooo.com"],
+      }
       db.users.insert(myuser)  
       userid = db.users.find().next()._id
 
       mydomain = 
-        {   
-                "name": "MYDOMAIN",
-                "postMaster": userid,
-                "defaultUser": userid,
-                "domainAdmin": userid
-        }
+      {   
+              "name": "MYDOMAIN",
+              "postMaster": userid,
+              "defaultUser": userid,
+              "domainAdmin": userid
+      }
      db.domain.insert(mydomain)
      domainid = db.domain.find().next()._id
 
      retriever_config = 
-        {
-                "module" : "retriever",
-                "mainDir" : "/home/juanjux/webmail",
-                "ownDomain" : ObjectId("539977b104ac3d27431d0668"),
-                "rawEmailStore" : "store/rawmails",
-                "attachmentStore" : "store/attachment",
-                "incomingMessageLimit" : 15728640
-                "storeTextIndex": true,
-                "smtpEncription" : 0,
-                "smtpPass" : "smtpRelayPass",
-                "smtpPort" : 25,
-                "smtpServer" : "smtpRelayHostName",
-                "smtpUser" : "smtpRelayUserName"
-        }
+     {
+               "module" : "retriever",
+               "mainDir" : "/home/juanjux/webmail",
+               "ownDomain" : ObjectId("539977b104ac3d27431d0668"),
+               "rawEmailStore" : "store/rawmails",
+               "attachmentStore" : "store/attachments",
+               "incomingMessageLimit" : 15728640
+               "salt": "SOMESALT",
+               "storeTextIndex": true,
+               "smtpEncription" : 0,
+               "smtpPass" : "smtpRelayPass",
+               "smtpPort" : 25,
+               "smtpServer" : "smtpRelayHostName",
+               "smtpUser" : "smtpRelayUserName"
+      }
       db.settings.insert(retriever_config)
 
     - Create the email index (unneded if storeTextIndex is false):
@@ -146,6 +152,17 @@ CONFIG DIRECTORY AND MONGO DB USER
     - sudo service mongodb restart
     (Now for opening the mongo console: mongo localhost:27017/admin -u webmaildbuser -p SomePassword)
 
+
+DUB DEPENDENCIES
+    - cd webmail/backend/source/webbackend
+    - dub build
+
+
+PATHS
+    - create a symbolic link from the configured attachment rawEmailStore (by default
+      PROJECT_DIR/store/attachments) to PROJECT_DIR/HTTPBACKEND_DIR/public/attachment:
+
+      ln -s /var/www/SERVICEDIR/store/attachments /var/www/SERVICEDIR/backend/source/webbackend/public/attachment
 
   TODO XXX
 

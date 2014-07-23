@@ -6,6 +6,7 @@
         ],
         "admin" : false,
         "loginName" : "anotherUser",
+        "loginHash" : "YHOxxOHmvwzceoxYkqJiQWslrmY=",
         "name" : "Another User",
         "surname" : "Surname1 Surname2"
 }

@@ -8,7 +8,7 @@
     "sourcePaths": [".", ".."],
     "excludedSourceFiles": ["../retriever/main.d", "../retriever/test.d", "livetests.d", "test.d"],
     "dependencies": {
-        "vibe-d": "~master"
+        "vibe-d": "~master",
     },
     "versions": ["VibeDefaultMain", "db_usetestdb"],
     "buildOptions": ["debugMode"],

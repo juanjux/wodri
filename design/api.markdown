@@ -59,9 +59,9 @@ user clicks on the "expand" link, all the messages will be fully loaded.
 # REST API
 
 ## /tag
-`get: /tag/?name=tagname&limit=50&page=0`
-    Get the last ConversationSummary objects for that tagname. The number of
-    ConversationSummaries returned would depend on the user configuration.
+`get: /tag/?name=NAME&limit=XX&page=YY`
+    Get the last ConversationSummary objects for that tagname until limit XX,
+    starting from page YY
 
     GET Parameters: name: tagname
                      limit: max results to return
@@ -88,8 +88,10 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Search conversations
 
 ## /message
-`get: /:id/message/`
-    Get the full Message
+`get: /:id/email/`
+    Get the full Email
+`get: /:id/email/?attachment=N`
+    Get the attachment at position N
 `(MISSING) get: /message/:id/raw`
     Get the original raw message
 `(MISSING) post: /message/:id/reply`

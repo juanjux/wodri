@@ -1,36 +1,55 @@
 module app;
 
+import std.stdio;
+import std.path;
 import vibe.d;
 import vibe.core.log;
-import std.stdio;
+import vibe.crypto.passwordhash;
+import vibe.http.fileserver;
+import vibe.inet.path;
 import webbackend.api;
+import retriever.db: getConfig, getUserHash;
 
-version(apitest)
+bool checkAuth(string user, string password)
 {
-    bool checkAuth(string user, string password)
-    {
-        return user == "admin" && password == "secret";
-    }
+    return testSimplePasswordHash(getUserHash(user),
+                                  password,
+                                  getConfig().salt);
 } 
-else
+
+
+pure string removeStartSlash(string path)
 {
-    // XXX read scrypt user and password from database...
-    bool checkAuth(string user, string password)
-    {
-        return true;
-    }
+    if (path.startsWith("/"))
+        return path[1..$];
+    return path;
+}
+pure string removeEndSlash(string path)
+{
+    if (path.endsWith("/"))
+        return path[0..$-1];
+    return path;
+}
+pure string removeStartEndSlashes(string path)
+{
+    return removeStartSlash(removeEndSlash(path));
 }
 
 
 shared static this()
 {
-    //setLogLevel(LogLevel.debugV);
+    setLogLevel(LogLevel.debugV);
+
+    auto config = getConfig();
     auto router = new URLRouter;
+
+    // Auth
     router.any("*", performBasicAuth("Site Realm", toDelegate(&checkAuth)));
+    // /attachment/[fileName]
+    router.get(joinPath(joinPath("/", config.URLAttachmentPath), "*"), 
+               serveStaticFiles(removeStartSlash(config.URLStaticPath)));
+    // /api/[rest_api]
     router.registerRestInterface(new ApiImpl);
-    auto routes = router.getAllRoutes();
-    writeln("XXX ROUTES:"); writeln(routes);
-    //router.get("/tag/:name/limit/:limit/page/:page", &getTagConversations);
 
     auto settings = new HTTPServerSettings;
     settings.port = 8080;

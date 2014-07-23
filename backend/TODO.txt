@@ -1,13 +1,7 @@
 Backend-API:
-    - Configure Vibe.d to serve the attachment URLs (AFTER auth)
-
-    - Authentication: scrypt-hashed password on the settings document (depency: libscrypt
-      and scrypt dub package)
+    - Curl unittest: download attachment, check md5
 
 Backend-Retriever:
-    - Settings: domain
-    - Generate attach URL from configured domain + configured attach URL path (getApiEmail)
-
     Later:
 
     - When the message failed to enter (validation error, or error on save)
@@ -32,6 +26,7 @@ Contacts:
     - Use it for getting the shortnames in the ConversationSummary object.
 
 All:
+    - Authentication with scrypt hashing instead of MD5
     - Run dub with code converage option
     - Import cleanup (only imports and symbols really used)
     - Const, immutable, pure, nothrow, in, out, safe et all

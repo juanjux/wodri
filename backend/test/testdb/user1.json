@@ -5,6 +5,7 @@
         ],
         "admin" : true,
         "loginName" : "testuser",
+        "loginHash" : "8AQl5bqZMY3vbczoBWJiTFVclKU=",
         "name" : "testUserName",
         "surname" : "testUserSurName"
 }

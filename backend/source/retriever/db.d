@@ -16,6 +16,7 @@ import std.traits;
 import vibe.db.mongo.mongo;
 import vibe.core.log;
 import vibe.data.json;
+import vibe.inet.path;
 
 import arsd.htmltotext;
 import retriever.userrule: Match, Action, UserFilter, SizeRuleType;
@@ -42,7 +43,7 @@ version(db_test) version = db_usetestdb;
 /**
  * Read the /etc/dbconnect.json file, check for missing keys and connect
  */
-static this()
+shared static this()
 {
     auto mandatoryKeys = ["host", "name",  "password", "port",
                                "testname", "type", "user"];
@@ -79,8 +80,10 @@ static this()
 struct RetrieverConfig
 {
     string mainDir;
+    string apiDomain;
     string rawEmailStore;
     string attachmentStore;
+    string salt;
     ulong  incomingMessageLimit;
     bool   storeTextIndex;
     string smtpServer;
@@ -89,6 +92,8 @@ struct RetrieverConfig
     string smtpUser;
     string smtpPass;
     uint   bodyPeekLength;
+    string URLAttachmentPath;
+    string URLStaticPath;
 }
 
 
@@ -157,17 +162,19 @@ private const(RetrieverConfig) getInitialConfig()
         }
     }
 
-    checkNotNull(["mainDir", "smtpServer", "smtpUser", "smtpPass",
-                  "smtpEncription", "smtpPort", "rawEmailStore",
-                  "attachmentStore", "incomingMessageLimit", "storeTextIndex",
-                  "bodyPeekLength"]);
+    checkNotNull(["mainDir", "apiDomain", "smtpServer", "smtpUser", "smtpPass",
+            "smtpEncription", "smtpPort", "rawEmailStore", "attachmentStore", "salt",
+            "incomingMessageLimit", "storeTextIndex", "bodyPeekLength",
+            "URLAttachmentPath", "URLStaticPath"]);
 
     _config.mainDir              = bsonStr(dbConfig.mainDir);
+    _config.apiDomain            = bsonStr(dbConfig.apiDomain);
     _config.smtpServer           = bsonStr(dbConfig.smtpServer);
     _config.smtpUser             = bsonStr(dbConfig.smtpUser);
     _config.smtpPass             = bsonStr(dbConfig.smtpPass);
     _config.smtpEncription       = to!uint(bsonNumber(dbConfig.smtpEncription));
     _config.smtpPort             = to!ulong(bsonNumber(dbConfig.smtpPort));
+    _config.salt                 = bsonStr(dbConfig.salt);
     auto dbPath                  = bsonStr(dbConfig.rawEmailStore);
     // If the db path starts with '/' interpret it as absolute
     _config.rawEmailStore        = dbPath.startsWith(dirSeparator)?
@@ -182,6 +189,8 @@ private const(RetrieverConfig) getInitialConfig()
     _config.incomingMessageLimit = to!ulong(bsonNumber(dbConfig.incomingMessageLimit));
     _config.storeTextIndex       = bsonBool(dbConfig.storeTextIndex);
     _config.bodyPeekLength       = to!uint(bsonNumber(dbConfig.bodyPeekLength));
+    _config.URLAttachmentPath    = bsonStr(dbConfig.URLAttachmentPath);
+    _config.URLStaticPath        = bsonStr(dbConfig.URLStaticPath);
     return _config;
 }
 
@@ -196,6 +205,17 @@ Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
         bsonStr(domain.defaultUser).length)
         return Yes.HasDefaultUser;
     return No.HasDefaultUser;
+}
+
+
+string getUserHash(string loginName)
+{
+    auto user = g_mongoDB["user"].findOne(["loginName": loginName],
+                                          ["loginHash": 1],
+                                          QueryFlags.None);
+    if (!user.isNull && !user.loginHash.isNull)
+        return bsonStr(user.loginHash);
+    return "";
 }
 
 
@@ -360,7 +380,7 @@ EmailSummary getEmailSummary(string dbId)
 }
 
 
-// XXX unittest
+// XXX unittest de los attachments
 ApiEmail getApiEmail(string dbId)
 {
     ApiEmail ret;
@@ -403,6 +423,9 @@ ApiEmail getApiEmail(string dbId)
                 att.filename = bsonStr(attach.fileName);
             if (!attach.contentId.isNull)
                 att.contentId = bsonStr(attach.contentId);
+            if (!attach.realPath.isNull)
+                att.Url = joinPath(getConfig().URLAttachmentPath,
+                                   baseName(bsonStr(attach.realPath)));
             ret.attachments ~= att;
         }
 
@@ -799,6 +822,8 @@ version(db_usetestdb)
         {
                 "_id"                  : "5399793904ac3d27431d0669",
                 "mainDir"              : "/home/juanjux/webmail",
+                "apiDomain"            : "juanjux.mooo.com",
+                "salt"                 : "someSalt",
                 "attachmentStore"      : "backend/test/attachments",
                 "incomingMessageLimit" : 15728640,
                 "storeTextIndex"       : true,
@@ -809,7 +834,9 @@ version(db_usetestdb)
                 "smtpPort"             : 25,
                 "smtpServer"           : "localhost",
                 "smtpUser"             : "smtpUser",
-                "bodyPeekLength"       : 100
+                "bodyPeekLength"       : 100,
+                "URLAttachmentPath"    : "attachment",
+                "URLStaticPath"        : "public",
         }`);
         g_mongoDB["settings"].insert(parseJsonString(settingsJsonStr));
     }
@@ -817,8 +844,8 @@ version(db_usetestdb)
 
     void recreateTestDb()
     {
-        foreach(string collection; ["envelope", "email", "emailIndexContents",
-                                    "conversation", "domain", "user", "userrule"])
+        foreach(string collection; ["conversation", "envelope", "emailIndexContents", 
+                                    "email", "domain", "user", "userrule"])
             g_mongoDB[collection].remove();
 
         // Fill the test DB
@@ -864,6 +891,13 @@ version(db_test)
         assert(domainHasDefaultUser("testdatabase.com")  == Yes.HasDefaultUser, "domainHasDefaultUser1");
         assert(domainHasDefaultUser("anotherdomain.com") == No.HasDefaultUser, "domainHasDefaultUser2");
     }
+
+    unittest // getUserHash
+    {
+        assert(getUserHash("testuser") == "8AQl5bqZMY3vbczoBWJiTFVclKU=");
+        assert(getUserHash("anotherUser") == "YHOxxOHmvwzceoxYkqJiQWslrmY=");
+    }
+
 
     unittest // getAddressFilters
     {
@@ -1172,6 +1206,8 @@ version(db_test)
         assert(apiEmail.attachments[0].size == 1363761);
         assert(toHexString(md5Of(apiEmail.bodyHtml)) == "15232B94D39F8EA5A902BB78100C50A7");
         assert(toHexString(md5Of(apiEmail.bodyPlain))== "CB492B7DF9B5C170D7C87527940EFF3B");
+        assert(apiEmail.attachments[0].Url.startsWith("attachment/"));
+        assert(apiEmail.attachments[0].Url.endsWith(".pdf"));
     }
 
     unittest // getConversationsByTag
