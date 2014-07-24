@@ -1,4 +1,4 @@
-module retriever.envelope;
+module db.envelope;
 
 import retriever.incomingemail: IncomingEmail;
 import std.string: format;

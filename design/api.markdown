@@ -79,7 +79,7 @@ user clicks on the "expand" link, all the messages will be fully loaded.
 `get: /:id/conversation/`/
     Get a Conversation with the specified id
 `(MISSING) delete: /:id/conversation/`
-    Delete the conversation (internally: tag all emails as deleted)
+    Delete the conversation
 `(MISSING) post: /:id/conversation/tags`
     Add tags to the conversation
 `(MISSING) delete: /:id/conversation/tags`
@@ -98,7 +98,7 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Send the email (must have been created as a draft before)
 `(MISSING) post: /email/draft`
     Create a new draft
-`(MISSING) delete: /email/:id`
+`(INPROGRESS) delete: /:id/email/`
     Put the "trash" tag to the email or delete from DB and filesystem if
     already on the trash
 

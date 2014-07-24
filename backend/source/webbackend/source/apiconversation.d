@@ -1,7 +1,7 @@
 module webbackend.apiconversation;
 
-import retriever.conversation;
-import retriever.db: EmailSummary, getEmailSummary;
+import db.conversation;
+import db.mongo: EmailSummary, getEmailSummary;
 
 struct ApiConversation
 {

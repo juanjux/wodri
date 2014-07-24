@@ -13,6 +13,23 @@ Backend-API:
     Unittests of all this.
 
 Backend-Retriever:
+    - Move types to a types submodule:
+        conversation.d
+        apiconversation.d
+        apiconversationsummary.d
+        apiemail.d
+        incomingemail.d
+        envelope.d
+        userfilter.d
+
+    - Split db.d into:
+        - db_user.d
+        - db_email.d
+        - db_envelope.d
+        - db_conversation.d
+        - db_domain.d
+        - db_userrules.d
+
     Later:
     - Use log to log more warnings, specially on db.d
 

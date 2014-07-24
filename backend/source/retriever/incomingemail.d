@@ -76,8 +76,6 @@ private string randomString(uint length)
 {
     return iota(length).map!(_ => lowercase[uniform(0, $)]).array;
 }
-
-
 private string randomFileName(string directory, string extension="")
 {
     string destPath;

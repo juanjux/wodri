@@ -1,17 +1,17 @@
-module retriever.conversation;
+module db.conversation;
 
 import std.datetime;
 import std.string;
 import std.datetime;
 import core.time: TimeException;
 import vibe.data.bson;
+import db.mongo;
 
 struct MessageLink
 {
     string messageId;
     string emailDbId;
 }
-
 
 struct Conversation
 {
@@ -22,6 +22,38 @@ struct Conversation
     MessageLink[] links;
     string[] attachFileNames;
     string cleanSubject;
+
+    static Conversation load(string id)
+    {
+        auto convDoc = collection("conversation").findOne(["_id": id]);
+        return conversationDocToObject(convDoc);
+    }
+
+    static private Conversation conversationDocToObject(ref Bson convDoc)
+    {
+        Conversation ret;
+        if (!convDoc.isNull)
+        {
+            ret.dbId         = bsonStr(convDoc._id);
+            ret.userDbId     = bsonStr(convDoc.userId);
+            ret.lastDate     = bsonStr(convDoc.lastDate);
+            ret.tags         = bsonStrArray(convDoc.tags);
+            ret.cleanSubject = bsonStr(convDoc.cleanSubject);
+
+            foreach(link; convDoc.links)
+            {
+                auto msgId = bsonStr(link["message-id"]);
+                ret.addLink(msgId, bsonStr(link["emailId"]));
+                auto emailSummary = getEmailSummary(getEmailIdByMessageId(msgId));
+                foreach(attach; emailSummary.attachFileNames)
+                {
+                    if (countUntil(ret.attachFileNames, attach) == -1)
+                        ret.attachFileNames ~= attach;
+                }
+            }
+        }
+        return ret;
+    }
 
     private bool haveLink(string messageId, string emailDbId)
     {

@@ -11,9 +11,9 @@ import std.algorithm: uniq;
 import std.array: array;
 import vibe.core.log;
 import retriever.incomingemail;
-import retriever.envelope;
-import retriever.userrule;
-import retriever.db;
+import db.envelope;
+import db.userrule;
+import db.mongo;
 
 version(maintest){}
 else version = not_maintest;
@@ -57,7 +57,7 @@ void saveAndLogRejectedEmail(const IncomingEmail email,
 }
 
 
-// XXX test when I've the full cicle tests
+// XXX test when I've the integration tests
 void processEmailForAddress(string destination, const IncomingEmail email, string emailId)
 {
     // Create the email=>user envelope
@@ -88,11 +88,12 @@ int main()
                LogLevel.info);
 
     auto email = new IncomingEmailImpl();
-    email.loadFromFile(std.stdio.stdin, config.rawEmailStore, 
-                       config.attachmentStore);
+    email.loadFromFile(std.stdio.stdin, 
+                      config.attachmentStore,
+                      config.rawEmailStore);
 
     auto isValid         = email.isValid();
-    const localReceivers = uniq(localReceivers(email)).array;
+    const localReceivers = uniq(email.localReceivers()).array;
     bool tooBig          = (email.computeSize() > config.incomingMessageLimit);
     auto alreadyOnDb     = email.emailAlreadyOnDb();
 

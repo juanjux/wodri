@@ -1,10 +1,10 @@
-module retriever.userrule;
+module db.userrule;
 
 import std.string;
 import std.algorithm;
 import vibe.core.log;
 import vibe.data.bson;
-import retriever.envelope;
+import db.envelope;
 import retriever.incomingemail;
 version(unittest)import std.stdio;
 

@@ -1,4 +1,4 @@
-module retriever.db;
+
 
 import std.stdio;
 import std.typecons;
@@ -19,10 +19,10 @@ import vibe.data.json;
 import vibe.inet.path;
 
 import arsd.htmltotext;
-import retriever.userrule: Match, Action, UserFilter, SizeRuleType;
+import db.userrule: Match, Action, UserFilter, SizeRuleType;
 import retriever.incomingemail;
-import retriever.envelope;
-import retriever.conversation;
+import db.envelope;
+import db.conversation;
 import webbackend.apiemail;
 
 version(unittest)
@@ -81,6 +81,8 @@ shared static this()
     g_config = getInitialConfig();
 }
 
+
+ref const(MongoCollection) collection(string name) { return g_mongoDB[name]; }
 
 struct RetrieverConfig
 {
@@ -264,19 +266,19 @@ const(UserFilter[]) getAddressFilters(string address)
                     throw new Exception(err);
             }
 
-            match.withAttachment = bsonBool      (rule.match_withAttachment);
-            match.withHtml       = bsonBool      (rule.match_withHtml);
-            match.totalSizeValue = to!ulong      (bsonNumber(rule.match_totalSizeValue));
-            match.bodyMatches    = bsonStrArray  (rule.match_bodyText);
-            match.headerMatches  = bsonStrHash   (rule.match_headers);
+            match.withAttachment = bsonBool    (rule.match_withAttachment);
+            match.withHtml       = bsonBool    (rule.match_withHtml);
+            match.totalSizeValue = to!ulong    (bsonNumber(rule.match_totalSizeValue));
+            match.bodyMatches    = bsonStrArray(rule.match_bodyText);
+            match.headerMatches  = bsonStrHash (rule.match_headers);
 
-            action.noInbox       = bsonBool      (rule.action_noInbox);
-            action.markAsRead    = bsonBool      (rule.action_markAsRead);
-            action.deleteIt      = bsonBool      (rule.action_delete);
-            action.neverSpam     = bsonBool      (rule.action_neverSpam);
-            action.setSpam       = bsonBool      (rule.action_setSpam);
-            action.forwardTo     = bsonStrArray  (rule.action_forwardTo);
-            action.addTags       = bsonStrArray  (rule.action_addTags);
+            action.noInbox       = bsonBool    (rule.action_noInbox);
+            action.markAsRead    = bsonBool    (rule.action_markAsRead);
+            action.deleteIt      = bsonBool    (rule.action_delete);
+            action.neverSpam     = bsonBool    (rule.action_neverSpam);
+            action.setSpam       = bsonBool    (rule.action_setSpam);
+            action.forwardTo     = bsonStrArray(rule.action_forwardTo);
+            action.addTags       = bsonStrArray(rule.action_addTags);
 
             res ~= new UserFilter(match, action);
         } catch (Exception e)
@@ -1350,7 +1352,7 @@ version(db_insertalltest) unittest
 
 
         sw.start();
-        auto localReceivers = localReceivers(email);
+        auto localReceivers = email.localReceivers();
         if (!localReceivers.length)
         {
             writeln("SKIPPING, not local receivers");

@@ -12,9 +12,7 @@ import retriever.db: getConfig, getUserHash;
 
 bool checkAuth(string user, string password)
 {
-    return testSimplePasswordHash(getUserHash(user),
-                                  password,
-                                  getConfig().salt);
+    return testSimplePasswordHash(getUserHash(user), password, getConfig().salt);
 } 
 
 

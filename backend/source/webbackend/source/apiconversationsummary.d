@@ -6,8 +6,8 @@ import std.stdio;
 import std.conv;
 import std.string;
 import std.array;
-import retriever.db;
-import retriever.conversation;
+import db.mongo;
+import db.conversation;
 import retriever.incomingemail: EMAIL_REGEX;
 
 auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
