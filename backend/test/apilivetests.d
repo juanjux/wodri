@@ -74,7 +74,7 @@ JSONValue getEmail(string id, Flag!"GetRaw" raw = No.GetRaw)
 
 void testGetConversation()
 {
-    writeln("Testing /api/:id/conversation/");
+    writeln("\nTesting /api/:id/conversation/");
     JSONValue conversations;
     conversations = getConversations("inbox", 20, 0);
 
@@ -84,12 +84,12 @@ void testGetConversation()
     auto convId4 = conversations[3]["dbId"].str;
     enforce(convId1.length);
 
-    auto conversation  = getConversationById(convId1);
-    assert(conversation["lastDate"].str == "2014-07-23T16:59:27Z");
-    assert(conversation["subject"].str == " Tired of Your Hosting Company?");
-    assert(jsonToArray(conversation["tags"]) == ["inbox"]);
+    auto conversation  = getConversationById(convId2);
+    enforce(conversation["lastDate"].str == "2014-06-10T12:51:10Z");
+    enforce(conversation["subject"].str == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
+    enforce(jsonToArray(conversation["tags"]) == ["inbox"]);
 
-    auto conversation2 = getConversationById(convId2);
+    auto conversation2 = getConversationById(convId1);
     auto conversation3 = getConversationById(convId3);
     auto conversation4 = getConversationById(convId4);
 }
@@ -97,7 +97,7 @@ void testGetConversation()
 
 void testGetTagConversations()
 {
-    writeln("Testing /api/:name/tag/?limit=%d&page=%d");
+    writeln("\nTesting /api/:name/tag/?limit=%d&page=%d");
 
     JSONValue conversations;
     conversations = getConversations("inbox", 20, 0);
@@ -130,7 +130,7 @@ void testGetTagConversations()
 
 void testGetEmail()
 {
-    writeln("Testing /api/:id/email");
+    writeln("\nTesting /api/:id/email");
 
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversation = getConversationById(conversations[0]["dbId"].str);
@@ -151,7 +151,7 @@ void testGetEmail()
     email = getEmail(singleConversation["summaries"][0]["dbId"].str);
     enforce(email["dbId"].str == singleConversation["summaries"][0]["dbId"].str);
     enforce(strip(email["from"].str) ==  "Test Sender <someuser@insomedomain.com>");
-    enforce(strip(email["subject"].str) == "some subject");
+    enforce(strip(email["subject"].str) == "some subject \"and quotes\" and noquotes");
     enforce(strip(email["to"].str) == "Test User2 <testuser@testdatabase.com>");
     enforce(strip(email["cc"].str) == "");
     enforce(strip(email["bcc"].str) == "");
@@ -187,7 +187,7 @@ void testGetEmail()
 
 void testGetRawEmail()
 {
-    writeln("Testing /api/:id/raw");
+    writeln("\nTesting /api/:id/raw");
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversation = getConversationById(conversations[3]["dbId"].str);
     auto rawText = getEmail(singleConversation["summaries"][1]["dbId"].str, Yes.GetRaw).str;

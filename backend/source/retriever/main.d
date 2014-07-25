@@ -11,6 +11,7 @@ import std.algorithm: uniq;
 import std.array: array;
 import vibe.core.log;
 import retriever.incomingemail;
+import db.conversation;
 import db.envelope;
 import db.userrule;
 import db.mongo;
@@ -74,7 +75,7 @@ void processEmailForAddress(string destination, const IncomingEmail email, strin
         filter.apply(envelope, tags);
 
     envelope.store();
-    upsertConversation(email, emailId, userId, tags);
+    Conversation.upsert(email, emailId, userId, tags);
     if (getConfig.storeTextIndex)
         storeTextIndex(email, emailId);
 }

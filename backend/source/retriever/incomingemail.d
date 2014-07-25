@@ -23,7 +23,7 @@ version(incomingemail_singletest)         version = anyincomingmailtest;
 version(incomingemail_allemailstest)      version = anyincomingmailtest;
 version(anyincomingmailtest)
 {
-    import retriever.db: getConfig;
+    import db.mongo: getConfig;
     import std.process;
 }
 
@@ -135,20 +135,22 @@ final interface IncomingEmail
     void loadFromFile(string emailPath, string attachStore, string rawEmailStore = "");
     void loadFromFile(File emailFile,   string attachStore, string rawEmailStore = "");
 
-    ref DictionaryList!(HeaderValue, false) headers();
-    const(HeaderValue)  getHeader(string name) const;
-    void                removeHeader(string name); // removes ALL even if repeated
-    void                addHeader(string rawHeader);
-    bool                hasHeader(string name) const;
-    ref const(DateTime) date() const;
-    const(MIMEPart[])   textualParts() const;
-    const(Attachment[]) attachments() const;
-    string              rawEmailPath() const;
-    void                generateMessageId(string domain="");
-    ulong               computeSize() const;
-    ulong               computeAttachmentsSize() const;
-    ulong               computeTextualBodySize() const;
-    string              printHeaders(Flag!"AsString" asString = No.AsString);
+    @property ref DictionaryList!(HeaderValue, false) headers();
+    @property ref const(DateTime) date() const;
+    @property const(MIMEPart[])   textualParts() const;
+    @property const(Attachment[]) attachments() const;
+    @property string              rawEmailPath() const;
+    @property Flag!"IsValidEmail" isValid() const;
+
+    const(HeaderValue) getHeader(string name) const;
+    void               removeHeader(string name); // removes ALL even if repeated
+    void               addHeader(string rawHeader);
+    bool               hasHeader(string name) const;
+    void               generateMessageId(string domain="");
+    ulong              computeSize() const;
+    ulong              computeAttachmentsSize() const;
+    ulong              computeTextualBodySize() const;
+    string             printHeaders(Flag!"AsString" asString = No.AsString);
 }
 
 
@@ -172,7 +174,7 @@ final class IncomingEmailImpl : IncomingEmail
         this.rootPart = new MIMEPart();
     }
 
-    @property Flag!"IsValidEmail" isValid()
+    @property Flag!"IsValidEmail" isValid() const
     {
         // From and Message-ID and at least one of to/cc/bcc/delivered-to
         if (getHeader("from").addresses.length &&
@@ -712,6 +714,10 @@ final class IncomingEmailImpl : IncomingEmail
             totalSize += textualPart.textContent.length;
         return totalSize;
     }
+
+
+    // mongoDep
+    
 }
 
 

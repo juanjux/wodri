@@ -8,7 +8,7 @@ import vibe.crypto.passwordhash;
 import vibe.http.fileserver;
 import vibe.inet.path;
 import webbackend.api;
-import retriever.db: getConfig, getUserHash;
+import db.mongo: getConfig, getUserHash;
 
 bool checkAuth(string user, string password)
 {
@@ -36,7 +36,7 @@ pure string removeStartEndSlashes(string path)
 
 shared static this()
 {
-    setLogLevel(LogLevel.debugV);
+    //setLogLevel(LogLevel.debugV);
 
     auto config = getConfig();
     auto router = new URLRouter;

@@ -7,7 +7,7 @@ import std.conv;
 import std.stdio;
 import vibe.web.common;
 import vibe.http.common;
-import db.db;
+import db.mongo;
 import db.conversation;
 import webbackend.apiconversationsummary;
 import webbackend.apiconversation;
@@ -39,14 +39,14 @@ class ApiImpl: Api
                                                      int page=0)
         {
             // returns an ApiConversationSummary for every Conversation
-            return getConversationsByTag(id, limit, page)
+            return Conversation.getByTag(id, limit, page)
                    .map!(i => ApiConversationSummary(i)).array;
         }
 
 
         ApiConversation getConversation_(string id)
         {
-            return ApiConversation(getConversation(id));
+            return ApiConversation(Conversation.get(id));
         }
 
 

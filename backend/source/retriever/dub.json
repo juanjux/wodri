@@ -67,7 +67,7 @@
         },
         {
             "name": "db_test",
-            "versions": ["db_test"],
+            "versions": ["db_test", "db_usetestdb"],
             "mainSourceFile": "db.d",
             "excludedSourceFiles": ["test.d", "main.d"],
             "dflags": ["-main", "-unittest"],
