@@ -13,11 +13,17 @@ Backend-API:
     Unittests of all this.
 
 Backend-Retriever:
+    - EmailBase => DbEmail && IncomingEmail
 
-    - db:
-        envelope.d
-        userfilter.d
-        email.d
+    - Missing unittests from email.d
+
+    - Add ensureTextIndex to Vibed and use it on mongo.d::ensure
+
+    - dbtypes:
+        Config
+        User
+        Domain
+
     - apitypes:
         apiconversation.d
         apiconversationsummary.d
@@ -48,6 +54,7 @@ Contacts:
     - Use it for getting the shortnames in the ConversationSummary object.
 
 All:
+    - See why after a test_db_all Mongo turns crazy and gets all the CPU
     - Authentication with scrypt hashing instead of MD5
     - Run dub with code converage option
     - Import cleanup (only imports and symbols really used)

@@ -5,10 +5,14 @@ import std.typecons;
 import std.array;
 import std.conv;
 import std.stdio;
+
 import vibe.web.common;
 import vibe.http.common;
+
 import db.mongo;
 import db.conversation;
+import db.email;
+
 import webbackend.apiconversationsummary;
 import webbackend.apiconversation;
 import webbackend.apiemail;
@@ -27,7 +31,7 @@ interface Api
     ApiEmail getEmail(string id);
 
     @method(HTTPMethod.GET) @path("raw/")
-    string getRawEmail_(string id);
+    string getOriginalEmail(string id);
 }
 
 
@@ -52,11 +56,11 @@ class ApiImpl: Api
 
         ApiEmail getEmail(string id)
         {
-            return getApiEmail(id);
+            return Email.getApiEmail(id);
         }
 
-        string getRawEmail_(string id)
+        string getOriginalEmail(string id)
         {
-            return getRawEmail(id);
+            return Email.getOriginal(id);
         }
 }

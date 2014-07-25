@@ -11,17 +11,18 @@ import std.algorithm: uniq;
 import std.array: array;
 import vibe.core.log;
 import retriever.incomingemail;
+import db.mongo;
 import db.conversation;
 import db.envelope;
-import db.userrule;
-import db.mongo;
+import db.userfilter;
+import db.email;
 
 version(maintest){}
 else version = not_maintest;
 
 
 // XXX test when I've the full cicle tests
-string saveRejectedEmail(const IncomingEmail email)
+string saveRejectedEmail(Email email)
 {
     const config = getConfig();
     auto failedEmailDir = buildPath(config.mainDir, "backend", "log", "failed_emails");
@@ -37,11 +38,11 @@ string saveRejectedEmail(const IncomingEmail email)
 
 
 // XXX test when I've the full cicle tests
-void saveAndLogRejectedEmail(const IncomingEmail email, 
+void saveAndLogRejectedEmail(Email email, 
                              Flag!"IsValidEmail" isValid, 
                              bool tooBig,
                              const string[] localReceivers, 
-                             Flag!"AlreadyOnDb" alreadyOnDb)
+                             Flag!"EmailOnDb" alreadyOnDb)
 {
     auto failedEmailPath = saveRejectedEmail(email);
     auto f = File(failedEmailPath, "a");
@@ -49,7 +50,7 @@ void saveAndLogRejectedEmail(const IncomingEmail email,
                     isValid == No.IsValidEmail? "\nInvalid headers":"",
                     !localReceivers.length? "\nInvalid destination":"",
                     tooBig? "\nMessage too big":"",
-                    alreadyOnDb == Yes.AlreadyOnDb? "\nAlready on DB": "");
+                    alreadyOnDb? "\nAlready on DB": "");
 
     logInfo(format("Message denied from SMTP. ValidHeaders:%s "~
                    "numLocalReceivers:%s SizeTooBig:%s. AlreadyOnDb: %s " ~
@@ -59,25 +60,23 @@ void saveAndLogRejectedEmail(const IncomingEmail email,
 
 
 // XXX test when I've the integration tests
-void processEmailForAddress(string destination, const IncomingEmail email, string emailId)
+void processEmailForAddress(string destination, Email email, string emailId)
 {
     // Create the email=>user envelope
     auto userId       = getUserIdFromAddress(destination);
-    auto envelope     = Envelope(email, destination, userId, emailId);
+    auto envelope     = new Envelope(email, destination, userId, emailId);
     bool[string] tags = ["inbox": true];
 
     if (email.hasHeader("x-spam-setspamtag"))
         tags["spam"] = true;
 
     // Apply the user-defined filters (if any)
-    const userFilters = getAddressFilters(destination);
+    const userFilters = UserFilter.getByAddress(destination);
     foreach(filter; userFilters)
         filter.apply(envelope, tags);
 
     envelope.store();
-    Conversation.upsert(email, emailId, userId, tags);
-    if (getConfig.storeTextIndex)
-        storeTextIndex(email, emailId);
+    Conversation.upsert(email, userId, tags);
 }
 
 // XXX test when I've the full cycle tests
@@ -88,38 +87,39 @@ int main()
     setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), 
                LogLevel.info);
 
-    auto email = new IncomingEmailImpl();
-    email.loadFromFile(std.stdio.stdin, 
+    auto inEmail = new IncomingEmailImpl();
+    inEmail.loadFromFile(std.stdio.stdin, 
                       config.attachmentStore,
                       config.rawEmailStore);
 
-    auto isValid         = email.isValid();
-    const localReceivers = uniq(email.localReceivers()).array;
-    bool tooBig          = (email.computeSize() > config.incomingMessageLimit);
-    auto alreadyOnDb     = email.emailAlreadyOnDb();
+    auto dbEmail         = new EmailImpl(inEmail);
+    bool tooBig          = (dbEmail.size() > config.incomingMessageLimit);
+    auto isValid         = inEmail.isValid();
+    const localReceivers = uniq(dbEmail.localReceivers()).array;
+    auto alreadyOnDb     = dbEmail.isOnDb();
 
     if (!tooBig 
-        && isValid == Yes.IsValidEmail
+        && isValid
         && localReceivers.length 
-        && alreadyOnDb == No.AlreadyOnDb)
+        && !alreadyOnDb)
     {
         try
         {
-            auto emailId = email.store();
+            auto emailId = dbEmail.store();
             foreach(ref destination; localReceivers)
-                processEmailForAddress(destination, email, emailId);
+                processEmailForAddress(destination, dbEmail, emailId);
         } catch (Exception e)
         {
             string exceptionReport = "Email failed to save on DB because of exception:\n" ~ 
                                      e.msg;
-            auto f = File(saveRejectedEmail(email), "a");
+            auto f = File(saveRejectedEmail(dbEmail), "a");
             f.writeln(exceptionReport);
             logError(exceptionReport);
         }
     }
     else
         // XXX rebound the message using the output route
-        saveAndLogRejectedEmail(email, isValid, tooBig, 
+        saveAndLogRejectedEmail(dbEmail, isValid, tooBig, 
                                 to!(string[])(localReceivers), 
                                 alreadyOnDb);
     return 0; // return != 0 == Postfix rebound the message. Avoid

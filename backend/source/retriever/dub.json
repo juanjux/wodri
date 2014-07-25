@@ -58,14 +58,6 @@
             "targetName": "test",
         },
         {
-            "name": "userrule_test",
-            "versions": ["userrule_test", "db_usetestdb"],
-            "mainSourceFile": "userrule.d",
-            "excludedSourceFiles": ["test.d", "main.d", "characterencoding.d"],
-            "dflags": ["-main", "-unittest"],
-            "targetName": "test",
-        },
-        {
             "name": "db_test",
             "versions": ["db_test", "db_usetestdb"],
             "mainSourceFile": "db.d",

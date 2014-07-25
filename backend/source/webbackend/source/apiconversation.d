@@ -1,7 +1,7 @@
 module webbackend.apiconversation;
 
 import db.conversation;
-import db.mongo: EmailSummary, getEmailSummary;
+import db.email: EmailSummary, Email;
 
 struct ApiConversation
 {
@@ -18,7 +18,7 @@ struct ApiConversation
 
         foreach(link; conv.links)
             if (link.emailDbId.length)
-                summaries ~= getEmailSummary(link.emailDbId);
+                summaries ~= Email.getSummary(link.emailDbId);
 
     }
 }

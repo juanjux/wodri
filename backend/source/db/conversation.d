@@ -9,7 +9,7 @@ import core.time: TimeException;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
 import db.mongo;
-import retriever.incomingemail;
+import db.email;
 
 struct MessageLink
 {
@@ -18,7 +18,7 @@ struct MessageLink
 }
 
 
-class Conversation
+final class Conversation
 {
     string dbId;
     string userDbId;
@@ -70,9 +70,12 @@ class Conversation
             to!string(this.tags), linksApp.data);
     }
 
+    // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
+    // ===================================================================
 
     /** Returns null if no Conversation with those references was found. */
+    // XXX unittest
     static Conversation get(string id)
     {
         auto convDoc = collection("conversation").findOne(["_id": id]);
@@ -104,10 +107,10 @@ class Conversation
 
         auto jsonFind = parseJsonString(format(`{"tags": {"$in": ["%s"]}}`, tagName));
         auto cursor   = collection("conversation").find(
-                jsonFind,
-                Bson(null),
-                QueryFlags.None,
-                page > 0? page*limit: 0 // skip
+                                                        jsonFind,
+                                                        Bson(null),
+                                                        QueryFlags.None,
+                                                        page > 0? page*limit: 0 // skip
         ).sort(["lastDate": -1]);
 
         cursor.limit(limit);
@@ -123,11 +126,11 @@ class Conversation
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    static Conversation upsert(const IncomingEmail email, string emailDbId,
-            string userId, const bool[string] tags)
+    static Conversation upsert(Email email, string userId, const bool[string] tags)
     {
+        assert(email.dbId.length);
         const references = email.getHeader("references").addresses;
-        const messageId  = email.getHeader("message-id").addresses[0];
+        const messageId  = email.messageId;
 
         auto conv = Conversation.getByReferences(userId, references ~ messageId);
         if (conv is null)
@@ -135,8 +138,7 @@ class Conversation
         conv.userDbId = userId;
 
         // date: will only be set if newer than lastDate
-        conv.updateLastDate(BsonDate(SysTime(email.date,
-                        TimeZone.getTimeZone("GMT"))).toString);
+        conv.updateLastDate(email.isoDate);
 
         // tags
         foreach(tagName, tagValue; tags)
@@ -145,7 +147,7 @@ class Conversation
 
         // add our references; addLink() only adds the new ones
         foreach(reference; references)
-            conv.addLink(reference, getEmailIdByMessageId(reference));
+            conv.addLink(reference, Email.messageIdToDbId(reference));
 
         bool wasInConversation = false;
         if (conv.dbId.length)
@@ -157,7 +159,7 @@ class Conversation
             {
                 if (entry.messageId == messageId)
                 {
-                    entry.emailDbId = emailDbId;
+                    entry.emailDbId = email.dbId;
                     wasInConversation = true;
                     break;
                 }
@@ -167,7 +169,7 @@ class Conversation
             conv.dbId = BsonObjectID.generate().toString;
 
         if (!wasInConversation)
-            conv.addLink(messageId, emailDbId);
+            conv.addLink(messageId, email.dbId);
 
         // update the conversation cleaned subject (last one wins)
         if (email.hasHeader("subject"))
@@ -194,7 +196,7 @@ class Conversation
             {
                 auto msgId = bsonStr(link["message-id"]);
                 ret.addLink(msgId, bsonStr(link["emailId"]));
-                auto emailSummary = getEmailSummary(getEmailIdByMessageId(msgId));
+                auto emailSummary = Email.getSummary(Email.messageIdToDbId(msgId));
                 foreach(attach; emailSummary.attachFileNames)
                 {
                     if (countUntil(ret.attachFileNames, attach) == -1)
@@ -226,17 +228,13 @@ version(db_usetestdb)
         recreateTestDb();
 
         auto convs = Conversation.getByTag("inbox", 0, 0);
-        //writeln("XXX 1");
         auto conv  = Conversation.get(convs[0].dbId);
-        //writeln("XXX 2");
         assert(conv !is null);
-        //writeln("XXX 3");
         assert(conv.lastDate.length); // this email date is set to NOW
         assert(conv.tags == ["inbox"]);
         assert(conv.links.length == 1);
         assert(!conv.attachFileNames.length);
         assert(conv.cleanSubject == " Tired of Your Hosting Company?");
-        //writeln("XXX 4");
 
         conv = Conversation.get(convs[1].dbId);
         assert(conv !is null);
@@ -245,7 +243,6 @@ version(db_usetestdb)
         assert(conv.links.length == 3);
         assert(!conv.attachFileNames.length);
         assert(conv.cleanSubject == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
-        //writeln("XXX 5");
 
         conv = Conversation.get(convs[2].dbId);
         assert(conv !is null);
@@ -255,7 +252,6 @@ version(db_usetestdb)
         assert(conv.attachFileNames.length == 1);
         assert(conv.attachFileNames[0] == "C++ Pocket Reference.pdf");
         assert(conv.cleanSubject == " Attachment test");
-        //writeln("XXX 6");
     }
 
     unittest // Conversation.getByTag
@@ -286,34 +282,36 @@ version(db_usetestdb)
 
     unittest // upsert
     {
+        import db.email;
+        import retriever.incomingemail;
+
         writeln("Testing upsert");
         recreateTestDb();
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test",
                                                "testemails");
-        auto email = new IncomingEmailImpl();
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
+        auto inEmail = new IncomingEmailImpl();
+        inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                                      getConfig().attachmentStore);
-        auto emailObjectDate = BsonDate(SysTime(email.date,
-                                                TimeZone.getTimeZone("GMT")))
-                                               .toString;
 
-        auto userId = getUserIdFromAddress(email.getHeader("to").addresses[0]);
+        auto userId = getUserIdFromAddress(inEmail.getHeader("to").addresses[0]);
         bool[string] tags = ["inbox": true, "dontstore": false, "anothertag": true];
         // test1: insert as is, should create a new conversation with this email as single member
-        auto emailId = email.store();
-        auto convId = Conversation.upsert(email, emailId, userId, tags).dbId;
+        auto dbEmail = new Email(inEmail);
+        auto emailId = dbEmail.store();
+        auto convId  = Conversation.upsert(dbEmail, userId, tags).dbId;
         auto convDoc = collection("conversation").findOne(["_id": convId]);
+
         assert(!convDoc.isNull);
-        assert(bsonStr(convDoc.userId) == userId);
-        assert(convDoc.links.type      == Bson.Type.array);
-        assert(convDoc.links.length    == 1);
-        assert(bsonStr(convDoc.links[0]["message-id"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc.userId)                 == userId);
+        assert(convDoc.links.type                      == Bson.Type.array);
+        assert(convDoc.links.length                    == 1);
+        assert(bsonStr(convDoc.links[0]["message-id"]) == dbEmail.messageId);
         assert(bsonStr(convDoc.links[0].emailId)       == emailId);
-        assert(convDoc.tags.type == Bson.Type.Array);
-        assert(convDoc.tags.length == 2);
-        assert(bsonStrArray(convDoc.tags)[0] == "inbox");
-        assert(bsonStrArray(convDoc.tags)[1] == "anothertag");
-        assert(bsonStr(convDoc.lastDate) == emailObjectDate);
+        assert(convDoc.tags.type                       == Bson.Type.Array);
+        assert(convDoc.tags.length                     == 2);
+        assert(bsonStrArray(convDoc.tags)[0]           == "inbox");
+        assert(bsonStrArray(convDoc.tags)[1]           == "anothertag");
+        assert(bsonStr(convDoc.lastDate)               == dbEmail.isoDate);
 
         auto convObject = Conversation.get(convId);
         assert(convObject !is null);
@@ -322,7 +320,7 @@ version(db_usetestdb)
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
         foreach(tag; convObject.tags)
             assert(tag in tags);
-        assert(convObject.links[0].messageId == email.getHeader("message-id").addresses[0]);
+        assert(convObject.links[0].messageId == inEmail.getHeader("message-id").addresses[0]);
         assert(convObject.links[0].emailDbId == emailId);
         assert(!convObject.attachFileNames.length);
 
@@ -330,20 +328,24 @@ version(db_usetestdb)
         // test2: insert as a msgid of a reference already on a conversation, check that the right
         // conversationId is returned and the emailId added to its entry in the conversation.links
         recreateTestDb();
-        email = new IncomingEmailImpl();
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
+        inEmail = new IncomingEmailImpl();
+        inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                            getConfig().attachmentStore);
-        email.headers["message-id"].addresses[0] = "testreference@blabla.testdomain.com";
-        emailId = email.store();
-        convId = Conversation.upsert(email, emailId, userId, tags).dbId;
+        dbEmail = new Email(inEmail);
+        auto testMsgId = "testreference@blabla.testdomain.com";
+        inEmail.headers["message-id"].addresses[0] = testMsgId;
+        dbEmail.messageId = testMsgId;
+        emailId = dbEmail.store();
+        convId = Conversation.upsert(dbEmail, userId, tags).dbId;
         convDoc = collection("conversation").findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
         assert(convDoc.links.type == Bson.Type.array);
         assert(convDoc.links.length == 3);
-        assert(bsonStr(convDoc.links[1]["message-id"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc.links[1]["message-id"]) == inEmail.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc.links[1]["message-id"]) == dbEmail.messageId);
         assert(bsonStr(convDoc.links[1].emailId) == emailId);
-        assert(bsonStr(convDoc.lastDate) != emailObjectDate);
+        assert(bsonStr(convDoc.lastDate) != dbEmail.isoDate);
 
         convObject = Conversation.get(convId);
         assert(convObject !is null);
@@ -352,28 +354,32 @@ version(db_usetestdb)
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
         foreach(tag; convObject.tags)
             assert(tag in tags);
-        assert(convObject.links[1].messageId == email.getHeader("message-id").addresses[0]);
+        assert(convObject.links[1].messageId == inEmail.getHeader("message-id").addresses[0]);
+        assert(convObject.links[1].messageId == dbEmail.messageId);
         assert(convObject.links[1].emailDbId == emailId);
         assert(!convObject.attachFileNames.length);
 
         // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
         // is added to that conversation
         recreateTestDb();
-        email = new IncomingEmailImpl();
-        email.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
+        inEmail = new IncomingEmailImpl();
+        inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                            getConfig().attachmentStore);
         string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
-        email.addHeader(refHeader);
-        emailId = email.store();
-        convId = Conversation.upsert(email, emailId, userId, tags).dbId;
+        inEmail.addHeader(refHeader);
+        dbEmail = new Email(inEmail);
+        emailId = dbEmail.store();
+        convId  = Conversation.upsert(dbEmail, userId, tags).dbId;
         convDoc = collection("conversation").findOne(["_id": convId]);
+
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == userId);
         assert(convDoc.links.type == Bson.Type.array);
         assert(convDoc.links.length == 2);
-        assert(bsonStr(convDoc.links[1]["message-id"]) == email.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc.links[1]["message-id"]) == inEmail.getHeader("message-id").addresses[0]);
+        assert(bsonStr(convDoc.links[1]["message-id"]) == dbEmail.messageId);
         assert(bsonStr(convDoc.links[1].emailId) == emailId);
-        assert(bsonStr(convDoc.lastDate) != emailObjectDate);
+        assert(bsonStr(convDoc.lastDate) != dbEmail.isoDate);
 
         convObject = Conversation.get(convId);
         assert(convObject !is null);
@@ -382,7 +388,8 @@ version(db_usetestdb)
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
         foreach(tag; convObject.tags)
             assert(tag in tags);
-        assert(convObject.links[1].messageId == email.getHeader("message-id").addresses[0]);
+        assert(convObject.links[1].messageId == inEmail.getHeader("message-id").addresses[0]);
+        assert(convObject.links[1].messageId == dbEmail.messageId);
         assert(convObject.links[1].emailDbId == emailId);
         assert(convObject.attachFileNames.length == 1);
         assert(convObject.attachFileNames[0] == "C++ Pocket Reference.pdf");

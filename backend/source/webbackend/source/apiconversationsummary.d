@@ -8,6 +8,7 @@ import std.string;
 import std.array;
 import db.mongo;
 import db.conversation;
+import db.email;
 import retriever.incomingemail: EMAIL_REGEX;
 
 auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
@@ -36,7 +37,7 @@ struct ApiConversationSummary
         {
             if (link.emailDbId.length)
             {
-                auto emailSummary = getEmailSummary(link.emailDbId);
+                auto emailSummary  = Email.getSummary(link.emailDbId);
                 this.shortAuthors ~= match(emailSummary.from, EMAIL_REGEX)
                                     .pre.translate(['<': ' ', '>': ' ']).strip();
 

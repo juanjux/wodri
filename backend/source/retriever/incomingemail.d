@@ -147,9 +147,6 @@ final interface IncomingEmail
     void               addHeader(string rawHeader);
     bool               hasHeader(string name) const;
     void               generateMessageId(string domain="");
-    ulong              computeSize() const;
-    ulong              computeAttachmentsSize() const;
-    ulong              computeTextualBodySize() const;
     string             printHeaders(Flag!"AsString" asString = No.AsString);
 }
 
@@ -690,34 +687,6 @@ final class IncomingEmailImpl : IncomingEmail
         if (!part.ctype.name.startsWith("multipart") && "charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
     }
-
-
-    pure ulong computeSize() const
-    {
-        return computeTextualBodySize() + computeAttachmentsSize();
-    }
-
-
-    pure ulong computeAttachmentsSize() const
-    {
-        ulong totalSize;
-        foreach(ref attachment; m_attachments)
-            totalSize += attachment.size;
-        return totalSize;
-    }
-
-
-    pure ulong computeTextualBodySize() const
-    {
-        ulong totalSize;
-        foreach(textualPart; m_textualParts)
-            totalSize += textualPart.textContent.length;
-        return totalSize;
-    }
-
-
-    // mongoDep
-    
 }
 
 
