@@ -78,7 +78,7 @@ version(db_usetestdb)
 
     unittest // envelope.store()
     {
-        writeln("Testing envelope.store");
+        writeln("Testing Envelope.store");
         import std.exception;
         import core.exception;
         recreateTestDb();

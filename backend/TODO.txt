@@ -13,21 +13,14 @@ Backend-API:
     Unittests of all this.
 
 Backend-Retriever:
-    - EmailBase => DbEmail && IncomingEmail
-
-    - Missing unittests from email.d
-
-    - Add ensureTextIndex to Vibed and use it on mongo.d::ensure
+    - Rename IncomingEmail to EmailParser
+    - Convert ApiEmail, ApiConversation and ApiConversationSummary to classes
 
     - dbtypes:
         Config
         User
         Domain
 
-    - apitypes:
-        apiconversation.d
-        apiconversationsummary.d
-        apiemail.d
 
     Later:
     - Use log to log more warnings, specially on db.d
@@ -35,7 +28,7 @@ Backend-Retriever:
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)
 
-    - Exception classes for the different parts.
+    - Exception classes for the different parts that throw.
 
     - Retriever's full test, use a Python script with the mail & smtp modules to
       parse the test mails collection changing the receiver from [myRealAddr] to
@@ -59,7 +52,7 @@ All:
     - Run dub with code converage option
     - Import cleanup (only imports and symbols really used)
     - Const, immutable, pure, nothrow, in, out, safe et all
-    - Mongo DB indexes, ensure()
+    - Add ensureTextIndex to Vibed and use it on mongo.d::ensure
     - See how to get around Mongo's 16MB document limit for bigger emails
       (GridFS?) Check is some email of my collection is bigger than 16MB without
       attachments (=> no)

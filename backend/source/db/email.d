@@ -38,14 +38,12 @@ struct EmailSummary
 }
 
 /** Paranoic retrieval of emailDoc headers */
-// XXX unittest
 private string headerRaw(Bson emailDoc, string headerName)
 {
     if (!emailDoc.headers.isNull &&
             !emailDoc.headers[headerName].isNull &&
             !emailDoc.headers[headerName][0].rawValue.isNull)
         return bsonStr(emailDoc.headers[headerName][0].rawValue);
-
     return "";
 }
 
@@ -104,8 +102,6 @@ final class Email
     {
         return (name in this.headers) != null;
     }
-
-
     HeaderValue getHeader(string name)
     {
         return hasHeader(name)? this.headers[name]: HeaderValue("", []);
@@ -145,7 +141,6 @@ final class Email
 
 
     /** Try to guess the relevant part of the email body and return it as plain text
-     * (currently used for indexing and getting a peek of the body)
      */
     private string maybeBodyNoFormat()
     {
@@ -189,11 +184,11 @@ final class Email
         {
             auto strHeader = removeQuotes? removechars(hdr.rawValue, "\""): hdr.rawValue;
 
-            ret = onlyValue == Yes.OnlyValue?
+            ret = onlyValue?
                 format("%s,", Json(strHeader).toString()):
                 format("\"%s\": %s,", headerName, Json(strHeader).toString());
         }
-        if (onlyValue == Yes.OnlyValue && !ret.length)
+        if (onlyValue && !ret.length)
             ret = `"",`;
         return ret;
     }
@@ -244,7 +239,7 @@ final class Email
         return "";
     }
 
-    // XXX unittest
+
     static EmailSummary getSummary(string dbId)
     {
         EmailSummary res;
@@ -413,8 +408,6 @@ final class Email
     }
 
 
-
-
     /** store or update the email into the DB */
     string store()
     {
@@ -503,27 +496,20 @@ final class Email
 
         // Update if we had a dbid (loaded from DB), insert if not
         auto bsonData = parseJsonString(emailInsertJson);
-        auto doUpdate = No.DoUpdate;
-        if (this.dbId.length) // existed, update
-        {
-            doUpdate = Yes.DoUpdate;
-            collection("email").update(["_id": this.dbId], bsonData);
-        }
-        else // new, insert
-        {
-            collection("email").insert(bsonData);
+        if (!this.dbId.length)
             this.dbId = documentId;
-        }
+
+        collection("email").update(["_id": this.dbId], bsonData, UpdateFlags.Upsert);
 
         // store the index document for Mongo's full text search engine
         if (getConfig().storeTextIndex)
-            storeTextIndex(doUpdate);
+            storeTextIndex();
 
         return documentId;
     }
 
 
-    void storeTextIndex(Flag!"DoUpdate" doUpdate = No.DoUpdate)
+    private void storeTextIndex()
     {
         assert(this.dbId.length);
         if (!this.dbId.length)
@@ -537,14 +523,9 @@ final class Email
             return;
 
         auto opData = ["text": maybeText];
-        if (doUpdate)
-            collection("emailIndexContents").update(["emailDbId": this.dbId], opData);
-        else
-        {
-            opData["_id"]       = BsonObjectID.generate().toString;
-            opData["emailDbId"] = this.dbId;
-            collection("emailIndexContents").insert(opData);
-        }
+        collection("emailIndexContents").update(["emailDbId": this.dbId], 
+                                                opData, 
+                                                UpdateFlags.Upsert);
     }
 }
 
@@ -602,7 +583,7 @@ version(db_usetestdb)
 
     unittest // isOnDb
     {
-        writeln("Testing email.isOnDb");
+        writeln("Testing Email.isOnDb");
         recreateTestDb();
         string backendTestEmailsDir = buildPath(getConfig().mainDir,
                                                 "backend", "test", "testemails");
@@ -615,6 +596,47 @@ version(db_usetestdb)
             auto emailDb = new Email(inEmail);
             assert(emailDb.isOnDb);
         }
+    }
+
+    unittest // getSummary
+    {
+        writeln("Testing Email.getSummary");
+        recreateTestDb();
+        import db.conversation;
+
+        auto convs    = Conversation.getByTag("inbox", 0, 0);
+        auto conv     = Conversation.get(convs[2].dbId);
+        assert(conv !is null);
+        auto summary = Email.getSummary(conv.links[0].emailDbId);
+        assert(summary.dbId == conv.links[0].emailDbId);
+        assert(summary.from == " Some Random User <someuser@somedomain.com>");
+        assert(summary.isoDate == "2014-01-21T14:32:20Z");
+        assert(summary.date == " Tue, 21 Jan 2014 15:32:20 +0100");
+        assert(summary.bodyPeek == "");
+        assert(summary.avatarUrl == "");
+        assert(summary.attachFileNames == ["C++ Pocket Reference.pdf"]);
+
+        conv = Conversation.get(convs[0].dbId);
+        summary = Email.getSummary(conv.links[0].emailDbId);
+        assert(summary.dbId == conv.links[0].emailDbId);
+        assert(summary.from == " SupremacyHosting.com Sales <brian@supremacyhosting.com>");
+        assert(summary.isoDate.length);
+        assert(summary.date == "");
+        assert(summary.bodyPeek == "Well it is speculated that there are over 20,000 "~
+                "hosting companies in this country alone. WIth that ");
+        assert(summary.avatarUrl == "");
+        assert(!summary.attachFileNames.length);
+    }
+
+    unittest // headerRaw
+    {
+        writeln("Testing Email.headerRaw");
+        auto bson = parseJsonString("{}");
+        auto emailDoc = collection("email").findOne(bson);
+
+        assert(headerRaw(emailDoc, "delivered-to") == " testuser@testdatabase.com");
+        assert(headerRaw(emailDoc, "date") == " Mon, 27 May 2013 07:42:30 +0200");
+        assert(!headerRaw(emailDoc, "inventedHere").length);
     }
 
     unittest // getApiEmail
@@ -662,5 +684,58 @@ version(db_usetestdb)
 
         assert(toHexString(md5Of(rawText)) == "CFA0B90028C9E6C5130C5526ABB61F1F");
         assert(rawText.length == 1867294);
+    }
+
+
+    unittest // email.store()
+    {
+        import std.range; 
+
+        writeln("Testing Email.store");
+        recreateTestDb();
+        auto cursor = collection("email").find();
+        cursor.sort(parseJsonString(`{"_id": 1}`));
+        assert(!cursor.empty);
+        auto emailDoc = cursor.front; // email 0
+        assert(emailDoc.headers.references[0].addresses.length == 1);
+        assert(bsonStr(emailDoc.headers.references[0].addresses[0]) == 
+                "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
+        assert(bsonStr(emailDoc.headers.subject[0].rawValue) == 
+                " Fwd: Se ha evitado un inicio de sesión sospechoso");
+        assert(emailDoc.attachments.length == 2);
+        assert(bsonStr(emailDoc.isodate) == "2013-05-27T05:42:30Z");
+        assert(bsonStr(emailDoc.receivers.addresses[0]) == "testuser@testdatabase.com");
+        assert(bsonStr(emailDoc.from.addresses[0]) == "someuser@somedomain.com");
+        assert(emailDoc.textParts.length == 2);
+        assert(bsonStr(emailDoc.bodyPeek) == "Some text inside the email plain part");
+
+        // check generated msgid
+        cursor.popFrontExactly(countUntil(TEST_EMAILS, "spam_notagged_nomsgid"));
+        assert(bsonStr(cursor.front["message-id"]).length);
+        assert(bsonStr(cursor.front.bodyPeek) == "Well it is speculated that there are over 20,000 hosting companies in this country alone. WIth that ");
+    }
+
+    unittest // storeTextIndex
+    {
+        writeln("Testing Email.storeTextIndex");
+        recreateTestDb();
+        auto findJson = format(`{"$text": {"$search": "DOESNTEXISTS"}}`);
+        auto cursor = collection("emailIndexContents").find(parseJsonString(findJson));
+        assert(cursor.empty);
+
+        findJson = format(`{"$text": {"$search": "text inside"}}`);
+        cursor = collection("emailIndexContents").find(parseJsonString(findJson));
+        assert(!cursor.empty);
+        string res = cursor.front.text.toString;
+        assert(countUntil(res, "text inside") == 6);
+
+        findJson = format(`{"$text": {"$search": "email"}}`);
+        cursor = collection("emailIndexContents").find(parseJsonString(findJson));
+        assert(!cursor.empty);
+        assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
+        cursor.popFront;
+        assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
+        cursor.popFront;
+        assert(cursor.empty);
     }
 }

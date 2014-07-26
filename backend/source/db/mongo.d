@@ -36,6 +36,24 @@ alias bsonId       = deserializeBson!BsonObjectID;
 alias bsonBool     = deserializeBson!bool;
 alias bsonStrArray = deserializeBson!(string[]);
 alias bsonStrHash  = deserializeBson!(string[string]);
+double bsonNumber(const Bson input)
+{
+    switch(input.type)
+    {
+        case Bson.Type.double_:
+            return deserializeBson!double(input);
+        case Bson.Type.int_:
+            return to!double(deserializeBson!int(input));
+        case Bson.Type.long_:
+            return to!double(deserializeBson!long(input));
+        default:
+            auto err = format("Bson input is not of numeric type but: ", input.type);
+            logError(err);
+            throw new Exception(err);
+    }
+    assert(0);
+}
+
 
 auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 
@@ -110,34 +128,9 @@ struct RetrieverConfig
     {
         return buildPath(this.mainDir, this.rawEmailStore);
     }
-
 }
-
-
-double bsonNumber(const Bson input)
-{
-    switch(input.type)
-    {
-        case Bson.Type.double_:
-            return deserializeBson!double(input);
-        case Bson.Type.int_:
-            return to!double(deserializeBson!int(input));
-        case Bson.Type.long_:
-            return to!double(deserializeBson!long(input));
-        default:
-            auto err = format("Bson input is not of numeric type but: ", input.type);
-            logError(err);
-            throw new Exception(err);
-    }
-    assert(0);
-}
-
 
 ref const(RetrieverConfig) getConfig() { return g_config; }
-string absAttachmentStore()
-{
-    return buildPath(getConfig.mainDir, getConfig.attachmentStore);
-}
 
 private const(RetrieverConfig) getInitialConfig()
 {
@@ -234,7 +227,7 @@ bool addressIsLocal(string address)
     if (!address.length)
         return false;
 
-    if (domainHasDefaultUser(address.split("@")[1]) == Yes.HasDefaultUser)
+    if (domainHasDefaultUser(address.split("@")[1]))
         return true;
 
     auto selector   = parseJsonString(`{"addresses": {"$in": ["` ~ address ~ `"]}}`);
@@ -314,8 +307,8 @@ version(db_usetestdb)
     {
         writeln("Testing domainHasDefaultUser");
         recreateTestDb();
-        assert(domainHasDefaultUser("testdatabase.com")  == Yes.HasDefaultUser, "domainHasDefaultUser1");
-        assert(domainHasDefaultUser("anotherdomain.com") == No.HasDefaultUser, "domainHasDefaultUser2");
+        assert(domainHasDefaultUser("testdatabase.com"), "domainHasDefaultUser1");
+        assert(!domainHasDefaultUser("anotherdomain.com"), "domainHasDefaultUser2");
     }
 
     unittest // getUserHash
@@ -335,57 +328,6 @@ version(db_usetestdb)
         assert(addressIsLocal("anotherUser@testdatabase.com"));
         assert(addressIsLocal("anotherUser@anotherdomain.com"));
         assert(!addressIsLocal("random@anotherdomain.com"));
-    }
-
-
-    unittest // email.store()
-    {
-        writeln("Testing email.store");
-        recreateTestDb();
-        auto cursor = collection("email").find();
-        cursor.sort(parseJsonString(`{"_id": 1}`));
-        assert(!cursor.empty);
-        auto emailDoc = cursor.front; // email 0
-        assert(emailDoc.headers.references[0].addresses.length == 1);
-        assert(bsonStr(emailDoc.headers.references[0].addresses[0]) == 
-                "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
-        assert(bsonStr(emailDoc.headers.subject[0].rawValue) == 
-                " Fwd: Se ha evitado un inicio de sesión sospechoso");
-        assert(emailDoc.attachments.length == 2);
-        assert(bsonStr(emailDoc.isodate) == "2013-05-27T05:42:30Z");
-        assert(bsonStr(emailDoc.receivers.addresses[0]) == "testuser@testdatabase.com");
-        assert(bsonStr(emailDoc.from.addresses[0]) == "someuser@somedomain.com");
-        assert(emailDoc.textParts.length == 2);
-        assert(bsonStr(emailDoc.bodyPeek) == "Some text inside the email plain part");
-
-        // check generated msgid
-        cursor.popFrontExactly(countUntil(TEST_EMAILS, "spam_notagged_nomsgid"));
-        assert(bsonStr(cursor.front["message-id"]).length);
-        assert(bsonStr(cursor.front.bodyPeek) == "Well it is speculated that there are over 20,000 hosting companies in this country alone. WIth that ");
-    }
-
-    unittest // storeTextIndex
-    {
-        writeln("Testing storeTextIndexMongo");
-        recreateTestDb();
-        auto findJson = format(`{"$text": {"$search": "DOESNTEXISTS"}}`);
-        auto cursor = collection("emailIndexContents").find(parseJsonString(findJson));
-        assert(cursor.empty);
-
-        findJson = format(`{"$text": {"$search": "text inside"}}`);
-        cursor = collection("emailIndexContents").find(parseJsonString(findJson));
-        assert(!cursor.empty);
-        string res = cursor.front.text.toString;
-        assert(countUntil(res, "text inside") == 6);
-
-        findJson = format(`{"$text": {"$search": "email"}}`);
-        cursor = collection("emailIndexContents").find(parseJsonString(findJson));
-        assert(!cursor.empty);
-        assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
-        cursor.popFront;
-        assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
-        cursor.popFront;
-        assert(cursor.empty);
     }
 }
 

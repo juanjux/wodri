@@ -175,9 +175,9 @@ final class Conversation
         if (email.hasHeader("subject"))
             conv.cleanSubject = db.mongo.cleanSubject(email.getHeader("subject").rawValue);
 
-        auto json     = parseJsonString(conv.toJson);
+        auto bson     = parseJsonString(conv.toJson);
         auto convColl = collection("conversation");
-        convColl.update(["_id": conv.dbId], json, UpdateFlags.Upsert);
+        convColl.update(["_id": conv.dbId], bson, UpdateFlags.Upsert);
         return conv;
     }
 
@@ -224,7 +224,7 @@ version(db_usetestdb)
 
     unittest // Conversation.get/conversationDocToObject
     {
-        writeln("Testing Conversation.get/getEmailSummary/conversationDocToObject");
+        writeln("Testing Conversation.get/conversationDocToObject");
         recreateTestDb();
 
         auto convs = Conversation.getByTag("inbox", 0, 0);
@@ -285,7 +285,7 @@ version(db_usetestdb)
         import db.email;
         import retriever.incomingemail;
 
-        writeln("Testing upsert");
+        writeln("Testing Conversation.upsert");
         recreateTestDb();
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test",
                                                "testemails");

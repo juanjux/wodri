@@ -191,6 +191,7 @@ void testGetRawEmail()
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversation = getConversationById(conversations[3]["dbId"].str);
     auto rawText = getEmail(singleConversation["summaries"][1]["dbId"].str, Yes.GetRaw).str;
+    // if this fails, check first the you didn't clean the messeges (rerun test_db.sh)
     enforce(toHexString(md5Of(rawText)) == "55E0B6D2FCA0C06A886C965DC24D1EBE");
     enforce(rawText.length == 22516);
 }

@@ -47,7 +47,7 @@ void saveAndLogRejectedEmail(Email email,
     auto failedEmailPath = saveRejectedEmail(email);
     auto f = File(failedEmailPath, "a");
     f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", 
-                    isValid == No.IsValidEmail? "\nInvalid headers":"",
+                    isValid == !isValid? "\nInvalid headers":"",
                     !localReceivers.length? "\nInvalid destination":"",
                     tooBig? "\nMessage too big":"",
                     alreadyOnDb? "\nAlready on DB": "");
@@ -92,7 +92,7 @@ int main()
                       config.attachmentStore,
                       config.rawEmailStore);
 
-    auto dbEmail         = new EmailImpl(inEmail);
+    auto dbEmail         = new Email(inEmail);
     bool tooBig          = (dbEmail.size() > config.incomingMessageLimit);
     auto isValid         = inEmail.isValid();
     const localReceivers = uniq(dbEmail.localReceivers()).array;
