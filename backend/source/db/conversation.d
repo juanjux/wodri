@@ -47,7 +47,6 @@ final class Conversation
                 return true;
         return false;
     }
-
     void addLink(string messageId, string emailDbId)
     {
         if (!haveLink(messageId, emailDbId))
@@ -87,7 +86,6 @@ final class Conversation
     // ===================================================================
 
     /** Returns null if no Conversation with those references was found. */
-    // XXX unittest
     static Conversation get(string id)
     {
         auto convDoc = collection("conversation").findOne(["_id": id]);

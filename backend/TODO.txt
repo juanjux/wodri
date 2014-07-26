@@ -13,9 +13,6 @@ Backend-API:
     Unittests of all this.
 
 Backend-Retriever:
-    - Revisar XXX
-    - unittest: User.getUserHash, User.getPasswordHash, User.addressIsLocal
-
     - Sacar de mongo.d:
         domain.d:
             addressIsLocal

@@ -90,7 +90,6 @@ MongoCollection collection(string name)
     return g_mongoDB[name];
 }
 
-// XXX static?
 private void ensureIndexes()
 {
     collection("conversation").ensureIndex(["links.message-id": 1, "userId": 1]);
