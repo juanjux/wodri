@@ -15,7 +15,7 @@ auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\
 auto NAME_CLEAN_REGEX = ctRegex!(r"[<>]", "g");
 
 
-struct ApiConversationSummary
+class ApiConversationSummary
 {
     string         dbId;
     ulong          numMessages;

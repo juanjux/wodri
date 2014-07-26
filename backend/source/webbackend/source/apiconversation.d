@@ -3,7 +3,7 @@ module webbackend.apiconversation;
 import db.conversation;
 import db.email: EmailSummary, Email;
 
-struct ApiConversation
+class ApiConversation
 {
     EmailSummary[] summaries;
     string lastDate;

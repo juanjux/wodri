@@ -23,7 +23,7 @@ version(incomingemail_singletest)         version = anyincomingmailtest;
 version(incomingemail_allemailstest)      version = anyincomingmailtest;
 version(anyincomingmailtest)
 {
-    import db.mongo: getConfig;
+    import db.config: getConfig;
     import std.process;
 }
 
@@ -174,11 +174,10 @@ final class IncomingEmailImpl : IncomingEmail
     @property Flag!"IsValidEmail" isValid() const
     {
         // From and Message-ID and at least one of to/cc/bcc/delivered-to
-        if (getHeader("from").addresses.length &&
-                (getHeader("to").addresses.length        ||
-                getHeader("cc").addresses.length         ||
-                getHeader("bcc").addresses.length        ||
-                getHeader("delivered-to").addresses.length))
+        if ((getHeader("to").addresses.length  ||
+             getHeader("cc").addresses.length  ||
+             getHeader("bcc").addresses.length ||
+             getHeader("delivered-to").addresses.length))
             return Yes.IsValidEmail;
         return No.IsValidEmail;
     }
@@ -699,30 +698,42 @@ final class IncomingEmailImpl : IncomingEmail
 /*
  * HOW TO TEST:
  *
- * Since I'm not putting my personal email collection inside the unittests dirs,
- * here's how to do it yourself:
+ * Since I'm not putting my personal email collection inside the unittests dirs, here's
+ * how to do it yourself:
  *
- * - Get all your emails (or the emails you want to test) into a single mbox file.
- *   For example, Gmail exports all your email in that format with Google Takeout
- *   (https://www.google.com/settings/takeout/custom/gmail)
+ * - Get all your emails (or the emails you want to test) into a single mbox file.  For
+ * example, Gmail exports all your email in that format with Google Takeout
+ * (https://www.google.com/settings/takeout/custom/gmail)
  *
- * - Split that mbox in single emails running:
- *      rdmd --main -unittest -version=createtestemails incomingemail.d
- *      (you only need to do this once)
- * - Replace, for example with "sed", all your real address for testuser@testdatabase.com:
- *   sed -i 's/myrealemail@gmail.com/testuser@testdatabase.com/g' *
+ * - Split that mbox in single emails running: 
+ *
+ * sh test/incomingmail_createmails.sh 
+ * (you only need to do this once) 
+
+ * - Replace, for example with "sed", all your real address on * the emails for
+ * testuser@testdatabase.com: 
+ *
+ * sed -i * 's/myrealemail@gmail.com/testuser@testdatabase.com/g' * 
+ *
  * - If you want, remove the chats (gmail gives you chat messages as emails and the tests
- *   will fail with them because the to: address is not always yours)
- * - With a stable version (that is, before your start to hack the code), generate
- *   the mime info files with:
- *      rdmd --main -unittest -version=generatetestdata
-*       (you only need to do this once, unless you change the mimeinfo format in
-*       the function createPartInfoText)
+ * will fail with them because the to: address is not always yours) 
+ *
+ * - With a stable * version (that is, before your start to hack the code), generate the
+ * mime info files with: 
+ *
+ * sh test/incomingmail_regenerate_test_data.sh
+ * (you only need to do this once, unless you change the mimeinfo format in the function
+ * createPartInfoText)
  *
  * Once you have the single emails and the test data you can do:
- *      rdmd --main -unittest => run all the tests on all emails
- *      rdmd --main -singletest => run the code in the singletest version (usually with a
- *      problematic email number hardcoded)
+ *
+ * sh test/test_incomingemail_all.sh
+ *
+ * to run the tests with all your emails. If you want to run the tests over a single
+ * email (usually a problematic email) change the hardcoded email number in the test 
+ * and run:
+ *
+ * sh test/test_incomingemail_single.sh
  */
 
 version(unittest)
@@ -900,6 +911,7 @@ unittest
         auto emailFile  = File(format("%s/%d", origEmailDir, filenumber), "r");
         auto email      = new IncomingEmailImpl();
         email.loadFromFile(emailFile, attachStore, rawEmailStore);
+        assert(email.isValid);
 
         visitParts(email.rootPart);
         foreach(part; email.textualParts)
@@ -935,7 +947,7 @@ unittest
         foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
         {
             //if (indexOf(e, "62877") == -1) continue; // For testing a specific email
-            //if (to!int(e.name.baseName) < 32000) continue; // For testing from some email forward
+            //if (to!int(e.name.baseName) < 10072) continue; // For testing from some email forward
 
             writeln(e.name, "...");
             if (baseName(e.name) in brokenEmails || baseName(e.name) in skipEmails)
@@ -943,9 +955,7 @@ unittest
 
             auto email = new IncomingEmailImpl();
             email.loadFromFile(File(e.name), attachStore, emailStore);
-
-            if (email.computeTextualBodySize() > 16*1024*1024)
-                assert(0);
+            assert(email.isValid);
 
             uint numPlain, numHtml, other;
             foreach(part; email.textualParts)
@@ -1061,10 +1071,6 @@ unittest
             if (emailStore.length)
                 std.file.remove(email.rawEmailPath);
         }
-    }
-
-    version(incomingemail_allemailstest)
-    {
         // Clean the attachment and rawEmail dirs
         system(format("rm -f %s/*", attachStore));
         system(format("rm -f %s/*", rawEmailStore));

@@ -7,6 +7,7 @@ import vibe.db.mongo.mongo;
 import db.email;
 import db.conversation;
 import db.mongo;
+import db.config;
 import db.envelope;
 import retriever.incomingemail;
 
@@ -39,16 +40,150 @@ version(db_usetestdb)
         {
             auto inEmail        = new IncomingEmailImpl();
             inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
-                               getConfig.absAttachmentStore,
-                               getConfig.absRawEmailStore);
-            assert(inEmail.isValid, "Email is not valid");
+                                 getConfig.absAttachmentStore,
+                                 getConfig.absRawEmailStore);
             auto dbEmail      = new Email(inEmail);
+            assert(dbEmail.isValid, "Email is not valid");
             auto destination  = dbEmail.getHeader("to").addresses[0];
             auto emailId      = dbEmail.store();
             auto userId       = getUserIdFromAddress(destination);
-            auto envelope     = new Envelope(dbEmail, destination, userId, emailId);
+            auto envelope     = new Envelope(dbEmail, destination, userId);
             envelope.store();
             Conversation.upsert(dbEmail, userId, ["inbox": true]);
         }
     }
 }
+
+
+version(db_insertalltest) unittest
+{
+    writeln("Testing Inserting Everything");
+    recreateTestDb();
+
+    import std.datetime;
+    import std.process;
+    import retriever.incomingemail;
+    import db.mongo;
+    import db.email;
+    import db.config;
+    import db.envelope;
+    import db.conversation;
+
+    string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
+    string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
+    string rawEmailStore   = buildPath(backendTestDir, "rawemails");
+    string attachmentStore = buildPath(backendTestDir, "attachments");
+    int[string] brokenEmails;
+    StopWatch sw;
+    StopWatch totalSw;
+    ulong totalTime = 0;
+    ulong count = 0;
+
+    foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
+    {
+        //if (indexOf(e, "10072") == -1) continue; // For testing a specific email
+        //if (to!int(e.name.baseName) < 10072) continue; // For testing from some email forward
+        writeln(e.name, "...");
+
+        totalSw.start();
+        if (baseName(e.name) in brokenEmails)
+            continue;
+        auto inEmail = new IncomingEmailImpl();
+
+        sw.start();
+        inEmail.loadFromFile(File(e.name), attachmentStore);
+        sw.stop(); writeln("loadFromFile time: ", sw.peek().msecs); sw.reset();
+
+        sw.start();
+        auto dbEmail = new Email(inEmail);
+        sw.stop(); writeln("DBEmail instance: ", sw.peek().msecs); sw.reset();
+
+        if (dbEmail.isValid)
+        {
+            writeln("Subject: ", dbEmail.getHeader("subject").rawValue);
+
+            sw.start();
+            dbEmail.store();
+            sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
+
+            sw.start();
+            auto localReceivers = dbEmail.localReceivers();
+            if (!localReceivers.length)
+            {
+                writeln("SKIPPING, not local receivers");
+                continue; // probably a message from the "sent" folder
+            }
+
+            auto userId = getUserIdFromAddress(localReceivers[0]);
+            auto envelope = new Envelope(dbEmail, localReceivers[0], userId);
+            assert(envelope.userId.length,
+                    "Please replace the destination in the test emails, not: " ~
+                    envelope.destination);
+            sw.stop(); writeln("getUserIdFromAddress time: ", sw.peek().msecs); sw.reset();
+
+            sw.start();
+            envelope.store();
+            sw.stop(); writeln("envelope.store(): ", sw.peek().msecs); sw.reset();
+
+            sw.start();
+            auto convId = Conversation.upsert(dbEmail, 
+                                              envelope.userId, 
+                                              ["inbox": true]).dbId;
+
+            sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
+        }
+        else
+            writeln("SKIPPING, invalid email");
+
+        totalSw.stop();
+        if (dbEmail.isValid)
+        {
+            auto emailTime = totalSw.peek().msecs;
+            totalTime += emailTime;
+            ++count;
+            writeln("Total time for this email: ", emailTime);
+        }
+        writeln("Valid emails until now: ", count); writeln;
+        totalSw.reset();
+    }
+
+    writeln("Total number of valid emails: ", count);
+    writeln("Average time per valid email: ", totalTime/count);
+
+    // Clean the attachment and rawEmail dirs
+    system(format("rm -f %s/*", attachmentStore));
+    system(format("rm -f %s/*", rawEmailStore));
+}
+
+version(db_test)
+version(db_usetestdb)
+{
+    unittest // domainHasDefaultUser
+    {
+        writeln("Testing domainHasDefaultUser");
+        recreateTestDb();
+        assert(domainHasDefaultUser("testdatabase.com"), "domainHasDefaultUser1");
+        assert(!domainHasDefaultUser("anotherdomain.com"), "domainHasDefaultUser2");
+    }
+
+    unittest // getUserHash
+    {
+        assert(getUserHash("testuser") == "8AQl5bqZMY3vbczoBWJiTFVclKU=");
+        assert(getUserHash("anotherUser") == "YHOxxOHmvwzceoxYkqJiQWslrmY=");
+    }
+
+
+    unittest // addressIsLocal
+    {
+        writeln("Testing addressIsLocal");
+        recreateTestDb();
+        assert(addressIsLocal("testuser@testdatabase.com"));
+        assert(addressIsLocal("random@testdatabase.com")); // has default user
+        assert(addressIsLocal("anotherUser@testdatabase.com"));
+        assert(addressIsLocal("anotherUser@anotherdomain.com"));
+        assert(!addressIsLocal("random@anotherdomain.com"));
+    }
+}
+
+
+

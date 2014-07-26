@@ -5,11 +5,23 @@ import std.string;
 import std.path;
 import std.algorithm;
 import std.stdio;
+import std.regex;
 import core.time: TimeException;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
 import db.mongo;
+import db.config: getConfig;
 import db.email;
+
+/**
+ * From removes variants of "Re:"/"RE:"/"re:" in the subject
+ */
+auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
+private string clearSubject(string subject)
+{
+    return replaceAll!(x => "")(subject, SUBJECT_CLEAN_REGEX);
+}
+
 
 struct MessageLink
 {
@@ -173,7 +185,7 @@ final class Conversation
 
         // update the conversation cleaned subject (last one wins)
         if (email.hasHeader("subject"))
-            conv.cleanSubject = db.mongo.cleanSubject(email.getHeader("subject").rawValue);
+            conv.cleanSubject = clearSubject(email.getHeader("subject").rawValue);
 
         auto bson     = parseJsonString(conv.toJson);
         auto convColl = collection("conversation");
@@ -425,5 +437,13 @@ version(db_usetestdb)
         assert(conv.links.length == 1);
         assert(conv.links[0].messageId == "CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com");
         assert(conv.links[0].emailDbId.length);
+    }
+
+    unittest // clearSubject
+    {
+        writeln("Testing conversation.clearSubject");
+        assert(clearSubject("RE: polompos") == "polompos");
+        assert(clearSubject("Re: cosa RE: otracosa re: mascosas") == "cosa otracosa mascosas");
+        assert(clearSubject("Pok and something Re: things") == "Pok and something things");
     }
 }

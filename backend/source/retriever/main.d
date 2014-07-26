@@ -12,6 +12,7 @@ import std.array: array;
 import vibe.core.log;
 import retriever.incomingemail;
 import db.mongo;
+import db.config;
 import db.conversation;
 import db.envelope;
 import db.userfilter;
@@ -64,7 +65,7 @@ void processEmailForAddress(string destination, Email email, string emailId)
 {
     // Create the email=>user envelope
     auto userId       = getUserIdFromAddress(destination);
-    auto envelope     = new Envelope(email, destination, userId, emailId);
+    auto envelope     = new Envelope(email, destination, userId);
     bool[string] tags = ["inbox": true];
 
     if (email.hasHeader("x-spam-setspamtag"))
@@ -88,13 +89,11 @@ int main()
                LogLevel.info);
 
     auto inEmail = new IncomingEmailImpl();
-    inEmail.loadFromFile(std.stdio.stdin, 
-                      config.attachmentStore,
-                      config.rawEmailStore);
+    inEmail.loadFromFile(std.stdio.stdin, config.attachmentStore, config.rawEmailStore);
 
     auto dbEmail         = new Email(inEmail);
     bool tooBig          = (dbEmail.size() > config.incomingMessageLimit);
-    auto isValid         = inEmail.isValid();
+    auto isValid         = dbEmail.isValid();
     const localReceivers = uniq(dbEmail.localReceivers()).array;
     auto alreadyOnDb     = dbEmail.isOnDb();
 

@@ -10,7 +10,6 @@ import std.json;
 import std.path;
 import std.algorithm;
 import std.file;
-import std.regex;
 import std.traits;
 import std.utf;
 
@@ -19,17 +18,10 @@ import vibe.core.log;
 import vibe.data.json;
 
 import arsd.htmltotext;
-import db.userfilter: Match, Action, UserFilter, SizeRuleType;
-import db.envelope;
-import db.conversation;
 
-version(unittest)
-{
-    import db.test_support;
-}
+version(db_test) version = db_usetestdb;
 
 private MongoDatabase g_mongoDB;
-private shared immutable RetrieverConfig g_config;
 
 alias bsonStr      = deserializeBson!string;
 alias bsonId       = deserializeBson!BsonObjectID;
@@ -55,9 +47,7 @@ double bsonNumber(const Bson input)
 }
 
 
-auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 
-version(db_test) version = db_usetestdb;
 
 /**
  * Read the /etc/dbconnect.json file, check for missing keys and connect
@@ -91,112 +81,21 @@ shared static this()
     else
         g_mongoDB = connectMongoDB(connectStr).getDatabase(dbData["name"].str);
 
-    g_config = getInitialConfig();
     ensureIndexes();
 }
 
 
-const MongoCollection collection(string name) 
+MongoCollection collection(string name) 
 { 
     return g_mongoDB[name];
 }
 
-struct RetrieverConfig
-{
-    string mainDir;
-    string apiDomain;
-    string rawEmailStore;
-    string attachmentStore;
-    string salt;
-    ulong  incomingMessageLimit;
-    bool   storeTextIndex;
-    string smtpServer;
-    uint   smtpEncription;
-    ulong  smtpPort;
-    string smtpUser;
-    string smtpPass;
-    uint   bodyPeekLength;
-    string URLAttachmentPath;
-    string URLStaticPath;
-
-    @property string absAttachmentStore() const
-    {
-        return buildPath(this.mainDir, this.attachmentStore);
-    }
-
-    @property string absRawEmailStore() const
-    {
-        return buildPath(this.mainDir, this.rawEmailStore);
-    }
-}
-
-ref const(RetrieverConfig) getConfig() { return g_config; }
-
-private const(RetrieverConfig) getInitialConfig()
-{
-    RetrieverConfig _config;
-    immutable dbConfig = collection("settings").findOne(["module": "retriever"]);
-    if (dbConfig.isNull)
-    {
-        auto err = "Could not retrieve config database, collection:settings,"~
-                   " module=retriever";
-        logError(err);
-        throw new Exception(err);
-    }
-
-    void checkNotNull(string[] keys)
-    {
-        string[] missingKeys = [];
-        foreach(key; keys)
-            if (dbConfig[key].isNull)
-                missingKeys ~= key;
-
-        if (missingKeys.length)
-        {
-            auto err = "Missing keys in retriever DB config collection: " ~
-                                 to!string(missingKeys);
-            logError(err);
-            throw new Exception(err);
-        }
-    }
-
-    checkNotNull(["mainDir", "apiDomain", "smtpServer", "smtpUser", "smtpPass",
-            "smtpEncription", "smtpPort", "rawEmailStore", "attachmentStore", "salt",
-            "incomingMessageLimit", "storeTextIndex", "bodyPeekLength",
-            "URLAttachmentPath", "URLStaticPath"]);
-
-    _config.mainDir              = bsonStr(dbConfig.mainDir);
-    _config.apiDomain            = bsonStr(dbConfig.apiDomain);
-    _config.smtpServer           = bsonStr(dbConfig.smtpServer);
-    _config.smtpUser             = bsonStr(dbConfig.smtpUser);
-    _config.smtpPass             = bsonStr(dbConfig.smtpPass);
-    _config.smtpEncription       = to!uint(bsonNumber(dbConfig.smtpEncription));
-    _config.smtpPort             = to!ulong(bsonNumber(dbConfig.smtpPort));
-    _config.salt                 = bsonStr(dbConfig.salt);
-    auto dbPath                  = bsonStr(dbConfig.rawEmailStore);
-    // If the db path starts with '/' interpret it as absolute
-    _config.rawEmailStore        = dbPath.startsWith(dirSeparator)?
-                                                           dbPath:
-                                                           buildPath(_config.mainDir,
-                                                                     dbPath);
-    auto attachPath              = bsonStr(dbConfig.attachmentStore);
-    _config.attachmentStore      = attachPath.startsWith(dirSeparator)?
-                                                               attachPath:
-                                                               buildPath(_config.mainDir,
-                                                                         attachPath);
-    _config.incomingMessageLimit = to!ulong(bsonNumber(dbConfig.incomingMessageLimit));
-    _config.storeTextIndex       = bsonBool(dbConfig.storeTextIndex);
-    _config.bodyPeekLength       = to!uint(bsonNumber(dbConfig.bodyPeekLength));
-    _config.URLAttachmentPath    = bsonStr(dbConfig.URLAttachmentPath);
-    _config.URLStaticPath        = bsonStr(dbConfig.URLStaticPath);
-    return _config;
-}
-
-
+// XXX static?
 private void ensureIndexes()
 {
     collection("conversation").ensureIndex(["links.message-id": 1, "userId": 1]);
 }
+
 
 Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
 {
@@ -208,51 +107,6 @@ Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
         bsonStr(domain.defaultUser).length)
         return Yes.HasDefaultUser;
     return No.HasDefaultUser;
-}
-
-
-string getUserHash(string loginName)
-{
-    auto user = collection("user").findOne(["loginName": loginName],
-                                          ["loginHash": 1],
-                                          QueryFlags.None);
-    if (!user.isNull && !user.loginHash.isNull)
-        return bsonStr(user.loginHash);
-    return "";
-}
-
-
-bool addressIsLocal(string address)
-{
-    if (!address.length)
-        return false;
-
-    if (domainHasDefaultUser(address.split("@")[1]))
-        return true;
-
-    auto selector   = parseJsonString(`{"addresses": {"$in": ["` ~ address ~ `"]}}`);
-    auto userRecord = collection("user").findOne(selector);
-    return !userRecord.isNull;
-}
-
-
-/**
- * From removes variants of "Re:"/"RE:"/"re:" in the subject
- */
-package string cleanSubject(string subject)
-{
-    return replaceAll!(x => "")(subject, SUBJECT_CLEAN_REGEX);
-}
-
-
-string getUserIdFromAddress(string address)
-{
-    auto userResult = collection("user").findOne(
-            parseJsonString(format(`{"addresses": {"$in": ["%s"]}}`, address)),
-            ["_id": 1],
-            QueryFlags.None
-    );
-    return userResult.isNull? "": bsonStr(userResult._id);
 }
 
 
@@ -299,134 +153,3 @@ version(db_usetestdb)
         collection("settings").insert(parseJsonString(settingsJsonStr));
     }
 }
-
-version(db_test)
-version(db_usetestdb)
-{
-    unittest // domainHasDefaultUser
-    {
-        writeln("Testing domainHasDefaultUser");
-        recreateTestDb();
-        assert(domainHasDefaultUser("testdatabase.com"), "domainHasDefaultUser1");
-        assert(!domainHasDefaultUser("anotherdomain.com"), "domainHasDefaultUser2");
-    }
-
-    unittest // getUserHash
-    {
-        assert(getUserHash("testuser") == "8AQl5bqZMY3vbczoBWJiTFVclKU=");
-        assert(getUserHash("anotherUser") == "YHOxxOHmvwzceoxYkqJiQWslrmY=");
-    }
-
-
-
-    unittest // addressIsLocal
-    {
-        writeln("Testing addressIsLocal");
-        recreateTestDb();
-        assert(addressIsLocal("testuser@testdatabase.com"));
-        assert(addressIsLocal("random@testdatabase.com")); // has default user
-        assert(addressIsLocal("anotherUser@testdatabase.com"));
-        assert(addressIsLocal("anotherUser@anotherdomain.com"));
-        assert(!addressIsLocal("random@anotherdomain.com"));
-    }
-}
-
-
-version(db_insertalltest) unittest
-{
-    writeln("Testing Inserting Everything");
-    recreateTestDb();
-
-    import std.datetime;
-    import std.process;
-    import retriever.incomingemail;
-    import db.email;
-
-    string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
-    string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
-    string rawEmailStore   = buildPath(backendTestDir, "rawemails");
-    string attachmentStore = buildPath(backendTestDir, "attachments");
-    int[string] brokenEmails;
-    StopWatch sw;
-    StopWatch totalSw;
-    ulong totalTime = 0;
-    ulong count = 0;
-
-    foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
-    {
-        //if (indexOf(e, "47") == -1) continue; // For testing a specific email
-        //if (to!int(e.name.baseName) < 3457) continue; // For testing from some email forward
-        writeln(e.name, "...");
-
-        totalSw.start();
-        if (baseName(e.name) in brokenEmails)
-            continue;
-        auto inEmail = new IncomingEmailImpl();
-
-        sw.start();
-        inEmail.loadFromFile(File(e.name), attachmentStore);
-        sw.stop(); writeln("loadFromFile time: ", sw.peek().msecs); sw.reset();
-
-        sw.start();
-        auto dbEmail = new Email(inEmail);
-        sw.stop(); writeln("DBEmail instance: ", sw.peek().msecs); sw.reset();
-
-
-        sw.start();
-        auto localReceivers = dbEmail.localReceivers();
-        if (!localReceivers.length)
-        {
-            writeln("SKIPPING, not local receivers");
-            continue; // probably a message from the "sent" folder
-        }
-
-        auto envelope = new Envelope(dbEmail, localReceivers[0]);
-        envelope.userId = getUserIdFromAddress(envelope.destination);
-        assert(envelope.userId.length,
-              "Please replace the destination in the test emails, not: " ~
-              envelope.destination);
-        sw.stop(); writeln("getUserIdFromAddress time: ", sw.peek().msecs); sw.reset();
-
-        if (dbEmail.isValid)
-        {
-            writeln("Subject: ", dbEmail.getHeader("subject").rawValue);
-
-            sw.start();
-            envelope.emailId = dbEmail.store();
-            sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
-
-            sw.start();
-            envelope.store();
-            sw.stop(); writeln("envelope.store(): ", sw.peek().msecs); sw.reset();
-
-            sw.start();
-            auto convId = Conversation.upsert(dbEmail, 
-                                              envelope.userId, 
-                                              ["inbox": true]).dbId;
-
-            sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
-        }
-        else
-            writeln("SKIPPING, invalid email");
-
-        totalSw.stop();
-        if (dbEmail.isValid)
-        {
-            auto emailTime = totalSw.peek().msecs;
-            totalTime += emailTime;
-            ++count;
-            writeln("Total time for this email: ", emailTime);
-        }
-        writeln("Valid emails until now: ", count); writeln;
-        totalSw.reset();
-    }
-
-    writeln("Total number of valid emails: ", count);
-    writeln("Average time per valid email: ", totalTime/count);
-
-    // Clean the attachment and rawEmail dirs
-    system(format("rm -f %s/*", attachmentStore));
-    system(format("rm -f %s/*", rawEmailStore));
-}
-
-

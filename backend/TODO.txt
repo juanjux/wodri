@@ -13,8 +13,21 @@ Backend-API:
     Unittests of all this.
 
 Backend-Retriever:
-    - Rename IncomingEmail to EmailParser
-    - Convert ApiEmail, ApiConversation and ApiConversationSummary to classes
+    - Revisar XXX
+    - unittest: User.getUserHash, User.getPasswordHash, User.addressIsLocal
+    - Cambiar nombres, addressIsLocal => getWithAddress (y devolver un objeto User o null)
+    - Examinar usos del addressIsLocal y getIdFromAddress y ver si se pueden hacer 
+      mejor con un objeto User.
+
+    - Sacar de mongo.d:
+        domain.d:
+            addressIsLocal
+            domainHasDefaultUser
+
+
+    - Ver que hacer con g_mongoDB...
+
+
 
     - dbtypes:
         Config

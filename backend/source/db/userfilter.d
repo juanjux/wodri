@@ -7,6 +7,7 @@ import vibe.data.bson;
 import vibe.db.mongo.mongo;
 import db.envelope;
 import db.mongo;
+import db.config;
 version(unittest)import std.stdio;
 
 
@@ -231,6 +232,8 @@ version(db_usetestdb)
             inEmail.loadFromFile(buildPath(testEmailDir, "with_2megs_attachment"),
                                  buildPath(testDir, "attachments"));
             auto dbEmail  = new Email(inEmail);
+            // a little kludge so I dont have to store this email 
+            dbEmail.dbId = Email.messageIdToDbId(dbEmail.messageId);
             auto envelope = new Envelope(dbEmail, "foo@foo.com");
             auto filter   = new UserFilter(match, action);
             tags = ["inbox": true];

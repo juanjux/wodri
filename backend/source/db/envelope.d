@@ -16,20 +16,15 @@ class Envelope
     Email email;
     string destination;
     string userId;
-    string emailId;
     string[] forwardTo;
     string dbId;
 
-    this(Email email, string destination)
+    this(Email email, string destination, string userId = "")
     {
-        this.email       = email;
+        this.email = email;
         this.destination = destination;
-    }
-    this(Email email, string destination, string userId, string emailId)
-    {
-        this(email, destination);
-        this.userId      = userId;
-        this.emailId     = emailId;
+        if (userId.length)
+            this.userId  = userId;
     }
 
     string toJson()
@@ -42,7 +37,7 @@ class Envelope
                 "destinationAddress": "%s",
                 "forwardTo": %s
             }`,
-            dbId, emailId, userId, destination, to!string(forwardTo)
+            dbId, email.dbId, userId, destination, to!string(forwardTo)
         );
     }
 

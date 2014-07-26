@@ -8,11 +8,12 @@ import vibe.crypto.passwordhash;
 import vibe.http.fileserver;
 import vibe.inet.path;
 import webbackend.api;
-import db.mongo: getConfig, getUserHash;
+import db.mongo: getUserHash;
+import db.config: getConfig;
 
 bool checkAuth(string user, string password)
 {
-    return testSimplePasswordHash(getUserHash(user), password, getConfig().salt);
+    return testSimplePasswordHash(getUserHash(user), password, getConfig.salt);
 } 
 
 

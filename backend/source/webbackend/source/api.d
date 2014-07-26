@@ -13,9 +13,9 @@ import db.mongo;
 import db.conversation;
 import db.email;
 
-import webbackend.apiconversationsummary;
-import webbackend.apiconversation;
 import webbackend.apiemail;
+import webbackend.apiconversation;
+import webbackend.apiconversationsummary;
 
 
 @rootPathFromName
@@ -44,13 +44,13 @@ class ApiImpl: Api
         {
             // returns an ApiConversationSummary for every Conversation
             return Conversation.getByTag(id, limit, page)
-                   .map!(i => ApiConversationSummary(i)).array;
+                   .map!(i => new ApiConversationSummary(i)).array;
         }
 
 
         ApiConversation getConversation_(string id)
         {
-            return ApiConversation(Conversation.get(id));
+            return new ApiConversation(Conversation.get(id));
         }
 
 

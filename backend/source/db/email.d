@@ -18,15 +18,22 @@ import vibe.inet.path: joinPath;
 import arsd.htmltotext;
 import retriever.incomingemail: IncomingEmail, Attachment, HeaderValue;
 import db.mongo;
+import db.config;
 import webbackend.apiemail;
 
-struct TextPart
+class TextPart
 {
     string ctype;
     string content;
+
+    this(string ctype, string content)
+    {
+        this.ctype   = ctype;
+        this.content = content;
+    }
 }
 
-struct EmailSummary
+class EmailSummary
 {
     string dbId;
     string from;
@@ -80,7 +87,7 @@ final class Email
         }
 
         foreach(const part; email.textualParts)
-            this.textParts ~= TextPart(part.ctype.name, part.textContent);
+            this.textParts ~= new TextPart(part.ctype.name, part.textContent);
 
         foreach(attach; email.attachments)
         {
@@ -111,7 +118,7 @@ final class Email
     private void extractBodyPeek()
     {
         auto relevantPlain = maybeBodyNoFormat();
-        // this is needed because string index != letters indexes for any non-ascii string
+        // this is needed because string index != letters index for any non-ascii string
         auto numChars     = std.utf.count(relevantPlain);
         auto peekUntil    = min(numChars, getConfig().bodyPeekLength);
         auto peekUntilUtf = toUTFindex(relevantPlain, peekUntil);
@@ -217,11 +224,10 @@ final class Email
     @property Flag!"IsValidEmail" isValid() 
     {
         // From and Message-ID and at least one of to/cc/bcc/delivered-to
-        if (getHeader("from").addresses.length &&
-                (getHeader("to").addresses.length        ||
-                getHeader("cc").addresses.length         ||
-                getHeader("bcc").addresses.length        ||
-                getHeader("delivered-to").addresses.length))
+        if ((getHeader("to").addresses.length  ||
+             getHeader("cc").addresses.length  ||
+             getHeader("bcc").addresses.length ||
+             getHeader("delivered-to").addresses.length))
             return Yes.IsValidEmail;
         return No.IsValidEmail;
     }
@@ -242,7 +248,7 @@ final class Email
 
     static EmailSummary getSummary(string dbId)
     {
-        EmailSummary res;
+        auto res = new EmailSummary();
         auto fieldSelector = ["from": 1,
              "headers": 1,
              "isodate": 1,
@@ -440,6 +446,11 @@ final class Email
         jsonAppender.put("{");
         foreach(headerName, ref headerValue; this.headers)
         {
+            // mongo doesnt allow $ or . on key names, any header with these chars
+            // is unimportant and broken anyway
+            if (countUntil(headerName, "$") != -1 ||
+                countUntil(headerName, ".") != -1)
+                    continue; 
             if (among(toLower(headerName), "from", "message-id"))
                 // these are outside doc.headers because they're indexed
                 continue;
