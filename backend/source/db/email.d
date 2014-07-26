@@ -19,6 +19,7 @@ import arsd.htmltotext;
 import retriever.incomingemail: IncomingEmail, Attachment, HeaderValue;
 import db.mongo;
 import db.config;
+import db.user;
 import webbackend.apiemail;
 
 class TextPart
@@ -384,7 +385,7 @@ final class Email
             allAddresses ~= getHeader(headerName).addresses;
 
         foreach(addr; allAddresses)
-            if (addressIsLocal(addr))
+            if (User.addressIsLocal(addr))
                 localAddresses ~= addr;
 
         return localAddresses;

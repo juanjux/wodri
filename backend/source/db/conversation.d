@@ -104,10 +104,10 @@ final class Conversation
     {
         string[] reversed = references.dup;
         reverse(reversed);
-        auto json = parseJsonString(format(`{"userId": "%s",`~
+        auto bson = parseJsonString(format(`{"userId": "%s",`~
                                            `"links.message-id": {"$in": %s}}`, 
                                            userId, reversed));
-        auto convDoc = collection("conversation").findOne(json);
+        auto convDoc = collection("conversation").findOne(bson);
         if (convDoc.isNull)
             return null;
         return conversationDocToObject(convDoc);
@@ -196,24 +196,25 @@ final class Conversation
     static private Conversation conversationDocToObject(ref Bson convDoc)
     {
         auto ret = new Conversation();
-        if (!convDoc.isNull)
-        {
-            ret.dbId         = bsonStr(convDoc._id);
-            ret.userDbId     = bsonStr(convDoc.userId);
-            ret.lastDate     = bsonStr(convDoc.lastDate);
-            ret.tags         = bsonStrArray(convDoc.tags);
-            ret.cleanSubject = bsonStr(convDoc.cleanSubject);
+        if (convDoc.isNull)
+            return ret;
 
-            foreach(link; convDoc.links)
+        ret.dbId         = bsonStr(convDoc._id);
+        ret.userDbId     = bsonStr(convDoc.userId);
+        ret.lastDate     = bsonStr(convDoc.lastDate);
+        ret.tags         = bsonStrArray(convDoc.tags);
+        ret.cleanSubject = bsonStr(convDoc.cleanSubject);
+
+        assert(!convDoc.links.isNull);
+        foreach(link; convDoc.links)
+        {
+            auto msgId = bsonStr(link["message-id"]);
+            ret.addLink(msgId, bsonStr(link["emailId"]));
+            auto emailSummary = Email.getSummary(Email.messageIdToDbId(msgId));
+            foreach(attach; emailSummary.attachFileNames)
             {
-                auto msgId = bsonStr(link["message-id"]);
-                ret.addLink(msgId, bsonStr(link["emailId"]));
-                auto emailSummary = Email.getSummary(Email.messageIdToDbId(msgId));
-                foreach(attach; emailSummary.attachFileNames)
-                {
-                    if (countUntil(ret.attachFileNames, attach) == -1)
-                        ret.attachFileNames ~= attach;
-                }
+                if (countUntil(ret.attachFileNames, attach) == -1)
+                    ret.attachFileNames ~= attach;
             }
         }
         return ret;
@@ -295,6 +296,7 @@ version(db_usetestdb)
     unittest // upsert
     {
         import db.email;
+        import db.user;
         import retriever.incomingemail;
 
         writeln("Testing Conversation.upsert");
@@ -305,16 +307,17 @@ version(db_usetestdb)
         inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                                      getConfig().attachmentStore);
 
-        auto userId = getUserIdFromAddress(inEmail.getHeader("to").addresses[0]);
+        auto user = User.getFromAddress(inEmail.getHeader("to").addresses[0]);
+        assert(user !is null);
         bool[string] tags = ["inbox": true, "dontstore": false, "anothertag": true];
         // test1: insert as is, should create a new conversation with this email as single member
         auto dbEmail = new Email(inEmail);
         auto emailId = dbEmail.store();
-        auto convId  = Conversation.upsert(dbEmail, userId, tags).dbId;
+        auto convId  = Conversation.upsert(dbEmail, user.id, tags).dbId;
         auto convDoc = collection("conversation").findOne(["_id": convId]);
 
         assert(!convDoc.isNull);
-        assert(bsonStr(convDoc.userId)                 == userId);
+        assert(bsonStr(convDoc.userId)                 == user.id);
         assert(convDoc.links.type                      == Bson.Type.array);
         assert(convDoc.links.length                    == 1);
         assert(bsonStr(convDoc.links[0]["message-id"]) == dbEmail.messageId);
@@ -328,7 +331,7 @@ version(db_usetestdb)
         auto convObject = Conversation.get(convId);
         assert(convObject !is null);
         assert(convObject.dbId == convId);
-        assert(convObject.userDbId == userId);
+        assert(convObject.userDbId == user.id);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
         foreach(tag; convObject.tags)
             assert(tag in tags);
@@ -348,10 +351,10 @@ version(db_usetestdb)
         inEmail.headers["message-id"].addresses[0] = testMsgId;
         dbEmail.messageId = testMsgId;
         emailId = dbEmail.store();
-        convId = Conversation.upsert(dbEmail, userId, tags).dbId;
+        convId = Conversation.upsert(dbEmail, user.id, tags).dbId;
         convDoc = collection("conversation").findOne(["_id": convId]);
         assert(!convDoc.isNull);
-        assert(bsonStr(convDoc.userId) == userId);
+        assert(bsonStr(convDoc.userId) == user.id);
         assert(convDoc.links.type == Bson.Type.array);
         assert(convDoc.links.length == 3);
         assert(bsonStr(convDoc.links[1]["message-id"]) == inEmail.getHeader("message-id").addresses[0]);
@@ -362,7 +365,7 @@ version(db_usetestdb)
         convObject = Conversation.get(convId);
         assert(convObject !is null);
         assert(convObject.dbId == convId);
-        assert(convObject.userDbId == userId);
+        assert(convObject.userDbId == user.id);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
         foreach(tag; convObject.tags)
             assert(tag in tags);
@@ -381,11 +384,11 @@ version(db_usetestdb)
         inEmail.addHeader(refHeader);
         dbEmail = new Email(inEmail);
         emailId = dbEmail.store();
-        convId  = Conversation.upsert(dbEmail, userId, tags).dbId;
+        convId  = Conversation.upsert(dbEmail, user.id, tags).dbId;
         convDoc = collection("conversation").findOne(["_id": convId]);
 
         assert(!convDoc.isNull);
-        assert(bsonStr(convDoc.userId) == userId);
+        assert(bsonStr(convDoc.userId) == user.id);
         assert(convDoc.links.type == Bson.Type.array);
         assert(convDoc.links.length == 2);
         assert(bsonStr(convDoc.links[1]["message-id"]) == inEmail.getHeader("message-id").addresses[0]);
@@ -396,7 +399,7 @@ version(db_usetestdb)
         convObject = Conversation.get(convId);
         assert(convObject !is null);
         assert(convObject.dbId == convId);
-        assert(convObject.userDbId == userId);
+        assert(convObject.userDbId == user.id);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
         foreach(tag; convObject.tags)
             assert(tag in tags);
@@ -409,26 +412,32 @@ version(db_usetestdb)
 
     unittest // Conversation.getByReferences
     {
+        import db.user;
+
         writeln("Testing Conversation.getByReferences");
         recreateTestDb();
-        auto userId1 = getUserIdFromAddress("testuser@testdatabase.com");
-        auto userId2 = getUserIdFromAddress("anotherUser@testdatabase.com");
-        assert(userId1.length);
-        assert(userId2.length);
+        auto user1 = User.getFromAddress("testuser@testdatabase.com");
+        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
+        assert(user1 !is null);
+        assert(user2 !is null);
+        assert(user1.id.length);
+        assert(user2.id.length);
 
-        auto conv = Conversation.getByReferences(userId1, ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
+        auto conv = Conversation.getByReferences(user1.id, 
+                ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
         assert(conv !is null);
         assert(conv.dbId.length);
         assert(conv.lastDate == "2013-05-27T05:42:30Z");
         assert(conv.tags.length == 1);
         assert(conv.tags[0] == "inbox");
         assert(conv.links.length == 2);
-        assert(conv.links[1].messageId == "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
+        assert(conv.links[1].messageId == 
+                "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
         assert(conv.links[0].emailDbId.length);
         assert(conv.links[1].emailDbId.length);
 
 
-        conv = Conversation.getByReferences(userId2, ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
+        conv = Conversation.getByReferences(user2.id, ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
         assert(conv !is null);
         assert(conv.dbId.length);
         assert(conv.lastDate == "2014-01-21T14:32:20Z");

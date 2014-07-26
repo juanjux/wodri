@@ -17,6 +17,7 @@ import db.conversation;
 import db.envelope;
 import db.userfilter;
 import db.email;
+import db.user;
 
 version(maintest){}
 else version = not_maintest;
@@ -64,7 +65,8 @@ void saveAndLogRejectedEmail(Email email,
 void processEmailForAddress(string destination, Email email, string emailId)
 {
     // Create the email=>user envelope
-    auto userId       = getUserIdFromAddress(destination);
+    auto user         = User.getFromAddress(destination);
+    string userId     = user is null? "": user.id;
     auto envelope     = new Envelope(email, destination, userId);
     bool[string] tags = ["inbox": true];
 

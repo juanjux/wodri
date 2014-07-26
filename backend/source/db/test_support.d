@@ -9,6 +9,7 @@ import db.conversation;
 import db.mongo;
 import db.config;
 import db.envelope;
+import db.user;
 import retriever.incomingemail;
 
 version(db_usetestdb)
@@ -46,10 +47,11 @@ version(db_usetestdb)
             assert(dbEmail.isValid, "Email is not valid");
             auto destination  = dbEmail.getHeader("to").addresses[0];
             auto emailId      = dbEmail.store();
-            auto userId       = getUserIdFromAddress(destination);
-            auto envelope     = new Envelope(dbEmail, destination, userId);
+            auto user         = User.getFromAddress(destination);
+            assert(user !is null);
+            auto envelope     = new Envelope(dbEmail, destination, user.id);
             envelope.store();
-            Conversation.upsert(dbEmail, userId, ["inbox": true]);
+            Conversation.upsert(dbEmail, user.id, ["inbox": true]);
         }
     }
 }
@@ -63,11 +65,6 @@ version(db_insertalltest) unittest
     import std.datetime;
     import std.process;
     import retriever.incomingemail;
-    import db.mongo;
-    import db.email;
-    import db.config;
-    import db.envelope;
-    import db.conversation;
 
     string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
     string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
@@ -114,12 +111,13 @@ version(db_insertalltest) unittest
                 continue; // probably a message from the "sent" folder
             }
 
-            auto userId = getUserIdFromAddress(localReceivers[0]);
-            auto envelope = new Envelope(dbEmail, localReceivers[0], userId);
-            assert(envelope.userId.length,
+            auto user = User.getFromAddress(localReceivers[0]);
+            assert(user !is null);
+            auto envelope = new Envelope(dbEmail, localReceivers[0], user.id);
+            assert(envelope.user.id.length,
                     "Please replace the destination in the test emails, not: " ~
                     envelope.destination);
-            sw.stop(); writeln("getUserIdFromAddress time: ", sw.peek().msecs); sw.reset();
+            sw.stop(); writeln("User.getFromAddress time: ", sw.peek().msecs); sw.reset();
 
             sw.start();
             envelope.store();
@@ -127,7 +125,7 @@ version(db_insertalltest) unittest
 
             sw.start();
             auto convId = Conversation.upsert(dbEmail, 
-                                              envelope.userId, 
+                                              envelope.user.id, 
                                               ["inbox": true]).dbId;
 
             sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
@@ -155,6 +153,7 @@ version(db_insertalltest) unittest
     system(format("rm -f %s/*", rawEmailStore));
 }
 
+
 version(db_test)
 version(db_usetestdb)
 {
@@ -165,25 +164,4 @@ version(db_usetestdb)
         assert(domainHasDefaultUser("testdatabase.com"), "domainHasDefaultUser1");
         assert(!domainHasDefaultUser("anotherdomain.com"), "domainHasDefaultUser2");
     }
-
-    unittest // getUserHash
-    {
-        assert(getUserHash("testuser") == "8AQl5bqZMY3vbczoBWJiTFVclKU=");
-        assert(getUserHash("anotherUser") == "YHOxxOHmvwzceoxYkqJiQWslrmY=");
-    }
-
-
-    unittest // addressIsLocal
-    {
-        writeln("Testing addressIsLocal");
-        recreateTestDb();
-        assert(addressIsLocal("testuser@testdatabase.com"));
-        assert(addressIsLocal("random@testdatabase.com")); // has default user
-        assert(addressIsLocal("anotherUser@testdatabase.com"));
-        assert(addressIsLocal("anotherUser@anotherdomain.com"));
-        assert(!addressIsLocal("random@anotherdomain.com"));
-    }
 }
-
-
-

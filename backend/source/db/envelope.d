@@ -66,6 +66,7 @@ version(db_test)
 version(db_usetestdb)
 {
     import db.test_support;
+    import db.user;
     import std.stdio;
     import std.algorithm;
     import std.range;
@@ -86,7 +87,7 @@ version(db_usetestdb)
         assert(cursor.empty);
         assert(collectException!AssertError(cursor.popFront));
         assert(envDoc.forwardTo.type == Bson.Type.array);
-        auto userId = getUserIdFromAddress("testuser@testdatabase.com");
+        auto userId = User.getFromAddress("testuser@testdatabase.com").id;
         assert(bsonStr(envDoc.userId) == userId);
         auto emailId = Email.messageIdToDbId("CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
         assert(bsonStr(envDoc.emailId) == emailId);
