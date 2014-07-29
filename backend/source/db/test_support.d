@@ -8,15 +8,19 @@ import db.email;
 import db.conversation;
 import db.mongo;
 import db.config;
-import db.envelope;
 import db.user;
 import retriever.incomingemail;
 
 version(db_usetestdb)
 {
+    immutable (string[]) TEST_EMAILS = ["multipart_mixed_rel_alternative_attachments",
+                                        "simple_alternative_noattach",
+                                        "spam_tagged",
+                                        "with_2megs_attachment",
+                                        "spam_notagged_nomsgid"];
     void emptyTestDb()
     {
-        foreach(string coll; ["conversation", "envelope", "emailIndexContents", 
+        foreach(string coll; ["conversation", "emailIndexContents", 
                               "email", "domain", "user", "userrule"])
             collection(coll).remove();
     }
@@ -26,7 +30,8 @@ version(db_usetestdb)
         emptyTestDb();
 
         // Fill the test DB
-        string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", "test", "testdb");
+        string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", 
+                                               "test", "testdb");
         string[string] jsonfile2collection = ["user1.json"     : "user",
                                               "user2.json"     : "user",
                                               "domain1.json"   : "domain",
@@ -34,24 +39,23 @@ version(db_usetestdb)
                                               "userrule1.json" : "userrule",
                                               "userrule2.json" : "userrule",];
         foreach(file_, coll; jsonfile2collection)
-            collection(coll).insert(parseJsonString(readText(buildPath(backendTestDataDir_, file_))));
+            collection(coll).insert(parseJsonString(readText(buildPath(backendTestDataDir_, 
+                                                                       file_))));
 
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
         foreach(mailname; TEST_EMAILS)
         {
-            auto inEmail        = new IncomingEmailImpl();
+            auto inEmail      = new IncomingEmailImpl();
             inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
                                  getConfig.absAttachmentStore,
                                  getConfig.absRawEmailStore);
-            auto dbEmail      = new Email(inEmail);
-            assert(dbEmail.isValid, "Email is not valid");
-            auto destination  = dbEmail.getHeader("to").addresses[0];
-            auto emailId      = dbEmail.store();
+            auto destination  = inEmail.getHeader("to").addresses[0];
             auto user         = User.getFromAddress(destination);
             assert(user !is null);
-            auto envelope     = new Envelope(dbEmail, destination, user.id);
-            envelope.store();
-            Conversation.upsert(dbEmail, user.id, ["inbox": true]);
+            auto dbEmail      = new Email(inEmail, destination);
+            assert(dbEmail.isValid, "Email is not valid");
+            auto emailId      = dbEmail.store();
+            Conversation.upsert(dbEmail, ["inbox": true]);
         }
     }
 }
@@ -100,33 +104,21 @@ version(db_insertalltest) unittest
             writeln("Subject: ", dbEmail.getHeader("subject").rawValue);
 
             sw.start();
-            dbEmail.store();
-            sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
-
-            sw.start();
             auto localReceivers = dbEmail.localReceivers();
             if (!localReceivers.length)
             {
                 writeln("SKIPPING, not local receivers");
                 continue; // probably a message from the "sent" folder
             }
-
-            auto user = User.getFromAddress(localReceivers[0]);
-            assert(user !is null);
-            auto envelope = new Envelope(dbEmail, localReceivers[0], user.id);
-            assert(envelope.user.id.length,
-                    "Please replace the destination in the test emails, not: " ~
-                    envelope.destination);
-            sw.stop(); writeln("User.getFromAddress time: ", sw.peek().msecs); sw.reset();
+            sw.stop(); writeln("localReceivers(): ", sw.peek().msecs); sw.reset();
 
             sw.start();
-            envelope.store();
-            sw.stop(); writeln("envelope.store(): ", sw.peek().msecs); sw.reset();
+            dbEmail.setOwner(localReceivers[0]);
+            dbEmail.store();
+            sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
 
             sw.start();
-            auto convId = Conversation.upsert(dbEmail, 
-                                              envelope.user.id, 
-                                              ["inbox": true]).dbId;
+            auto convId = Conversation.upsert(dbEmail, ["inbox": true]).dbId;
 
             sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
         }
@@ -154,14 +146,3 @@ version(db_insertalltest) unittest
 }
 
 
-version(db_test)
-version(db_usetestdb)
-{
-    unittest // domainHasDefaultUser
-    {
-        writeln("Testing domainHasDefaultUser");
-        recreateTestDb();
-        assert(domainHasDefaultUser("testdatabase.com"), "domainHasDefaultUser1");
-        assert(!domainHasDefaultUser("anotherdomain.com"), "domainHasDefaultUser2");
-    }
-}

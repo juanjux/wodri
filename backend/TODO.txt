@@ -12,25 +12,22 @@ Backend-API:
 
     Unittests of all this.
 
+
 Backend-Retriever:
-    - Sacar de mongo.d:
-        domain.d:
-            addressIsLocal
-            domainHasDefaultUser
+    - Update the recreateTestDB() code and data
 
+    - email.isOnDb() => remove or add the user?
 
-    - Ver que hacer con g_mongoDB...
+    - Conversation.links => add a "deleted" field and in Conversation.get* 
 
+    - Conversation.upsert => ya no hace falta pedir el userId, lo tiene email
 
-
-    - dbtypes:
-        Config
-        User
-        Domain
-
+    - ApiConversation => flag "hasDeleted", by default don't load deleted except
+      with an especific parameter to the url &loadDeleted=1, then it will load
+      them
 
     Later:
-    - Use log to log more warnings, specially on db.d
+    - Use log to log more warnings, specially on db.*
 
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)

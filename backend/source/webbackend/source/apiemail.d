@@ -21,5 +21,6 @@ struct ApiEmail
     string date; 
     string bodyHtml;
     string bodyPlain;
+    bool deleted = false;
     ApiAttachment[] attachments; 
 }

@@ -39,23 +39,19 @@ double bsonNumber(const Bson input)
         case Bson.Type.long_:
             return to!double(deserializeBson!long(input));
         default:
-            auto err = format("Bson input is not of numeric type but: ", input.type);
+            auto err = format("Bson input is not of numeric type but: %s", input.type);
             logError(err);
             throw new Exception(err);
     }
     assert(0);
 }
 
-
-
-
 /**
  * Read the /etc/dbconnect.json file, check for missing keys and connect
  */
 shared static this()
 {
-    auto mandatoryKeys = ["host", "name",  "password", "port",
-                               "testname", "type", "user"];
+    auto mandatoryKeys = ["host", "name",  "password", "port", "testname", "type", "user"];
     sort(mandatoryKeys);
 
     auto dbData = parseJSON(readText("/etc/webmail/dbconnect.json"));
@@ -73,82 +69,21 @@ shared static this()
                                dbData["port"].integer,
                                "admin");
 
-    version(db_usetestdb)
-    {
-        g_mongoDB = connectMongoDB(connectStr).getDatabase(dbData["testname"].str);
-        insertTestSettings();
-    }
-    else
-        g_mongoDB = connectMongoDB(connectStr).getDatabase(dbData["name"].str);
 
+    version(db_usetestdb)
+        auto dbName = dbData["testname"].str;
+    else
+        auto dbName = dbData["name"].str;
+
+    g_mongoDB = connectMongoDB(connectStr).getDatabase(dbName);
     ensureIndexes();
 }
 
 
-MongoCollection collection(string name) 
-{ 
-    return g_mongoDB[name];
-}
+MongoCollection collection(string name) { return g_mongoDB[name]; }
+
 
 private void ensureIndexes()
 {
     collection("conversation").ensureIndex(["links.message-id": 1, "userId": 1]);
-}
-
-
-Flag!"HasDefaultUser" domainHasDefaultUser(string domainName)
-{
-    auto domain = collection("domain").findOne(["name": domainName],
-                                              ["defaultUser": 1],
-                                              QueryFlags.None);
-    if (!domain.isNull &&
-        !domain.defaultUser.isNull &&
-        bsonStr(domain.defaultUser).length)
-        return Yes.HasDefaultUser;
-    return No.HasDefaultUser;
-}
-
-
-
-
-//  _    _       _ _   _            _
-// | |  | |     (_) | | |          | |
-// | |  | |_ __  _| |_| |_ ___  ___| |_
-// | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_
-//  \____/|_| |_|_|\__|\__\___||___/\__|
-
-version(db_usetestdb)
-{
-    string[] TEST_EMAILS = ["multipart_mixed_rel_alternative_attachments",
-                            "simple_alternative_noattach",
-                            "spam_tagged",
-                            "with_2megs_attachment",
-                            "spam_notagged_nomsgid"];
-
-    void insertTestSettings()
-    {
-        collection("settings").remove();
-        string settingsJsonStr = format(`
-        {
-                "_id"                  : "5399793904ac3d27431d0669",
-                "mainDir"              : "/home/juanjux/webmail",
-                "apiDomain"            : "juanjux.mooo.com",
-                "salt"                 : "someSalt",
-                "attachmentStore"      : "backend/test/attachments",
-                "incomingMessageLimit" : 15728640,
-                "storeTextIndex"       : true,
-                "module"               : "retriever",
-                "rawEmailStore"        : "backend/test/rawemails",
-                "smtpEncription"       : 0,
-                "smtpPass"             : "smtpPass",
-                "smtpPort"             : 25,
-                "smtpServer"           : "localhost",
-                "smtpUser"             : "smtpUser",
-                "bodyPeekLength"       : 100,
-                "URLAttachmentPath"    : "attachment",
-                "URLStaticPath"        : "public",
-        }`);
-        collection("settings").insert(parseJsonString(settingsJsonStr));
-    }
 }

@@ -2,6 +2,7 @@ module db.user;
 
 import std.array;
 import db.mongo;
+import db.domain;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
 
@@ -64,7 +65,7 @@ class User
     {
         if (!address.length)
             return false;
-        if (domainHasDefaultUser(address.split("@")[1]))
+        if (Domain.hasDefaultUser(address.split("@")[1]))
             return true;
         return getFromAddress(address) !is null;
     }

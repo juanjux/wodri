@@ -5,9 +5,9 @@ import std.algorithm;
 import vibe.core.log;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
-import db.envelope;
 import db.mongo;
 import db.config;
+import db.email;
 version(unittest)import std.stdio;
 
 
@@ -57,22 +57,22 @@ class UserFilter
     }
 
 
-    void apply(Envelope envelope, ref bool[string] convTags) const
+    void apply(Email email, ref bool[string] convTags) const
     {
-        if (checkMatch(envelope)) 
-            applyAction(envelope, convTags);
+        if (checkMatch(email)) 
+            applyAction(email, convTags);
     }
 
 
-    private bool checkMatch(Envelope envelope) const
+    private bool checkMatch(Email email) const
     {
-        if (this.match.withAttachment && !envelope.email.attachments.length)
+        if (this.match.withAttachment && !email.attachments.length)
             return false;
 
         if (this.match.withHtml)
         {
             bool hasHtml = false;
-            foreach(subpart; envelope.email.textParts)
+            foreach(subpart; email.textParts)
                 if (subpart.ctype == "text/html")
                     hasHtml = true;
             if (!hasHtml)
@@ -80,11 +80,11 @@ class UserFilter
         }
 
         foreach(matchHeaderName, matchHeaderFilter; this.match.headerMatches)
-            if (countUntil(envelope.email.getHeader(matchHeaderName).rawValue,
+            if (countUntil(email.getHeader(matchHeaderName).rawValue,
                            matchHeaderFilter) == -1)
                 return false;
 
-        foreach(part; envelope.email.textParts)
+        foreach(part; email.textParts)
         {
             foreach(string bodyMatch; this.match.bodyMatches)
                 if (countUntil(part.content, bodyMatch) == -1)
@@ -93,7 +93,7 @@ class UserFilter
 
         if (this.match.totalSizeType != SizeRuleType.None)
         {
-            auto emailSize = envelope.email.size();
+            auto emailSize = email.size();
             if (this.match.totalSizeType == SizeRuleType.GreaterThan &&
                 emailSize < this.match.totalSizeValue)
             {
@@ -109,7 +109,7 @@ class UserFilter
     }
 
 
-    private void applyAction(Envelope envelope, ref bool[string] convTags) const
+    private void applyAction(Email email, ref bool[string] convTags) const
     {
         // email.tags == false actually mean to the rest of the retriever processes: "it
         // doesnt have the tag and please dont add it after this point"
@@ -136,7 +136,7 @@ class UserFilter
         }
 
         if (this.action.forwardTo.length)
-            envelope.forwardTo ~= this.action.forwardTo;
+            email.forwardedTo ~= this.action.forwardTo;
     }
 
 
@@ -226,49 +226,51 @@ version(db_usetestdb)
         auto testEmailDir = buildPath(testDir, "testemails");
         bool[string] tags;
 
-        Envelope reInstance(Match match, Action action)
+        // this will change the outer "tags" hash
+        Email reInstance(Match match, Action action)
         {
             auto inEmail = new IncomingEmailImpl();
             inEmail.loadFromFile(buildPath(testEmailDir, "with_2megs_attachment"),
                                  buildPath(testDir, "attachments"));
             auto dbEmail  = new Email(inEmail);
-            // a little kludge so I dont have to store this email 
+            dbEmail.destinationAddress = "foo@foo.com";
+            dbEmail.userId = "fakeuserid";
+            // a little kludge so I dont have to store this email to get an id
             dbEmail.dbId = Email.messageIdToDbId(dbEmail.messageId);
-            auto envelope = new Envelope(dbEmail, "foo@foo.com");
             auto filter   = new UserFilter(match, action);
             tags = ["inbox": true];
-            filter.apply(envelope, tags);
-            return envelope;
+            filter.apply(dbEmail, tags);
+            return dbEmail;
         }
 
         // Match the From, set unread to false
         Match match; match.headerMatches["from"] = "someuser@somedomain.com";
         Action action; action.markAsRead = true;
-        auto envelope = reInstance(match, action);
+        reInstance(match, action);
         assert("unread" in tags && !tags["unread"]);
 
         // Fail to match the From
         Match match2; match2.headerMatches["from"] = "foo@foo.com";
         Action action2; action2.markAsRead = true;
-        auto envelope2 = reInstance(match2, action2);
+        reInstance(match2, action2);
         assert("unread" !in tags);
 
         // Match the withAttachment, set inbox to false
         Match match3; match3.withAttachment = true;
         Action action3; action3.noInbox = true;
-        auto envelope3 = reInstance(match3, action3);
+        reInstance(match3, action3);
         assert("inbox" in tags && !tags["inbox"]);
 
         // Match the withHtml, set deleted to true
         Match match4; match4.withHtml = true;
         Action action4; action4.deleteIt = true;
-        auto envelope4 = reInstance(match4, action4);
+        reInstance(match4, action4);
         assert("deleted" in tags && tags["deleted"]);
 
         // Negative match on body
         Match match5; match5.bodyMatches = ["nomatch_atall"];
         Action action5; action5.deleteIt = true;
-        auto envelope5 = reInstance(match5, action5);
+        reInstance(match5, action5);
         assert("deleted" !in tags);
 
         //Match SizeGreaterThan, set tag
@@ -276,17 +278,17 @@ version(db_usetestdb)
         match6.totalSizeType = SizeRuleType.GreaterThan;
         match6.totalSizeValue = 1024*1024; // 1MB, the email is 1.36MB
         Action action6; action6.addTags = ["testtag1", "testtag2"];
-        auto envelope6 = reInstance(match6, action6);
+        auto email1 = reInstance(match6, action6);
         assert("testtag1" in tags && "testtag2" in tags);
 
         //Dont match SizeGreaterThan, set tag
-        auto size1 = envelope6.email.size();
+        auto size1 = email1.size();
         auto size2 = 2*1024*1024;
         Match match7;
         match7.totalSizeType = SizeRuleType.GreaterThan;
         match7.totalSizeValue = 2*1024*1024; // 1MB, the email is 1.36MB
         Action action7; action7.addTags = ["testtag1", "testtag2"];
-        auto envelope7 = reInstance(match7, action7);
+        auto email2 = reInstance(match7, action7);
         assert("testtag1" !in tags && "testtag2" !in tags);
 
         // Match SizeSmallerThan, set forward
@@ -295,8 +297,8 @@ version(db_usetestdb)
         match8.totalSizeValue = 2*1024*1024; // 2MB, the email is 1.38MB
         Action action8;
         action8.forwardTo = ["juanjux@yahoo.es"];
-        auto envelope8 = reInstance(match8, action8);
-        assert(envelope8.forwardTo[0] == "juanjux@yahoo.es");
+        auto email3 = reInstance(match8, action8);
+        assert(email3.forwardedTo[0] == "juanjux@yahoo.es");
 
         // Dont match SizeSmallerTham
         Match match9;
@@ -304,8 +306,8 @@ version(db_usetestdb)
         match9.totalSizeValue = 1024*1024; // 2MB, the email is 1.39MB
         Action action9;
         action9.forwardTo = ["juanjux@yahoo.es"];
-        auto envelope9 = reInstance(match9, action9);
-        assert(!envelope9.forwardTo.length);
+        auto email4 = reInstance(match9, action9);
+        assert(!email4.forwardedTo.length);
     }
 
     unittest // getByAddress

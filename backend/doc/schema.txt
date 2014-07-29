@@ -69,42 +69,33 @@ Contains rules that will match documents and actions to do on them
     "userId"               : "<rule owner user Id>"
 }
 
-
-
-ENVELOPE
-
-By-user email metadata; emails are static and only 1 copy for all receivers,
-Envelopes are one copy for every receiving address (so if a user get an email
-to two address he owns, he'll have two envelopes but a single email).
-
-{
-    "_id"                : "<ThisDocumentId>",
-    "destinationAddress" : "email@foo.com",
-    "emailId"            : "<email Id>",
-    "forwardTo"          : ["someotheremail@foo.com"],
-    "userId"             : "<user Id>"
-}
-
 EMAIL
 
-An email. Only the fields that would be displayed on the frontend gui are
-stored on the database. A copy of the original email is kept on the filesystem
-if the user wants to see the original email (could also be used for a database
-recovery process).  Only a single copy of every email is stored in the DB, even
-if the email is addresses for several users of the system; see the description
-for the Envelope document.
+An email. Only the fields that would be displayed on the frontend gui and some
+support fields are stored on the database. A copy of the original email is kept on
+the filesystem if the user wants to see the original email (could also be used for
+a database recovery process).  
 
-Note: email["headers"] will contain all the headers except Message-ID and From because
-they're outside the headers subdoc (for easier indexing by MongoDB). A header entry
-is a list because some fields like "received" can be repeated several times; each
-list item was an additional header entry in the original email.
+Note: email["headers"] will contain all the headers except "Message-ID" and "From"
+because they're outside the headers subdoc (for easier indexing by MongoDB). A
+header entry is a list because some fields like "received" can be repeated several
+times; each list item was an additional header entry in the original email.
+
+The "destinationAddress" field indicates the destination this email was really
+directed to (an email address can have several destination emails in our system,
+even several to the same user, but every copy as rececived from an external SMTP
+server is directed to a single address).
 
 
 {
-        "_id"          : "<ThisDocumentId>",
-        "message-id"   : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
-        "rawEmailPath" : "/path/to/the/original/email/somenumbers_5534534534",
-        "isodate"      : "2008-03-12T17                                                       : 45 : 49Z",
+        "_id"                : "<ThisDocumentId>",
+        "userId"             : "<user Id>",
+        "destinationAddress" : "email@foo.com",
+        "deleted"            : false,
+        "forwardedTo"        : ["someotheremail@foo.com"],
+        "message-id"         : "0fbf60d6-da2d-45ad-a937-fe435c679be8@a70g2000hsh.googlegroups.com",
+        "rawEmailPath"       : "/path/to/the/original/email/somenumbers_5534534534",
+        "isodate"            : "2008-03-12T17                                                       : 45 : 49Z",
         "from" : {
                 "rawValue"  : "Some Guy Name <someguy@gmail.com>",
                 "addresses" : [ "someguy@gmail.com" ]

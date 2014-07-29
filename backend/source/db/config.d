@@ -36,11 +36,14 @@ struct RetrieverConfig
         return buildPath(this.mainDir, this.rawEmailStore);
     }
 }
-
 private shared immutable RetrieverConfig g_config;
 
+// Read config from the DB into g_config
 shared static this()
 {
+    version(db_usetestdb)
+        insertTestSettings();
+
     immutable dbConfig = collection("settings").findOne(["module": "retriever"]);
     if (dbConfig.isNull)
     {
@@ -98,3 +101,37 @@ shared static this()
 }
 
 ref const(RetrieverConfig) getConfig() { return g_config; }
+
+
+// testing config
+version(db_usetestdb)
+{
+    import std.string;
+    import vibe.data.json;
+
+    void insertTestSettings()
+    {
+        collection("settings").remove();
+        string settingsJsonStr = format(`
+        {
+                "_id"                  : "5399793904ac3d27431d0669",
+                "mainDir"              : "/home/juanjux/webmail",
+                "apiDomain"            : "juanjux.mooo.com",
+                "salt"                 : "someSalt",
+                "attachmentStore"      : "backend/test/attachments",
+                "incomingMessageLimit" : 15728640,
+                "storeTextIndex"       : true,
+                "module"               : "retriever",
+                "rawEmailStore"        : "backend/test/rawemails",
+                "smtpEncription"       : 0,
+                "smtpPass"             : "smtpPass",
+                "smtpPort"             : 25,
+                "smtpServer"           : "localhost",
+                "smtpUser"             : "smtpUser",
+                "bodyPeekLength"       : 100,
+                "URLAttachmentPath"    : "attachment",
+                "URLStaticPath"        : "public",
+        }`);
+        collection("settings").insert(parseJsonString(settingsJsonStr));
+    }
+}

@@ -39,6 +39,7 @@ final class Conversation
     MessageLink[] links;
     string[] attachFileNames;
     string cleanSubject;
+    bool hasDeleted = false;
 
     private bool haveLink(string messageId, string emailDbId)
     {
@@ -136,16 +137,17 @@ final class Conversation
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    static Conversation upsert(Email email, string userId, const bool[string] tags)
+    static Conversation upsert(Email email, const bool[string] tags)
     {
+        assert(email.userId.length);
         assert(email.dbId.length);
         const references = email.getHeader("references").addresses;
         const messageId  = email.messageId;
 
-        auto conv = Conversation.getByReferences(userId, references ~ messageId);
+        auto conv = Conversation.getByReferences(email.userId, references ~ messageId);
         if (conv is null)
             conv = new Conversation();
-        conv.userDbId = userId;
+        conv.userDbId = email.userId;
 
         // date: will only be set if newer than lastDate
         conv.updateLastDate(email.isoDate);
@@ -310,8 +312,10 @@ version(db_usetestdb)
         bool[string] tags = ["inbox": true, "dontstore": false, "anothertag": true];
         // test1: insert as is, should create a new conversation with this email as single member
         auto dbEmail = new Email(inEmail);
+        dbEmail.setOwner(dbEmail.localReceivers()[0]);
+        assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         auto emailId = dbEmail.store();
-        auto convId  = Conversation.upsert(dbEmail, user.id, tags).dbId;
+        auto convId  = Conversation.upsert(dbEmail, tags).dbId;
         auto convDoc = collection("conversation").findOne(["_id": convId]);
 
         assert(!convDoc.isNull);
@@ -348,8 +352,10 @@ version(db_usetestdb)
         auto testMsgId = "testreference@blabla.testdomain.com";
         inEmail.headers["message-id"].addresses[0] = testMsgId;
         dbEmail.messageId = testMsgId;
+        dbEmail.setOwner(dbEmail.localReceivers()[0]);
+        assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         emailId = dbEmail.store();
-        convId = Conversation.upsert(dbEmail, user.id, tags).dbId;
+        convId = Conversation.upsert(dbEmail, tags).dbId;
         convDoc = collection("conversation").findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == user.id);
@@ -381,8 +387,10 @@ version(db_usetestdb)
         string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
         inEmail.addHeader(refHeader);
         dbEmail = new Email(inEmail);
+        dbEmail.setOwner(dbEmail.localReceivers()[0]);
+        assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         emailId = dbEmail.store();
-        convId  = Conversation.upsert(dbEmail, user.id, tags).dbId;
+        convId  = Conversation.upsert(dbEmail, tags).dbId;
         convDoc = collection("conversation").findOne(["_id": convId]);
 
         assert(!convDoc.isNull);

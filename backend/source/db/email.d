@@ -43,6 +43,7 @@ class EmailSummary
     string[] attachFileNames;
     string bodyPeek;
     string avatarUrl;
+    bool deleted=false;
 }
 
 /** Paranoic retrieval of emailDoc headers */
@@ -58,16 +59,20 @@ private string headerRaw(Bson emailDoc, string headerName)
 
 final class Email
 {
-    string dbId;
-    string messageId;
-    HeaderValue from;
-    HeaderValue receivers;
-    DictionaryList!(HeaderValue, false) headers;
+    string       dbId;
+    string       userId;
+    bool         deleted = false;
+    string[]     forwardedTo;
+    string       destinationAddress;
+    string       messageId;
+    HeaderValue  from;
+    HeaderValue  receivers;
     Attachment[] attachments;
-    string rawEmailPath;
-    string bodyPeek;
-    string isoDate;
-    TextPart[] textParts;
+    string       rawEmailPath;
+    string       bodyPeek;
+    string       isoDate;
+    TextPart[]   textParts;
+    DictionaryList!(HeaderValue, false) headers;
 
     /** Load from an IncomingEmail object (making mutable copies of the data members).
      * dbId will be an empty string until .store() is called */
@@ -103,6 +108,23 @@ final class Email
 
         extractBodyPeek();
         loadReceivers();
+    }
+
+    this(IncomingEmail email, string destination)
+    {
+        this(email);
+        setOwner(destination);
+    }
+
+
+    void setOwner(string destinationAddress)
+    {
+        auto user = User.getFromAddress(destinationAddress);
+        if (user is null)
+            throw new Exception("Trying to set a not local destination address: " 
+                                 ~ destinationAddress);
+        this.userId = user.id;
+        this.destinationAddress = destinationAddress;
     }
 
 
@@ -273,6 +295,9 @@ final class Email
             if (!emailDoc.bodyPeek.isNull)
                 res.bodyPeek = bsonStr(emailDoc.bodyPeek);
 
+            if (!emailDoc.deleted.isNull)
+                res.deleted = bsonBool(emailDoc.deleted);
+
             foreach(ref attach; emailDoc.attachments)
                 if (!attach.fileName.isNull)
                     res.attachFileNames ~= bsonStr(attach.fileName);
@@ -307,6 +332,9 @@ final class Email
                 ret.date    = headerRaw(emailDoc, "date");
                 ret.subject = headerRaw(emailDoc, "subject");
             }
+
+            if (!emailDoc.deleted.isNull)
+                ret.deleted = bsonBool(emailDoc.deleted);
 
             if (!emailDoc.from.rawValue.isNull)
                 ret.from = bsonStr(emailDoc.from.rawValue);
@@ -392,32 +420,13 @@ final class Email
     }
 
 
-    /**
-      Search for an equal email on the DB, comparing all relevant fields
-     */
-    Flag!"EmailOnDb" isOnDb()
-    {
-        const emailInDb = collection("email").findOne(
-                ["message-id": this.messageId],
-                ["headers": 1, "from": 1, "receivers": 1],
-                QueryFlags.None
-        );
-
-        if (emailInDb.isNull)
-            return No.EmailOnDb;
-
-        if (getHeader("subject").rawValue != bsonStr(emailInDb.headers.subject[0].rawValue)
-            || this.from.rawValue  != bsonStr(emailInDb.from.rawValue)
-            || getHeader("to").rawValue    != bsonStr(emailInDb.receivers.rawValue)
-            || getHeader("date").rawValue  != bsonStr(emailInDb.headers.date[0].rawValue))
-            return No.EmailOnDb;
-        return Yes.EmailOnDb;
-    }
-
-
     /** store or update the email into the DB */
-    string store()
+    string store(Flag!"ForceInsertNew" = No.ForceInsertNew)
     {
+        assert(this.userId !is null);
+        assert(this.userId.length);
+        if (this.userId is null || !this.userId.length)
+            throw new Exception("Cant store email without assigning a user");
         Appender!string jsonAppender;
 
         // json for the text parts
@@ -477,11 +486,14 @@ final class Email
         string rawHeadersStr = jsonAppender.data();
         jsonAppender.clear();
 
-        const documentId = this.dbId.length?
-                                        this.dbId:
-                                        BsonObjectID.generate().toString;
+        if (Yes.ForceInsertNew || !this.dbId.length)
+            this.dbId = BsonObjectID.generate().toString;
+
         auto emailInsertJson = format(
               `{"_id": "%s",` ~
+              `"userId": "%s",` ~
+              `"destinationAddress": "%s",` ~
+              `"forwardedTo": %s,` ~
               `"rawEmailPath": "%s",` ~
               `"message-id": "%s",`    ~
               `"isodate": "%s",`      ~
@@ -491,7 +503,10 @@ final class Email
               `"textParts": [ %s ], ` ~
               `"bodyPeek": %s, ` ~
               `"attachments": [ %s ] }`,
-                documentId,
+                this.dbId,
+                this.userId,
+                this.destinationAddress,
+                to!string(this.forwardedTo),
                 this.rawEmailPath,
                 this.messageId,
                 this.isoDate,
@@ -506,18 +521,14 @@ final class Email
         );
         //writeln(emailInsertJson);
 
-        // Update if we had a dbid (loaded from DB), insert if not
         auto bsonData = parseJsonString(emailInsertJson);
-        if (!this.dbId.length)
-            this.dbId = documentId;
-
         collection("email").update(["_id": this.dbId], bsonData, UpdateFlags.Upsert);
 
         // store the index document for Mongo's full text search engine
         if (getConfig().storeTextIndex)
             storeTextIndex();
 
-        return documentId;
+        return this.dbId;
     }
 
 
@@ -591,23 +602,6 @@ version(db_usetestdb)
         assert(std.algorithm.count(arr, id2) == 1);
         assert(std.algorithm.count(arr, id3) == 1);
         assert(std.algorithm.count(arr, id4) == 1);
-    }
-
-    unittest // isOnDb
-    {
-        writeln("Testing Email.isOnDb");
-        recreateTestDb();
-        string backendTestEmailsDir = buildPath(getConfig().mainDir,
-                                                "backend", "test", "testemails");
-        // ignore the nomsgid email (last one) since it cant be checked to be on DB
-        foreach(mailname; TEST_EMAILS[0..$-1])
-        {
-            auto inEmail = new IncomingEmailImpl();
-            inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
-                                           getConfig().attachmentStore);
-            auto emailDb = new Email(inEmail);
-            assert(emailDb.isOnDb);
-        }
     }
 
     unittest // getSummary
@@ -722,7 +716,7 @@ version(db_usetestdb)
         assert(bsonStr(emailDoc.bodyPeek) == "Some text inside the email plain part");
 
         // check generated msgid
-        cursor.popFrontExactly(countUntil(TEST_EMAILS, "spam_notagged_nomsgid"));
+        cursor.popFrontExactly(countUntil(db.test_support.TEST_EMAILS, "spam_notagged_nomsgid"));
         assert(bsonStr(cursor.front["message-id"]).length);
         assert(bsonStr(cursor.front.bodyPeek) == "Well it is speculated that there are over 20,000 hosting companies in this country alone. WIth that ");
     }
