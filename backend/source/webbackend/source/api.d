@@ -25,7 +25,7 @@ interface Api
     ApiConversationSummary[] getTagConversations(string id, int limit=50, int page=0);
 
     @method(HTTPMethod.GET) @path("conversation/")
-    ApiConversation getConversation_(string id);
+    ApiConversation getConversation_(string id, int loadDeleted=0);
 
     @method(HTTPMethod.GET) @path("email/")
     ApiEmail getEmail(string id);
@@ -35,7 +35,7 @@ interface Api
 }
 
 
-class ApiImpl: Api
+final class ApiImpl: Api
 {
     override:
         ApiConversationSummary[] getTagConversations(string id,
@@ -48,9 +48,9 @@ class ApiImpl: Api
         }
 
 
-        ApiConversation getConversation_(string id)
+        ApiConversation getConversation_(string id, int loadDeleted=0)
         {
-            return new ApiConversation(Conversation.get(id));
+            return new ApiConversation(Conversation.get(id), cast(bool)loadDeleted);
         }
 
 

@@ -1,30 +1,12 @@
 Backend-API:
-    - DELETE /api/:id/email?purge=0 => set the "deleted" field of the envelope to true
-    (add a deleted field to the email document, CHECK FILTERS)
+    - DELETE /api/:id/email?purge=0 => set the "deleted" field of the email to true 
+      (and update the conversation the email belongs to).
 
-    purge=1: remove the envelope from the DB, and if it was the only envelope remove
-    the email
-
-    Deleted: should be considered when displaying conversations in the frontend
-
-    getConversation: check the envelope for that user and email, add the deleted field
-    to the ApiEmail struct before returning it.
-
-    Unittests of all this.
-
+    purge=1: remove the email from the DB, check the conversation, if it was the only
+    email on the conversation still on DB, delete the conversation.
 
 Backend-Retriever:
-    - Update the recreateTestDB() code and data
-
-    - email.isOnDb() => remove or add the user?
-
-    - Conversation.links => add a "deleted" field and in Conversation.get* 
-
-    - Conversation.upsert => ya no hace falta pedir el userId, lo tiene email
-
-    - ApiConversation => flag "hasDeleted", by default don't load deleted except
-      with an especific parameter to the url &loadDeleted=1, then it will load
-      them
+    - Unittest: set email.deleted to true, store, check email, check conversation
 
     Later:
     - Use log to log more warnings, specially on db.*

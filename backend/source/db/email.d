@@ -22,7 +22,7 @@ import db.config;
 import db.user;
 import webbackend.apiemail;
 
-class TextPart
+final class TextPart
 {
     string ctype;
     string content;
@@ -34,7 +34,7 @@ class TextPart
     }
 }
 
-class EmailSummary
+final class EmailSummary
 {
     string dbId;
     string from;
@@ -268,7 +268,9 @@ final class Email
         return "";
     }
 
-
+    /**
+     * Smaller version of the standar email object 
+     */
     static EmailSummary getSummary(string dbId)
     {
         auto res = new EmailSummary();
@@ -276,6 +278,7 @@ final class Email
              "headers": 1,
              "isodate": 1,
              "bodyPeek": 1,
+             "deleted": 1,
              "attachments": 1];
 
         const emailDoc = collection("email").findOne(["_id": dbId],
@@ -462,7 +465,7 @@ final class Email
                 countUntil(headerName, ".") != -1)
                     continue; 
             if (among(toLower(headerName), "from", "message-id"))
-                // these are outside doc.headers because they're indexed
+                // these are keys outside doc.headers because they're indexed
                 continue;
 
             // headers can have several values per key and thus be repeated

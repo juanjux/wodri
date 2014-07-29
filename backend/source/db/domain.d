@@ -4,7 +4,7 @@ import std.typecons;
 import vibe.db.mongo.mongo;
 import db.mongo;
 
-class Domain
+final class Domain
 {
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported

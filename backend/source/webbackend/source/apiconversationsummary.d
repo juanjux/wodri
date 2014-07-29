@@ -15,7 +15,7 @@ auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\
 auto NAME_CLEAN_REGEX = ctRegex!(r"[<>]", "g");
 
 
-class ApiConversationSummary
+final class ApiConversationSummary
 {
     string         dbId;
     ulong          numMessages;
@@ -28,13 +28,16 @@ class ApiConversationSummary
     this (const Conversation conv)
     {
         this.dbId = conv.dbId;
-        this.numMessages = conv.links.length;
         this.lastDate = conv.lastDate;
         this.tags = conv.tags;
         this.subject = conv.cleanSubject;
 
         foreach(link; conv.links)
         {
+            if (link.deleted)
+                continue;
+
+            this.numMessages += 1;
             if (link.emailDbId.length)
             {
                 auto emailSummary  = Email.getSummary(link.emailDbId);

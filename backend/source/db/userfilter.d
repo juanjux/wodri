@@ -42,7 +42,7 @@ struct Action
 }
 
 
-class UserFilter
+final class UserFilter
 {
     package
     {
@@ -50,7 +50,7 @@ class UserFilter
         Action action;
     }
 
-    this(ref Match match, ref Action action)
+    this(Match match, Action action)
     {
         this.match  = match;
         this.action = action;

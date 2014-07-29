@@ -6,7 +6,7 @@ import db.domain;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
 
-class User
+final class User
 {
     string id;
     string loginName;

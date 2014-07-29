@@ -1,6 +1,5 @@
 module db.conversation;
 
-//import std.datetime;
 import std.string;
 import std.path;
 import std.algorithm;
@@ -27,6 +26,7 @@ struct MessageLink
 {
     string messageId;
     string emailDbId;
+    bool deleted;
 }
 
 
@@ -48,10 +48,10 @@ final class Conversation
                 return true;
         return false;
     }
-    void addLink(string messageId, string emailDbId)
+    void addLink(string messageId, string emailDbId, bool deleted)
     {
         if (!haveLink(messageId, emailDbId))
-            this.links ~= MessageLink(messageId, emailDbId);
+            this.links ~= MessageLink(messageId, emailDbId, deleted);
     }
 
 
@@ -67,8 +67,12 @@ final class Conversation
     {
         auto linksApp = appender!string;
         foreach(link; this.links)
-            linksApp.put(format(`{"message-id": "%s", "emailId": "%s"},`, 
-                                link.messageId, link.emailDbId));
+            linksApp.put(format(`{"message-id": "%s",` ~
+                                `"emailId": "%s",` ~
+                                `"deleted": %s},`,
+                                link.messageId, 
+                                link.emailDbId,
+                                link.deleted));
         return format(`
         {
             "_id": "%s",
@@ -159,7 +163,7 @@ final class Conversation
 
         // add our references; addLink() only adds the new ones
         foreach(reference; references)
-            conv.addLink(reference, Email.messageIdToDbId(reference));
+            conv.addLink(reference, Email.messageIdToDbId(reference), email.deleted);
 
         bool wasInConversation = false;
         if (conv.dbId.length)
@@ -181,7 +185,7 @@ final class Conversation
             conv.dbId = BsonObjectID.generate().toString;
 
         if (!wasInConversation)
-            conv.addLink(messageId, email.dbId);
+            conv.addLink(messageId, email.dbId, email.deleted);
 
         // update the conversation cleaned subject (last one wins)
         if (email.hasHeader("subject"))
@@ -209,7 +213,7 @@ final class Conversation
         foreach(link; convDoc.links)
         {
             auto msgId = bsonStr(link["message-id"]);
-            ret.addLink(msgId, bsonStr(link["emailId"]));
+            ret.addLink(msgId, bsonStr(link["emailId"]), bsonBool(link["deleted"]));
             auto emailSummary = Email.getSummary(Email.messageIdToDbId(msgId));
             foreach(attach; emailSummary.attachFileNames)
             {
@@ -248,6 +252,7 @@ version(db_usetestdb)
         assert(conv.links.length == 1);
         assert(!conv.attachFileNames.length);
         assert(conv.cleanSubject == " Tired of Your Hosting Company?");
+        assert(conv.links[0].deleted == false);
 
         conv = Conversation.get(convs[1].dbId);
         assert(conv !is null);
@@ -256,6 +261,7 @@ version(db_usetestdb)
         assert(conv.links.length == 3);
         assert(!conv.attachFileNames.length);
         assert(conv.cleanSubject == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
+        assert(conv.links[0].deleted == false);
 
         conv = Conversation.get(convs[2].dbId);
         assert(conv !is null);
@@ -265,6 +271,7 @@ version(db_usetestdb)
         assert(conv.attachFileNames.length == 1);
         assert(conv.attachFileNames[0] == "C++ Pocket Reference.pdf");
         assert(conv.cleanSubject == " Attachment test");
+        assert(conv.links[0].deleted == false);
     }
 
     unittest // Conversation.getByTag
@@ -274,11 +281,14 @@ version(db_usetestdb)
         auto convs = Conversation.getByTag("inbox", 0, 0);
         assert(convs.length == 4);
         assert(convs[0].lastDate > convs[3].lastDate);
+        assert(convs[0].links[0].deleted == false);
 
         auto convs2 = Conversation.getByTag("inbox", 2, 0);
         assert(convs2.length == 2);
         assert(convs2[0].dbId == convs[0].dbId);
         assert(convs2[1].dbId == convs[1].dbId);
+        assert(convs2[0].links[0].deleted == false);
+        assert(convs2[1].links[0].deleted == false);
 
         auto convs3 = Conversation.getByTag("inbox", 2, 1);
         assert(convs3.length == 2);
@@ -290,6 +300,10 @@ version(db_usetestdb)
         assert(convs4[1].dbId == convs[1].dbId);
         assert(convs4[2].dbId == convs[2].dbId);
         assert(convs4[3].dbId == convs[3].dbId);
+        assert(convs4[0].links[0].deleted == false);
+        assert(convs4[1].links[0].deleted == false);
+        assert(convs4[2].links[0].deleted == false);
+        assert(convs4[3].links[0].deleted == false);
 
     }
 
@@ -340,6 +354,7 @@ version(db_usetestdb)
         assert(convObject.links[0].messageId == inEmail.getHeader("message-id").addresses[0]);
         assert(convObject.links[0].emailDbId == emailId);
         assert(!convObject.attachFileNames.length);
+        assert(convObject.links[0].deleted == false);
 
 
         // test2: insert as a msgid of a reference already on a conversation, check that the right
@@ -377,6 +392,7 @@ version(db_usetestdb)
         assert(convObject.links[1].messageId == dbEmail.messageId);
         assert(convObject.links[1].emailDbId == emailId);
         assert(!convObject.attachFileNames.length);
+        assert(convObject.links[0].deleted == false);
 
         // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
         // is added to that conversation
@@ -414,6 +430,7 @@ version(db_usetestdb)
         assert(convObject.links[1].emailDbId == emailId);
         assert(convObject.attachFileNames.length == 1);
         assert(convObject.attachFileNames[0] == "C++ Pocket Reference.pdf");
+        assert(convObject.links[1].deleted == false);
     }
 
     unittest // Conversation.getByReferences
@@ -441,6 +458,8 @@ version(db_usetestdb)
                 "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
         assert(conv.links[0].emailDbId.length);
         assert(conv.links[1].emailDbId.length);
+        assert(conv.links[0].deleted == false);
+        assert(conv.links[1].deleted == false);
 
 
         conv = Conversation.getByReferences(user2.id, ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
@@ -452,6 +471,7 @@ version(db_usetestdb)
         assert(conv.links.length == 1);
         assert(conv.links[0].messageId == "CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com");
         assert(conv.links[0].emailDbId.length);
+        assert(conv.links[0].deleted == false);
     }
 
     unittest // clearSubject
