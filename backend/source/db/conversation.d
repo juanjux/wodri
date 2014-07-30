@@ -175,6 +175,7 @@ final class Conversation
     {
         assert(email.userId.length);
         assert(email.dbId.length);
+
         const references = email.getHeader("references").addresses;
         const messageId  = email.messageId;
 
@@ -205,7 +206,8 @@ final class Conversation
             {
                 if (entry.messageId == messageId)
                 {
-                    entry.emailDbId = email.dbId;
+                    entry.emailDbId   = email.dbId;
+                    entry.deleted     = email.deleted;
                     wasInConversation = true;
                     break;
                 }

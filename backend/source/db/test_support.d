@@ -42,7 +42,8 @@ version(db_usetestdb)
             collection(coll).insert(parseJsonString(readText(buildPath(backendTestDataDir_, 
                                                                        file_))));
 
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
+        string backendTestEmailsDir = 
+            buildPath(getConfig().mainDir, "backend", "test", "testemails");
         foreach(mailname; TEST_EMAILS)
         {
             auto inEmail      = new IncomingEmailImpl();

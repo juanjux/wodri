@@ -423,7 +423,7 @@ final class Email
     }
 
 
-    /** store or update the email into the DB */
+    /** store or update the email into the DB, returns the DB id */
     string store(Flag!"ForceInsertNew" = No.ForceInsertNew)
     {
         assert(this.userId !is null);
@@ -494,6 +494,7 @@ final class Email
 
         auto emailInsertJson = format(
               `{"_id": "%s",` ~
+              `"deleted": %s,` ~ 
               `"userId": "%s",` ~
               `"destinationAddress": "%s",` ~
               `"forwardedTo": %s,` ~
@@ -507,16 +508,17 @@ final class Email
               `"bodyPeek": %s, ` ~
               `"attachments": [ %s ] }`,
                 this.dbId,
+                this.deleted,
                 this.userId,
                 this.destinationAddress,
-                to!string(this.forwardedTo),
+                this.forwardedTo, 
                 this.rawEmailPath,
                 this.messageId,
                 this.isoDate,
                 Json(this.from.rawValue).toString,
-                to!string(this.from.addresses),
+                this.from.addresses,
                 Json(this.receivers.rawValue).toString,
-                to!string(this.receivers.addresses),
+                this.receivers.addresses,
                 rawHeadersStr,
                 textPartsJsonStr,
                 Json(this.bodyPeek).toString,
@@ -701,7 +703,8 @@ version(db_usetestdb)
         import std.range; 
 
         writeln("Testing Email.store");
-        recreateTestDb();
+        recreateTestDb();  
+        // recreateTestDb already calls email.store, check that the inserted email is fine
         auto cursor = collection("email").find();
         cursor.sort(parseJsonString(`{"_id": 1}`));
         assert(!cursor.empty);
@@ -722,6 +725,42 @@ version(db_usetestdb)
         cursor.popFrontExactly(countUntil(db.test_support.TEST_EMAILS, "spam_notagged_nomsgid"));
         assert(bsonStr(cursor.front["message-id"]).length);
         assert(bsonStr(cursor.front.bodyPeek) == "Well it is speculated that there are over 20,000 hosting companies in this country alone. WIth that ");
+    }
+
+    unittest // test email.deleted
+    {
+        writeln("Testing email.deleted");
+        // insert a new email with deleted = true
+        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", 
+                                                "test", "testemails");
+        auto inEmail = new IncomingEmailImpl();
+        auto mailname = "simple_alternative_noattach";
+        inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
+                             getConfig.absAttachmentStore);
+        auto dbEmail = new Email(inEmail);
+        auto user = User.getFromAddress("testuser@testdatabase.com");
+        dbEmail.userId = user.id;
+        dbEmail.deleted = true;
+        auto id = dbEmail.store();
+
+        // check that the doc has the deleted
+        auto emailDoc = collection("email").findOne(["_id": id]);
+        assert(bsonBool(emailDoc.deleted));
+
+        import db.conversation;
+        // check that the conversation has the link.deleted for this email set to true
+        Conversation.upsert(dbEmail, ["inbox": true]);
+        auto conv = Conversation.getByReferences(user.id, [dbEmail.messageId], 
+                                                 Yes.WithDeleted);
+        foreach(ref msglink; conv.links)
+        {
+            if (msglink.messageId == dbEmail.messageId)
+            {
+                assert(msglink.deleted);
+                assert(msglink.emailDbId == id);
+                break;
+            }
+        }
     }
 
     unittest // storeTextIndex

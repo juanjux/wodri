@@ -6,8 +6,6 @@ Backend-API:
     email on the conversation still on DB, delete the conversation.
 
 Backend-Retriever:
-    - Unittest: set email.deleted to true, store, check email, check conversation
-
     Later:
     - Use log to log more warnings, specially on db.*
 
