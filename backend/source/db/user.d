@@ -32,7 +32,6 @@ final class User
         ret.loginHash = bsonStr(userDoc.loginHash);
         ret.name = bsonStr(userDoc.name);
         ret.surname = bsonStr(userDoc.surname);
-
         return ret;
     }
 

@@ -5,6 +5,7 @@ import std.path;
 import std.algorithm;
 import std.stdio;
 import std.regex;
+import std.typecons;
 import core.time: TimeException;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
@@ -39,7 +40,6 @@ final class Conversation
     MessageLink[] links;
     string[] attachFileNames;
     string cleanSubject;
-    bool hasDeleted = false;
 
     private bool haveLink(string messageId, string emailDbId)
     {
@@ -103,38 +103,68 @@ final class Conversation
      * Return the first Conversation that has ANY of the references contained in its
      * links. Returns null if no Conversation with those references was found.
      */
-    static Conversation getByReferences(string userId, const string[] references)
+    static Conversation getByReferences(string userId, const string[] references, 
+                                        Flag!"WithDeleted" withDeleleted = No.WithDeleted)
     {
         string[] reversed = references.dup;
         reverse(reversed);
-        auto bson = parseJsonString(format(`{"userId": "%s",`~
-                                           `"links.message-id": {"$in": %s}}`, 
-                                           userId, reversed));
+        Appender!string jsonApp;
+        jsonApp.put(format(`{"userId":"%s","links.message-id":{"$in":%s},`,
+                           userId, reversed));
+        if (!withDeleleted)
+            jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
+        jsonApp.put("}");
+
+        auto bson = parseJsonString(jsonApp.data);
         auto convDoc = collection("conversation").findOne(bson);
-        if (convDoc.isNull)
-            return null;
-        return conversationDocToObject(convDoc);
+        return convDoc.isNull? null: conversationDocToObject(convDoc);
     }
 
-    static Conversation[] getByTag(string tagName, uint limit, uint page)
+    static Conversation[] getByTag(string tagName, uint limit, uint page,
+                                   Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
         Conversation[] ret;
 
-        auto jsonFind = parseJsonString(format(`{"tags": {"$in": ["%s"]}}`, tagName));
-        auto cursor   = collection("conversation").find(
-                                                        jsonFind,
-                                                        Bson(null),
-                                                        QueryFlags.None,
-                                                        page > 0? page*limit: 0 // skip
+        Appender!string jsonApp;
+        jsonApp.put(format(`{"tags": {"$in": ["%s"]},`, tagName));
+        if (!withDeleted)
+            jsonApp.put(`"tags":{"$nin":["deleted"]},`);
+        jsonApp.put("}");
+
+        auto bson   = parseJsonString(jsonApp.data);
+        auto cursor = collection("conversation").find(bson,
+                                                      Bson(null),
+                                                      QueryFlags.None,
+                                                      page > 0? page*limit: 0 // skip
         ).sort(["lastDate": -1]);
 
         cursor.limit(limit);
         foreach(ref doc; cursor)
-        {
             if (!doc.isNull)
                 ret ~= Conversation.conversationDocToObject(doc);
-        }
         return ret;
+    }
+
+
+    static void addTag(string dbId, string tag)
+    {
+        assert(dbId.length);
+        assert(tag.length);
+
+        auto json = format(`{"$push":{"tags":"%s"}}`, tag);
+        auto bson = parseJsonString(json);
+        collection("conversation").update(["_id": dbId], bson);
+    }
+
+
+    static void removeTag(string dbId, string tag)
+    {
+        assert(dbId.length);
+        assert(tag.length);
+
+        auto json = format(`{"$pull":{"tags":"%s"}}`, tag);
+        auto bson = parseJsonString(json);
+        collection("conversation").update(["_id": dbId], bson);
     }
 
     /**
@@ -192,8 +222,7 @@ final class Conversation
             conv.cleanSubject = clearSubject(email.getHeader("subject").rawValue);
 
         auto bson     = parseJsonString(conv.toJson);
-        auto convColl = collection("conversation");
-        convColl.update(["_id": conv.dbId], bson, UpdateFlags.Upsert);
+        collection("conversation").update(["_id": conv.dbId], bson, UpdateFlags.Upsert);
         return conv;
     }
 
@@ -305,6 +334,32 @@ version(db_usetestdb)
         assert(convs4[2].links[0].deleted == false);
         assert(convs4[3].links[0].deleted == false);
 
+        // check that it doesnt returns the deleted convs
+        auto len1 = convs4.length;
+        Conversation.addTag(convs4[0].dbId, "deleted");
+        convs4 = Conversation.getByTag("inbox", 1000, 0);
+        assert(convs4.length == len1-1);
+        // except when using Yes.WithDeleted
+        convs4 = Conversation.getByTag("inbox", 1000, 0, Yes.WithDeleted);
+        assert(convs4.length == len1);
+    }
+
+    unittest // Conversation.addTag / removeTag
+    {
+        writeln("Testing Conversation.addTag");
+        recreateTestDb();
+        auto convs = Conversation.getByTag("inbox", 0, 0);
+        assert(convs.length);
+        auto dbId = convs[0].dbId;
+        Conversation.addTag(dbId, "testTag");
+        auto conv = Conversation.get(dbId);
+        assert(conv !is null);
+        assert(countUntil(conv.tags, "testTag"));
+
+        writeln("Testing Conversation.removeTag");
+        Conversation.removeTag(dbId, "testTag");
+        conv = Conversation.get(dbId);
+        assert(countUntil(conv.tags, "testTag") == -1);
     }
 
     unittest // upsert
@@ -472,6 +527,17 @@ version(db_usetestdb)
         assert(conv.links[0].messageId == "CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com");
         assert(conv.links[0].emailDbId.length);
         assert(conv.links[0].deleted == false);
+
+        Conversation.addTag(conv.dbId, "deleted");
+        // check that it doesnt returns the deleted convs
+        conv = Conversation.getByReferences(user2.id, 
+                ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
+        assert(conv is null);
+        // except when using Yes.WithDeleted
+        conv = Conversation.getByReferences(user2.id, 
+                ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"],
+                Yes.WithDeleted);
+        assert(conv !is null);
     }
 
     unittest // clearSubject

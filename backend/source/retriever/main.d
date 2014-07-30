@@ -52,7 +52,7 @@ void saveAndLogRejectedEmail(Email email,
                     tooBig? "\nMessage too big":"");
 
     logInfo(format("Message denied from SMTP. ValidHeaders:%s "~
-                   "numLocalReceivers:%s SizeTooBig:%s. AlreadyOnDb: %s " ~
+                   "numLocalReceivers:%s SizeTooBig:%s. " ~
                    "Message copy stored at %s",
                    isValid, localReceivers.length, tooBig, failedEmailPath));
 }

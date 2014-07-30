@@ -79,7 +79,7 @@ user clicks on the "expand" link, all the messages will be fully loaded.
 `get: /:id/conversation/`/
     Get a Conversation with the specified id
 `(MISSING) delete: /:id/conversation/`
-    Delete the conversation
+    Delete the conversation 
 `(MISSING) post: /:id/conversation/tags`
     Add tags to the conversation
 `(MISSING) delete: /:id/conversation/tags`
