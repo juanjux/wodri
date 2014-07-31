@@ -1,25 +1,23 @@
 module db.email;
 
-import std.datetime: SysTime, TimeZone;
-import std.utf: count, toUTFindex;
+import arsd.htmltotext;
+import db.config;
+import db.mongo;
+import db.user;
+import retriever.incomingemail: IncomingEmail, Attachment, HeaderValue;
 import std.algorithm: among;
-import std.string;
-import std.typecons;
-import std.stdio: File, writeln;
+import std.datetime: SysTime, TimeZone;
 import std.file: exists;
 import std.path: baseName;
-
-import vibe.data.bson;
+import std.stdio: File, writeln;
+import std.string;
+import std.typecons;
+import std.utf: count, toUTFindex;
 import vibe.core.log;
-import vibe.utils.dictionarylist;
+import vibe.data.bson;
 import vibe.db.mongo.mongo;
 import vibe.inet.path: joinPath;
-
-import arsd.htmltotext;
-import retriever.incomingemail: IncomingEmail, Attachment, HeaderValue;
-import db.mongo;
-import db.config;
-import db.user;
+import vibe.utils.dictionarylist;
 import webbackend.apiemail;
 
 final class TextPart
@@ -56,7 +54,6 @@ private string headerRaw(Bson emailDoc, string headerName)
     return "";
 }
 
-
 final class Email
 {
     string       dbId;
@@ -73,6 +70,8 @@ final class Email
     string       isoDate;
     TextPart[]   textParts;
     DictionaryList!(HeaderValue, false) headers;
+
+    this() {}
 
     /** Load from an IncomingEmail object (making mutable copies of the data members).
      * dbId will be an empty string until .store() is called */
@@ -108,6 +107,8 @@ final class Email
 
         extractBodyPeek();
         loadReceivers();
+
+        this();
     }
 
     this(IncomingEmail email, string destination)
@@ -115,7 +116,6 @@ final class Email
         this(email);
         setOwner(destination);
     }
-
 
     void setOwner(string destinationAddress)
     {
@@ -284,22 +284,15 @@ final class Email
         const emailDoc = collection("email").findOne(["_id": dbId],
                 fieldSelector,
                 QueryFlags.None);
+
         if (!emailDoc.isNull)
         {
-            res.dbId = dbId;
-            res.date = headerRaw(emailDoc, "date");
-
-            if (!emailDoc.from.rawValue.isNull)
-                res.from = bsonStr(emailDoc.from.rawValue);
-
-            if (!emailDoc.isodate.isNull)
-                res.isoDate = bsonStr(emailDoc.isodate);
-
-            if (!emailDoc.bodyPeek.isNull)
-                res.bodyPeek = bsonStr(emailDoc.bodyPeek);
-
-            if (!emailDoc.deleted.isNull)
-                res.deleted = bsonBool(emailDoc.deleted);
+            res.dbId     = dbId;
+            res.date     = headerRaw(emailDoc, "date");
+            res.from     = bsonStr(emailDoc.from.rawValue);
+            res.isoDate  = bsonStr(emailDoc.isodate);
+            res.bodyPeek = bsonStr(emailDoc.bodyPeek);
+            res.deleted  = bsonBool(emailDoc.deleted);
 
             foreach(ref attach; emailDoc.attachments)
                 if (!attach.fileName.isNull)
@@ -358,7 +351,7 @@ final class Email
                 if (!attach.realPath.isNull)
                     att.Url = joinPath("/",
                             joinPath(getConfig().URLAttachmentPath,
-                                baseName(bsonStr(attach.realPath))));
+                                     baseName(bsonStr(attach.realPath))));
                 ret.attachments ~= att;
             }
 
@@ -390,8 +383,8 @@ final class Email
     {
         string noMail = "Error: could not get raw email";
         const emailDoc = collection("email").findOne(["_id": dbId],
-                ["rawEmailPath": 1],
-                QueryFlags.None);
+                                                     ["rawEmailPath": 1],
+                                                     QueryFlags.None);
         if (!emailDoc.isNull && !emailDoc.rawEmailPath.isNull)
         {
             auto rawPath = bsonStr(emailDoc.rawEmailPath);
@@ -399,11 +392,42 @@ final class Email
             {
                 Appender!string app;
                 auto rawFile = File(rawPath, "r");
-                while(!rawFile.eof) app.put(rawFile.readln());
+                while(!rawFile.eof) 
+                    app.put(rawFile.readln());
                 return app.data;
             }
         }
         return noMail;
+    }
+
+    
+    static void setDeleted(string dbId, bool setDel)
+    {
+        // Get the email from the DB, check the needed deleted and userId fields
+        const emailDoc = collection("email").findOne(["_id": dbId],
+                                                     ["deleted": 1],
+                                                     QueryFlags.None);
+        if (emailDoc.isNull || emailDoc.deleted.isNull)
+        {
+            logWarn(format("setDeleted: Trying to set deleted (%s) of email with id (%s) " ~
+                        "not in DB or with missing deleted field", setDel, dbId));
+            return;
+        }
+
+        auto dbDeleted = bsonBool(emailDoc.deleted);
+        if (dbDeleted == setDel)
+        {
+            logWarn(format("setDeleted: Trying to set deleted to (%s) but email with id " ~
+                        "(%s) already was in that state", setDel, dbId));
+            return;
+        }
+
+        // Update the document
+        auto json    = format(`{"$set": {"deleted": %s}}`, setDel);
+        auto bsonUpd = parseJsonString(json);
+        collection("email").update(["_id": dbId], bsonUpd);
+
+        Conversation.setEmailDeleted(dbId, setDel);
     }
 
 
@@ -572,11 +596,11 @@ version(db_usetestdb)
     import std.path;
     import retriever.incomingemail;
     import db.test_support;
+    import db.conversation;
+    import std.digest.md;
 
     unittest // jsonizeHeader
     {
-        import db.email;
-
         writeln("Testing Email.jsonizeHeader");
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
 
@@ -609,11 +633,32 @@ version(db_usetestdb)
         assert(std.algorithm.count(arr, id4) == 1);
     }
 
+    unittest // Email.setDeleted
+    {
+        writeln("Testing Email.setDeleted");
+        recreateTestDb();
+        string messageId = "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com";
+        auto dbId = Email.messageIdToDbId(messageId);
+
+        Email.setDeleted(dbId, true);
+        auto emailDoc = collection("email").findOne(["_id": dbId]);
+        assert(bsonBool(emailDoc.deleted));
+        auto conv = Conversation.getByReferences(bsonStr(emailDoc.userId),
+                                                 [messageId], Yes.WithDeleted);
+        assert(conv.links[1].deleted);
+
+        Email.setDeleted(dbId, false);
+        emailDoc = collection("email").findOne(["_id": dbId]);
+        assert(!bsonBool(emailDoc.deleted));
+        conv = Conversation.getByReferences(bsonStr(emailDoc.userId),
+                                            [messageId], Yes.WithDeleted);
+        assert(!conv.links[1].deleted);
+    }
+
     unittest // getSummary
     {
         writeln("Testing Email.getSummary");
         recreateTestDb();
-        import db.conversation;
 
         auto convs    = Conversation.getByTag("inbox", 0, 0);
         auto conv     = Conversation.get(convs[2].dbId);
@@ -654,8 +699,6 @@ version(db_usetestdb)
     {
         writeln("Testing Email.getApiEmail");
         recreateTestDb();
-        import db.conversation;
-        import std.digest.md;
 
         auto convs    = Conversation.getByTag("inbox", 0, 0);
         auto conv     = Conversation.get(convs[2].dbId);
@@ -682,8 +725,6 @@ version(db_usetestdb)
 
     unittest // Email.getOriginal
     {
-        import std.digest.md;
-        import db.conversation;
         writeln("Testing Email.getOriginal");
         recreateTestDb();
 
@@ -747,7 +788,6 @@ version(db_usetestdb)
         auto emailDoc = collection("email").findOne(["_id": id]);
         assert(bsonBool(emailDoc.deleted));
 
-        import db.conversation;
         // check that the conversation has the link.deleted for this email set to true
         Conversation.upsert(dbEmail, ["inbox": true]);
         auto conv = Conversation.getByReferences(user.id, [dbEmail.messageId], 

@@ -46,6 +46,7 @@ double bsonNumber(const Bson input)
     assert(0);
 }
 
+
 /**
  * Read the /etc/dbconnect.json file, check for missing keys and connect
  */

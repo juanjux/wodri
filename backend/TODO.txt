@@ -3,7 +3,8 @@ Backend-API:
       (and update the conversation the email belongs to).
 
     purge=1: remove the email from the DB, check the conversation, if it was the only
-    email on the conversation still on DB, delete the conversation.
+    email on the conversation still on DB, delete the conversation, delete the rawmail too,
+    log 
 
 Backend-Retriever:
     Later:

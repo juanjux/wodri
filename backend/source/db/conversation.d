@@ -9,6 +9,7 @@ import std.typecons;
 import core.time: TimeException;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
+import vibe.core.log;
 import db.mongo;
 import db.config: getConfig;
 import db.email;
@@ -99,6 +100,7 @@ final class Conversation
         return Conversation.conversationDocToObject(convDoc);
     }
 
+
     /**
      * Return the first Conversation that has ANY of the references contained in its
      * links. Returns null if no Conversation with those references was found.
@@ -119,6 +121,7 @@ final class Conversation
         auto convDoc = collection("conversation").findOne(bson);
         return convDoc.isNull? null: conversationDocToObject(convDoc);
     }
+
 
     static Conversation[] getByTag(string tagName, uint limit, uint page,
                                    Flag!"WithDeleted" withDeleted = No.WithDeleted)
@@ -254,6 +257,42 @@ final class Conversation
         }
         return ret;
     }
+
+
+    // Find any conversation with this email and update the links.[email].deleted field
+    package static string setEmailDeleted(string dbId, bool setDel)
+    {
+        auto json    = format(`{"links.emailId": {"$in": ["%s"]}}`, dbId);
+        auto bson    = parseJsonString(json);
+        auto convDoc = collection("conversation").findOne(bson,
+                                                          ["_id": 1, "links": 1],
+                                                          QueryFlags.None);
+        if (convDoc.isNull)
+        {
+            logWarn(format("setDeleted: No conversation found for email with id (%s)", dbId));
+            return "";
+        }
+
+        int idx = 0;
+        foreach(ref entry; convDoc.links)
+        {
+            if (!entry.emailId.isNull && bsonStr(entry.emailId) == dbId)
+            {
+                if (entry.deleted.isNull || bsonBool(entry.deleted) == setDel)
+                {
+                    logWarn(format("setDeleted: entry for email (%s) in conversation is " ~
+                                "null or the deleted state was already %s", dbId, setDel));
+                    return "";
+                }
+                json = format(`{"$set": {"links.%d.deleted": %s}}`, idx, setDel);
+                bson = parseJsonString(json);
+                collection("conversation").update(["_id": bsonStr(convDoc._id)], bson);
+                break;
+            }
+            idx++;
+        }
+        return bsonStr(convDoc._id);
+    }
 }
 
 
@@ -303,6 +342,20 @@ version(db_usetestdb)
         assert(conv.attachFileNames[0] == "C++ Pocket Reference.pdf");
         assert(conv.cleanSubject == " Attachment test");
         assert(conv.links[0].deleted == false);
+    }
+
+    unittest // Conversation.setEmailDeleted
+    {
+        writeln("Testing Conversation.setEmailDeleted");
+        recreateTestDb();
+
+        auto conv = Conversation.getByTag("inbox", 0, 0)[0];
+        conv.setEmailDeleted(conv.links[0].emailDbId, true);
+        conv = Conversation.getByTag("inbox", 0, 0)[0];
+        assert(conv.links[0].deleted);
+        conv.setEmailDeleted(conv.links[0].emailDbId, false);
+        conv = Conversation.getByTag("inbox", 0, 0)[0];
+        assert(!conv.links[0].deleted);
     }
 
     unittest // Conversation.getByTag

@@ -20,18 +20,26 @@ be absolute (starting with a "/") or relative. If relative, they'll be appended
 to the "maindir" setting. The incomingMessageLimit is in bytes.
 
 {
-    "_id"                  : "<ThisDocumentId>",
-    "attachmentStore"      : "path/for/attachments",
-    "incomingMessageLimit" : 15728640,
-    "mainDir"              : "/opt/mainSystemDir",
-    "module"               : "retriever",
-    "rawEmailStore"        : "path/for/rawemails",
-    "smtpEncription"       : 0,
-    "smtpPass"             : "somePasswordForTheOutgoingSMTPRelay",
-    "smtpPort"             : 25,
-    "smtpServer"           : "someSMTP.server.com",
-    "smtpUser"             : "someUserForTheOutgoingSMTPRelay"
+        "_id" : "5399793904ac3d27431d0669",
+        "smtpEncription" : 0,
+        "module" : "retriever",
+        "incomingMessageLimit" : 15728640,
+        "smtpUser" : "smtpUser",
+        "smtpPass" : "smtpPass",
+        "salt" : "someSalt",
+        "smtpServer" : "localhost",
+        "bodyPeekLength" : 100,
+        "smtpPort" : 25,
+        "mainDir" : "/home/juanjux/webmail",
+        "URLAttachmentPath" : "attachment",
+        "apiDomain" : "juanjux.mooo.com",
+        "rawEmailStore" : "backend/test/rawemails",
+        "attachmentStore" : "backend/test/attachments",
+        "storeTextIndex" : true,
+        "URLStaticPath" : "public"
 }
+
+
 
 USER
 
@@ -43,6 +51,7 @@ User information.
     "admin"     : false,
     "loginName" : "someUserLoginName",
     "name"      : "John",
+    "loginHash" : "8AQl5bqZMY3vbczoBWJiTFVclKU=",
     "surname"   : "Smith"
 }
 
@@ -149,14 +158,17 @@ Tags are stored in conversations.
     "links": [
         {
             "emailId"   : "<some email id>",
+            "deleted"   : false,
             "messageId" : "CAGA-+RQDsMTnFegb_FYeiyHOFeSQc3cSw9uRY1a41L+vWEBB3g@mail.gmail.com"
         },
         {
             "emailId"   : "<another email id>",
+            "deleted"   : false,
             "messageId" : "DUB117-W199FD472475A8034B1A715A8870@phx.gbl"
         },
         {
             "emailId"   : "<third email in the conversation id>",
+            "deleted"   : false,
             "messageId" : "CAGA-+RTYnkF6OA-tzT+vBP4eL5LS_+gou7yVC0rZyVLCieQ_ng@mail.gmail.com"
         }
     ],
