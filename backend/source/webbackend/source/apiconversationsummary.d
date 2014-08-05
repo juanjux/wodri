@@ -1,17 +1,20 @@
 module webbackend.apiconversationsummary;
 
-import std.regex;
-import std.algorithm;
-import std.stdio;
-import std.conv;
-import std.string;
-import std.array;
-import db.mongo;
 import db.conversation;
 import db.email;
+import db.mongo;
 import retriever.incomingemail: EMAIL_REGEX;
+import std.algorithm;
+import std.array;
+import std.conv;
+import std.regex;
+import std.stdio;
+import std.string;
 
-auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
+auto SUBJECT_CLEAN_REGEX = ctRegex!(
+        r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", 
+        "gi"
+);
 auto NAME_CLEAN_REGEX = ctRegex!(r"[<>]", "g");
 
 

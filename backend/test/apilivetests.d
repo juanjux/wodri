@@ -14,42 +14,61 @@ import std.exception;
  * is loaded
  */
 
+enum USER = "testuser";
+enum PASS = "secret";
+enum URL  = "http://127.0.0.1:8080/api";
+
+string callCurl(string apicall, string operationName, string id="", string method="GET")
+{
+    auto realId = id.length? "/"~id: "";
+    auto curlCmd = escapeShellCommand(
+            "curl", "-u", USER~":"~PASS, "-s", "-X", method, "-H",
+            "Content-Type: application/json",
+            format("%s%s/%s", URL, realId, apicall)
+    );
+    auto retCurl = executeShell(curlCmd);
+    writeln("\t" ~ curlCmd);
+    if (retCurl.status)
+        throw new Exception("bad curl result while " ~ operationName);
+
+    return retCurl.output;
+}
+
+
 string[] jsonToArray(JSONValue val)
 {
     return array(map!(x => x.str)(val.array));
 }
 
-
-JSONValue getConversations(string tag, uint limit, uint page)
+void recreateTestDb()
 {
+    callCurl("testrebuilddb/", "rebuilding test DB");
+}
 
-    auto curlCmd = escapeShellCommand("curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H",
-            "Content-Type: application/json",
-            format("http://127.0.0.1:8080/api/%s/tag/?limit=%d&page=%d",
-            tag, limit, page));
-    writeln("\t" ~ curlCmd);
-    auto retCurl = executeShell(curlCmd);
-    if (retCurl.status != 0 || !retCurl.output.length)
-        throw new Exception("bad curl result");
 
-    auto conversations = parseJSON(retCurl.output);
+void deleteEmail(string id)
+{
+    callCurl("emaildelete/", "deleting email", id);
+}
+
+
+
+JSONValue getConversations(string tag, uint limit, uint page, bool loadDeleted=false)
+{
+    auto loadStr = loadDeleted? "&loadDeleted=1": "";
+    auto ret = callCurl(format("%s/tag/?limit=%d&page=%d%s", tag, limit, page, loadStr),
+                             "getting conversations");
+
+    auto conversations = parseJSON(ret);
     return conversations;
 }
 
 
-JSONValue getConversationById(string id)
+JSONValue getConversationById(string id, bool loadDeleted=false)
 {
-    auto curlCmd = escapeShellCommand(
-                    "curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H",
-                    "Content-Type: application/json",
-                    format("http://127.0.0.1:8080/api/%s/conversation/", id)
-    );
-    writeln("\t" ~ curlCmd);
-    auto retCurl = executeShell(curlCmd);
-    if (retCurl.status != 0 || !retCurl.output.length)
-        throw new Exception("bad curl result");
-
-    auto conversation = parseJSON(retCurl.output);
+    auto loadStr = loadDeleted? "?loadDeleted=1": "";
+    auto ret = callCurl("conversation/" ~ loadStr, "getting conversation by id", id);
+    auto conversation = parseJSON(ret);
     return conversation;
 }
 
@@ -57,24 +76,16 @@ JSONValue getConversationById(string id)
 JSONValue getEmail(string id, Flag!"GetRaw" raw = No.GetRaw)
 {
     string name = raw == Yes.GetRaw?"raw":"email";
-    auto curlCmd = escapeShellCommand(
-                    "curl", "-u", "testuser:secret", "-s", "-X", "GET", "-H",
-                    "Content-Type: application/json",
-                    format("http://127.0.0.1:8080/api/%s/%s/", id, name)
-    );
-    writeln("\t" ~ curlCmd);
-    auto retCurl = executeShell(curlCmd);
-    if (retCurl.status != 0 || !retCurl.output.length)
-        throw new Exception("bad curl result");
-
-    auto email = parseJSON(retCurl.output);
+    auto ret = callCurl(name ~ "/", "getting single email", id);
+    auto email = parseJSON(ret);
     return email;
 }
 
 
 void testGetConversation()
 {
-    writeln("\nTesting /api/:id/conversation/");
+    writeln("\nTesting GET /api/:id/conversation/");
+    recreateTestDb();
     JSONValue conversations;
     conversations = getConversations("inbox", 20, 0);
 
@@ -94,11 +105,10 @@ void testGetConversation()
     auto conversation4 = getConversationById(convId4);
 }
 
-
 void testGetTagConversations()
 {
-    writeln("\nTesting /api/:name/tag/?limit=%d&page=%d");
-
+    writeln("\nTesting GET /api/:name/tag/?limit=%d&page=%d");
+    recreateTestDb();
     JSONValue conversations;
     conversations = getConversations("inbox", 20, 0);
 
@@ -130,7 +140,8 @@ void testGetTagConversations()
 
 void testGetEmail()
 {
-    writeln("\nTesting /api/:id/email");
+    writeln("\nTesting GET /api/:id/email");
+    recreateTestDb();
 
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversation = getConversationById(conversations[0]["dbId"].str);
@@ -187,7 +198,8 @@ void testGetEmail()
 
 void testGetRawEmail()
 {
-    writeln("\nTesting /api/:id/raw");
+    writeln("\nTesting GET /api/:id/raw");
+    recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversation = getConversationById(conversations[3]["dbId"].str);
     auto rawText = getEmail(singleConversation["summaries"][1]["dbId"].str, Yes.GetRaw).str;
@@ -197,12 +209,48 @@ void testGetRawEmail()
 }
 
 
+// also tests getConversationById and getConversations with/without deleted emails
+void testDeleteEmail()
+{
+    writeln("\nTesting GET /api/:id/emaildelete");
+    recreateTestDb();
+    auto conversations = getConversations("inbox", 20, 0);
+    auto singleConversation = getConversationById(conversations[0]["dbId"].str);
+
+    auto emailId = singleConversation["summaries"][0]["dbId"].str;
+    auto email = getEmail(emailId);
+    //writeln(email["subject"].str);
+    deleteEmail(email["dbId"].str);
+    auto reloadedEmail = getEmail(emailId);
+    //writeln(reloadedEmail["subject"].str);
+    enforce(reloadedEmail["deleted"].type == JSON_TYPE.TRUE);
+
+    // without getting deleted summaries
+    auto reloadedConv = getConversationById(conversations[0]["dbId"].str);
+    enforce(!reloadedConv["summaries"].array.length);
+
+    // getting them
+    reloadedConv = getConversationById(conversations[0]["dbId"].str, true);
+    enforce(reloadedConv["summaries"].array.length == 1);
+    enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
+    
+    auto newconversations = getConversations("inbox", 20, 0);
+    enforce(newconversations.array.length == (conversations.array.length-1));
+
+    // XXX REHACER BBDD TEST
+    // XXX siguiente: probar con el 1, que tiene 3 mensajes pero no deberia devolver
+    // la conversacion porque los otros dos son son emailDbId
+    
+    // XXX siguiente, probar con el 3 que tiene 2 mensajes pero no deberia irse
+}
+
+
 void main()
 {
     testGetTagConversations();
     testGetConversation();
     testGetEmail();
     testGetRawEmail();
-    // This stupid message is needed because sometimes this crashes quietly
-    writeln("Ooooooooook, all tests finished");
+    testDeleteEmail();
+    writeln("All CURL tests finished");
 }

@@ -1,10 +1,8 @@
 Backend-API:
-    - DELETE /api/:id/email?purge=0 => set the "deleted" field of the email to true 
-      (and update the conversation the email belongs to).
-
-    purge=1: remove the email from the DB, check the conversation, if it was the only
-    email on the conversation still on DB, delete the conversation, delete the rawmail too,
-    log 
+    - RPC para rehacer BBDD de test
+    - curlTests:
+                 testDeleteEmail (con getConversaitonById y getConversationsByTag)
+                 testPurgeEmail (idem)
 
 Backend-Retriever:
     Later:

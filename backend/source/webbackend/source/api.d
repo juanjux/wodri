@@ -22,7 +22,8 @@ import webbackend.apiconversationsummary;
 interface Api
 {
     @method(HTTPMethod.GET) @path("tag/")
-    ApiConversationSummary[] getTagConversations(string id, int limit=50, int page=0);
+    ApiConversationSummary[] getTagConversations(string id, int limit=50, 
+                                                 int page=0, int loadDeleted=0);
 
     @method(HTTPMethod.GET) @path("conversation/")
     ApiConversation getConversation_(string id, int loadDeleted=0);
@@ -30,8 +31,18 @@ interface Api
     @method(HTTPMethod.GET) @path("email/")
     ApiEmail getEmail(string id);
 
+    @method(HTTPMethod.GET) @path("emaildelete/")
+    void deleteEmail(string id, int purge=0);
+
     @method(HTTPMethod.GET) @path("raw/")
     string getOriginalEmail(string id);
+
+    version(db_usetestdb)
+    {
+        @method(HTTPMethod.GET) @path("testrebuilddb/")
+        void testRebuildDb();
+    }
+
 }
 
 
@@ -40,11 +51,31 @@ final class ApiImpl: Api
     override:
         ApiConversationSummary[] getTagConversations(string id,
                                                      int limit=50,
-                                                     int page=0)
+                                                     int page=0,
+                                                     int loadDeleted=0)
         {
             // returns an ApiConversationSummary for every Conversation
-            return Conversation.getByTag(id, limit, page)
-                   .map!(i => new ApiConversationSummary(i)).array;
+            auto loadDel = cast(bool)loadDeleted? Yes.WithDeleted: No.WithDeleted;
+
+            ApiConversationSummary[] ret;
+            foreach(ref conv; Conversation.getByTag(id, limit, page, loadDel))
+            {
+                // Check if there is some not deleted email in the conversations; dont
+                // return any ApiConversationSummary if the Conversation doesnt have any
+                // undeleted emails
+                bool hasNotDeleted = false;
+                foreach(ref link; conv.links)
+                {
+                    if (!link.deleted)
+                    {
+                        hasNotDeleted = true;
+                        break;
+                    }
+                }
+                if (hasNotDeleted)
+                    ret ~= new ApiConversationSummary(conv);
+            }
+            return ret;
         }
 
 
@@ -59,8 +90,26 @@ final class ApiImpl: Api
             return Email.getApiEmail(id);
         }
 
+        void deleteEmail(string id, int purge=0)
+        {
+            if (cast(bool)purge)
+                Email.removeById(id);
+            else
+                Email.setDeleted(id, true);
+        }
+
         string getOriginalEmail(string id)
         {
             return Email.getOriginal(id);
         }
+
+        version(db_usetestdb)
+        {
+            void testRebuildDb()
+            {
+                import db.test_support;
+                recreateTestDb();
+            }
+        }
+
 }

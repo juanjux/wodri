@@ -7,35 +7,21 @@
     "importPaths": [".", ".."],
     "sourcePaths": [".", ".."],
     "excludedSourceFiles": ["../retriever/main.d", "../retriever/test.d", "livetests.d", "test.d"],
+    "buildRequirements": ["requireBoundsCheck", "disallowDeprecations"],
     "dependencies": {
         "vibe-d": "~master",
     },
     "versions": ["VibeDefaultMain", "db_usetestdb"],
-    "buildOptions": ["debugMode"],
     "configurations": [
         {
             "name": "default",
             "targetType": "executable",
-            "platforms": ["posix"],
-        },
-        {
-            "name": "withtestdb",
-            "targetType": "executable",
-            "platforms": ["posix"],
-            "versions": ["db_usetestdb"],
-        },
-        {
-            "name": "apitest",
-            "versions": ["apitest", "db_usetestdb"],
-            "dflags": ["-unittest", "-debug"],
-            "targetName": "test",
-            "targetType": "executable",
+            "buildOptions": ["releaseMode"],
             "platforms": ["posix"],
         },
         {
             "name": "curltest",
-            "versions": ["apitest", "db_usetestdb"],
-            "dflags": ["-debug"],
+            "versions": ["db_usetestdb"],
             "targetName": "test",
             "targetType": "executable",
             "platforms": ["posix"],

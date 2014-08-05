@@ -7,15 +7,17 @@ import db.email: EmailSummary, Email;
 final class ApiConversation
 {
     EmailSummary[] summaries;
+    string dbId;
     string lastDate;
     string subject;
     string[] tags;
  
     this(Conversation conv, bool loadDeleted = false)
     {
+        this.dbId     = conv.dbId;
         this.lastDate = conv.lastDate;
-        this.tags = conv.tags;
-        this.subject = conv.cleanSubject;
+        this.tags     = conv.tags;
+        this.subject  = conv.cleanSubject;
 
         foreach(link; conv.links)
             if (link.emailDbId.length && (loadDeleted || !link.deleted))

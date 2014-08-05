@@ -2,6 +2,7 @@ module db.email;
 
 import arsd.htmltotext;
 import db.config;
+import db.conversation;
 import db.mongo;
 import db.user;
 import retriever.incomingemail: IncomingEmail, Attachment, HeaderValue;
@@ -119,7 +120,7 @@ final class Email
 
     void setOwner(string destinationAddress)
     {
-        auto user = User.getFromAddress(destinationAddress);
+        const user = User.getFromAddress(destinationAddress);
         if (user is null)
             throw new Exception("Trying to set a not local destination address: " 
                                  ~ destinationAddress);
@@ -140,12 +141,16 @@ final class Email
 
     private void extractBodyPeek()
     {
-        auto relevantPlain = maybeBodyNoFormat();
-        // this is needed because string index != letters index for any non-ascii string
-        auto numChars     = std.utf.count(relevantPlain);
-        auto peekUntil    = min(numChars, getConfig().bodyPeekLength);
-        auto peekUntilUtf = toUTFindex(relevantPlain, peekUntil);
-        this.bodyPeek     = peekUntil? relevantPlain[0..peekUntilUtf]: "";
+        const relevantPlain = maybeBodyNoFormat();
+        // this is needed because string index != letters index for any non-ascii string:
+        // numer of unicode characters in the string
+        const numChars = std.utf.count(relevantPlain);
+        // whatever is lower of the configured body peek length or the string length
+        const peekUntilUtfLen = min(numChars, getConfig().bodyPeekLength);
+        // convert the index of the number of UTF chars in the string to an array index 
+        const peekUntilArrayLen = toUTFindex(relevantPlain, peekUntilUtfLen);
+        // and get the substring until that index
+        this.bodyPeek = peekUntilUtfLen? relevantPlain[0..peekUntilArrayLen]: "";
     }
 
 
@@ -209,10 +214,10 @@ final class Email
                                  Flag!"OnlyValue" onlyValue       = No.OnlyValue)
     {
         string ret;
-        auto hdr = getHeader(headerName);
+        const hdr = getHeader(headerName);
         if (hdr.rawValue.length)
         {
-            auto strHeader = removeQuotes? removechars(hdr.rawValue, "\""): hdr.rawValue;
+            const strHeader = removeQuotes? removechars(hdr.rawValue, "\""): hdr.rawValue;
 
             ret = onlyValue?
                 format("%s,", Json(strHeader).toString()):
@@ -260,7 +265,7 @@ final class Email
 
     static string messageIdToDbId(string messageId)
     {
-        auto findSelector = parseJsonString(format(`{"message-id": "%s"}`, messageId));
+        const findSelector = parseJsonString(format(`{"message-id": "%s"}`, messageId));
         const res = collection("email").findOne(findSelector, ["_id": 1],
                 QueryFlags.None);
         if (!res.isNull)
@@ -274,7 +279,7 @@ final class Email
     static EmailSummary getSummary(string dbId)
     {
         auto res = new EmailSummary();
-        auto fieldSelector = ["from": 1,
+        const fieldSelector = ["from": 1,
              "headers": 1,
              "isodate": 1,
              "bodyPeek": 1,
@@ -305,13 +310,14 @@ final class Email
     static ApiEmail getApiEmail(string dbId)
     {
         ApiEmail ret;
-        auto fieldSelector = ["from": 1,
+        const fieldSelector = ["from": 1,
              "headers": 1,
              "isodate": 1,
              "textParts": 1,
+             "deleted": 1,
              "attachments": 1];
 
-        auto emailDoc = collection("email").findOne(
+        const emailDoc = collection("email").findOne(
                 ["_id": dbId], fieldSelector, QueryFlags.None
         );
 
@@ -327,6 +333,7 @@ final class Email
                 ret.bcc     = headerRaw(emailDoc, "bcc");
                 ret.date    = headerRaw(emailDoc, "date");
                 ret.subject = headerRaw(emailDoc, "subject");
+                ret.deleted = bsonBool(emailDoc.deleted);
             }
 
             if (!emailDoc.deleted.isNull)
@@ -381,13 +388,13 @@ final class Email
 
     static string getOriginal(string dbId)
     {
-        string noMail = "Error: could not get raw email";
+        const noMail = "Error: could not get raw email";
         const emailDoc = collection("email").findOne(["_id": dbId],
                                                      ["rawEmailPath": 1],
                                                      QueryFlags.None);
         if (!emailDoc.isNull && !emailDoc.rawEmailPath.isNull)
         {
-            auto rawPath = bsonStr(emailDoc.rawEmailPath);
+            const rawPath = bsonStr(emailDoc.rawEmailPath);
             if (rawPath.length && rawPath.exists)
             {
                 Appender!string app;
@@ -401,6 +408,9 @@ final class Email
     }
 
     
+    /**
+     * Update the email DB record/document and set the deleted field to setDel
+     */
     static void setDeleted(string dbId, bool setDel)
     {
         // Get the email from the DB, check the needed deleted and userId fields
@@ -414,7 +424,7 @@ final class Email
             return;
         }
 
-        auto dbDeleted = bsonBool(emailDoc.deleted);
+        const dbDeleted = bsonBool(emailDoc.deleted);
         if (dbDeleted == setDel)
         {
             logWarn(format("setDeleted: Trying to set deleted to (%s) but email with id " ~
@@ -423,11 +433,61 @@ final class Email
         }
 
         // Update the document
-        auto json    = format(`{"$set": {"deleted": %s}}`, setDel);
-        auto bsonUpd = parseJsonString(json);
+        const json    = format(`{"$set": {"deleted": %s}}`, setDel);
+        const bsonUpd = parseJsonString(json);
         collection("email").update(["_id": dbId], bsonUpd);
-
         Conversation.setEmailDeleted(dbId, setDel);
+    }
+
+
+    /**
+     * Completely remove the email from the DB. If there is any conversation
+     * with this emailId as its only link it will be removed too
+     */
+    // XXX unittest
+    static void removeById(string dbId)
+    {
+        const emailDoc = collection("email").findOne(["_id": dbId],
+                                                     ["_id": 1],
+                                                     QueryFlags.None);
+        if (emailDoc.isNull)
+        {
+            logWarn(format("Email.removeById: Trying to remove email with id (%s) not in DB", 
+                           dbId));
+            return;
+        }
+        const emailId = bsonStr(emailDoc._id);
+
+        // Get the email's Conversation
+        const json = format(`{"links.emailId": {"$in": ["%s"]}}`, emailId);
+        const convDoc = collection("conversation").findOne(parseJsonString(json),
+                                                           ["_id": 1],
+                                                           QueryFlags.None);
+        if (!convDoc.isNull)
+        {
+            auto convObject = Conversation.get(bsonStr(convDoc._id));
+            // If this is the only email in the conversation stored on db, delete it
+            auto numLinksInDb = 0;
+            foreach(ref link; convObject.links)
+            {
+                if (link.emailDbId.length)
+                    numLinksInDb++;
+            }
+
+            if (numLinksInDb < 2)
+                convObject.remove();
+            else
+            {
+                // remove the link
+                convObject.removeLink(emailId);
+                convObject.store();
+            }
+        }
+        else
+            logWarn(format("Email.removeById: no conversation found for email (%s)", dbId));
+
+        // Remove the email from the DB
+        collection("email").remove(["_id": emailId]);
     }
 
 
@@ -596,7 +656,6 @@ version(db_usetestdb)
     import std.path;
     import retriever.incomingemail;
     import db.test_support;
-    import db.conversation;
     import std.digest.md;
 
     unittest // jsonizeHeader
@@ -653,6 +712,50 @@ version(db_usetestdb)
         conv = Conversation.getByReferences(bsonStr(emailDoc.userId),
                                             [messageId], Yes.WithDeleted);
         assert(!conv.links[1].deleted);
+    }
+
+    unittest // removeById
+    {
+        writeln("Testing Email.removeById");
+        recreateTestDb();
+        auto convs = Conversation.getByTag("inbox", 0, 0);
+        auto singleMailConv = convs[0];
+        auto singleConvId = singleMailConv.dbId;
+        auto singleMailId = singleMailConv.links[0].emailDbId;
+
+        // since this is a single mail conversation, it should be deleted
+        // when the single email is deleted
+        Email.removeById(singleMailId);
+        auto emailDoc = collection("email").findOne(["_id": singleMailId]);
+        assert(emailDoc.isNull);
+        auto convDoc = collection("conversation").findOne(["_id": singleConvId]);
+        assert(convDoc.isNull);
+
+        // conversation with more links, but only one is actually in DB, 
+        // it should be removed too
+        auto fakeMultiConv = convs[1];
+        auto fakeMultiConvId = fakeMultiConv.dbId;
+        auto fakeMultiConvEmailId = fakeMultiConv.links[2].emailDbId;
+        Email.removeById(fakeMultiConvEmailId);
+        emailDoc = collection("email").findOne(["_id": fakeMultiConvEmailId]);
+        assert(emailDoc.isNull);
+        convDoc = collection("conversation").findOne(["_id": fakeMultiConvId]);
+        assert(convDoc.isNull);
+
+        // conversation with more emails in the DB, the link of the email to
+        // remove should be deleted but the conversation should be keept in DB
+        auto multiConv = convs[3];
+        auto multiConvId = multiConv.dbId;
+        auto multiConvEmailId = multiConv.links[0].emailDbId;
+        Email.removeById(multiConvEmailId);
+        emailDoc = collection("email").findOne(["_id": multiConvEmailId]);
+        assert(emailDoc.isNull);
+        convDoc = collection("conversation").findOne(["_id": multiConvId]);
+        assert(!convDoc.isNull);
+        assert(!convDoc.links.isNull);
+        assert(convDoc.links.length == 1);
+        assert(!convDoc.links[0].emailId.isNull);
+        assert(bsonStr(convDoc.links[0].emailId) != multiConvEmailId);
     }
 
     unittest // getSummary
@@ -770,7 +873,7 @@ version(db_usetestdb)
 
     unittest // test email.deleted
     {
-        writeln("Testing email.deleted");
+        writeln("Testing Email.deleted");
         // insert a new email with deleted = true
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", 
                                                 "test", "testemails");
