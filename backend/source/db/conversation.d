@@ -59,8 +59,11 @@ final class Conversation
         if (!hasLink(messageId, emailDbId))
             this.links ~= MessageLink(messageId, emailDbId, deleted);
     }
+
+
     // FIXME: ugly copy of the entire links list, I probably should use some container
     // with fast removal or this could have problems with threads with hundreds of messages
+    // FIXME: update this.lastDate
     void removeLink(string emailDbId)
     {
         assert(emailDbId.length);
@@ -75,7 +78,7 @@ final class Conversation
     }
 
 
-    /** Update the lastDate field if the argument is newer */
+    /** Update the lastDate field if the argument is newer*/
     void updateLastDate(string newIsoDate)
     {
         if (!this.lastDate.length || this.lastDate < newIsoDate)
@@ -118,11 +121,12 @@ final class Conversation
     }
 
 
+    /** Note: this will NOT remove the contained emails from the DB */
     void remove()
     {
         if (!this.dbId.length)
         {
-            logWarn(format("Conversation.remove: no dbid"));
+            logWarn("Conversation.remove: empty DB id, is this conversation stored?");
             return;
         }
         collection("conversation").remove(["_id": this.dbId]);

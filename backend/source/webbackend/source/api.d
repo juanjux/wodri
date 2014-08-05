@@ -26,7 +26,10 @@ interface Api
                                                  int page=0, int loadDeleted=0);
 
     @method(HTTPMethod.GET) @path("conversation/")
-    ApiConversation getConversation_(string id, int loadDeleted=0);
+    ApiConversation getConversation_(string id);
+
+    @method(HTTPMethod.GET) @path("conversationdelete/")
+    void deleteConversation(string id, int purge=0);
 
     @method(HTTPMethod.GET) @path("email/")
     ApiEmail getEmail(string id);
@@ -78,16 +81,49 @@ final class ApiImpl: Api
             return ret;
         }
 
-
-        ApiConversation getConversation_(string id, int loadDeleted=0)
+        ApiConversation getConversation_(string id)
         {
-            return new ApiConversation(Conversation.get(id), cast(bool)loadDeleted);
+            auto conv = Conversation.get(id);
+            return conv is null? null: new ApiConversation(conv);
+        }
+
+
+        void deleteConversation(string id, int purge=0)
+        {
+            auto conv = Conversation.get(id);
+            if (conv is null) 
+                return;
+
+            // without purge: set "deleted" tag and set all links to deleted.
+            if (!purge)
+            {
+                foreach(ref link; conv.links)
+                {
+                    Email.setDeleted(link.emailDbId, true, No.UpdateConversation);
+                    link.deleted = true;
+                }
+
+                // add the deleted tag is it wasnt already there
+                if (countUntil(conv.tags, "deleted") == -1)
+                    conv.tags ~= "deleted";
+
+                // update the conversation with the new tag and links on DB
+                conv.store();
+            }
+            // purge: remove() all emails and the conversation
+            else
+            {
+                foreach(ref link; conv.links)
+                    Email.removeById(link.emailDbId, No.UpdateConversation);
+                conv.remove();
+            }
         }
 
 
         ApiEmail getEmail(string id)
         {
-            return Email.getApiEmail(id);
+            auto email = Email.getApiEmail(id);
+            return email is null? null: email;
         }
 
         void deleteEmail(string id, int purge=0)

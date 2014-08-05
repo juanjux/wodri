@@ -78,11 +78,14 @@ user clicks on the "expand" link, all the messages will be fully loaded.
 ## /conversation
 `get: /:id/conversation/`/
     Get a Conversation with the specified id
-`(MISSING) delete: /:id/conversation/`
-    Delete the conversation 
-`(MISSING) post: /:id/conversation/tags`
+`get: /:id/conversationdelete/`
+    Delete the conversation: sets the delete tag and sets the tag 
+    for all emails inside
+`get: /:id/conversationundelete/`
+    Undelete the conversation and all emails inside
+`(MISSING) post: /:id/conversationaddtag`
     Add tags to the conversation
-`(MISSING) delete: /:id/conversation/tags`
+`(MISSING) post: /:id/conversationremovetag`
     Remove tags from the conversation
 `(MISSING) post: /conversation/search`
     Search conversations
@@ -98,7 +101,10 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Send the email (must have been created as a draft before)
 `(MISSING) post: /email/draft`
     Create a new draft
-`(INPROGRESS) delete: /:id/email/`
-    Put the "trash" tag to the email or delete from DB and filesystem if
-    already on the trash
-
+`get: /:id/emaildelete/`
+    Email.deleted = true
+`get: /:id/emailpurge/`
+    Completely remove the email from the system. It'll also remove the
+    conversation the email belongs to if it's the last email in it.
+`get: /:id/emailundelete/`
+    Email.deleted = false

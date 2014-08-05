@@ -279,12 +279,12 @@ final class Email
     static EmailSummary getSummary(string dbId)
     {
         auto res = new EmailSummary();
-        const fieldSelector = ["from": 1,
-             "headers": 1,
-             "isodate": 1,
-             "bodyPeek": 1,
-             "deleted": 1,
-             "attachments": 1];
+        const fieldSelector = ["from"        : 1,
+                               "headers"     : 1,
+                               "isodate"     : 1,
+                               "bodyPeek"    : 1,
+                               "deleted"     : 1,
+                               "attachments" : 1];
 
         const emailDoc = collection("email").findOne(["_id": dbId],
                 fieldSelector,
@@ -309,7 +309,7 @@ final class Email
 
     static ApiEmail getApiEmail(string dbId)
     {
-        ApiEmail ret;
+        ApiEmail ret = null;
         const fieldSelector = ["from": 1,
              "headers": 1,
              "isodate": 1,
@@ -323,6 +323,7 @@ final class Email
 
         if (!emailDoc.isNull)
         {
+            ret = new ApiEmail();
             ret.dbId = dbId;
 
             // Headers
@@ -411,7 +412,8 @@ final class Email
     /**
      * Update the email DB record/document and set the deleted field to setDel
      */
-    static void setDeleted(string dbId, bool setDel)
+    static void setDeleted(string dbId, bool setDel,
+                           Flag!"UpdateConversation" = Yes.UpdateConversation)
     {
         // Get the email from the DB, check the needed deleted and userId fields
         const emailDoc = collection("email").findOne(["_id": dbId],
@@ -436,16 +438,17 @@ final class Email
         const json    = format(`{"$set": {"deleted": %s}}`, setDel);
         const bsonUpd = parseJsonString(json);
         collection("email").update(["_id": dbId], bsonUpd);
-        Conversation.setEmailDeleted(dbId, setDel);
+
+        if (Yes.UpdateConversation)
+            Conversation.setEmailDeleted(dbId, setDel);
     }
 
 
     /**
      * Completely remove the email from the DB. If there is any conversation
-     * with this emailId as its only link it will be removed too
+     * with this emailId as is its only link it will be removed too
      */
-    // XXX unittest
-    static void removeById(string dbId)
+    static void removeById(string dbId, Flag!"UpdateConversation" = Yes.UpdateConversation)
     {
         const emailDoc = collection("email").findOne(["_id": dbId],
                                                      ["_id": 1],
@@ -458,33 +461,39 @@ final class Email
         }
         const emailId = bsonStr(emailDoc._id);
 
-        // Get the email's Conversation
-        const json = format(`{"links.emailId": {"$in": ["%s"]}}`, emailId);
-        const convDoc = collection("conversation").findOne(parseJsonString(json),
-                                                           ["_id": 1],
-                                                           QueryFlags.None);
-        if (!convDoc.isNull)
+        if (Yes.UpdateConversation)
         {
-            auto convObject = Conversation.get(bsonStr(convDoc._id));
-            // If this is the only email in the conversation stored on db, delete it
-            auto numLinksInDb = 0;
-            foreach(ref link; convObject.links)
+            // Get the email's Conversation
+            const json = format(`{"links.emailId": {"$in": ["%s"]}}`, emailId);
+            const convDoc = collection("conversation").findOne(parseJsonString(json),
+                                                               ["_id": 1],
+                                                               QueryFlags.None);
+            if (!convDoc.isNull)
             {
-                if (link.emailDbId.length)
-                    numLinksInDb++;
-            }
+                auto convObject = Conversation.get(bsonStr(convDoc._id));
+                assert(convObject !is null);
+                enforce(convObject !is null);
 
-            if (numLinksInDb < 2)
-                convObject.remove();
-            else
-            {
-                // remove the link
-                convObject.removeLink(emailId);
-                convObject.store();
+                // If this is the only email in the conversation stored on db, delete it
+                auto numLinksInDb = 0;
+                foreach(ref link; convObject.links)
+                {
+                    if (link.emailDbId.length)
+                        numLinksInDb++;
+                }
+
+                if (numLinksInDb < 2)
+                    convObject.remove();
+                else
+                {
+                    // remove the link
+                    convObject.removeLink(emailId);
+                    convObject.store();
+                }
             }
+            else
+                logWarn(format("Email.removeById: no conversation found for email (%s)", dbId));
         }
-        else
-            logWarn(format("Email.removeById: no conversation found for email (%s)", dbId));
 
         // Remove the email from the DB
         collection("email").remove(["_id": emailId]);
@@ -776,6 +785,7 @@ version(db_usetestdb)
         assert(summary.attachFileNames == ["C++ Pocket Reference.pdf"]);
 
         conv = Conversation.get(convs[0].dbId);
+        assert(conv !is null);
         summary = Email.getSummary(conv.links[0].emailDbId);
         assert(summary.dbId == conv.links[0].emailDbId);
         assert(summary.from == " SupremacyHosting.com Sales <brian@supremacyhosting.com>");
@@ -895,6 +905,7 @@ version(db_usetestdb)
         Conversation.upsert(dbEmail, ["inbox": true]);
         auto conv = Conversation.getByReferences(user.id, [dbEmail.messageId], 
                                                  Yes.WithDeleted);
+        assert(conv !is null);
         foreach(ref msglink; conv.links)
         {
             if (msglink.messageId == dbEmail.messageId)

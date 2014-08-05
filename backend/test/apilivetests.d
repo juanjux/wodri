@@ -46,9 +46,17 @@ void recreateTestDb()
 }
 
 
-void deleteEmail(string id)
+void deleteEmail(string id, bool purge=false)
 {
-    callCurl("emaildelete/", "deleting email", id);
+    auto purgeStr = purge? "?purge=1": "";
+    callCurl("emaildelete/" ~ purgeStr, "deleting email", id);
+}
+
+
+void deleteConversation(string id, bool purge=false)
+{
+    auto purgeStr = purge? "?purge=1": "";
+    callCurl("conversationdelete/" ~ purgeStr, "deleting conversation", id);
 }
 
 
@@ -64,10 +72,9 @@ JSONValue getConversations(string tag, uint limit, uint page, bool loadDeleted=f
 }
 
 
-JSONValue getConversationById(string id, bool loadDeleted=false)
+JSONValue getConversationById(string id)
 {
-    auto loadStr = loadDeleted? "?loadDeleted=1": "";
-    auto ret = callCurl("conversation/" ~ loadStr, "getting conversation by id", id);
+    auto ret = callCurl("conversation/", "getting conversation by id", id);
     auto conversation = parseJSON(ret);
     return conversation;
 }
@@ -103,6 +110,18 @@ void testGetConversation()
     auto conversation2 = getConversationById(convId1);
     auto conversation3 = getConversationById(convId3);
     auto conversation4 = getConversationById(convId4);
+
+    // delete email, check that the returned email summaries have that email.deleted=true
+    conversations = getConversations("inbox", 20, 0);
+    auto twoEmailsConvId = conversations[3]["dbId"].str;
+    auto conversationSingleEmail = getConversationById(twoEmailsConvId);
+    enforce(conversationSingleEmail["summaries"].array.length == 2);
+    // delete the first email of this conversation
+    deleteEmail(conversationSingleEmail["summaries"].array[0]["dbId"].str);
+    auto conversationSingleEmailReload = getConversationById(twoEmailsConvId);
+    // first should be deleted, second shouldn't
+    enforce(conversationSingleEmailReload["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
+    enforce(conversationSingleEmailReload["summaries"].array[1]["deleted"].type == JSON_TYPE.FALSE);
 }
 
 void testGetTagConversations()
@@ -136,6 +155,11 @@ void testGetTagConversations()
 
     conversations = getConversations("inbox", 2, 1);
     enforce(conversations[1]["lastDate"].str == olderDate);
+
+    // XXX: when /conversationaddtag is implemented add test:
+    // 1. Set tag "deleted" to a conversation
+    // 2. getConversations(loadDeleted = false), check size and tags (none with deleted)
+    // 3. getConversations(loadDeleted = true), check size and tags (one with deleted)
 }
 
 void testGetEmail()
@@ -209,7 +233,6 @@ void testGetRawEmail()
 }
 
 
-// also tests getConversationById and getConversations with/without deleted emails
 void testDeleteEmail()
 {
     writeln("\nTesting GET /api/:id/emaildelete");
@@ -219,31 +242,73 @@ void testDeleteEmail()
 
     auto emailId = singleConversation["summaries"][0]["dbId"].str;
     auto email = getEmail(emailId);
-    //writeln(email["subject"].str);
-    deleteEmail(email["dbId"].str);
+    deleteEmail(emailId);
     auto reloadedEmail = getEmail(emailId);
-    //writeln(reloadedEmail["subject"].str);
     enforce(reloadedEmail["deleted"].type == JSON_TYPE.TRUE);
-
-    // without getting deleted summaries
-    auto reloadedConv = getConversationById(conversations[0]["dbId"].str);
-    enforce(!reloadedConv["summaries"].array.length);
-
-    // getting them
-    reloadedConv = getConversationById(conversations[0]["dbId"].str, true);
-    enforce(reloadedConv["summaries"].array.length == 1);
-    enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
-    
-    auto newconversations = getConversations("inbox", 20, 0);
-    enforce(newconversations.array.length == (conversations.array.length-1));
-
-    // XXX REHACER BBDD TEST
-    // XXX siguiente: probar con el 1, que tiene 3 mensajes pero no deberia devolver
-    // la conversacion porque los otros dos son son emailDbId
-    
-    // XXX siguiente, probar con el 3 que tiene 2 mensajes pero no deberia irse
 }
 
+
+void testPurgeEmail()
+{
+    writeln("\nTesting GET /api/:id/emaildelete?purge=1");
+    recreateTestDb();
+    
+    auto conversations = getConversations("inbox", 20, 0);
+    auto singleConversationId = conversations[0]["dbId"].str;
+    auto singleConversation = getConversationById(singleConversationId);
+    auto emailId = singleConversation["summaries"][0]["dbId"].str;
+    deleteEmail(emailId, true);
+    auto reloadedEmail = getEmail(emailId);
+    enforce(reloadedEmail.type == JSON_TYPE.NULL);
+
+    // Check that the conversation 0 has been removed too, since it was its only email
+    auto reloadedSingleConversation = getConversationById(singleConversationId);
+    enforce(reloadedSingleConversation.type == JSON_TYPE.NULL);
+
+    // Now purge an email from a conversation with one single email in DB (the ones we're
+    // deleting) and two references to mails not in DB: the conversation should be purged
+    // too
+    recreateTestDb();
+    conversations = getConversations("inbox", 20, 0);
+    auto fakeMultiConversationId = conversations[2]["dbId"].str;
+    auto fakeMultiConversation = getConversationById(fakeMultiConversationId);
+    emailId = fakeMultiConversation["summaries"][0]["dbId"].str;
+    deleteEmail(emailId, true);
+    reloadedEmail = getEmail(emailId);
+    enforce(reloadedEmail.type == JSON_TYPE.NULL);
+
+    auto reloadedFakeMultiConversation = getConversationById(fakeMultiConversationId);
+    enforce(reloadedFakeMultiConversation.type == JSON_TYPE.NULL);
+
+    // Idem for a conversation with two emails in DB. The conversation SHOULD NOT be 
+    // removed and only an email should be in the summaries
+    recreateTestDb();
+    conversations = getConversations("inbox", 20, 0);
+    auto multiConversationId = conversations[3]["dbId"].str;
+    auto multiConversation = getConversationById(multiConversationId);
+    emailId = multiConversation["summaries"][0]["dbId"].str;
+    deleteEmail(emailId, true);
+    reloadedEmail = getEmail(emailId);
+    enforce(reloadedEmail.type == JSON_TYPE.NULL);
+
+    auto reloadedMultiConversation = getConversationById(multiConversationId);
+    enforce(reloadedMultiConversation.type != JSON_TYPE.NULL);
+    enforce(reloadedMultiConversation["summaries"].array.length == 1);
+    enforce(reloadedMultiConversation["summaries"].array[0]["dbId"].str != emailId);
+}
+
+
+void testDeleteConversation()
+{
+    writeln("\nTesting GET /api/:id/conversationdelete?purge=0");
+    auto conversations = getConversations("inbox", 20, 0);
+    auto convId = conversations[0]["dbId"].str;
+    auto conv1 = getConversationById(convId);
+    deleteConversation(convId);
+    auto reloadedConv1 = getConversationById(convId);
+    enforce(reloadedConv1["tags"].array[1].str == "deleted");
+    enforce(reloadedConv1["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
+}
 
 void main()
 {
@@ -252,5 +317,7 @@ void main()
     testGetEmail();
     testGetRawEmail();
     testDeleteEmail();
+    testPurgeEmail();
+    testDeleteConversation();
     writeln("All CURL tests finished");
 }

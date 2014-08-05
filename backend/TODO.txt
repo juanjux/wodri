@@ -1,10 +1,15 @@
 Backend-API:
-    - RPC para rehacer BBDD de test
-    - curlTests:
-                 testDeleteEmail (con getConversaitonById y getConversationsByTag)
-                 testPurgeEmail (idem)
+    - /api/:id/emailundelete 
+        Email.setDeleted(id, false)
+    - /api/:id/conversationundelete 
+        Remove deleted tag from Conversation
+        Remove deleted in links
+        Email.setDeleted(id, false) for every email in the conversation
+
+    - POST /api/:id/conversationaddtag => and add test for adding "delete" tag to curl test
 
 Backend-Retriever:
+
     Later:
     - Use log to log more warnings, specially on db.*
 
@@ -21,6 +26,8 @@ Backend-Retriever:
       apply correctly, check searches with the indexer, et cetera.
 
     - Sent the new changes in characterencodings.d to Ruppe
+
+    - When adding or removing links from a conversation, update conversation.lastDate
 
 Frontend:
 

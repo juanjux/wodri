@@ -12,7 +12,7 @@ final class ApiConversation
     string subject;
     string[] tags;
  
-    this(Conversation conv, bool loadDeleted = false)
+    this(Conversation conv)
     {
         this.dbId     = conv.dbId;
         this.lastDate = conv.lastDate;
@@ -20,7 +20,7 @@ final class ApiConversation
         this.subject  = conv.cleanSubject;
 
         foreach(link; conv.links)
-            if (link.emailDbId.length && (loadDeleted || !link.deleted))
+            if (link.emailDbId.length) 
                 summaries ~= Email.getSummary(link.emailDbId);
 
     }
