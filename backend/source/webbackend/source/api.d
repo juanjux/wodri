@@ -19,7 +19,7 @@ import webbackend.apiconversationsummary;
 
 
 @rootPathFromName
-interface Api
+final interface Api
 {
     @method(HTTPMethod.GET) @path("tag/")
     ApiConversationSummary[] getTagConversations(string id, int limit=50, 
@@ -31,11 +31,17 @@ interface Api
     @method(HTTPMethod.GET) @path("conversationdelete/")
     void deleteConversation(string id, int purge=0);
 
+    @method(HTTPMethod.GET) @path("conversationundelete/")
+    void unDeleteConversation(string id);
+
     @method(HTTPMethod.GET) @path("email/")
     ApiEmail getEmail(string id);
 
     @method(HTTPMethod.GET) @path("emaildelete/")
     void deleteEmail(string id, int purge=0);
+
+    @method(HTTPMethod.GET) @path("emailundelete/")
+    void unDeleteEmail(string id);
 
     @method(HTTPMethod.GET) @path("raw/")
     string getOriginalEmail(string id);
@@ -94,29 +100,47 @@ final class ApiImpl: Api
             if (conv is null) 
                 return;
 
-            // without purge: set "deleted" tag and set all links to deleted.
-            if (!purge)
-            {
-                foreach(ref link; conv.links)
-                {
-                    Email.setDeleted(link.emailDbId, true, No.UpdateConversation);
-                    link.deleted = true;
-                }
-
-                // add the deleted tag is it wasnt already there
-                if (countUntil(conv.tags, "deleted") == -1)
-                    conv.tags ~= "deleted";
-
-                // update the conversation with the new tag and links on DB
-                conv.store();
-            }
-            // purge: remove() all emails and the conversation
-            else
+            if (purge != 0) 
             {
                 foreach(ref link; conv.links)
                     Email.removeById(link.emailDbId, No.UpdateConversation);
                 conv.remove();
+                return;
             }
+
+
+            // set "deleted" tag and set all links to deleted.
+            foreach(ref link; conv.links)
+            {
+                Email.setDeleted(link.emailDbId, true, No.UpdateConversation);
+                link.deleted = true;
+            }
+
+            // add the deleted tag is it wasnt already there
+            if (countUntil(conv.tags, "deleted") == -1)
+                conv.tags ~= "deleted";
+
+            // update the conversation with the new tag and links on DB
+            conv.store();
+        }
+
+
+        void unDeleteConversation(string id)
+        {
+            auto conv = Conversation.get(id);
+            if (conv is null)
+                return;
+
+            // remove the "deleted" tag with marks the conversation as deleted
+            conv.tags = remove!("a == \"deleted\"")(conv.tags);
+
+            // undelete the email links and the emails
+            foreach(ref link; conv.links)
+            {
+                Email.setDeleted(link.emailDbId, false, No.UpdateConversation);
+                link.deleted = false;
+            }
+            conv.store();
         }
 
 
@@ -128,11 +152,17 @@ final class ApiImpl: Api
 
         void deleteEmail(string id, int purge=0)
         {
-            if (cast(bool)purge)
+            if (purge != 0)
                 Email.removeById(id);
             else
                 Email.setDeleted(id, true);
         }
+
+        void unDeleteEmail(string id)
+        {
+            Email.setDeleted(id, false, Yes.UpdateConversation);
+        }
+
 
         string getOriginalEmail(string id)
         {

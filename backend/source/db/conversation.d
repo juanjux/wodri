@@ -312,7 +312,7 @@ final class Conversation
                                                           QueryFlags.None);
         if (convDoc.isNull)
         {
-            logWarn(format("setDeleted: No conversation found for email with id (%s)", dbId));
+            logWarn(format("setEmailDeleted: No conversation found for email with id (%s)", dbId));
             return "";
         }
 
@@ -323,7 +323,7 @@ final class Conversation
             {
                 if (entry.deleted.isNull || bsonBool(entry.deleted) == setDel)
                 {
-                    logWarn(format("setDeleted: entry for email (%s) in conversation is " ~
+                    logWarn(format("setEmailDeleted: entry for email (%s) in conversation is " ~
                                 "null or the deleted state was already %s", dbId, setDel));
                     return "";
                 }

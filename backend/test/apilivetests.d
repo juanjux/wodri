@@ -53,6 +53,12 @@ void deleteEmail(string id, bool purge=false)
 }
 
 
+void unDeleteEmail(string id)
+{
+    callCurl("emailundelete/", "un-deleting email", id);
+}
+
+
 void deleteConversation(string id, bool purge=false)
 {
     auto purgeStr = purge? "?purge=1": "";
@@ -301,13 +307,71 @@ void testPurgeEmail()
 void testDeleteConversation()
 {
     writeln("\nTesting GET /api/:id/conversationdelete?purge=0");
+    recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto convId = conversations[0]["dbId"].str;
-    auto conv1 = getConversationById(convId);
+    auto conv = getConversationById(convId);
     deleteConversation(convId);
-    auto reloadedConv1 = getConversationById(convId);
-    enforce(reloadedConv1["tags"].array[1].str == "deleted");
-    enforce(reloadedConv1["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
+    auto reloadedConv = getConversationById(convId);
+    enforce(reloadedConv["tags"].array[1].str == "deleted");
+    enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
+    auto email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
+    enforce(email["deleted"].type == JSON_TYPE.TRUE);
+}
+
+
+void testPurgeConversation()
+{
+    writeln("\nTesting GET /api:/id/conversationdelete?purge=1");
+    recreateTestDb();
+    auto conversations = getConversations("inbox", 20, 0);
+    auto convId = conversations[3]["dbId"].str;
+    auto conv = getConversationById(convId);
+    deleteConversation(convId, true);
+    auto reloadedConv = getConversationById(convId);
+    enforce(reloadedConv.type == JSON_TYPE.NULL);
+    auto email1 = getEmail(conv["summaries"].array[0]["dbId"].str);
+    auto email2 = getEmail(conv["summaries"].array[1]["dbId"].str);
+    enforce(email1.type == JSON_TYPE.NULL);
+    enforce(email2.type == JSON_TYPE.NULL);
+}
+
+
+void testUndeleteConversation()
+{
+    writeln("\nTesting GET /api:/id/conversationundelete");
+    recreateTestDb();
+    auto conversations = getConversations("inbox", 20, 0);
+    auto convId = conversations[1]["dbId"].str;
+    auto conv = getConversationById(convId);
+    deleteConversation(convId);
+    auto reloadedConv = getConversationById(convId);
+    enforce(reloadedConv["tags"].array[1].str == "deleted");
+    enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
+    auto email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
+    enforce(email["deleted"].type == JSON_TYPE.TRUE);
+
+    callCurl("conversationundelete/", "un-deleting conversation", convId);
+    reloadedConv = getConversationById(convId);
+    enforce(reloadedConv["tags"].jsonToArray == ["inbox"]);
+    enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.FALSE);
+    email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
+    enforce(email["deleted"].type == JSON_TYPE.FALSE);
+}
+
+
+void testUnDeleteEmail()
+{
+    writeln("\nTesting GET /api/:id/emailundelete");
+    recreateTestDb();
+    auto convId = getConversations("inbox", 20, 0)[1]["dbId"].str;
+    auto conv = getConversationById(convId);
+    auto emailId = conv["summaries"][0]["dbId"].str;
+    deleteEmail(emailId);
+    callCurl("emailundelete/", "un-deleting email", emailId);
+    auto email = getEmail(emailId);
+    email = getEmail(emailId);
+    enforce(email["deleted"].type == JSON_TYPE.FALSE);
 }
 
 void main()
@@ -319,5 +383,8 @@ void main()
     testDeleteEmail();
     testPurgeEmail();
     testDeleteConversation();
+    testPurgeConversation();
+    testUndeleteConversation();
+    testUnDeleteEmail();
     writeln("All CURL tests finished");
 }

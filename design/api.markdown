@@ -67,13 +67,6 @@ user clicks on the "expand" link, all the messages will be fully loaded.
                      limit: max results to return
                      page: skip (limit * this) elements
 
-`(MISSING) post: /tag/create (Tag)`
-    Create a new tag name with an optional description and color.
-
-    POST Parameters: name: new tag name
-                     description: tag description
-                     color: tag color
-        
 
 ## /conversation
 `get: /:id/conversation/`/

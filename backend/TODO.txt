@@ -1,11 +1,4 @@
 Backend-API:
-    - /api/:id/emailundelete 
-        Email.setDeleted(id, false)
-    - /api/:id/conversationundelete 
-        Remove deleted tag from Conversation
-        Remove deleted in links
-        Email.setDeleted(id, false) for every email in the conversation
-
     - POST /api/:id/conversationaddtag => and add test for adding "delete" tag to curl test
 
 Backend-Retriever:
