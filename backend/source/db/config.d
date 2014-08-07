@@ -115,7 +115,7 @@ version(db_usetestdb)
         string settingsJsonStr = format(`
         {
                 "_id"                  : "5399793904ac3d27431d0669",
-                "mainDir"              : "/home/juanjux/webmail",
+                "mainDir"              : "/home/juanjux/wodri",
                 "apiDomain"            : "juanjux.mooo.com",
                 "salt"                 : "someSalt",
                 "attachmentStore"      : "backend/test/attachments",

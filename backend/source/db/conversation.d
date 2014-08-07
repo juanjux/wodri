@@ -1,18 +1,19 @@
 module db.conversation;
 
-import std.string;
-import std.path;
-import std.algorithm;
-import std.stdio;
-import std.regex;
-import std.typecons;
 import core.time: TimeException;
-import vibe.data.bson;
-import vibe.db.mongo.mongo;
-import vibe.core.log;
-import db.mongo;
 import db.config: getConfig;
 import db.email;
+import db.mongo;
+import db.tagcontainer;
+import std.algorithm;
+import std.path;
+import std.regex;
+import std.stdio;
+import std.string;
+import std.typecons;
+import vibe.core.log;
+import vibe.data.bson;
+import vibe.db.mongo.mongo;
 
 /**
  * From removes variants of "Re:"/"RE:"/"re:" in the subject
@@ -37,12 +38,19 @@ final class Conversation
     string dbId;
     string userDbId;
     string lastDate;
-    string[] tags;
+
     MessageLink[] links;
     string[] attachFileNames;
     string cleanSubject;
+    private TagContainer m_tags;
 
-    private bool hasLink(string messageId, string emailDbId)
+    // XXX unittest
+    bool hasTag(string tag) { return m_tags.has(tag); }
+    void addTag(string tag) { m_tags.add(tag); }
+    void removeTag(string tag) { m_tags.remove(tag); }
+
+
+    bool hasLink(string messageId, string emailDbId)
     {
         foreach(ref link; this.links)
             if (link.messageId == messageId && link.emailDbId == emailDbId)
@@ -106,7 +114,7 @@ final class Conversation
             "links": [%s]
         }`, this.dbId, this.userDbId, 
             this.lastDate, Json(this.cleanSubject).toString,
-            this.tags, linksApp.data);
+            this.m_tags.array, linksApp.data);
     }
 
     // ===================================================================
@@ -193,7 +201,7 @@ final class Conversation
     }
 
 
-    static void addTag(string dbId, string tag)
+    static void addTagDb(string dbId, string tag)
     {
         assert(dbId.length);
         assert(tag.length);
@@ -204,7 +212,7 @@ final class Conversation
     }
 
 
-    static void removeTag(string dbId, string tag)
+    static void removeTagDb(string dbId, string tag)
     {
         assert(dbId.length);
         assert(tag.length);
@@ -564,7 +572,7 @@ version(db_usetestdb)
 
         // check that it doesnt returns the deleted convs
         auto len1 = convs4.length;
-        Conversation.addTag(convs4[0].dbId, "deleted");
+        Conversation.addTagDb(convs4[0].dbId, "deleted");
         convs4 = Conversation.getByTag("inbox", 1000, 0);
         assert(convs4.length == len1-1);
         // except when using Yes.WithDeleted
@@ -572,20 +580,20 @@ version(db_usetestdb)
         assert(convs4.length == len1);
     }
 
-    unittest // Conversation.addTag / removeTag
+    unittest // Conversation.addTagDb / removeTagDb
     {
-        writeln("Testing Conversation.addTag");
+        writeln("Testing Conversation.addTagDb");
         recreateTestDb();
         auto convs = Conversation.getByTag("inbox", 0, 0);
         assert(convs.length);
         auto dbId = convs[0].dbId;
-        Conversation.addTag(dbId, "testTag");
+        Conversation.addTagDb(dbId, "testTag");
         auto conv = Conversation.get(dbId);
         assert(conv !is null);
         assert(countUntil(conv.tags, "testTag"));
 
-        writeln("Testing Conversation.removeTag");
-        Conversation.removeTag(dbId, "testTag");
+        writeln("Testing Conversation.removeTagDb");
+        Conversation.removeTagDb(dbId, "testTag");
         conv = Conversation.get(dbId);
         assert(countUntil(conv.tags, "testTag") == -1);
     }
@@ -756,7 +764,7 @@ version(db_usetestdb)
         assert(conv.links[0].emailDbId.length);
         assert(conv.links[0].deleted == false);
 
-        Conversation.addTag(conv.dbId, "deleted");
+        Conversation.addTagDb(conv.dbId, "deleted");
         // check that it doesnt returns the deleted convs
         conv = Conversation.getByReferences(user2.id, 
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);

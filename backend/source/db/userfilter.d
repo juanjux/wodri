@@ -8,6 +8,7 @@ import vibe.db.mongo.mongo;
 import db.mongo;
 import db.config;
 import db.email;
+import db.tagcontainer;
 version(unittest)import std.stdio;
 
 
@@ -57,7 +58,7 @@ final class UserFilter
     }
 
 
-    void apply(Email email, ref bool[string] convTags) const
+    void apply(Email email, ref TagContainer convTags) const
     {
         if (checkMatch(email)) 
             applyAction(email, convTags);
@@ -109,7 +110,7 @@ final class UserFilter
     }
 
 
-    private void applyAction(Email email, ref bool[string] convTags) const
+    private void applyAction(Email email, ref TagContainer convTags) const
     {
         // email.tags == false actually mean to the rest of the retriever processes: "it
         // doesnt have the tag and please dont add it after this point"

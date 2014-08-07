@@ -1,5 +1,6 @@
 Backend-API:
     - POST /api/:id/conversationaddtag => and add test for adding "delete" tag to curl test
+    - POST /api/:id/conversationdeletetag
 
 Backend-Retriever:
 
