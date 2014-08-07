@@ -44,10 +44,12 @@ final class Conversation
     string cleanSubject;
     private TagContainer m_tags;
 
-    // XXX unittest
-    bool hasTag(string tag) { return m_tags.has(tag); }
-    void addTag(string tag) { m_tags.add(tag); }
-    void removeTag(string tag) { m_tags.remove(tag); }
+    bool     hasTag(string tag) const { return m_tags.has(tag); }
+    bool     hasTags(string[] tags) const { return m_tags.has(tags); }
+    void     addTag(string tag) { m_tags.add(tag); }
+    void     removeTag(string tag) { m_tags.remove(tag); }
+    string[] tagsArray() const { return m_tags.array; }
+    uint     numTags() const { return m_tags.length; }
 
 
     bool hasLink(string messageId, string emailDbId)
@@ -226,7 +228,7 @@ final class Conversation
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    static Conversation upsert(Email email, const bool[string] tags)
+    static Conversation upsert(Email email, const string[] tagsToAdd, const string[] tagsToRemove)
     {
         assert(email.userId.length);
         assert(email.dbId.length);
@@ -243,9 +245,8 @@ final class Conversation
         conv.updateLastDate(email.isoDate);
 
         // tags
-        foreach(tagName, tagValue; tags)
-            if (tagValue && countUntil(conv.tags, tagName) == -1)
-                conv.tags ~= tagName;
+        conv.m_tags.add(tagsToAdd);
+        conv.m_tags.remove(tagsToRemove);
 
         // add our references; addLink() only adds the new ones
         foreach(reference; references)
@@ -291,8 +292,10 @@ final class Conversation
         ret.dbId         = bsonStr(convDoc._id);
         ret.userDbId     = bsonStr(convDoc.userId);
         ret.lastDate     = bsonStr(convDoc.lastDate);
-        ret.tags         = bsonStrArray(convDoc.tags);
         ret.cleanSubject = bsonStr(convDoc.cleanSubject);
+        
+        foreach(tag; bsonStrArray(convDoc.tags))
+            ret.addTag(tag);
 
         assert(!convDoc.links.isNull);
         foreach(link; convDoc.links)
@@ -369,7 +372,8 @@ version(db_usetestdb)
         auto conv  = Conversation.get(convs[0].dbId);
         assert(conv !is null);
         assert(conv.lastDate.length); // this email date is set to NOW
-        assert(conv.tags == ["inbox"]);
+        assert(conv.hasTag("inbox"));
+        assert(conv.numTags == 1);
         assert(conv.links.length == 1);
         assert(!conv.attachFileNames.length);
         assert(conv.cleanSubject == " Tired of Your Hosting Company?");
@@ -378,7 +382,8 @@ version(db_usetestdb)
         conv = Conversation.get(convs[1].dbId);
         assert(conv !is null);
         assert(conv.lastDate == "2014-06-10T12:51:10Z");
-        assert(conv.tags == ["inbox"]);
+        assert(conv.hasTag("inbox"));
+        assert(conv.numTags == 1);
         assert(conv.links.length == 3);
         assert(!conv.attachFileNames.length);
         assert(conv.cleanSubject == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
@@ -387,7 +392,8 @@ version(db_usetestdb)
         conv = Conversation.get(convs[2].dbId);
         assert(conv !is null);
         assert(conv.lastDate == "2014-01-21T14:32:20Z");
-        assert(conv.tags == ["inbox"]);
+        assert(conv.hasTag("inbox"));
+        assert(conv.numTags == 1);
         assert(conv.links.length == 1);
         assert(conv.attachFileNames.length == 1);
         assert(conv.attachFileNames[0] == "C++ Pocket Reference.pdf");
@@ -498,7 +504,7 @@ version(db_usetestdb)
         auto convs = Conversation.getByTag("inbox", 0, 0);
         assert(convs.length == 4);
         // update existing (id doesnt change)
-        convs[0].tags ~= "newtag";
+        convs[0].addTag("newtag");
         convs[0].addLink("someMessageId");
         auto oldDbId = convs[0].dbId;
         convs[0].store();
@@ -506,7 +512,9 @@ version(db_usetestdb)
         auto convs2 = Conversation.getByTag("inbox", 0, 0);
         assert(convs2.length == 4);
         assert(convs2[0].dbId == oldDbId);
-        assert(convs2[0].tags == ["inbox", "newtag"]);
+        assert(convs2[0].hasTag("inbox"));
+        assert(convs2[0].hasTag("newtag"));
+        assert(convs2[0].numTags == 2);
         assert(convs2[0].links[1].messageId == "someMessageId");
 
         // create new (new dbId)
@@ -523,8 +531,8 @@ version(db_usetestdb)
                 found = true;
                 assert(conv.userDbId == convs2[0].userDbId);
                 assert(conv.lastDate == convs2[0].lastDate);
-                assert(conv.tags.length == convs2[0].tags.length);
-                assert(conv.tags[0] == convs2[0].tags[0]);
+                assert(conv.numTags == convs2[0].numTags);
+                assert(convs2[0].hasTags(conv.tagsArray));
                 assert(conv.attachFileNames == convs2[0].attachFileNames);
                 assert(conv.cleanSubject == convs2[0].cleanSubject);
                 foreach(idx, link; conv.links)
@@ -590,12 +598,12 @@ version(db_usetestdb)
         Conversation.addTagDb(dbId, "testTag");
         auto conv = Conversation.get(dbId);
         assert(conv !is null);
-        assert(countUntil(conv.tags, "testTag"));
+        assert(conv.hasTag("testtag"));
 
         writeln("Testing Conversation.removeTagDb");
         Conversation.removeTagDb(dbId, "testTag");
         conv = Conversation.get(dbId);
-        assert(countUntil(conv.tags, "testTag") == -1);
+        assert(!conv.hasTag("testtag"));
     }
 
     unittest // upsert
@@ -614,13 +622,13 @@ version(db_usetestdb)
 
         auto user = User.getFromAddress(inEmail.getHeader("to").addresses[0]);
         assert(user !is null);
-        bool[string] tags = ["inbox": true, "dontstore": false, "anothertag": true];
+        string[] tagsToAdd = ["inbox", "anothertag"];
         // test1: insert as is, should create a new conversation with this email as single member
         auto dbEmail = new Email(inEmail);
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         auto emailId = dbEmail.store();
-        auto convId  = Conversation.upsert(dbEmail, tags).dbId;
+        auto convId  = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         auto convDoc = collection("conversation").findOne(["_id": convId]);
 
         assert(!convDoc.isNull);
@@ -631,8 +639,8 @@ version(db_usetestdb)
         assert(bsonStr(convDoc.links[0].emailId)       == emailId);
         assert(convDoc.tags.type                       == Bson.Type.Array);
         assert(convDoc.tags.length                     == 2);
-        assert(bsonStrArray(convDoc.tags)[0]           == "inbox");
-        assert(bsonStrArray(convDoc.tags)[1]           == "anothertag");
+        assert(bsonStrArray(convDoc.tags)[0]           == "anothertag");
+        assert(bsonStrArray(convDoc.tags)[1]           == "inbox");
         assert(bsonStr(convDoc.lastDate)               == dbEmail.isoDate);
 
         auto convObject = Conversation.get(convId);
@@ -640,8 +648,7 @@ version(db_usetestdb)
         assert(convObject.dbId == convId);
         assert(convObject.userDbId == user.id);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
-        foreach(tag; convObject.tags)
-            assert(tag in tags);
+        assert(convObject.hasTags(tagsToAdd));
         assert(convObject.links[0].messageId == inEmail.getHeader("message-id").addresses[0]);
         assert(convObject.links[0].emailDbId == emailId);
         assert(!convObject.attachFileNames.length);
@@ -661,7 +668,7 @@ version(db_usetestdb)
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         emailId = dbEmail.store();
-        convId = Conversation.upsert(dbEmail, tags).dbId;
+        convId = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         convDoc = collection("conversation").findOne(["_id": convId]);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == user.id);
@@ -677,8 +684,7 @@ version(db_usetestdb)
         assert(convObject.dbId == convId);
         assert(convObject.userDbId == user.id);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
-        foreach(tag; convObject.tags)
-            assert(tag in tags);
+        assert(convObject.hasTags(tagsToAdd));
         assert(convObject.links[1].messageId == inEmail.getHeader("message-id").addresses[0]);
         assert(convObject.links[1].messageId == dbEmail.messageId);
         assert(convObject.links[1].emailDbId == emailId);
@@ -697,7 +703,7 @@ version(db_usetestdb)
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         emailId = dbEmail.store();
-        convId  = Conversation.upsert(dbEmail, tags).dbId;
+        convId  = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         convDoc = collection("conversation").findOne(["_id": convId]);
 
         assert(!convDoc.isNull);
@@ -714,8 +720,7 @@ version(db_usetestdb)
         assert(convObject.dbId == convId);
         assert(convObject.userDbId == user.id);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
-        foreach(tag; convObject.tags)
-            assert(tag in tags);
+        assert(convObject.hasTags(tagsToAdd));
         assert(convObject.links[1].messageId == inEmail.getHeader("message-id").addresses[0]);
         assert(convObject.links[1].messageId == dbEmail.messageId);
         assert(convObject.links[1].emailDbId == emailId);
@@ -742,8 +747,7 @@ version(db_usetestdb)
         assert(conv !is null);
         assert(conv.dbId.length);
         assert(conv.lastDate == "2013-05-27T05:42:30Z");
-        assert(conv.tags.length == 1);
-        assert(conv.tags[0] == "inbox");
+        assert(conv.tagsArray == ["inbox"]);
         assert(conv.links.length == 2);
         assert(conv.links[1].messageId == 
                 "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
@@ -757,8 +761,7 @@ version(db_usetestdb)
         assert(conv !is null);
         assert(conv.dbId.length);
         assert(conv.lastDate == "2014-01-21T14:32:20Z");
-        assert(conv.tags.length == 1);
-        assert(conv.tags[0] == "inbox");
+        assert(conv.tagsArray == ["inbox"]);
         assert(conv.links.length == 1);
         assert(conv.links[0].messageId == "CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com");
         assert(conv.links[0].emailDbId.length);

@@ -902,7 +902,7 @@ version(db_usetestdb)
         assert(bsonBool(emailDoc.deleted));
 
         // check that the conversation has the link.deleted for this email set to true
-        Conversation.upsert(dbEmail, ["inbox": true]);
+        Conversation.upsert(dbEmail, ["inbox"], []);
         auto conv = Conversation.getByReferences(user.id, [dbEmail.messageId], 
                                                  Yes.WithDeleted);
         assert(conv !is null);

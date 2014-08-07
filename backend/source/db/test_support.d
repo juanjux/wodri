@@ -56,7 +56,7 @@ version(db_usetestdb)
             auto dbEmail      = new Email(inEmail, destination);
             assert(dbEmail.isValid, "Email is not valid");
             auto emailId      = dbEmail.store();
-            Conversation.upsert(dbEmail, ["inbox": true]);
+            Conversation.upsert(dbEmail, ["inbox"], []);
         }
     }
 }

@@ -32,7 +32,7 @@ final class ApiConversationSummary
     {
         this.dbId = conv.dbId;
         this.lastDate = conv.lastDate;
-        this.tags = conv.tags;
+        this.tags = conv.tagsArray;
         this.subject = conv.cleanSubject;
 
         foreach(link; conv.links)
