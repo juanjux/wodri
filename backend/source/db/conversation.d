@@ -59,15 +59,30 @@ final class Conversation
                 return true;
         return false;
     }
+
+
     /** Adds a new link (email in the thread) to the conversation */
     void addLink(string messageId, string emailDbId="", bool deleted=false)
     {
         assert(messageId.length);
         if (!messageId.length)
-            throw new Exception("Conversation.addLink: First MessageId parameter " ~ 
+            throw new Exception("Conversation.addLink: First MessageId parameter " ~
                                 "must have length");
         if (!hasLink(messageId, emailDbId))
             this.links ~= MessageLink(messageId, emailDbId, deleted);
+    }
+
+
+    /** Return only the links that are in the DB */
+    MessageLink*[] receivedLinks()
+    {
+        MessageLink*[] res;
+        foreach(ref link; this.links)
+        {
+            if (link.emailDbId.length)
+                res ~= &link;
+        }
+        return res;
     }
 
 
@@ -103,7 +118,7 @@ final class Conversation
             linksApp.put(format(`{"message-id": "%s",` ~
                                 `"emailId": "%s",` ~
                                 `"deleted": %s},`,
-                                link.messageId, 
+                                link.messageId,
                                 link.emailDbId,
                                 link.deleted));
         return format(`
@@ -114,7 +129,7 @@ final class Conversation
             "cleanSubject": %s,
             "tags": %s,
             "links": [%s]
-        }`, this.dbId, this.userDbId, 
+        }`, this.dbId, this.userDbId,
             this.lastDate, Json(this.cleanSubject).toString,
             this.m_tags.array, linksApp.data);
     }
@@ -122,7 +137,7 @@ final class Conversation
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
-    
+
     // XXX error control
     void store()
     {
@@ -157,7 +172,7 @@ final class Conversation
      * Return the first Conversation that has ANY of the references contained in its
      * links. Returns null if no Conversation with those references was found.
      */
-    static Conversation getByReferences(string userId, const string[] references, 
+    static Conversation getByReferences(string userId, const string[] references,
                                         Flag!"WithDeleted" withDeleleted = No.WithDeleted)
     {
         string[] reversed = references.dup;
@@ -293,7 +308,7 @@ final class Conversation
         ret.userDbId     = bsonStr(convDoc.userId);
         ret.lastDate     = bsonStr(convDoc.lastDate);
         ret.cleanSubject = bsonStr(convDoc.cleanSubject);
-        
+
         foreach(tag; bsonStrArray(convDoc.tags))
             ret.addTag(tag);
 
@@ -466,6 +481,35 @@ version(db_usetestdb)
         assert(conv.links[1].emailDbId == link1.emailDbId);
     }
 
+
+    unittest // Conversation.receivedLinks
+    {
+        writeln("Testing Conversation.receivedLinks");
+        recreateTestDb();
+        auto conv = Conversation.getByTag("inbox", 0, 0)[0];
+        assert(conv.links.length == 1);
+        assert(conv.receivedLinks.length == 1);
+
+        conv = Conversation.getByTag("inbox", 0, 0)[1];
+        assert(conv.links.length == 3);
+        assert(conv.receivedLinks.length == 1);
+
+        conv = Conversation.getByTag("inbox", 0, 0)[2];
+        assert(conv.links.length == 1);
+        assert(conv.receivedLinks.length == 1);
+
+        conv = Conversation.getByTag("inbox", 0, 0)[3];
+        assert(conv.links.length == 2);
+        assert(conv.receivedLinks.length == 2);
+        auto convId = conv.dbId;
+        foreach(ref link; conv.receivedLinks)
+            link.deleted = true;
+        conv.store();
+        conv = Conversation.get(convId);
+        assert(conv.links[0].deleted);
+        assert(conv.links[1].deleted);
+    }
+
     unittest // Conversation.setEmailDeleted
     {
         writeln("Testing Conversation.setEmailDeleted");
@@ -544,7 +588,7 @@ version(db_usetestdb)
             }
         }
         assert(found);
-        
+
     }
 
     unittest // Conversation.getByTag
@@ -645,7 +689,7 @@ version(db_usetestdb)
 
         auto convObject = Conversation.get(convId);
         assert(convObject !is null);
-        assert(convObject.dbId == convId);
+        assert(convObject.dbId     == convId);
         assert(convObject.userDbId == user.id);
         assert(convObject.lastDate == bsonStr(convDoc.lastDate));
         assert(convObject.hasTags(tagsToAdd));
@@ -742,14 +786,14 @@ version(db_usetestdb)
         assert(user1.id.length);
         assert(user2.id.length);
 
-        auto conv = Conversation.getByReferences(user1.id, 
+        auto conv = Conversation.getByReferences(user1.id,
                 ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
         assert(conv !is null);
         assert(conv.dbId.length);
         assert(conv.lastDate == "2013-05-27T05:42:30Z");
         assert(conv.tagsArray == ["inbox"]);
         assert(conv.links.length == 2);
-        assert(conv.links[1].messageId == 
+        assert(conv.links[1].messageId ==
                 "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
         assert(conv.links[0].emailDbId.length);
         assert(conv.links[1].emailDbId.length);
@@ -769,11 +813,11 @@ version(db_usetestdb)
 
         Conversation.addTagDb(conv.dbId, "deleted");
         // check that it doesnt returns the deleted convs
-        conv = Conversation.getByReferences(user2.id, 
+        conv = Conversation.getByReferences(user2.id,
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
         assert(conv is null);
         // except when using Yes.WithDeleted
-        conv = Conversation.getByReferences(user2.id, 
+        conv = Conversation.getByReferences(user2.id,
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"],
                 Yes.WithDeleted);
         assert(conv !is null);

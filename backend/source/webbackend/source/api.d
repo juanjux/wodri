@@ -34,6 +34,12 @@ final interface Api
     @method(HTTPMethod.GET) @path("conversationundelete/")
     void unDeleteConversation(string id);
 
+    @method(HTTPMethod.POST) @path("conversationaddtag/")
+    void conversationAddTag(string id, string tag);
+
+    @method(HTTPMethod.POST) @path("conversationremovetag/")
+    void conversationRemoveTag(string id, string tag);
+
     @method(HTTPMethod.GET) @path("email/")
     ApiEmail getEmail(string id);
 
@@ -73,7 +79,7 @@ final class ApiImpl: Api
                 // return any ApiConversationSummary if the Conversation doesnt have any
                 // undeleted emails
                 bool hasNotDeleted = false;
-                foreach(ref link; conv.links)
+                foreach(const link; conv.receivedLinks)
                 {
                     if (!link.deleted)
                     {
@@ -102,23 +108,19 @@ final class ApiImpl: Api
 
             if (purge != 0) 
             {
-                foreach(ref link; conv.links)
+                foreach(const link; conv.receivedLinks)
                     Email.removeById(link.emailDbId, No.UpdateConversation);
                 conv.remove();
                 return;
             }
 
-
             // set "deleted" tag and set all links to deleted.
-            foreach(ref link; conv.links)
+            foreach(link; conv.receivedLinks)
             {
                 Email.setDeleted(link.emailDbId, true, No.UpdateConversation);
                 link.deleted = true;
             }
-
-            // add the deleted tag is it wasnt already there
-            if (countUntil(conv.tags, "deleted") == -1)
-                conv.tags ~= "deleted";
+            conv.addTag("deleted");
 
             // update the conversation with the new tag and links on DB
             conv.store();
@@ -131,15 +133,35 @@ final class ApiImpl: Api
             if (conv is null)
                 return;
 
-            // remove the "deleted" tag with marks the conversation as deleted
-            conv.tags = remove!("a == \"deleted\"")(conv.tags);
-
             // undelete the email links and the emails
-            foreach(ref link; conv.links)
+            foreach(link; conv.receivedLinks)
             {
                 Email.setDeleted(link.emailDbId, false, No.UpdateConversation);
                 link.deleted = false;
             }
+            conv.removeTag("deleted");
+            conv.store();
+        }
+
+
+        void conversationAddTag(string id, string tag)
+        {
+            auto conv = Conversation.get(id);
+            if (conv is null)
+                return;
+            
+            conv.addTag(tag);
+            conv.store();
+        }
+
+
+        void conversationRemoveTag(string id, string tag)
+        {
+            auto conv = Conversation.get(id);
+            if (conv is null)
+                return;
+            
+            conv.removeTag(tag);
             conv.store();
         }
 

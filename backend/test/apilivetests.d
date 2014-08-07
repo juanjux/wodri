@@ -18,12 +18,17 @@ enum USER = "testuser";
 enum PASS = "secret";
 enum URL  = "http://127.0.0.1:8080/api";
 
-string callCurl(string apicall, string operationName, string id="", string method="GET")
+string callCurl(string apicall, 
+                string operationName, 
+                string id="", 
+                string method="GET",
+                string postData="")
 {
     auto realId = id.length? "/"~id: "";
+    auto dataPart = postData.length? postData: "";
     auto curlCmd = escapeShellCommand(
-            "curl", "-u", USER~":"~PASS, "-s", "-X", method, "-H",
-            "Content-Type: application/json",
+            "curl", "-u", USER ~ ":" ~ PASS, "-s", "-X", method, "-H", 
+            "Content-Type: application/json", "--data", dataPart,
             format("%s%s/%s", URL, realId, apicall)
     );
     auto retCurl = executeShell(curlCmd);
@@ -94,6 +99,22 @@ JSONValue getEmail(string id, Flag!"GetRaw" raw = No.GetRaw)
     return email;
 }
 
+void addTag(string id, string tag)
+{
+    auto json = parseJSON(format(`{"tag":"%s"}`, tag));
+    callCurl("conversationaddtag/", 
+             "adding tag", id, 
+             "POST", json.toString);
+}
+
+
+void removeTag(string id, string tag)
+{
+    auto json = parseJSON(format(`{"tag":"%s"}`, tag));
+    callCurl("conversationremovetag/", 
+             "removing tag", id, 
+             "POST", json.toString);
+}
 
 void testGetConversation()
 {
@@ -166,6 +187,48 @@ void testGetTagConversations()
     // 1. Set tag "deleted" to a conversation
     // 2. getConversations(loadDeleted = false), check size and tags (none with deleted)
     // 3. getConversations(loadDeleted = true), check size and tags (one with deleted)
+}
+
+
+void testConversationAddTag()
+{
+    writeln("\nTesting POST /api/:id/conversationaddtag");
+    recreateTestDb();
+    auto conversations = getConversations("inbox", 20, 0);
+    auto convId = conversations[3]["dbId"].str;
+    addTag(convId, "newtag");
+    auto conv = getConversationById(convId);
+    enforce(jsonToArray(conv["tags"]) == ["inbox", "newtag"]);
+
+    // again the same tag
+    addTag(convId, "newtag");
+    conv = getConversationById(convId);
+    enforce(jsonToArray(conv["tags"]) == ["inbox", "newtag"]);
+
+    // tags with mixed case should be lowered
+    addTag(convId, "LOWERme");
+    conv = getConversationById(convId);
+    enforce(jsonToArray(conv["tags"]) == ["inbox", "lowerme", "newtag"]);
+}
+
+
+void testConversationRemoveTag()
+{
+    writeln("\tTesting POST /api/:id/conversationremovetag");
+    recreateTestDb();
+    auto conversations = getConversations("inbox", 20, 0);
+    auto convId = conversations[0]["dbId"].str;
+    removeTag(convId, "inbox");
+    auto conv = getConversationById(convId);
+    enforce(jsonToArray(conv["tags"]).length == 0);
+
+    addTag(convId, "sometag");
+    addTag(convId, "othertag");
+    addTag(convId, "finaltag");
+    removeTag(convId, "SoMeTaG");
+    conv = getConversationById(convId);
+    enforce(jsonToArray(conv["tags"]) == ["finaltag", "othertag"]);
+
 }
 
 void testGetEmail()
@@ -313,7 +376,7 @@ void testDeleteConversation()
     auto conv = getConversationById(convId);
     deleteConversation(convId);
     auto reloadedConv = getConversationById(convId);
-    enforce(reloadedConv["tags"].array[1].str == "deleted");
+    enforce(reloadedConv["tags"].array[0].str == "deleted");
     enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
     auto email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
     enforce(email["deleted"].type == JSON_TYPE.TRUE);
@@ -346,7 +409,7 @@ void testUndeleteConversation()
     auto conv = getConversationById(convId);
     deleteConversation(convId);
     auto reloadedConv = getConversationById(convId);
-    enforce(reloadedConv["tags"].array[1].str == "deleted");
+    enforce(reloadedConv["tags"].array[0].str == "deleted");
     enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
     auto email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
     enforce(email["deleted"].type == JSON_TYPE.TRUE);
@@ -376,15 +439,17 @@ void testUnDeleteEmail()
 
 void main()
 {
-    testGetTagConversations();
-    testGetConversation();
-    testGetEmail();
-    testGetRawEmail();
-    testDeleteEmail();
-    testPurgeEmail();
-    testDeleteConversation();
-    testPurgeConversation();
-    testUndeleteConversation();
-    testUnDeleteEmail();
+    //testGetTagConversations();
+    //testGetConversation();
+    testConversationAddTag();
+    testConversationRemoveTag();
+    //testGetEmail();
+    //testGetRawEmail();
+    //testDeleteEmail();
+    //testPurgeEmail();
+    //testDeleteConversation();
+    //testPurgeConversation();
+    //testUndeleteConversation();
+    //testUnDeleteEmail();
     writeln("All CURL tests finished");
 }

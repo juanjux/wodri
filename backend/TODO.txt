@@ -1,9 +1,7 @@
 Backend-API:
-    - POST /api/:id/conversationaddtag => and add test for adding "delete" tag to curl test
-    - POST /api/:id/conversationdeletetag
+    - POST /api/search/
 
 Backend-Retriever:
-
     Later:
     - Use log to log more warnings, specially on db.*
 
