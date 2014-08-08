@@ -81,5 +81,13 @@
             "dflags": ["-main", "-unittest"],
             "targetName": "test",
         },
+        {
+            "name": "search_test",
+            "versions": ["search_test", "db_usetestdb"],
+            "mainSourceFile": "search.d",
+            "excludedSourceFiles": ["main.d", "test.d"],
+            "dflags": ["-main", "-unittest"],
+            "targetName": "test",
+        },
     ]
 }

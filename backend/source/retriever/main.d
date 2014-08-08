@@ -92,7 +92,9 @@ int main()
     auto dbEmail         = new Email(inEmail);
     bool tooBig          = (dbEmail.size() > config.incomingMessageLimit);
     auto isValid         = dbEmail.isValid();
-    const localReceivers = uniq(dbEmail.localReceivers()).array;
+    auto sortedReceivers = dbEmail.localReceivers();
+    sort(sortedReceivers);
+    const localReceivers = uniq(sortedReceivers).array;
 
     if (!tooBig 
         && isValid

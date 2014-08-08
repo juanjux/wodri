@@ -2,6 +2,12 @@ Backend-API:
     - POST /api/search/
 
 Backend-Retriever:
+    Search:
+        - searchHeaders
+            - acotar por fechas
+            - probar rendimiento
+        - search bodies
+
     Later:
     - Use log to log more warnings, specially on db.*
 

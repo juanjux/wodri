@@ -439,17 +439,17 @@ void testUnDeleteEmail()
 
 void main()
 {
-    //testGetTagConversations();
-    //testGetConversation();
+    testGetTagConversations();
+    testGetConversation();
     testConversationAddTag();
     testConversationRemoveTag();
-    //testGetEmail();
-    //testGetRawEmail();
-    //testDeleteEmail();
-    //testPurgeEmail();
-    //testDeleteConversation();
-    //testPurgeConversation();
-    //testUndeleteConversation();
-    //testUnDeleteEmail();
+    testGetEmail();
+    testGetRawEmail();
+    testDeleteEmail();
+    testPurgeEmail();
+    testDeleteConversation();
+    testPurgeConversation();
+    testUndeleteConversation();
+    testUnDeleteEmail();
     writeln("All CURL tests finished");
 }

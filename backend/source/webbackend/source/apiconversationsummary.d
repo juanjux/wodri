@@ -30,10 +30,10 @@ final class ApiConversationSummary
 
     this (const Conversation conv)
     {
-        this.dbId = conv.dbId;
+        this.dbId     = conv.dbId;
         this.lastDate = conv.lastDate;
-        this.tags = conv.tagsArray;
-        this.subject = conv.cleanSubject;
+        this.tags     = conv.tagsArray;
+        this.subject  = conv.cleanSubject;
 
         foreach(link; conv.links)
         {
@@ -48,8 +48,11 @@ final class ApiConversationSummary
                                     .pre.translate(['<': ' ', '>': ' ']).strip();
 
                 if (emailSummary.attachFileNames.length)
-                    this.attachFileNames = uniq(this.attachFileNames ~
-                                                emailSummary.attachFileNames).array();
+                {
+                    auto joinedAttachs = this.attachFileNames ~ emailSummary.attachFileNames;
+                    sort(joinedAttachs);
+                    this.attachFileNames = uniq(joinedAttachs).array;
+                }
             }
         }
     }

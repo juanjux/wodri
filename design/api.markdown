@@ -76,9 +76,9 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     for all emails inside
 `get: /:id/conversationundelete/`
     Undelete the conversation and all emails inside
-`(MISSING) post: /:id/conversationaddtag`
+`post: /:id/conversationaddtag`
     Add tags to the conversation
-`(MISSING) post: /:id/conversationremovetag`
+`post: /:id/conversationremovetag`
     Remove tags from the conversation
 `(MISSING) post: /conversation/search`
     Search conversations

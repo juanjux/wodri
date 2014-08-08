@@ -133,6 +133,8 @@ final class Email
     {
         return (name in this.headers) != null;
     }
+
+
     HeaderValue getHeader(string name)
     {
         return hasHeader(name)? this.headers[name]: HeaderValue("", []);
@@ -259,6 +261,7 @@ final class Email
             return Yes.IsValidEmail;
         return No.IsValidEmail;
     }
+
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================

@@ -60,6 +60,7 @@ struct TagContainer
 // | |__| | | | | | |_| ||  __/\__ \ |_
 //  \____/|_| |_|_|\__|\__\___||___/\__|
 
+version(db_test)
 version(unittest)
 {
     import std.stdio;
