@@ -123,9 +123,9 @@ MONGODB:
 
     - Create the email index (unneded if storeTextIndex is false):
         use webmail
-        db.emailIndexContents.ensureIndex({text: "text"})
+        db.emailIndexContents.ensureIndex({text: "text"}, {default_language: "none"})
         use testwebmail
-        db.emailIndexContents.ensureIndex({text: "text"})
+        db.emailIndexContents.ensureIndex({text: "text"}, {default_language: "none"})
 
    
 CONFIG DIRECTORY AND MONGO DB USER

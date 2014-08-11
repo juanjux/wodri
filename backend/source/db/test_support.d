@@ -62,7 +62,8 @@ version(db_usetestdb)
 }
 
 
-version(db_insertalltest) unittest
+version(db_insertalltest) 
+unittest
 {
     writeln("Testing Inserting Everything");
     recreateTestDb();
@@ -119,7 +120,7 @@ version(db_insertalltest) unittest
             sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
 
             sw.start();
-            auto convId = Conversation.upsert(dbEmail, ["inbox": true]).dbId;
+            auto convId = Conversation.upsert(dbEmail, ["inbox"], []).dbId;
 
             sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
         }

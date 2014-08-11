@@ -4,9 +4,15 @@ Backend-API:
 Backend-Retriever:
     Search:
         - searchHeaders
-            - acotar por fechas
+            - acotar por fechas 
+            - paginacion
             - probar rendimiento
+            - unittest de búsqueda con fechas
         - search bodies
+
+        - Poner dos BBDD de test, una con los 33.000 emails
+
+    - CHECK ALL USES OF PARSEJSONSTRING, AVOID INJECTIONS USING Json(U).toString
 
     Later:
     - Use log to log more warnings, specially on db.*

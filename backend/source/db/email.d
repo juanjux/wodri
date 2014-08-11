@@ -6,7 +6,7 @@ import db.conversation;
 import db.mongo;
 import db.user;
 import retriever.incomingemail: IncomingEmail, Attachment, HeaderValue;
-import std.algorithm: among;
+import std.algorithm: among, sort, uniq;
 import std.datetime: SysTime, TimeZone;
 import std.file: exists;
 import std.path: baseName;
@@ -20,6 +20,8 @@ import vibe.db.mongo.mongo;
 import vibe.inet.path: joinPath;
 import vibe.utils.dictionarylist;
 import webbackend.apiemail;
+
+static shared immutable SEARCH_FIELDS = ["to", "subject", "cc", "bcc"];
 
 final class TextPart
 {
@@ -642,14 +644,60 @@ final class Email
             return;
         }
 
+        // body
         auto maybeText = maybeBodyNoFormat();
-        if (!maybeText.length)
-            return;
 
-        auto opData = ["text": maybeText];
+        // searchable headers (currently, to, from, cc, bcc and subject)
+        Appender!string headerIndexText;
+        headerIndexText.put("from:"~strip(this.from.rawValue)~"\n");
+        foreach(hdrKey; SEARCH_FIELDS)
+        {
+            string hdrOrEmpty = hdrKey in headers? strip(headers[hdrKey].rawValue): "";
+            headerIndexText.put(hdrKey ~ ":" ~ hdrOrEmpty ~ "\n");
+        }
+
+        auto opData = ["text": headerIndexText.data ~ "\n\n" ~ maybeText,
+                       "emailDbId": this.dbId,
+                       "isoDate": this.isoDate];
         collection("emailIndexContents").update(["emailDbId": this.dbId], 
                                                 opData, 
                                                 UpdateFlags.Upsert);
+    }
+
+
+    /** IMPORTANT: dateStart and dateEnd should be GMT */
+    static string[] search(const string[] needles, string dateStart="", string dateEnd="")
+    {
+        string[] res;
+        foreach(needle; needles)
+        {
+            Appender!string findJson;
+            findJson.put(format(`{"$text": {"$search": "\"%s\""}`, needle));
+
+            if (dateStart.length && dateEnd.length)
+                findJson.put(format(`,"isoDate": {"$gt": %s, "$lt": %s}}`,
+                                    Json(dateStart).toString,
+                                    Json(dateEnd).toString));
+
+            else if (dateStart.length && !dateEnd.length)
+                findJson.put(format(`,"isoDate": {"$gt": %s}}`, 
+                                    Json(dateStart).toString));
+            
+            else if (dateEnd.length && !dateStart.length)
+                findJson.put(format(`,"isoDate": {"$lt": %s}}`, 
+                                    Json(dateEnd).toString));
+
+            else 
+                findJson.put("}");
+
+            writeln(findJson.data);
+            auto bson = parseJsonString(findJson.data);
+            auto emailIdsCursor = collection("emailIndexContents").find(bson);
+            foreach(item; emailIdsCursor)
+                res ~= bsonId(item._id).toString;
+        }
+        sort(res);
+        return uniq(res).array;
     }
 }
 
@@ -924,17 +972,17 @@ version(db_usetestdb)
     {
         writeln("Testing Email.storeTextIndex");
         recreateTestDb();
-        auto findJson = format(`{"$text": {"$search": "DOESNTEXISTS"}}`);
+        auto findJson = `{"$text": {"$search": "DOESNTEXISTS"}}`;
         auto cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(cursor.empty);
 
-        findJson = format(`{"$text": {"$search": "text inside"}}`);
+        findJson = `{"$text": {"$search": "text inside"}}`;
         cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(!cursor.empty);
         string res = cursor.front.text.toString;
-        assert(countUntil(res, "text inside") == 6);
+        assert(countUntil(res, "text inside") == 165);
 
-        findJson = format(`{"$text": {"$search": "email"}}`);
+        findJson = `{"$text": {"$search": "email"}}`;
         cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(!cursor.empty);
         assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
@@ -942,5 +990,57 @@ version(db_usetestdb)
         assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
         cursor.popFront;
         assert(cursor.empty);
+
+        findJson = `{"$text": {"$search": "inicio de sesión"}}`;
+        cursor = collection("emailIndexContents").find(parseJsonString(findJson));
+        assert(!cursor.empty);
+        res = cursor.front.text.toString;
+        auto foundPos = countUntil(res, "inicio de sesión");
+        assert(foundPos != -1);
+
+        findJson = `{"$text": {"$search": "inicio de sesion"}}`;
+        cursor = collection("emailIndexContents").find(parseJsonString(findJson));
+        assert(!cursor.empty);
+        res = cursor.front.text.toString;
+        auto foundPos2 = countUntil(res, "inicio de sesión");
+        assert(foundPos == foundPos2);
+
+        findJson = `{"$text": {"$search": "\"inicio de sesion\""}}`;
+        cursor = collection("emailIndexContents").find(parseJsonString(findJson));
+        assert(cursor.empty);
+    }
+
+    unittest // search
+    {
+        writeln("Testing Email.search");
+        recreateTestDb();
+        string[] ids = Email.search(["inicio de sesión"]);
+        assert(ids.length == 1);
+
+        ids = Email.search(["inicio de sesión", "text inside"]);
+        assert(ids.length == 1);
+        ids = Email.search(["text inside", "turtlebeach"]);
+        assert(ids.length == 2);
+        // this could fail depending on the search engine stop words and stemming
+        ids = Email.search(["some"]);
+        assert(ids.length == 4);
+        ids = Email.search(["doesntreallyexists"]);
+        assert(ids.length == 0);
+
+        // check the date ranges
+        ids = Email.search(["some"], "2010-01-21T14:32:20Z");
+        assert(ids.length == 4);
+        ids = Email.search(["some"], "2013-05-28T14:32:20Z");
+        assert(ids.length == 2);
+        ids = Email.search(["some"], "2018-05-28T14:32:20Z");
+        assert(ids.length == 0);
+
+        string startFixedDate = "2005-01-01T00:00:00Z";
+        ids = Email.search(["some"], startFixedDate, "2018-12-12T00:00:00Z");
+        assert(ids.length == 4);
+        ids = Email.search(["some"], startFixedDate, "2013-05-28T00:00:00Z");
+        assert(ids.length == 2);
+        ids = Email.search(["some"], "2010-11-25T00:00:00Z", "2014-02-21T00:00:00Z");
+        assert(ids.length == 3);
     }
 }
