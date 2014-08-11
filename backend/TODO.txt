@@ -1,15 +1,9 @@
 Backend-API:
-    - POST /api/search/
+    - POST /api/search/ => llamar Email.search, convertir a ApiConversationSummary, devolver
 
 Backend-Retriever:
     Search:
-        - searchHeaders
-            - acotar por fechas 
-            - paginacion
-            - probar rendimiento
-            - unittest de búsqueda con fechas
-        - search bodies
-
+        - probar rendimiento
         - Poner dos BBDD de test, una con los 33.000 emails
 
     - CHECK ALL USES OF PARSEJSONSTRING, AVOID INJECTIONS USING Json(U).toString

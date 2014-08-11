@@ -198,6 +198,7 @@ final class Conversation
         if (!withDeleted)
             jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
         jsonApp.put("}");
+
         auto bson = parseJsonString(jsonApp.data);
         auto convDoc = collection("conversation").findOne(bson);
         return convDoc.isNull? null: conversationDocToObject(convDoc);

@@ -704,14 +704,14 @@ final class Email
             auto bson = parseJsonString(findJson.data);
             auto emailIdsCursor = collection("emailIndexContents").find(
                     bson,
-                    ["_id": 1],
+                    ["_id": 1, "emailDbId": 1],
                     QueryFlags.None,
                     page*limit // skip
             ).sort(["lastDate": -1]);
             emailIdsCursor.limit(limit);
 
             foreach(item; emailIdsCursor)
-                res ~= bsonId(item._id).toString;
+                res ~= bsonStr(item.emailDbId);
         }
         return removeDups(res);
     }
@@ -724,17 +724,41 @@ final class Email
                                  string dateStart="", 
                                  string dateEnd="")
     {
-        SearchResult[] res;
         // Get an list of matching email IDs
         auto matchingIds = searchEmailsGetIds(needles, limit, page, dateStart, dateEnd);
 
-        // For every id, get the conversation (getByEmailId)
+        // keep the found conversations+matches indexes, the key is the conversation dbId
+        SearchResult[string] map;
+
+        // For every id, get the conversation
         foreach(emailId; matchingIds)
         {
+            writeln("XXX emailId: |"~emailId~"|");
+            auto conv = Conversation.getByEmailId(emailId);
 
+            if (conv is null)
+                continue;
+
+            uint indexMatching = -1;
+            // find the index of the email inside the conversation
+            foreach(int idx, const ref MessageLink link; conv.links)
+            {
+                if (link.emailDbId == emailId)
+                {
+                    indexMatching = idx;
+                    break; // inner foreach
+                }
+            }
+            if (indexMatching == -1)
+                continue;
+
+            if (conv.dbId in map)
+                map[conv.dbId].matchingEmailsIdx ~= indexMatching;
+            else
+                map[conv.dbId] = SearchResult(conv, [indexMatching]);
         }
 
-        return res;
+        return map.values;
     }
 }
 
@@ -1047,37 +1071,32 @@ version(db_usetestdb)
         assert(cursor.empty);
     }
 
-    //unittest // search
-    //{
-        //writeln("Testing Email.search");
-        //recreateTestDb();
-        //string[] ids = Email.search(["inicio de sesión"]);
-        //assert(ids.length == 1);
+    unittest // search
+    {
+        // FIXME: improve, check inside some search results
+        writeln("Testing Email.search");
+        recreateTestDb();
+        auto searchResults = Email.search(["inicio de sesión"], 20, 0);
+        assert(searchResults.length == 1);
+        assert(searchResults[0].matchingEmailsIdx == [1]);
 
-        //ids = Email.search(["inicio de sesión", "text inside"]);
-        //assert(ids.length == 1);
-        //ids = Email.search(["text inside", "turtlebeach"]);
-        //assert(ids.length == 2);
-        //// this could fail depending on the search engine stop words and stemming
-        //ids = Email.search(["some"]);
-        //assert(ids.length == 4);
-        //ids = Email.search(["doesntreallyexists"]);
-        //assert(ids.length == 0);
+        searchResults = Email.search(["some"], 20, 0);
+        assert(searchResults.length == 3);
 
-        //// check the date ranges
-        //ids = Email.search(["some"], "2010-01-21T14:32:20Z");
-        //assert(ids.length == 4);
-        //ids = Email.search(["some"], "2013-05-28T14:32:20Z");
-        //assert(ids.length == 2);
-        //ids = Email.search(["some"], "2018-05-28T14:32:20Z");
-        //assert(ids.length == 0);
+        searchResults = Email.search(["some"], 20, 0, "2010-01-21T14:32:20Z");
+        assert(searchResults.length == 3);
+        searchResults = Email.search(["some"], 20, 0, "2013-05-28T14:32:20Z");
+        assert(searchResults.length == 2);
+        searchResults = Email.search(["some"], 20, 0, "2018-05-28T14:32:20Z");
+        assert(searchResults.length == 0);
 
-        //string startFixedDate = "2005-01-01T00:00:00Z";
-        //ids = Email.search(["some"], startFixedDate, "2018-12-12T00:00:00Z");
-        //assert(ids.length == 4);
-        //ids = Email.search(["some"], startFixedDate, "2013-05-28T00:00:00Z");
-        //assert(ids.length == 2);
-        //ids = Email.search(["some"], "2010-11-25T00:00:00Z", "2014-02-21T00:00:00Z");
-        //assert(ids.length == 3);
-    //}
+        string startFixedDate = "2005-01-01T00:00:00Z";
+        searchResults = Email.search(["some"], 20, 0, startFixedDate, "2018-12-12T00:00:00Z");
+        assert(searchResults.length == 3);
+        searchResults = Email.search(["some"], 20, 0, startFixedDate, "2013-05-28T00:00:00Z");
+        assert(searchResults.length == 1);
+        assert(searchResults[0].matchingEmailsIdx.length == 2);
+        searchResults = Email.search(["some"], 20, 0, startFixedDate, "2014-02-21T00:00:00Z");
+        assert(searchResults.length == 2);
+    }
 }
