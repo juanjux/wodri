@@ -7,7 +7,7 @@ import std.string;
 import vibe.db.mongo.mongo;
 import vibe.data.bson;
 
-static shared immutable SEARCH_FIELDS = ["to", "subject", "from", "cc", "bcc"];
+static shared immutable SEARCH_FIELDS = ["to", "subject", "cc", "bcc"];
 
 
 string[] searchHeaders(string needle, string dateStart="", string dateEnd="")
@@ -43,13 +43,18 @@ string[] searchHeaders(string needle, string dateStart="", string dateEnd="")
 version(search_test)
 {
     import db.test_support;
+    import std.datetime: StopWatch;
 
     unittest
     {
-        writeln("Testing searchHeaders");
+        write("Testing searchHeaders: ");
 
-        recreateTestDb();
+        //recreateTestDb();
+        StopWatch sw;
+        sw.start();
         auto ids = searchHeaders("test", "", "");
+        sw.stop();
         writeln(ids);
+        writeln("Total time for search: ", sw.peek().msecs);
     }
 }
