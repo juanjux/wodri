@@ -173,17 +173,31 @@ final class Conversation
      * links. Returns null if no Conversation with those references was found.
      */
     static Conversation getByReferences(string userId, const string[] references,
-                                        Flag!"WithDeleted" withDeleleted = No.WithDeleted)
+                                        Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
         string[] reversed = references.dup;
         reverse(reversed);
         Appender!string jsonApp;
         jsonApp.put(format(`{"userId":"%s","links.message-id":{"$in":%s},`,
                            userId, reversed));
-        if (!withDeleleted)
+        if (!withDeleted)
             jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
         jsonApp.put("}");
 
+        auto bson = parseJsonString(jsonApp.data);
+        auto convDoc = collection("conversation").findOne(bson);
+        return convDoc.isNull? null: conversationDocToObject(convDoc);
+    }
+
+
+    static Conversation getByEmailId(string emailId, 
+                                     Flag!"WithDeleted" withDeleted = No.WithDeleted)
+    {
+        Appender!string jsonApp;
+        jsonApp.put(format(`{"links.emailId": {"$in": %s},`, [emailId]));
+        if (!withDeleted)
+            jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
+        jsonApp.put("}");
         auto bson = parseJsonString(jsonApp.data);
         auto convDoc = collection("conversation").findOne(bson);
         return convDoc.isNull? null: conversationDocToObject(convDoc);
@@ -202,13 +216,14 @@ final class Conversation
         jsonApp.put("}");
 
         auto bson   = parseJsonString(jsonApp.data);
-        auto cursor = collection("conversation").find(bson,
-                                                      Bson(null),
-                                                      QueryFlags.None,
-                                                      page > 0? page*limit: 0 // skip
+        auto cursor = collection("conversation").find(
+                bson,
+                Bson(null),
+                QueryFlags.None,
+                page*limit // skip
         ).sort(["lastDate": -1]);
-
         cursor.limit(limit);
+
         foreach(ref doc; cursor)
         {
             if (!doc.isNull)
@@ -243,7 +258,8 @@ final class Conversation
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    static Conversation upsert(Email email, const string[] tagsToAdd, const string[] tagsToRemove)
+    static Conversation upsert(Email email, const string[] tagsToAdd, 
+                               const string[] tagsToRemove)
     {
         assert(email.userId.length);
         assert(email.dbId.length);
@@ -377,6 +393,7 @@ version(db_test)
 version(db_usetestdb)
 {
     import db.test_support;
+    import db.user;
 
     unittest // Conversation.get/conversationDocToObject
     {
@@ -775,8 +792,6 @@ version(db_usetestdb)
 
     unittest // Conversation.getByReferences
     {
-        import db.user;
-
         writeln("Testing Conversation.getByReferences");
         recreateTestDb();
         auto user1 = User.getFromAddress("testuser@testdatabase.com");
@@ -821,6 +836,24 @@ version(db_usetestdb)
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"],
                 Yes.WithDeleted);
         assert(conv !is null);
+    }
+
+
+    unittest // getByEmailId
+    {
+        writeln("Testing Conversation.getByEmailId");
+        recreateTestDb();
+        
+        auto user1 = User.getFromAddress("testuser@testdatabase.com");
+        auto conv = Conversation.getByReferences(user1.id,
+                ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
+
+        auto conv2 = Conversation.getByEmailId(conv.links[0].emailDbId);
+        assert(conv2 !is null);
+        assert(conv.dbId == conv2.dbId);
+
+        auto conv3 = Conversation.getByEmailId("doesntexist");
+        assert(conv3 is null);
     }
 
     unittest // clearSubject
