@@ -1,17 +1,24 @@
 module db.test_support;
 
-import std.string;
-import std.path;
-import std.file;
-import vibe.db.mongo.mongo;
-import db.email;
-import db.conversation;
-import db.mongo;
 import db.config;
+import db.conversation;
+import db.email;
+import db.mongo;
 import db.user;
 import retriever.incomingemail;
+import std.file;
+import std.path;
+import std.string;
+import vibe.db.mongo.mongo;
 
-version(db_usetestdb)
+
+version(db_usetestdb)     version = anytestdb;
+version(db_usebigdb)      version = anytestdb;
+version(db_insertalltest) version = anytestdb;
+version(db_insertalltest) version = db_usebigdb;
+version(search_test)      version = db_usebigdb;
+
+version(anytestdb)
 {
     immutable (string[]) TEST_EMAILS = ["multipart_mixed_rel_alternative_attachments",
                                         "simple_alternative_noattach",
@@ -63,88 +70,88 @@ version(db_usetestdb)
 
 
 version(db_insertalltest) 
-unittest
 {
-    writeln("Testing Inserting Everything");
-    recreateTestDb();
-
-    import std.datetime;
-    import std.process;
-    import retriever.incomingemail;
-
-    string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
-    string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
-    string rawEmailStore   = buildPath(backendTestDir, "rawemails");
-    string attachmentStore = buildPath(backendTestDir, "attachments");
-    int[string] brokenEmails;
-    StopWatch sw;
-    StopWatch totalSw;
-    ulong totalTime = 0;
-    ulong count = 0;
-
-    foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
+    unittest
     {
-        //if (indexOf(e, "10072") == -1) continue; // For testing a specific email
-        //if (to!int(e.name.baseName) < 10072) continue; // For testing from some email forward
-        writeln(e.name, "...");
+        writeln("Testing Inserting Everything");
+        recreateTestDb();
 
-        totalSw.start();
-        if (baseName(e.name) in brokenEmails)
-            continue;
-        auto inEmail = new IncomingEmailImpl();
+        import std.datetime;
+        import std.process;
+        import retriever.incomingemail;
 
-        sw.start();
-        inEmail.loadFromFile(File(e.name), attachmentStore);
-        sw.stop(); writeln("loadFromFile time: ", sw.peek().msecs); sw.reset();
+        string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
+        string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
+        string rawEmailStore   = buildPath(backendTestDir, "rawemails");
+        string attachmentStore = buildPath(backendTestDir, "attachments");
+        int[string] brokenEmails;
+        StopWatch sw;
+        StopWatch totalSw;
+        ulong totalTime = 0;
+        ulong count = 0;
 
-        sw.start();
-        auto dbEmail = new Email(inEmail);
-        sw.stop(); writeln("DBEmail instance: ", sw.peek().msecs); sw.reset();
-
-        if (dbEmail.isValid)
+        foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
         {
-            writeln("Subject: ", dbEmail.getHeader("subject").rawValue);
+            //if (indexOf(e, "10072") == -1) continue; // For testing a specific email
+            //if (to!int(e.name.baseName) < 10072) continue; // For testing from some email forward
+            writeln(e.name, "...");
+
+            totalSw.start();
+            if (baseName(e.name) in brokenEmails)
+                continue;
+            auto inEmail = new IncomingEmailImpl();
 
             sw.start();
-            auto localReceivers = dbEmail.localReceivers();
-            if (!localReceivers.length)
+            inEmail.loadFromFile(File(e.name), attachmentStore);
+            sw.stop(); writeln("loadFromFile time: ", sw.peek().msecs); sw.reset();
+
+            sw.start();
+            auto dbEmail = new Email(inEmail);
+            sw.stop(); writeln("DBEmail instance: ", sw.peek().msecs); sw.reset();
+
+            if (dbEmail.isValid)
             {
-                writeln("SKIPPING, not local receivers");
-                continue; // probably a message from the "sent" folder
+                writeln("Subject: ", dbEmail.getHeader("subject").rawValue);
+
+                sw.start();
+                auto localReceivers = dbEmail.localReceivers();
+                if (!localReceivers.length)
+                {
+                    writeln("SKIPPING, not local receivers");
+                    continue; // probably a message from the "sent" folder
+                }
+                sw.stop(); writeln("localReceivers(): ", sw.peek().msecs); sw.reset();
+
+                sw.start();
+                dbEmail.setOwner(localReceivers[0]);
+                dbEmail.store();
+                sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
+
+                sw.start();
+                auto convId = Conversation.upsert(dbEmail, ["inbox"], []).dbId;
+
+                sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
             }
-            sw.stop(); writeln("localReceivers(): ", sw.peek().msecs); sw.reset();
+            else
+                writeln("SKIPPING, invalid email");
 
-            sw.start();
-            dbEmail.setOwner(localReceivers[0]);
-            dbEmail.store();
-            sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
-
-            sw.start();
-            auto convId = Conversation.upsert(dbEmail, ["inbox"], []).dbId;
-
-            sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
+            totalSw.stop();
+            if (dbEmail.isValid)
+            {
+                auto emailTime = totalSw.peek().msecs;
+                totalTime += emailTime;
+                ++count;
+                writeln("Total time for this email: ", emailTime);
+            }
+            writeln("Valid emails until now: ", count); writeln;
+            totalSw.reset();
         }
-        else
-            writeln("SKIPPING, invalid email");
 
-        totalSw.stop();
-        if (dbEmail.isValid)
-        {
-            auto emailTime = totalSw.peek().msecs;
-            totalTime += emailTime;
-            ++count;
-            writeln("Total time for this email: ", emailTime);
-        }
-        writeln("Valid emails until now: ", count); writeln;
-        totalSw.reset();
+        writeln("Total number of valid emails: ", count);
+        writeln("Average time per valid email: ", totalTime/count);
+
+        // Clean the attachment and rawEmail dirs
+        system(format("rm -f %s/*", attachmentStore));
+        system(format("rm -f %s/*", rawEmailStore));
     }
-
-    writeln("Total number of valid emails: ", count);
-    writeln("Average time per valid email: ", totalTime/count);
-
-    // Clean the attachment and rawEmail dirs
-    system(format("rm -f %s/*", attachmentStore));
-    system(format("rm -f %s/*", rawEmailStore));
 }
-
-

@@ -1,25 +1,27 @@
 module db.mongo;
 
-import std.stdio;
-import std.typecons;
-import std.string;
-import std.datetime: SysTime, TimeZone;
+import arsd.htmltotext;
+import std.algorithm;
 import std.array;
-import std.range;
+import std.datetime: SysTime, TimeZone;
+import std.file;
 import std.json;
 import std.path;
-import std.algorithm;
-import std.file;
+import std.range;
+import std.stdio;
+import std.string;
 import std.traits;
+import std.typecons;
 import std.utf;
-
-import vibe.db.mongo.mongo;
 import vibe.core.log;
 import vibe.data.json;
+import vibe.db.mongo.mongo;
 
-import arsd.htmltotext;
-
-version(db_test) version = db_usetestdb;
+version(db_usetestdb)     version = anytestdb;
+version(db_usebigdb)      version = anytestdb;
+version(db_insertalltest) version = anytestdb;
+version(db_insertalltest) version = db_usebigdb;
+version(search_test)      version = db_usebigdb;
 
 private MongoDatabase g_mongoDB;
 
@@ -70,9 +72,10 @@ shared static this()
                                dbData["port"].integer,
                                "admin");
 
-
     version(db_usetestdb)
         auto dbName = dbData["testname"].str;
+    else version(db_usebigdb)
+        auto dbName = dbData["testname"].str~"_all"; // FIXME: add another setting
     else
         auto dbName = dbData["name"].str;
 
@@ -87,4 +90,6 @@ MongoCollection collection(string name) { return g_mongoDB[name]; }
 private void ensureIndexes()
 {
     collection("conversation").ensureIndex(["links.message-id": 1, "userId": 1]);
+    collection("email").ensureIndex(["message-id": 1, "userId": 1, "isoDate": 1]);
+    collection("emailIndexContents").ensureIndex(["emailDbId": 1]);
 }

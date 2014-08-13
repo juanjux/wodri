@@ -40,7 +40,7 @@ final class User
     {
         User ret = null;
         auto userResult = collection("user").findOne(
-                parseJsonString(`{"addresses": {"$in": ["` ~ address ~ `"]}}`)
+                parseJsonString(`{"addresses": {"$in": [` ~ Json(address).toString ~ `]}}`)
         );
 
         if (!userResult.isNull)

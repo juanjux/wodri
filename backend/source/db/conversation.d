@@ -62,6 +62,7 @@ final class Conversation
 
 
     /** Adds a new link (email in the thread) to the conversation */
+    // FIXME: update this.lastDate
     void addLink(string messageId, string emailDbId="", bool deleted=false)
     {
         assert(messageId.length);
@@ -123,14 +124,14 @@ final class Conversation
                                 link.deleted));
         return format(`
         {
-            "_id": "%s",
-            "userId": "%s",
-            "lastDate": "%s",
+            "_id": %s,
+            "userId": %s,
+            "lastDate": %s,
             "cleanSubject": %s,
             "tags": %s,
             "links": [%s]
-        }`, this.dbId, this.userDbId,
-            this.lastDate, Json(this.cleanSubject).toString,
+        }`, Json(this.dbId).toString, Json(this.userDbId).toString,
+            Json(this.lastDate).toString, Json(this.cleanSubject).toString,
             this.m_tags.array, linksApp.data);
     }
 
@@ -189,7 +190,7 @@ final class Conversation
         return convDoc.isNull? null: conversationDocToObject(convDoc);
     }
 
-
+    
     static Conversation getByEmailId(string emailId, 
                                      Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
@@ -199,9 +200,15 @@ final class Conversation
             jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
         jsonApp.put("}");
 
-        auto bson = parseJsonString(jsonApp.data);
+        auto bson    = parseJsonString(jsonApp.data);
+        import std.datetime; // XXX quitar
+        StopWatch sw; sw.start;
         auto convDoc = collection("conversation").findOne(bson);
-        return convDoc.isNull? null: conversationDocToObject(convDoc);
+        sw.stop; writeln("\t\t Conversation.findOne: ", sw.peek.msecs); sw.reset;
+        sw.start;
+        auto res     = convDoc.isNull? null: conversationDocToObject(convDoc);
+        sw.stop; writeln("\t\t convDocToObjecT: ", sw.peek.msecs); sw.reset;
+        return res;
     }
 
 
@@ -259,6 +266,7 @@ final class Conversation
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
+    // XXX unittest: comprobar que se actualiza el emailIndexContent
     static Conversation upsert(Email email, const string[] tagsToAdd, 
                                const string[] tagsToRemove)
     {
@@ -312,10 +320,12 @@ final class Conversation
             conv.cleanSubject = clearSubject(email.getHeader("subject").rawValue);
 
         conv.store();
+
+        Email.setConversationInEmailIndex(email.dbId, conv.dbId);
         return conv;
     }
 
-    static private Conversation conversationDocToObject(ref Bson convDoc)
+    static private Conversation conversationDocToObject(const ref Bson convDoc)
     {
         auto ret = new Conversation();
         if (convDoc.isNull)
@@ -330,11 +340,21 @@ final class Conversation
             ret.addTag(tag);
 
         assert(!convDoc.links.isNull);
+        enforce(!convDoc.links.isNull, 
+                format("Internal Error, links for conversation %s null", ret.dbId));
+
         foreach(link; convDoc.links)
         {
-            auto msgId = bsonStr(link["message-id"]);
-            ret.addLink(msgId, bsonStr(link["emailId"]), bsonBool(link["deleted"]));
-            auto emailSummary = Email.getSummary(Email.messageIdToDbId(msgId));
+            auto emailId = bsonStr(link["emailId"]);
+            //if (!emailId.length)
+            //{
+                //// Not in DB; email referenced in a thread but not received here
+                //continue;
+            //}
+
+            ret.addLink(bsonStr(link["message-id"]), emailId, bsonBool(link["deleted"]));
+
+            auto emailSummary = Email.getSummary(emailId);
             foreach(attach; emailSummary.attachFileNames)
             {
                 if (countUntil(ret.attachFileNames, attach) == -1)

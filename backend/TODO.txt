@@ -1,12 +1,13 @@
 Backend-API:
     - POST /api/search/ => llamar Email.search, convertir a ApiConversationSummary, devolver
+      usando el limit, devolver también el número de resultados y poner una opción
+      para saltar.
+
+    - Ver como considerar el delete
+
 
 Backend-Retriever:
-    Search:
-        - probar rendimiento
-        - Poner dos BBDD de test, una con los 33.000 emails
-
-    - CHECK ALL USES OF PARSEJSONSTRING, AVOID INJECTIONS USING Json(U).toString
+    - Más benchmark, ver si conviene poner el conversation en el emailIndexContents
 
     Later:
     - Use log to log more warnings, specially on db.*
@@ -35,12 +36,10 @@ Contacts:
     - Use it for getting the shortnames in the ConversationSummary object.
 
 All:
-    - See why after a test_db_all Mongo turns crazy and gets all the CPU
     - Authentication with scrypt hashing instead of MD5
     - Run dub with code converage option
     - Import cleanup (only imports and symbols really used)
     - Const, immutable, pure, nothrow, in, out, safe et all
-    - Add ensureTextIndex to Vibed and use it on mongo.d::ensure
     - See how to get around Mongo's 16MB document limit for bigger emails
       (GridFS?) Check is some email of my collection is bigger than 16MB without
       attachments (=> no)

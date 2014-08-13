@@ -3,10 +3,14 @@ module db.config;
 import std.path;
 import std.conv;
 import std.algorithm;
-
 import vibe.core.log;
-
 import db.mongo;
+
+version(db_usetestdb)     version = anytestdb;
+version(db_usebigdb)      version = anytestdb;
+version(db_insertalltest) version = anytestdb;
+version(db_insertalltest) version = db_usebigdb;
+version(search_test)      version = db_usebigdb;
 
 struct RetrieverConfig
 {
@@ -41,7 +45,7 @@ private shared immutable RetrieverConfig g_config;
 // Read config from the DB into g_config
 shared static this()
 {
-    version(db_usetestdb)
+    version(anytestdb)
         insertTestSettings();
 
     immutable dbConfig = collection("settings").findOne(["module": "retriever"]);
@@ -102,9 +106,8 @@ shared static this()
 
 ref const(RetrieverConfig) getConfig() { return g_config; }
 
-
 // testing config
-version(db_usetestdb)
+version(anytestdb)
 {
     import std.string;
     import vibe.data.json;

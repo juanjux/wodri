@@ -126,6 +126,8 @@ MONGODB:
         db.emailIndexContents.ensureIndex({text: "text"}, {default_language: "none"})
         use testwebmail
         db.emailIndexContents.ensureIndex({text: "text"}, {default_language: "none"})
+        use testwebmail_all
+        db.emailIndexContents.ensureIndex({text: "text"}, {default_language: "none"})
 
    
 CONFIG DIRECTORY AND MONGO DB USER

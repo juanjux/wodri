@@ -145,7 +145,7 @@ final class UserFilter
         UserFilter[] res;
         auto userRuleFindJson = parseJsonString(
                 format(`{"destinationAccounts": {"$in": ["%s"]}}`, address)
-                );
+        );
         auto userRuleCursor   = collection("userrule").find(userRuleFindJson);
 
         foreach(ref rule; userRuleCursor)
