@@ -36,6 +36,12 @@ final class TextPart
     }
 }
 
+private struct EmailAndConvIds
+{
+    string emailId;
+    string convId;
+}
+
 struct SearchResult
 {
     Conversation conversation;
@@ -695,11 +701,11 @@ final class Email
     }
 
 
-    private static string[] searchEmailsGetIds(const string[] needles,
+    private static EmailAndConvIds[] searchEmailsGetIds(const string[] needles,
                                                string dateStart = "",
                                                string dateEnd = "")
     {
-        string[] res;
+        EmailAndConvIds[] res;
         foreach(needle; needles)
         {
             Appender!string findJson;
@@ -724,12 +730,14 @@ final class Email
             auto bson = parseJsonString(findJson.data);
             auto emailIdsCursor = collection("emailIndexContents").find(
                     bson,
-                    ["_id": 1, "emailDbId": 1],
+                    ["_id": 1, "emailDbId": 1, "convDbId": 1],
                     QueryFlags.None
             ).sort(["lastDate": -1]);
 
             foreach(item; emailIdsCursor)
-                res ~= bsonStr(item.emailDbId);
+            {
+                res ~= EmailAndConvIds(bsonStr(item.emailDbId), bsonStr(item.convDbId));
+            }
         }
         return removeDups(res);
     }
@@ -749,7 +757,7 @@ final class Email
         // Get an list of matching email IDs
         import std.datetime; // XXX quitar
         StopWatch sw; sw.start;
-        auto matchingIds = searchEmailsGetIds(needles, dateStart, dateEnd);
+        auto matchingEmailAndConvIds = searchEmailsGetIds(needles, dateStart, dateEnd);
         sw.stop; writeln("searchEmailGetIds: ", sw.peek.msecs); sw.reset;
 
         // keep the found conversations+matches indexes, the key is the conversation dbId
@@ -758,10 +766,11 @@ final class Email
         // For every id, get the conversation (with MessageSummaries loaded)
         uint total = 0; // XXX
         uint counter = 0;
-        foreach(emailId; matchingIds)
+        foreach(emailAndConvId; matchingEmailAndConvIds)
         {
+            auto emailId = emailAndConvId.emailId;
             sw.start;
-            auto conv = Conversation.getByEmailId(emailId);
+            auto conv = Conversation.get(emailAndConvId.convId);
             sw.stop; 
             total += sw.peek.msecs;
             writeln("\t Conversation.getByEmailId: ", sw.peek.msecs); sw.reset;
