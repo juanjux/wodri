@@ -61,6 +61,7 @@ final class EmailSummary
     bool deleted=false;
 }
 
+
 /** Paranoic retrieval of emailDoc headers */
 private string headerRaw(Bson emailDoc, string headerName)
 {
@@ -70,6 +71,7 @@ private string headerRaw(Bson emailDoc, string headerName)
         return bsonStr(emailDoc.headers[headerName][0].rawValue);
     return "";
 }
+
 
 final class Email
 {
@@ -279,6 +281,44 @@ final class Email
         return No.IsValidEmail;
     }
 
+
+    /** NOTE: * - dateStart and dateEnd should be GMT */
+    static SearchResult[] search(const string[] needles,
+                                 string dateStart="",
+                                 string dateEnd="")
+    {
+        // Get an list of matching email IDs
+        auto matchingEmailAndConvIds = searchEmailsGetIds(needles, dateStart, dateEnd);
+
+        // keep the found conversations+matches indexes, the key is the conversation dbId
+        SearchResult[string] map;
+
+        // For every id, get the conversation (with MessageSummaries loaded)
+        foreach(emailAndConvId; matchingEmailAndConvIds)
+        {
+            auto conv = Conversation.get(emailAndConvId.convId);
+            assert(conv !is null);
+
+            uint indexMatching = -1;
+            // find the index of the email inside the conversation
+            foreach(int idx, const ref MessageLink link; conv.links)
+            {
+                if (link.emailDbId == emailAndConvId.emailId)
+                {
+                    indexMatching = idx;
+                    break; // inner foreach
+                }
+            }
+            assert(indexMatching != -1);
+
+            if (conv.dbId in map)
+                map[conv.dbId].matchingEmailsIdx ~= indexMatching;
+            else
+                map[conv.dbId] = SearchResult(conv, [indexMatching]);
+        }
+        return map.values;
+    }
+
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
@@ -291,21 +331,118 @@ final class Email
             return bsonStr(res["_id"]);
         return "";
     }
-    
 
-    // Get an email document, return the attachment filenames in an array
-    private static string[] extractAttachNamesFromDoc(const ref Bson emailDoc)
+    /** store or update the email into the DB, returns the DB id */
+    string store(Flag!"ForceInsertNew" = No.ForceInsertNew)
     {
-        string[] res;
-        if (!emailDoc.isNull)
+        assert(this.userId !is null);
+        assert(this.userId.length);
+        if (this.userId is null || !this.userId.length)
+            throw new Exception("Cant store email without assigning a user");
+        Appender!string jsonAppender;
+
+        // json for the text parts
+        foreach(idx, part; this.textParts)
+            jsonAppender.put("{\"contentType\": " ~ Json(part.ctype).toString ~ ","
+                              "\"content\": "     ~ Json(part.content).toString ~ "},");
+        string textPartsJsonStr = jsonAppender.data;
+        jsonAppender.clear();
+
+        // json for the attachments
+        foreach(ref attach; this.attachments)
         {
-            foreach(ref attach; emailDoc.attachments)
-            {
-                if (!attach.fileName.isNull)
-                    res ~= bsonStr(attach.fileName);
-            }
+            jsonAppender.put(`{"contentType": ` ~ Json(attach.ctype).toString     ~ `,` ~
+                             ` "realPath": `    ~ Json(attach.realPath).toString  ~ `,` ~
+                             ` "size": `        ~ Json(attach.size).toString      ~ `,`);
+            if (attach.contentId.length)
+                jsonAppender.put(` "contentId": ` ~ Json(attach.contentId).toString ~ `,`);
+            if (attach.filename.length)
+                jsonAppender.put(` "fileName": `  ~ Json(attach.filename).toString  ~ `,`);
+            jsonAppender.put("},");
         }
-        return res;
+        string attachmentsJsonStr = jsonAppender.data();
+        jsonAppender.clear();
+
+        // Json for the headers (see the schema.txt doc)
+        bool[string] alreadyDone;
+        jsonAppender.put("{");
+        foreach(headerName, ref headerValue; this.headers)
+        {
+            // mongo doesnt allow $ or . on key names, any header with these chars
+            // is unimportant and broken anyway
+            if (countUntil(headerName, "$") != -1 ||
+                countUntil(headerName, ".") != -1)
+                    continue;
+            if (among(toLower(headerName), "from", "message-id"))
+                // these are keys outside doc.headers because they're indexed
+                continue;
+
+            // headers can have several values per key and thus be repeated
+            // in the foreach iteration but we extract all the first time
+            if (headerName in alreadyDone)
+                continue;
+            alreadyDone[headerName] = true;
+
+            auto allValues = this.headers.getAll(headerName);
+            jsonAppender.put(format(`"%s": [`, toLower(headerName)));
+            foreach(ref hv; allValues)
+            {
+                jsonAppender.put(format(`{"rawValue": %s`, Json(hv.rawValue).toString));
+                if (hv.addresses.length)
+                    jsonAppender.put(format(`,"addresses": %s`, to!string(hv.addresses)));
+                jsonAppender.put("},");
+            }
+            jsonAppender.put("],");
+        }
+        jsonAppender.put("}");
+        string rawHeadersStr = jsonAppender.data();
+        jsonAppender.clear();
+
+        if (Yes.ForceInsertNew || !this.dbId.length)
+            this.dbId = BsonObjectID.generate().toString;
+
+        auto emailInsertJson = format(
+              `{"_id": %s,` ~
+              `"deleted": %s,` ~
+              `"userId": "%s",` ~
+              `"destinationAddress": %s,` ~
+              `"forwardedTo": %s,` ~
+              `"rawEmailPath": %s,` ~
+              `"message-id": %s,`    ~
+              `"isodate": %s,`      ~
+              `"from": { "rawValue": %s, "addresses": %s },` ~
+              `"receivers": { "rawValue": %s, "addresses": %s },`   ~
+              `"headers": %s, `    ~
+              `"textParts": [ %s ], ` ~
+              `"bodyPeek": %s, ` ~
+              `"attachments": [ %s ] }`,
+                Json(this.dbId).toString,
+                this.deleted,
+                this.userId,
+                Json(this.destinationAddress).toString,
+                this.forwardedTo,
+                Json(this.rawEmailPath).toString,
+                Json(this.messageId).toString,
+                Json(this.isoDate).toString,
+                Json(this.from.rawValue).toString,
+                this.from.addresses,
+                Json(this.receivers.rawValue).toString,
+                this.receivers.addresses,
+                rawHeadersStr,
+                textPartsJsonStr,
+                Json(this.bodyPeek).toString,
+                attachmentsJsonStr
+        );
+        //writeln(emailInsertJson);
+
+        auto bsonData = parseJsonString(emailInsertJson);
+        collection("email").update(["_id": this.dbId], bsonData, UpdateFlags.Upsert);
+
+        // store the index document for Mongo's full text search engine
+        if (getConfig().storeTextIndex)
+            storeTextIndex();
+
+        return this.dbId;
     }
 
 
@@ -336,15 +473,6 @@ final class Email
             res.attachFileNames = extractAttachNamesFromDoc(emailDoc);
         }
         return res;
-    }
-
-
-    static string[] getAttachFileNames(string dbId)
-    {
-        string[] res;
-        const emailDoc = collection("email").findOne(["_id": dbId], ["attachments": 1],
-                                                     QueryFlags.None);
-        return extractAttachNamesFromDoc(emailDoc);
     }
 
 
@@ -535,7 +663,6 @@ final class Email
             else
                 logWarn(format("Email.removeById: no conversation found for email (%s)", dbId));
         }
-
         // Remove the email from the DB
         collection("email").remove(["_id": emailId]);
     }
@@ -557,117 +684,27 @@ final class Email
     }
 
 
-    /** store or update the email into the DB, returns the DB id */
-    string store(Flag!"ForceInsertNew" = No.ForceInsertNew)
+    static void setConversationInEmailIndex(string emailId, string convId)
     {
-        assert(this.userId !is null);
-        assert(this.userId.length);
-        if (this.userId is null || !this.userId.length)
-            throw new Exception("Cant store email without assigning a user");
-        Appender!string jsonAppender;
+        const json = format(`{"$set": {"convId": %s}}`, Json(convId).toString);
+        const bson = parseJsonString(json);
+        collection("emailIndexContents").update(["emailDbId": emailId], bson);
+    }
 
-        // json for the text parts
-        foreach(idx, part; this.textParts)
-            jsonAppender.put("{\"contentType\": " ~ Json(part.ctype).toString ~ ","
-                              "\"content\": "     ~ Json(part.content).toString ~ "},");
-        string textPartsJsonStr = jsonAppender.data;
-        jsonAppender.clear();
 
-        // json for the attachments
-        foreach(ref attach; this.attachments)
+    // Get an email document, return the attachment filenames in an array
+    private static string[] extractAttachNamesFromDoc(const ref Bson emailDoc)
+    {
+        string[] res;
+        if (!emailDoc.isNull)
         {
-            jsonAppender.put(`{"contentType": ` ~ Json(attach.ctype).toString     ~ `,` ~
-                             ` "realPath": `    ~ Json(attach.realPath).toString  ~ `,` ~
-                             ` "size": `        ~ Json(attach.size).toString      ~ `,`);
-            if (attach.contentId.length)
-                jsonAppender.put(` "contentId": ` ~ Json(attach.contentId).toString ~ `,`);
-            if (attach.filename.length)
-                jsonAppender.put(` "fileName": `  ~ Json(attach.filename).toString  ~ `,`);
-            jsonAppender.put("},");
-        }
-        string attachmentsJsonStr = jsonAppender.data();
-        jsonAppender.clear();
-
-        // Json for the headers (see the schema.txt doc)
-        bool[string] alreadyDone;
-        jsonAppender.put("{");
-        foreach(headerName, ref headerValue; this.headers)
-        {
-            // mongo doesnt allow $ or . on key names, any header with these chars
-            // is unimportant and broken anyway
-            if (countUntil(headerName, "$") != -1 ||
-                countUntil(headerName, ".") != -1)
-                    continue;
-            if (among(toLower(headerName), "from", "message-id"))
-                // these are keys outside doc.headers because they're indexed
-                continue;
-
-            // headers can have several values per key and thus be repeated
-            // in the foreach iteration but we extract all the first time
-            if (headerName in alreadyDone)
-                continue;
-            alreadyDone[headerName] = true;
-
-            auto allValues = this.headers.getAll(headerName);
-            jsonAppender.put(format(`"%s": [`, toLower(headerName)));
-            foreach(ref hv; allValues)
+            foreach(ref attach; emailDoc.attachments)
             {
-                jsonAppender.put(format(`{"rawValue": %s`, Json(hv.rawValue).toString));
-                if (hv.addresses.length)
-                    jsonAppender.put(format(`,"addresses": %s`, to!string(hv.addresses)));
-                jsonAppender.put("},");
+                if (!attach.fileName.isNull)
+                    res ~= bsonStr(attach.fileName);
             }
-            jsonAppender.put("],");
         }
-        jsonAppender.put("}");
-        string rawHeadersStr = jsonAppender.data();
-        jsonAppender.clear();
-
-        if (Yes.ForceInsertNew || !this.dbId.length)
-            this.dbId = BsonObjectID.generate().toString;
-
-        auto emailInsertJson = format(
-              `{"_id": %s,` ~
-              `"deleted": %s,` ~
-              `"userId": "%s",` ~
-              `"destinationAddress": %s,` ~
-              `"forwardedTo": %s,` ~
-              `"rawEmailPath": %s,` ~
-              `"message-id": %s,`    ~
-              `"isodate": %s,`      ~
-              `"from": { "rawValue": %s, "addresses": %s },` ~
-              `"receivers": { "rawValue": %s, "addresses": %s },`   ~
-              `"headers": %s, `    ~
-              `"textParts": [ %s ], ` ~
-              `"bodyPeek": %s, ` ~
-              `"attachments": [ %s ] }`,
-                Json(this.dbId).toString,
-                this.deleted,
-                this.userId,
-                Json(this.destinationAddress).toString,
-                this.forwardedTo,
-                Json(this.rawEmailPath).toString,
-                Json(this.messageId).toString,
-                Json(this.isoDate).toString,
-                Json(this.from.rawValue).toString,
-                this.from.addresses,
-                Json(this.receivers.rawValue).toString,
-                this.receivers.addresses,
-                rawHeadersStr,
-                textPartsJsonStr,
-                Json(this.bodyPeek).toString,
-                attachmentsJsonStr
-        );
-        //writeln(emailInsertJson);
-
-        auto bsonData = parseJsonString(emailInsertJson);
-        collection("email").update(["_id": this.dbId], bsonData, UpdateFlags.Upsert);
-
-        // store the index document for Mongo's full text search engine
-        if (getConfig().storeTextIndex)
-            storeTextIndex();
-
-        return this.dbId;
+        return res;
     }
 
 
@@ -730,90 +767,14 @@ final class Email
             auto bson = parseJsonString(findJson.data);
             auto emailIdsCursor = collection("emailIndexContents").find(
                     bson,
-                    ["_id": 1, "emailDbId": 1, "convDbId": 1],
+                    ["emailDbId": 1, "convId": 1],
                     QueryFlags.None
             ).sort(["lastDate": -1]);
 
             foreach(item; emailIdsCursor)
-            {
-                res ~= EmailAndConvIds(bsonStr(item.emailDbId), bsonStr(item.convDbId));
-            }
+                res ~= EmailAndConvIds(bsonStr(item.emailDbId), bsonStr(item.convId));
         }
         return removeDups(res);
-    }
-
-
-    /** NOTES: 
-     * - dateStart and dateEnd should be GMT 
-     * - it could return less SearchResult's than limit because SearchResults 
-     *   are conversations and limit are emails (and if a conversation has more than
-     *   one matching email less than limit will be returned). 
-     *   For getting N results, call this routine several times until you have as many
-     * */
-    static SearchResult[] search(const string[] needles,
-                                 string dateStart="",
-                                 string dateEnd="")
-    {
-        // Get an list of matching email IDs
-        import std.datetime; // XXX quitar
-        StopWatch sw; sw.start;
-        auto matchingEmailAndConvIds = searchEmailsGetIds(needles, dateStart, dateEnd);
-        sw.stop; writeln("searchEmailGetIds: ", sw.peek.msecs); sw.reset;
-
-        // keep the found conversations+matches indexes, the key is the conversation dbId
-        SearchResult[string] map;
-
-        // For every id, get the conversation (with MessageSummaries loaded)
-        uint total = 0; // XXX
-        uint counter = 0;
-        foreach(emailAndConvId; matchingEmailAndConvIds)
-        {
-            auto emailId = emailAndConvId.emailId;
-            sw.start;
-            auto conv = Conversation.get(emailAndConvId.convId);
-            sw.stop; 
-            total += sw.peek.msecs;
-            writeln("\t Conversation.getByEmailId: ", sw.peek.msecs); sw.reset;
-            writeln("\t Total: ", total);
-            counter++;
-            if (conv is null)
-            {
-                logWarn(format("Conversation not found for email with id [%s]", emailId));
-                continue;
-            }
-
-            uint indexMatching = -1;
-            // find the index of the email inside the conversation
-            foreach(int idx, const ref MessageLink link; conv.links)
-            {
-                if (link.emailDbId == emailId)
-                {
-                    indexMatching = idx;
-                    break; // inner foreach
-                }
-            }
-            if (indexMatching == -1)
-            {
-                logWarn(format("DB returned result for search [%s] but conversation [%s]",
-                        needles, emailId) ~"doesnt have any matching email");
-                continue;
-            }
-
-            if (conv.dbId in map)
-                map[conv.dbId].matchingEmailsIdx ~= indexMatching;
-            else
-                map[conv.dbId] = SearchResult(conv, [indexMatching]);
-        }
-        writeln("Average by Conversation: ", total*1.0/counter*1.0);
-        return map.values;
-    }
-
-
-    static void setConversationInEmailIndex(string emailId, string convId)
-    {
-        const json = format(`{"$set": {"convId": %s}}`, Json(convId).toString);
-        const bson = parseJsonString(json);
-        collection("emailIndexContents").update(["emailDbId": emailId], bson);
     }
 }
 
@@ -1126,31 +1087,75 @@ version(db_usetestdb)
         assert(cursor.empty);
     }
 
+
+    unittest // searchEmailsGetIds
+    {
+        writeln("Testing Email.searchEmailsGetIds");
+        recreateTestDb();
+        auto results = Email.searchEmailsGetIds(["inicio de sesión"]);
+        assert(results.length == 1);
+        auto conv  = Conversation.get(results[0].convId);
+        assert(conv.links[1].emailDbId == results[0].emailId);
+
+        results = Email.searchEmailsGetIds(["some"]);
+        assert(results.length == 4);
+        foreach(ref result; results)
+        {
+            conv = Conversation.get(result.convId);
+            bool found = false;
+            foreach(ref link; conv.links)
+            {
+                if (link.emailDbId == result.emailId)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            assert(found);
+        }
+        
+        results = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z");
+        assert(results.length == 4);
+
+        results = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z", "2013-05-28T00:00:00Z");
+        assert(results.length == 2);
+
+        string startFixedDate = "2005-01-01T00:00:00Z";
+        results = Email.searchEmailsGetIds(["some"], startFixedDate, "2018-12-12T00:00:00Z");
+        assert(results.length == 4);
+
+        results = Email.searchEmailsGetIds(["some"], startFixedDate, "2013-05-28T00:00:00Z");
+        assert(results.length == 2);
+    }
+
+
     unittest // search
     {
-        // FIXME: improve, check inside some search results
+        // Not the same as the searchEmailGetIds test because "search" returns conversations
+        // with several messages grouped (this, less results sometimes)
         writeln("Testing Email.search");
-        auto searchResults = Email.search(["inicio de sesión"], 20, 0);
+        recreateTestDb();
+        auto searchResults = Email.search(["inicio de sesión"]);
         assert(searchResults.length == 1);
         assert(searchResults[0].matchingEmailsIdx == [1]);
 
-        searchResults = Email.search(["some"], 20, 0);
+        searchResults = Email.search(["some"]);
         assert(searchResults.length == 3);
 
-        searchResults = Email.search(["some"], 20, 0, "2010-01-21T14:32:20Z");
+        searchResults = Email.search(["some"], "2010-01-21T14:32:20Z");
         assert(searchResults.length == 3);
-        searchResults = Email.search(["some"], 20, 0, "2013-05-28T14:32:20Z");
+        searchResults = Email.search(["some"], "2013-05-28T14:32:20Z");
         assert(searchResults.length == 2);
-        searchResults = Email.search(["some"], 20, 0, "2018-05-28T14:32:20Z");
+        searchResults = Email.search(["some"], "2018-05-28T14:32:20Z");
         assert(searchResults.length == 0);
 
         string startFixedDate = "2005-01-01T00:00:00Z";
-        searchResults = Email.search(["some"], 20, 0, startFixedDate, "2018-12-12T00:00:00Z");
+        searchResults = Email.search(["some"], startFixedDate, "2018-12-12T00:00:00Z");
         assert(searchResults.length == 3);
-        searchResults = Email.search(["some"], 20, 0, startFixedDate, "2013-05-28T00:00:00Z");
+        searchResults = Email.search(["some"], startFixedDate, "2013-05-28T00:00:00Z");
         assert(searchResults.length == 1);
         assert(searchResults[0].matchingEmailsIdx.length == 2);
-        searchResults = Email.search(["some"], 20, 0, startFixedDate, "2014-02-21T00:00:00Z");
+        searchResults = Email.search(["some"], startFixedDate, "2014-02-21T00:00:00Z");
         assert(searchResults.length == 2);
     }
 
@@ -1166,7 +1171,7 @@ version(search_test)
         sw.start();
         auto searchRes = Email.search(["testing"]);
         sw.stop();
-        writeln(format("Time to search with a result set of %s convs: %s msecs", 
+        writeln(format("Time to search with a result set of %s convs: %s msecs",
                 searchRes.length, sw.peek.msecs));
         sw.reset();
     }
