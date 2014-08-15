@@ -37,10 +37,13 @@ pure string removeStartEndSlashes(string path)
 
 shared static this()
 {
-    //setLogLevel(LogLevel.debugV);
-
-    auto config = getConfig();
+    const config = getConfig();
     auto router = new URLRouter;
+
+  // Log
+    setLogFile(buildPath(config.mainDir, "backend", "log", "webbackend.log"), 
+               LogLevel.info);
+    //setLogLevel(LogLevel.debugV);
 
   // Auth
     router.any("*", performBasicAuth("Site Realm", toDelegate(&checkAuth)));

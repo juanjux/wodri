@@ -11,10 +11,7 @@ import std.regex;
 import std.stdio;
 import std.string;
 
-auto SUBJECT_CLEAN_REGEX = ctRegex!(
-        r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", 
-        "gi"
-);
+auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 auto NAME_CLEAN_REGEX = ctRegex!(r"[<>]", "g");
 
 
@@ -28,7 +25,7 @@ final class ApiConversationSummary
     string[]       attachFileNames;
     const string[] tags;
 
-    this (const Conversation conv)
+    this (const Conversation conv, bool withDeleted = false)
     {
         this.dbId     = conv.dbId;
         this.lastDate = conv.lastDate;
@@ -37,7 +34,7 @@ final class ApiConversationSummary
 
         foreach(link; conv.links)
         {
-            if (link.deleted)
+            if (!withDeleted && link.deleted)
                 continue;
 
             this.numMessages += 1;

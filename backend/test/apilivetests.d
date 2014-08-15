@@ -75,45 +75,50 @@ void deleteConversation(string id, bool purge=false)
 JSONValue getConversations(string tag, uint limit, uint page, bool loadDeleted=false)
 {
     auto loadStr = loadDeleted? "&loadDeleted=1": "";
-    auto ret = callCurl(format("%s/tag/?limit=%d&page=%d%s", tag, limit, page, loadStr),
-                             "getting conversations");
-
-    auto conversations = parseJSON(ret);
-    return conversations;
+    return parseJSON(callCurl(format("%s/tag/?limit=%d&page=%d%s", 
+                                     tag, limit, page, loadStr),
+                             "getting conversations"));
 }
 
 
 JSONValue getConversationById(string id)
 {
-    auto ret = callCurl("conversation/", "getting conversation by id", id);
-    auto conversation = parseJSON(ret);
-    return conversation;
+    return parseJSON(callCurl("conversation/", "getting conversation by id", id));
 }
 
 
 JSONValue getEmail(string id, Flag!"GetRaw" raw = No.GetRaw)
 {
     string name = raw == Yes.GetRaw?"raw":"email";
-    auto ret = callCurl(name ~ "/", "getting single email", id);
-    auto email = parseJSON(ret);
-    return email;
+    return parseJSON(callCurl(name ~ "/", "getting single email", id));
 }
+
 
 void addTag(string id, string tag)
 {
-    auto json = parseJSON(format(`{"tag":"%s"}`, tag));
-    callCurl("conversationaddtag/", 
-             "adding tag", id, 
-             "POST", json.toString);
+    auto json = format(`{"tag": "%s"}`, tag);
+    callCurl("conversationaddtag/", "adding tag", id, "POST", json);
 }
 
 
 void removeTag(string id, string tag)
 {
-    auto json = parseJSON(format(`{"tag":"%s"}`, tag));
-    callCurl("conversationremovetag/", 
-             "removing tag", id, 
-             "POST", json.toString);
+    auto json = format(`{"tag":"%s"}`, tag);
+    callCurl("conversationremovetag/", "removing tag", id, "POST", json);
+}
+
+
+// XXX devolver JsonValue y poner parseJSON al return
+JSONValue search(string[] terms, 
+            string dateStart, 
+            string dateEnd, 
+            uint limit, 
+            uint page, 
+            int loadDeleted)
+{
+    auto json = format(`{"terms":%s,"dateStart":"%s","dateEnd":"%s","limit":%s,"page":%s,"loadDeleted":%s}`,
+                       terms, dateStart, dateEnd, limit, page, loadDeleted);
+    return parseJSON(callCurl("search/", "searching", "", "POST", json));
 }
 
 void testGetConversation()
@@ -423,6 +428,12 @@ void testUndeleteConversation()
 }
 
 
+    //ApiConversationSummary[] search(string[] terms,
+                                    //string dateStart="",
+                                    //string dateEnd="",
+                                    //uint limit=DEFAULT_SEARCH_RESULTS_LIMIT,
+                                    //uint page=0,
+                                    //int loadDeleted=0);
 void testUnDeleteEmail()
 {
     writeln("\nTesting GET /api/:id/emailundelete");
@@ -436,6 +447,61 @@ void testUnDeleteEmail()
     email = getEmail(emailId);
     enforce(email["deleted"].type == JSON_TYPE.FALSE);
 }
+
+
+void testSearch()
+{
+    writeln("\nTestin POST /api/search");
+    recreateTestDb();
+    auto searchRes = search(["some"], "", "", 20, 0, 0);
+    enforce(searchRes.array.length == 3);
+    auto first  = searchRes.array[0];
+    auto second = searchRes.array[1];
+    auto third  = searchRes.array[2];
+
+    // limit = 1, page = 0
+    searchRes = search(["some"], "", "", 1, 0, 0);
+    enforce(searchRes.array.length == 1);
+    enforce(searchRes.array.length == 1);
+    enforce(first["dbId"].str == searchRes.array[0]["dbId"].str);
+
+    searchRes = search(["some"], "", "", 0, 0, 0);
+    enforce(searchRes.array.length == 0);
+
+    // limit = 2 and page = 1 should give the third element
+    searchRes = search(["some"], "", "", 2, 1, 0);
+    enforce(searchRes.array.length == 1);
+    enforce(third["dbId"].str == searchRes.array[0]["dbId"].str);
+
+    // limit = 3 page = 1: no elements
+    searchRes = search(["some"], "", "", 3, 1, 0);
+    enforce(searchRes.array.length == 0);
+
+    // outside range: no elements
+    searchRes = search(["some"], "", "", 100, 100, 0);
+    enforce(searchRes.array.length == 0);
+
+    // non matching search
+    searchRes = search(["nomatch"], "", "", 20, 0, 0);
+    enforce(searchRes.array.length == 0);
+
+    // some match, some doesnt
+    searchRes = search(["nomatch", "some"], "", "", 20, 0, 0);
+    enforce(searchRes.array.length == 3);
+
+    // startDate test      
+    searchRes = search(["some"], "2014-01-01T00:00:00Z", "", 20, 0, 0);
+    enforce(searchRes.array.length == 2);
+
+    // endDate test
+    searchRes = search(["some"], "", "2014-01-01T00:00:00Z", 20, 0, 0);
+    enforce(searchRes.array.length == 1);
+
+    // startDate+endDate
+    searchRes = search(["some"], "2014-01-01T00:00:00Z", "2014-07-01T00:00:00Z", 20, 0, 0);
+    enforce(searchRes.array.length == 2);
+}
+
 
 void main()
 {
@@ -451,5 +517,6 @@ void main()
     testPurgeConversation();
     testUndeleteConversation();
     testUnDeleteEmail();
+    testSearch();
     writeln("All CURL tests finished");
 }

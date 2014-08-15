@@ -1,29 +1,29 @@
 module webbackend.api;
 
+import db.conversation;
+import db.email;
+import db.mongo;
 import std.algorithm;
-import std.typecons;
 import std.array;
 import std.conv;
 import std.stdio;
-
-import vibe.web.common;
+import std.typecons;
+import vibe.core.log;
 import vibe.http.common;
-
-import db.mongo;
-import db.conversation;
-import db.email;
-
-import webbackend.apiemail;
+import vibe.web.common;
 import webbackend.apiconversation;
 import webbackend.apiconversationsummary;
-
+import webbackend.apiemail;
+import webbackend.constants;
 
 @rootPathFromName
 final interface Api
 {
     @method(HTTPMethod.GET) @path("tag/")
-    ApiConversationSummary[] getTagConversations(string id, int limit=50, 
-                                                 int page=0, int loadDeleted=0);
+    ApiConversationSummary[] getTagConversations(string id, 
+                                                 uint limit=DEFAULT_CONVERSATIONS_LIMIT,
+                                                 uint page=0, 
+                                                 int loadDeleted=0);
 
     @method(HTTPMethod.GET) @path("conversation/")
     ApiConversation getConversation_(string id);
@@ -52,6 +52,14 @@ final interface Api
     @method(HTTPMethod.GET) @path("raw/")
     string getOriginalEmail(string id);
 
+    @method(HTTPMethod.POST) @path("search/")
+    ApiConversationSummary[] search(string[] terms,
+                                    string dateStart="",
+                                    string dateEnd="",
+                                    uint limit=DEFAULT_SEARCH_RESULTS_LIMIT,
+                                    uint page=0,
+                                    int loadDeleted=0);
+
     version(db_usetestdb)
     {
         @method(HTTPMethod.GET) @path("testrebuilddb/")
@@ -64,34 +72,30 @@ final interface Api
 final class ApiImpl: Api
 {
     override:
+        /** Returns an ApiConversationSummary for every Conversation in the tag */
         ApiConversationSummary[] getTagConversations(string id,
-                                                     int limit=50,
-                                                     int page=0,
+                                                     uint limit=DEFAULT_CONVERSATIONS_LIMIT,
+                                                     uint page=0,
                                                      int loadDeleted=0)
         {
-            // returns an ApiConversationSummary for every Conversation
-            auto loadDel = cast(bool)loadDeleted? Yes.WithDeleted: No.WithDeleted;
-
             ApiConversationSummary[] ret;
-            foreach(ref conv; Conversation.getByTag(id, limit, page, loadDel))
+            auto conversations = Conversation.getByTag(
+                    id,
+                    limit,
+                    page,
+                    cast(Flag!"WithDeleted")loadDeleted
+            );
+
+            foreach(ref conv; conversations)
             {
-                // Check if there is some not deleted email in the conversations; dont
-                // return any ApiConversationSummary if the Conversation doesnt have any
-                // undeleted emails
-                bool hasNotDeleted = false;
-                foreach(const link; conv.receivedLinks)
-                {
-                    if (!link.deleted)
-                    {
-                        hasNotDeleted = true;
-                        break;
-                    }
-                }
-                if (hasNotDeleted)
-                    ret ~= new ApiConversationSummary(conv);
+                auto apiConvSummary = new ApiConversationSummary(conv,
+                                                                 cast(bool)loadDeleted);
+                if (apiConvSummary.numMessages > 0) // if == 0 all msgs were deleted
+                    ret ~= apiConvSummary;
             }
             return ret;
         }
+
 
         ApiConversation getConversation_(string id)
         {
@@ -103,10 +107,10 @@ final class ApiImpl: Api
         void deleteConversation(string id, int purge=0)
         {
             auto conv = Conversation.get(id);
-            if (conv is null) 
+            if (conv is null)
                 return;
 
-            if (purge != 0) 
+            if (purge != 0)
             {
                 foreach(const link; conv.receivedLinks)
                     Email.removeById(link.emailDbId, No.UpdateConversation);
@@ -149,7 +153,7 @@ final class ApiImpl: Api
             auto conv = Conversation.get(id);
             if (conv is null)
                 return;
-            
+
             conv.addTag(tag);
             conv.store();
         }
@@ -160,7 +164,7 @@ final class ApiImpl: Api
             auto conv = Conversation.get(id);
             if (conv is null)
                 return;
-            
+
             conv.removeTag(tag);
             conv.store();
         }
@@ -189,6 +193,37 @@ final class ApiImpl: Api
         string getOriginalEmail(string id)
         {
             return Email.getOriginal(id);
+        }
+
+
+        ApiConversationSummary[] search(string[] terms,
+                                        string dateStart="",
+                                        string dateEnd="",
+                                        uint limit=DEFAULT_SEARCH_RESULTS_LIMIT,
+                                        uint page=0,
+                                        int loadDeleted = 0)
+        {
+            ApiConversationSummary[] ret;
+            if (limit <= 0 || page < 0)
+            {
+                logWarn("Api.search: returning empty array because limit<=0 or page<0");
+                return ret;
+            }
+
+            auto results = Email.search(terms, dateStart, dateEnd);
+
+            foreach(ref result; results)
+            {
+                assert(result.conversation !is null);
+                auto apiConvSummary = new ApiConversationSummary(result.conversation,
+                                                                 cast(bool)loadDeleted);
+                if (apiConvSummary.numMessages > 0)
+                    ret ~= apiConvSummary; // if numMessage==0 all msgs had deleted=True
+            }
+
+            auto rangeStart = min(limit*page, ret.length);
+            auto rangeEnd   = min(rangeStart + limit, ret.length);
+            return ret[rangeStart..rangeEnd];
         }
 
         version(db_usetestdb)

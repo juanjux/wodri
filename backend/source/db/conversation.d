@@ -44,12 +44,12 @@ final class Conversation
     string cleanSubject;
     private TagContainer m_tags;
 
-    bool     hasTag(string tag) const { return m_tags.has(tag); }
+    bool     hasTag(string tag)     const { return m_tags.has(tag);  }
     bool     hasTags(string[] tags) const { return m_tags.has(tags); }
-    void     addTag(string tag) { m_tags.add(tag); }
-    void     removeTag(string tag) { m_tags.remove(tag); }
-    string[] tagsArray() const { return m_tags.array; }
-    uint     numTags() const { return m_tags.length; }
+    void     addTag(string tag)           { m_tags.add(tag);         }
+    void     removeTag(string tag)        { m_tags.remove(tag);      }
+    string[] tagsArray()            const { return m_tags.array;     }
+    uint     numTags()              const { return m_tags.length;    }
 
 
     bool hasLink(string messageId, string emailDbId)
@@ -105,14 +105,14 @@ final class Conversation
 
 
     /** Update the lastDate field if the argument is newer*/
-    void updateLastDate(string newIsoDate)
+    private void updateLastDate(string newIsoDate)
     {
         if (!this.lastDate.length || this.lastDate < newIsoDate)
             this.lastDate = newIsoDate;
     }
 
 
-    string toJson()
+    private string toJson()
     {
         auto linksApp = appender!string;
         foreach(link; this.links)
@@ -201,13 +201,8 @@ final class Conversation
         jsonApp.put("}");
 
         auto bson    = parseJsonString(jsonApp.data);
-        import std.datetime; // XXX quitar
-        StopWatch sw; sw.start;
         auto convDoc = collection("conversation").findOne(bson);
-        sw.stop; writeln("\t\t Conversation.findOne: ", sw.peek.msecs); sw.reset;
-        sw.start;
         auto res     = convDoc.isNull? null: conversationDocToObject(convDoc);
-        sw.stop; writeln("\t\t convDocToObjecT: ", sw.peek.msecs); sw.reset;
         return res;
     }
 
@@ -241,7 +236,8 @@ final class Conversation
     }
 
 
-    static void addTagDb(string dbId, string tag)
+    version(unittest)
+    private static void addTagDb(string dbId, string tag)
     {
         assert(dbId.length);
         assert(tag.length);
@@ -251,8 +247,8 @@ final class Conversation
         collection("conversation").update(["_id": dbId], bson);
     }
 
-
-    static void removeTagDb(string dbId, string tag)
+    version(unittest)
+    private static void removeTagDb(string dbId, string tag)
     {
         assert(dbId.length);
         assert(tag.length);
@@ -325,6 +321,7 @@ final class Conversation
         return conv;
     }
 
+
     static private Conversation conversationDocToObject(const ref Bson convDoc)
     {
         auto ret = new Conversation();
@@ -366,7 +363,7 @@ final class Conversation
 
 
     // Find any conversation with this email and update the links.[email].deleted field
-    package static string setEmailDeleted(string dbId, bool setDel)
+    static string setEmailDeleted(string dbId, bool setDel)
     {
         auto json    = format(`{"links.emailId": {"$in": ["%s"]}}`, dbId);
         auto bson    = parseJsonString(json);

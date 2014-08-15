@@ -1,15 +1,15 @@
 Backend-API:
-    - POST /api/search/ => llamar Email.search, convertir a ApiConversationSummary, devolver
-      usando el limit, devolver también el número de resultados y poner una opción
-      para saltar.
+      - Test curl: 
+            - Con limit
+            - Con fechas
 
 Backend-Retriever:
-    - Ver como considerar en delete en search
-
     - Auditar todos los usos de messageIdToDbId, ver si son necesarios ahora que tengo
       el convId en el emailIndex
 
     - Actualizar schema.txt
+
+    - Alguna forma de devolver el numero total de resultados de busqueda
 
     Later:
     - Use log to log more warnings, specially on db.*
