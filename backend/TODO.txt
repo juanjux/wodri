@@ -1,15 +1,8 @@
 Backend-API:
-      - Test curl: 
-            - Con limit
-            - Con fechas
+    - Alguna forma de devolver el numero total de resultados de busqueda en el API
+      (por ejemplo devuelve un struct { uint resultCount, ApiConversationSummary[] results }
 
 Backend-Retriever:
-    - Auditar todos los usos de messageIdToDbId, ver si son necesarios ahora que tengo
-      el convId en el emailIndex
-
-    - Actualizar schema.txt
-
-    - Alguna forma de devolver el numero total de resultados de busqueda
 
     Later:
     - Use log to log more warnings, specially on db.*

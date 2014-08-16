@@ -16,13 +16,21 @@ import webbackend.apiconversationsummary;
 import webbackend.apiemail;
 import webbackend.constants;
 
+struct ApiSearchResult
+{
+    ApiConversationSummary[] conversations;
+    ulong totalResultCount;
+    ulong startIndex;
+}
+
+
 @rootPathFromName
 final interface Api
 {
     @method(HTTPMethod.GET) @path("tag/")
-    ApiConversationSummary[] getTagConversations(string id, 
+    ApiConversationSummary[] getTagConversations(string id,
                                                  uint limit=DEFAULT_CONVERSATIONS_LIMIT,
-                                                 uint page=0, 
+                                                 uint page=0,
                                                  int loadDeleted=0);
 
     @method(HTTPMethod.GET) @path("conversation/")
@@ -53,7 +61,7 @@ final interface Api
     string getOriginalEmail(string id);
 
     @method(HTTPMethod.POST) @path("search/")
-    ApiConversationSummary[] search(string[] terms,
+    ApiSearchResult search(string[] terms,
                                     string dateStart="",
                                     string dateEnd="",
                                     uint limit=DEFAULT_SEARCH_RESULTS_LIMIT,
@@ -176,6 +184,7 @@ final class ApiImpl: Api
             return email is null? null: email;
         }
 
+
         void deleteEmail(string id, int purge=0)
         {
             if (purge != 0)
@@ -183,6 +192,7 @@ final class ApiImpl: Api
             else
                 Email.setDeleted(id, true);
         }
+
 
         void unDeleteEmail(string id)
         {
@@ -196,14 +206,16 @@ final class ApiImpl: Api
         }
 
 
-        ApiConversationSummary[] search(string[] terms,
+        ApiSearchResult search(string[] terms,
                                         string dateStart="",
                                         string dateEnd="",
                                         uint limit=DEFAULT_SEARCH_RESULTS_LIMIT,
                                         uint page=0,
                                         int loadDeleted = 0)
         {
-            ApiConversationSummary[] ret;
+            ApiSearchResult ret;
+            ApiConversationSummary[] convs;
+
             if (limit <= 0 || page < 0)
             {
                 logWarn("Api.search: returning empty array because limit<=0 or page<0");
@@ -218,12 +230,17 @@ final class ApiImpl: Api
                 auto apiConvSummary = new ApiConversationSummary(result.conversation,
                                                                  cast(bool)loadDeleted);
                 if (apiConvSummary.numMessages > 0)
-                    ret ~= apiConvSummary; // if numMessage==0 all msgs had deleted=True
+                    // all msgs had deleted=True
+                    convs ~= apiConvSummary; 
             }
 
-            auto rangeStart = min(limit*page, ret.length);
-            auto rangeEnd   = min(rangeStart + limit, ret.length);
-            return ret[rangeStart..rangeEnd];
+            auto convsArrayEnd   = convs.length;
+            auto rangeStart      = min(limit*page,         convsArrayEnd);
+            auto rangeEnd        = min(rangeStart + limit, convsArrayEnd);
+            ret.conversations    = convs[rangeStart..rangeEnd];
+            ret.totalResultCount = convsArrayEnd;
+            ret.startIndex       = rangeStart;
+            return ret;
         }
 
         version(db_usetestdb)

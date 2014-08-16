@@ -108,7 +108,6 @@ void removeTag(string id, string tag)
 }
 
 
-// XXX devolver JsonValue y poner parseJSON al return
 JSONValue search(string[] terms, 
             string dateStart, 
             string dateEnd, 
@@ -428,12 +427,6 @@ void testUndeleteConversation()
 }
 
 
-    //ApiConversationSummary[] search(string[] terms,
-                                    //string dateStart="",
-                                    //string dateEnd="",
-                                    //uint limit=DEFAULT_SEARCH_RESULTS_LIMIT,
-                                    //uint page=0,
-                                    //int loadDeleted=0);
 void testUnDeleteEmail()
 {
     writeln("\nTesting GET /api/:id/emailundelete");
@@ -454,69 +447,87 @@ void testSearch()
     writeln("\nTestin POST /api/search");
     recreateTestDb();
     auto searchRes = search(["some"], "", "", 20, 0, 0);
-    enforce(searchRes.array.length == 3);
-    auto first  = searchRes.array[0];
-    auto second = searchRes.array[1];
-    auto third  = searchRes.array[2];
+    enforce(searchRes["conversations"].array.length == 3);
+    auto first  = searchRes["conversations"].array[0];
+    auto second = searchRes["conversations"].array[1];
+    auto third  = searchRes["conversations"].array[2];
 
     // limit = 1, page = 0
     searchRes = search(["some"], "", "", 1, 0, 0);
-    enforce(searchRes.array.length == 1);
-    enforce(searchRes.array.length == 1);
-    enforce(first["dbId"].str == searchRes.array[0]["dbId"].str);
+    enforce(searchRes["conversations"].array.length == 1);
+    enforce(searchRes["conversations"].array.length == 1);
+    enforce(searchRes["totalResultCount"].integer == 3);
+    enforce(searchRes["startIndex"].integer == 0);
+    enforce(first["dbId"].str == searchRes["conversations"].array[0]["dbId"].str);
 
     searchRes = search(["some"], "", "", 0, 0, 0);
-    enforce(searchRes.array.length == 0);
+    enforce(searchRes["conversations"].array.length == 0);
 
     // limit = 2 and page = 1 should give the third element
     searchRes = search(["some"], "", "", 2, 1, 0);
-    enforce(searchRes.array.length == 1);
-    enforce(third["dbId"].str == searchRes.array[0]["dbId"].str);
+    enforce(searchRes["conversations"].array.length == 1);
+    enforce(searchRes["totalResultCount"].integer == 3);
+    enforce(searchRes["startIndex"].integer == 2);
+    enforce(third["dbId"].str == searchRes["conversations"].array[0]["dbId"].str);
 
     // limit = 3 page = 1: no elements
     searchRes = search(["some"], "", "", 3, 1, 0);
-    enforce(searchRes.array.length == 0);
+    enforce(searchRes["conversations"].array.length == 0);
+    enforce(searchRes["totalResultCount"].integer == 3);
+    enforce(searchRes["startIndex"].integer == 3); // yep
 
     // outside range: no elements
     searchRes = search(["some"], "", "", 100, 100, 0);
-    enforce(searchRes.array.length == 0);
+    enforce(searchRes["conversations"].array.length == 0);
+    enforce(searchRes["totalResultCount"].integer == 3);
+    enforce(searchRes["startIndex"].integer == 3); // yep
 
     // non matching search
     searchRes = search(["nomatch"], "", "", 20, 0, 0);
-    enforce(searchRes.array.length == 0);
+    enforce(searchRes["conversations"].array.length == 0);
+    enforce(searchRes["totalResultCount"].integer == 0);
+    enforce(searchRes["startIndex"].integer == 0);
 
     // some match, some doesnt
     searchRes = search(["nomatch", "some"], "", "", 20, 0, 0);
-    enforce(searchRes.array.length == 3);
+    enforce(searchRes["conversations"].array.length == 3);
+    enforce(searchRes["totalResultCount"].integer == 3);
+    enforce(searchRes["startIndex"].integer == 0);
 
     // startDate test      
     searchRes = search(["some"], "2014-01-01T00:00:00Z", "", 20, 0, 0);
-    enforce(searchRes.array.length == 2);
+    enforce(searchRes["conversations"].array.length == 2);
+    enforce(searchRes["totalResultCount"].integer == 2);
+    enforce(searchRes["startIndex"].integer == 0);
 
     // endDate test
     searchRes = search(["some"], "", "2014-01-01T00:00:00Z", 20, 0, 0);
-    enforce(searchRes.array.length == 1);
+    enforce(searchRes["conversations"].array.length == 1);
+    enforce(searchRes["totalResultCount"].integer == 1);
+    enforce(searchRes["startIndex"].integer == 0);
 
     // startDate+endDate
     searchRes = search(["some"], "2014-01-01T00:00:00Z", "2014-07-01T00:00:00Z", 20, 0, 0);
-    enforce(searchRes.array.length == 2);
+    enforce(searchRes["conversations"].array.length == 2);
+    enforce(searchRes["totalResultCount"].integer == 2);
+    enforce(searchRes["startIndex"].integer == 0);
 }
 
 
 void main()
 {
-    testGetTagConversations();
-    testGetConversation();
-    testConversationAddTag();
-    testConversationRemoveTag();
-    testGetEmail();
-    testGetRawEmail();
-    testDeleteEmail();
-    testPurgeEmail();
-    testDeleteConversation();
-    testPurgeConversation();
-    testUndeleteConversation();
-    testUnDeleteEmail();
+    //testGetTagConversations();
+    //testGetConversation();
+    //testConversationAddTag();
+    //testConversationRemoveTag();
+    //testGetEmail();
+    //testGetRawEmail();
+    //testDeleteEmail();
+    //testPurgeEmail();
+    //testDeleteConversation();
+    //testPurgeConversation();
+    //testUndeleteConversation();
+    //testUnDeleteEmail();
     testSearch();
     writeln("All CURL tests finished");
 }
