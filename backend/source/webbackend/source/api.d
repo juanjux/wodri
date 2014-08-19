@@ -72,7 +72,10 @@ final interface Api
                                     int loadDeleted=0);
 
     @method(HTTPMethod.POST) @path("draft/")
-    string updateDraft(ApiEmail draftContent, string userName, bool doAlternative = true);
+    string updateDraft(ApiEmail draftContent,
+                       string userName, 
+                       string dbId = "",
+                       string replyDbId = "");
 
     version(db_usetestdb)
     {
@@ -186,8 +189,7 @@ final class ApiImpl: Api
 
         ApiEmail getEmail(string id)
         {
-            auto email = Email.getApiEmail(id);
-            return email is null? null: email;
+            return Email.getApiEmail(id);
         }
 
 
@@ -251,9 +253,12 @@ final class ApiImpl: Api
 
 
         // FIXME: get the authenticated user, remove it as a parameter for the call
-        string updateDraft(ApiEmail draftContent, string userName, bool doAlternative = true)
+        string updateDraft(ApiEmail draftContent, 
+                string userName,
+                string dbId = "",
+                string replyDbId = "")
         {
-            auto dbEmail = new Email(draftContent);
+            auto dbEmail  = new Email(draftContent, dbId, replyDbId);
             auto addrUser = User.getFromAddress(dbEmail.from.addresses[0]);
             auto authUser = User.getFromLoginName(userName);
 
@@ -264,9 +269,14 @@ final class ApiImpl: Api
             if (addrUser.id != authUser.id)
                 return format("ERROR: email user (%s) and authenticated user (%s) dont match",
                               addrUser.loginName, authUser.loginName);
-
             dbEmail.userId = addrUser.id;
-            dbEmail.store();
+
+            auto insertNew = dbId.length == 0? Yes.ForceInsertNew: No.ForceInsertNew;
+            dbEmail.draft = true;
+            dbEmail.store(insertNew);
+
+            if (insertNew) // add to the conversation
+                Conversation.upsert(dbEmail, [], []);
             return dbEmail.dbId;
         }
 

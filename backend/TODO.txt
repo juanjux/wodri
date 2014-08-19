@@ -1,6 +1,8 @@
 Backend-API:
-    `(MISSING) post: /email/draft`
 
+    Unittest everything!!!
+
+    `(MISSING) post: /email/draft`
         - Missing/empty fields in the stored draft:
             - message-id (create when storing) => move to common.utils
 
@@ -8,10 +10,8 @@ Backend-API:
           it with the draft save/create RPC (first step: DONT overwrite the email.attachments 
           when updating the draft).
 
-        - Other fields: Received (list), References (list or string), take from previous
-          email + add ours?
-
 Backend-Retriever:
+    - unittests for all things in utils.d
 
     Later:
     - Use log to log more warnings, specially on db.*

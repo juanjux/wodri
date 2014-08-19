@@ -1,8 +1,8 @@
 module db.email;
 
 import arsd.htmltotext;
+import common.utils;
 import db.config;
-import common.utils: removeDups;
 import db.conversation;
 import db.mongo;
 import db.user;
@@ -59,7 +59,8 @@ final class EmailSummary
     string[] attachFileNames;
     string bodyPeek;
     string avatarUrl;
-    bool deleted=false;
+    bool deleted = false;
+    bool draft = false;
 }
 
 
@@ -79,6 +80,7 @@ final class Email
     string       dbId;
     string       userId;
     bool         deleted = false;
+    bool         draft = false;
     string[]     forwardedTo;
     string       destinationAddress;
     string       messageId;
@@ -98,7 +100,8 @@ final class Email
     }
 
 
-    this(ApiEmail apiEmail)
+    // XXX unittest
+    this(ApiEmail apiEmail, string emailDbId, string repliedEmailDbId)
     {
         HeaderValue field2HeaderValue(string field)
         {
@@ -109,14 +112,44 @@ final class Email
             return hv;
         }
 
+        bool isNew   = (emailDbId.length == 0);
+        bool isReply = (repliedEmailDbId.length > 0);
+
+        if (isNew)
+        {
+            emailDbId = BsonObjectID.generate().toString;
+            this.messageId = generateMessageId(domainFromAddress(apiEmail.from));
+        }
+        this.dbId = emailDbId;
+
+        if (isReply)
+        {
+            // get the references from the previous message
+            auto references = Email.getReferencesFromPrevious(repliedEmailDbId);
+            if (references.length == 0)
+            {
+                logWarn("Email.this(ApiEmail) was suplied a repliedEmailDbId but no " ~
+                        " email was found with that id: " ~ repliedEmailDbId);
+                isReply = false;
+                repliedEmailDbId = "";
+            }
+            else
+            {
+                auto referencesRaw = join(references, "\n        ");
+                this.headers.addField("references", HeaderValue(referencesRaw, references));
+            }
+        }
+
+        // Copy the other fields from the ApiEmail
         this.from      = field2HeaderValue(apiEmail.from);
-        this.messageId = apiEmail.dbId;
         this.isoDate   = apiEmail.isoDate;
         this.deleted   = apiEmail.deleted;
         enforce(apiEmail.to.length, "Email from ApiEmail constructor should receive a .date");
         this.headers.addField("to",   field2HeaderValue(apiEmail.to));
         enforce(apiEmail.date.length, "Email from ApiEmail constructor should receive a .date");
         this.headers.addField("date", HeaderValue(apiEmail.date));
+        if (apiEmail.subject.length > 0)
+            this.headers.addField("subject", HeaderValue(apiEmail.subject));
         if (apiEmail.cc.length > 0)
             this.headers.addField("cc",   field2HeaderValue(apiEmail.cc));
         if (apiEmail.bcc.length > 0)
@@ -125,6 +158,8 @@ final class Email
             this.textParts ~= new TextPart("text/html", apiEmail.bodyHtml);
         if (apiEmail.bodyPlain.length > 0)
             this.textParts ~= new TextPart("text/plain", apiEmail.bodyPlain);
+        this.headers.addField("mime-type", HeaderValue("1.0"));
+        this.headers.addField("sender", this.from);
         // XXX Attachments: pensar como hacer
         this();
     }
@@ -361,16 +396,6 @@ final class Email
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
-    static string messageIdToDbId(string messageId)
-    {
-        const findSelector = parseJsonString(format(`{"message-id": %s}`, Json(messageId).toString));
-        const res = collection("email").findOne(findSelector, ["_id": 1], QueryFlags.None);
-        if (!res.isNull)
-            return bsonStr(res["_id"]);
-        return "";
-    }
-
-
     /** store or update the email into the DB, returns the DB id */
     string store(Flag!"ForceInsertNew" = No.ForceInsertNew)
     in
@@ -387,7 +412,7 @@ final class Email
 
         // json for the text parts
         foreach(idx, part; this.textParts)
-            jsonAppender.put(`{"contentType": ` ~ Json(part.ctype).toString ~ "," ~ 
+            jsonAppender.put(`{"contentType": ` ~ Json(part.ctype).toString ~ "," ~
                               `"content": `     ~ Json(part.content).toString ~ "},");
         string textPartsJsonStr = jsonAppender.data;
         jsonAppender.clear();
@@ -448,6 +473,7 @@ final class Email
         auto emailInsertJson = format(
               `{"_id": %s,` ~
               `"deleted": %s,` ~
+              `"draft": %s,` ~
               `"userId": "%s",` ~
               `"destinationAddress": %s,` ~
               `"forwardedTo": %s,` ~
@@ -462,6 +488,7 @@ final class Email
               `"attachments": [ %s ] }`,
                 Json(this.dbId).toString,
                 this.deleted,
+                this.draft,
                 this.userId,
                 Json(this.destinationAddress).toString,
                 this.forwardedTo,
@@ -499,6 +526,7 @@ final class Email
                                "isodate"     : 1,
                                "bodyPeek"    : 1,
                                "deleted"     : 1,
+                               "draft"       : 1,
                                "attachments" : 1];
 
         const emailDoc = collection("email").findOne(["_id": dbId], fieldSelector,
@@ -512,6 +540,7 @@ final class Email
             res.isoDate         = bsonStr(emailDoc.isodate);
             res.bodyPeek        = bsonStr(emailDoc.bodyPeek);
             res.deleted         = bsonBool(emailDoc.deleted);
+            res.draft           = bsonBool(emailDoc.draft);
             res.attachFileNames = extractAttachNamesFromDoc(emailDoc);
         }
         return res;
@@ -528,6 +557,7 @@ final class Email
              "isodate": 1,
              "textParts": 1,
              "deleted": 1,
+             "draft": 1,
              "attachments": 1
         ];
 
@@ -549,6 +579,7 @@ final class Email
                 ret.date    = headerRaw(emailDoc, "date");
                 ret.subject = headerRaw(emailDoc, "subject");
                 ret.deleted = bsonBool(emailDoc.deleted);
+                ret.draft   = bsonBool(emailDoc.draft);
             }
 
             if (!emailDoc.deleted.isNull)
@@ -683,8 +714,8 @@ final class Email
             auto convObject = Conversation.getByEmailId(emailId);
             if (convObject !is null)
             {
-                // remove the link from the Conversation (which could trigger a 
-                // removal of the full conversation if it was the last locally stored link) 
+                // remove the link from the Conversation (which could trigger a
+                // removal of the full conversation if it was the last locally stored link)
                 convObject.removeLink(emailId);
                 if (convObject.dbId.length > 0) // will be 0 if it was removed from the DB
                     convObject.store();
@@ -825,6 +856,42 @@ final class Email
         }
         return removeDups(res);
     }
+
+
+    static string messageIdToDbId(string messageId)
+    {
+        const findSelector = parseJsonString(format(`{"message-id": %s}`, Json(messageId).toString));
+        const res = collection("email").findOne(findSelector, ["_id": 1], QueryFlags.None);
+        if (!res.isNull)
+            return bsonStr(res["_id"]);
+        return "";
+    }
+
+
+    /** Get the references for an email from the one it is replying to, that is
+     * the previous email references + its message-id
+     */
+    // XXX unittest
+    static string[] getReferencesFromPrevious(string dbId)
+    {
+        string[] references;
+        const res = collection("email").findOne(["_id": dbId], 
+                                                ["headers": 1, "message-id": 1],
+                                                QueryFlags.None);
+        if (!res.isNull)
+        {
+            writeln(res.headers);
+            string[] inheritedRefs;
+            if (!res.headers.isNull && !res.headers.references.isNull)
+                inheritedRefs = bsonStrArray(res.headers.references.addresses);
+
+            references = inheritedRefs ~ bsonStr(res["message-id"]);
+        }
+
+        return references;
+
+    }
+
 }
 
 
@@ -1197,7 +1264,7 @@ version(db_usetestdb)
             }
             assert(found);
         }
-        
+
         results = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z");
         assert(results.length == 4);
 

@@ -59,24 +59,27 @@ void deleteEmail(string id, bool purge=false)
 
 void createDraft()
 {
+    //recreateTestDb();
     auto json = 
     `{
         "draftContent": {
             "dbId": "",
-            "from": "testuser@testdatabase.com",
+            "from": "anotherUser@testdatabase.com",
             "to": "juanjux@gmail.com",
             "cc": "",
             "bcc": "",
-            "subject": "test subject",
-            "isoDate": "2013-05-27T05:42:30Z",
+            "subject": "test subject 2 ñññ",
+            "isoDate": "2008-05-27T05:42:30Z",
             "date": "Mon, 27 May 2013 07:42:30 +0200",
             "bodyHtml": "",
             "bodyPlain": "hola mundo",
             "deleted": false,
+            "draft": true,
             "attachments": []
         },
-        "userName": "testuser",
-        "doAlternative": true,
+        "userName": "anotherUser",
+        "dbId": "",
+        "replyDbId": "53f3ce2bff2f69216e00000a",
     }`;
     auto res = callCurl("draft/", "updating draft", "", "POST", json);
     writeln("XXX res: ", res);

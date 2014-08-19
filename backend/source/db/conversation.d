@@ -276,7 +276,8 @@ final class Conversation
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    static Conversation upsert(Email email, const string[] tagsToAdd, 
+    static Conversation upsert(Email email,
+                               const string[] tagsToAdd, 
                                const string[] tagsToRemove)
     {
         assert(email.userId.length);

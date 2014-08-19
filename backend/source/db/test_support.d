@@ -49,6 +49,7 @@ version(anytestdb)
                                               "domain2.json"   : "domain",
                                               "userrule1.json" : "userrule",
                                               "userrule2.json" : "userrule",];
+
         foreach(file_, coll; jsonfile2collection)
             collection(coll).insert(parseJsonString(readText(buildPath(backendTestDataDir_, 
                                                                        file_))));

@@ -21,6 +21,7 @@ final class ApiEmail
     string date; 
     string bodyHtml;
     string bodyPlain;
-    bool deleted = false;
+    bool   deleted = false;
+    bool   draft   = false;
     ApiAttachment[] attachments; 
 }

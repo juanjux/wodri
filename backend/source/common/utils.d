@@ -52,3 +52,72 @@ pure string lowStrip(string input)
 {
     return toLower(strip(input));
 }
+
+
+string generateMessageId(string domain="")
+{
+    if (domain.length == 0)
+        domain = randomString(10) ~ ".com";
+
+    auto curDate = stdTimeToUnixTime(Clock.currStdTime);
+    auto preDomain = randomString(15);
+    return preDomain ~ "@" ~ domain;
+}
+
+
+string domainFromAddress(string address)
+{
+    if (countUntil(address, "@") == -1)
+        return "";
+
+    return strip(address).split('@')[1];
+}
+
+
+/**
+ * Try to normalize headers to the most common capitalizations
+ * RFC 2822 specifies that headers are case insensitive, but better
+ * to be safe than sorry
+ */
+pure string capitalizeHeader(string name)
+{
+    string res = toLower(name);
+    switch(name)
+    {
+        case "domainkey-signature": return "DomainKey-Signature";
+        case "x-spam-setspamtag": return "X-Spam-SetSpamTag";
+        default:
+    }
+
+    const tokens = split(res, "-");
+    string newres;
+    foreach(idx, ref tok; tokens)
+    {
+        if (among(tok, "mime", "dkim", "id", "spf"))
+            newres ~= toUpper(tok);
+        else
+            newres ~= capitalize(tok);
+        if (idx < tokens.length-1)
+            newres ~= "-";
+    }
+
+    return newres;
+}
+
+
+//  _    _       _ _   _            _
+// | |  | |     (_) | | |          | |
+// | |  | |_ __  _| |_| |_ ___  ___| |_
+// | |  | | '_ \| | __| __/ _ \/ __| __|
+// | |__| | | | | | |_| ||  __/\__ \ |_
+//  \____/|_| |_|_|\__|\__\___||___/\__|
+
+
+unittest // capitalizeHeader
+{
+    assert(capitalizeHeader("mime-version")   == "MIME-Version");
+    assert(capitalizeHeader("subject")        == "Subject");
+    assert(capitalizeHeader("received-spf")   == "Received-SPF");
+    assert(capitalizeHeader("dkim-signature") == "DKIM-Signature");
+    assert(capitalizeHeader("message-id")     == "Message-ID");
+}

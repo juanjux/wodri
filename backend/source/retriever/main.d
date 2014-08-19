@@ -75,7 +75,7 @@ void processEmailForAddress(string destination, Email email)
     foreach(filter; userFilters)
         filter.apply(email, tags);
 
-    Conversation.upsert(email, tags);
+    Conversation.upsert(email, tags, []);
 }
 
 // XXX test when I've the full cycle tests
@@ -96,9 +96,7 @@ int main()
     sort(sortedReceivers);
     const localReceivers = uniq(sortedReceivers).array;
 
-    if (!tooBig 
-        && isValid
-        && localReceivers.length)
+    if (!tooBig && isValid && localReceivers.length)
     {
         try
         {

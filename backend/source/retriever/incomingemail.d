@@ -123,7 +123,6 @@ final interface IncomingEmail
     void               removeHeader(string name); // removes ALL even if repeated
     void               addHeader(string rawHeader);
     bool               hasHeader(string name) const;
-    void               generateMessageId(string domain="");
     string             headersToString();
 }
 
@@ -251,7 +250,7 @@ final class IncomingEmailImpl : IncomingEmail
 
         if (!hasHeader("message-id"))
         {
-            generateMessageId();
+            addHeader("Message-ID: <" ~ generateMessageId ~ "> " ~ this.lineSep);
             version(anyincomingmailtest)this.generatedMessageId = true;
         }
 
@@ -296,18 +295,6 @@ final class IncomingEmailImpl : IncomingEmail
             textHeaders.put(value.rawValue ~ this.lineSep);
         }
         return textHeaders.data;
-    }
-
-
-    void generateMessageId(string domain="")
-    {
-        m_headers.removeAll("message-id");
-        if (domain.length == 0)
-            domain = randomString(10) ~ ".com";
-
-        addHeader("Message-ID: <" ~ to!string(stdTimeToUnixTime(Clock.currStdTime)) ~
-                                    randomString(15) ~ "@" ~
-                                    domain ~ "> " ~ this.lineSep);
     }
 
 
@@ -1069,6 +1056,7 @@ unittest
         system(format("rm -f %s/*", rawEmailStore));
     }
 }
+
 
 unittest // capitalizeHeader
 {
