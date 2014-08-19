@@ -3,13 +3,16 @@ module webbackend.api;
 import db.conversation;
 import db.email;
 import db.mongo;
+import db.user;
 import std.algorithm;
 import std.array;
 import std.conv;
 import std.stdio;
+import std.string;
 import std.typecons;
 import vibe.core.log;
 import vibe.http.common;
+import vibe.http.server;
 import vibe.web.common;
 import webbackend.apiconversation;
 import webbackend.apiconversationsummary;
@@ -67,6 +70,9 @@ final interface Api
                                     uint limit=DEFAULT_SEARCH_RESULTS_LIMIT,
                                     uint page=0,
                                     int loadDeleted=0);
+
+    @method(HTTPMethod.POST) @path("draft/")
+    string updateDraft(ApiEmail draftContent, string userName, bool doAlternative = true);
 
     version(db_usetestdb)
     {
@@ -242,6 +248,28 @@ final class ApiImpl: Api
             ret.startIndex       = rangeStart;
             return ret;
         }
+
+
+        // FIXME: get the authenticated user, remove it as a parameter for the call
+        string updateDraft(ApiEmail draftContent, string userName, bool doAlternative = true)
+        {
+            auto dbEmail = new Email(draftContent);
+            auto addrUser = User.getFromAddress(dbEmail.from.addresses[0]);
+            auto authUser = User.getFromLoginName(userName);
+
+            if (addrUser is null)
+                return "ERROR: no user found for the address " ~ dbEmail.from.addresses[0];
+            if (authUser is null)
+                return "ERROR: no user found in the DB with name: " ~ userName;
+            if (addrUser.id != authUser.id)
+                return format("ERROR: email user (%s) and authenticated user (%s) dont match",
+                              addrUser.loginName, authUser.loginName);
+
+            dbEmail.userId = addrUser.id;
+            dbEmail.store();
+            return dbEmail.dbId;
+        }
+
 
         version(db_usetestdb)
         {

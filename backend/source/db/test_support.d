@@ -8,6 +8,7 @@ import db.user;
 import retriever.incomingemail;
 import std.file;
 import std.path;
+import std.process;
 import std.string;
 import vibe.db.mongo.mongo;
 
@@ -17,6 +18,7 @@ version(db_usebigdb)      version = anytestdb;
 version(db_insertalltest) version = anytestdb;
 version(db_insertalltest) version = db_usebigdb;
 version(search_test)      version = db_usebigdb;
+
 
 version(anytestdb)
 {
@@ -30,6 +32,8 @@ version(anytestdb)
         foreach(string coll; ["conversation", "emailIndexContents", 
                               "email", "domain", "user", "userrule"])
             collection(coll).remove();
+        system(format("rm -f %s/*", getConfig.absAttachmentStore));
+        system(format("rm -f %s/*", getConfig.absRawEmailStore));
     }
 
     void recreateTestDb()
@@ -49,20 +53,23 @@ version(anytestdb)
             collection(coll).insert(parseJsonString(readText(buildPath(backendTestDataDir_, 
                                                                        file_))));
 
-        string backendTestEmailsDir = 
-            buildPath(getConfig().mainDir, "backend", "test", "testemails");
+        string backendTestEmailsDir = buildPath(
+                getConfig().mainDir, "backend", "test", "testemails"
+        );
+
         foreach(mailname; TEST_EMAILS)
         {
-            auto inEmail      = new IncomingEmailImpl();
+            auto inEmail = new IncomingEmailImpl();
             inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
                                  getConfig.absAttachmentStore,
                                  getConfig.absRawEmailStore);
-            auto destination  = inEmail.getHeader("to").addresses[0];
-            auto user         = User.getFromAddress(destination);
+
+            auto destination = inEmail.getHeader("to").addresses[0];
+            auto user = User.getFromAddress(destination);
             assert(user !is null);
-            auto dbEmail      = new Email(inEmail, destination);
+            auto dbEmail = new Email(inEmail, destination);
             assert(dbEmail.isValid, "Email is not valid");
-            auto emailId      = dbEmail.store();
+            auto emailId = dbEmail.store();
             Conversation.upsert(dbEmail, ["inbox"], []);
         }
     }

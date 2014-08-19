@@ -19,6 +19,47 @@ final class User
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
+    static User get(string id)
+    {
+        return getFromDirectField("_id", id);
+    }
+
+
+    static User getFromLoginName(string login)
+    {
+        return getFromDirectField("loginName", login);
+    }
+
+
+    static User getFromAddress(string address)
+    {
+        auto userResult = collection("user").findOne(
+                parseJsonString(`{"addresses": {"$in": [` ~ Json(address).toString ~ `]}}`)
+        );
+
+        if (!userResult.isNull)
+            return userDocToObject(userResult);
+        return null;
+    }
+
+
+    static bool addressIsLocal(string address)
+    {
+        if (!address.length)
+            return false;
+        if (Domain.hasDefaultUser(address.split("@")[1]))
+            return true;
+        return getFromAddress(address) !is null;
+    }
+
+
+    private static User getFromDirectField(string fieldName, string fieldValue)
+    {
+        auto userResult = collection("user").findOne([fieldName: fieldValue]);
+        return userResult.isNull ? null : userDocToObject(userResult); 
+    }
+
+
     static private User userDocToObject(ref Bson userDoc)
     {
         auto ret = new User();
@@ -34,40 +75,6 @@ final class User
         ret.surname = bsonStr(userDoc.surname);
         return ret;
     }
-
-
-    static User getFromAddress(string address)
-    {
-        User ret = null;
-        auto userResult = collection("user").findOne(
-                parseJsonString(`{"addresses": {"$in": [` ~ Json(address).toString ~ `]}}`)
-        );
-
-        if (!userResult.isNull)
-            return userDocToObject(userResult);
-        return ret;
-    }
-
-
-    static string getPasswordHash(string loginName)
-    {
-        auto user = collection("user").findOne(["loginName": loginName],
-                                               ["loginHash": 1],
-                                               QueryFlags.None);
-        if (!user.isNull && !user.loginHash.isNull)
-            return bsonStr(user.loginHash);
-        return "";
-    }
-
-
-    static bool addressIsLocal(string address)
-    {
-        if (!address.length)
-            return false;
-        if (Domain.hasDefaultUser(address.split("@")[1]))
-            return true;
-        return getFromAddress(address) !is null;
-    }
 }
 
 //  _    _       _ _   _            _
@@ -82,6 +89,34 @@ version(db_usetestdb)
 {
     import std.stdio;
     import db.test_support;
+
+    unittest // get
+    {
+        writeln("Testing User.get");
+        recreateTestDb();
+        auto userObject = User.get("doesntexits");
+        assert(userObject is null);
+        auto userDoc = collection("user").findOne(["loginName": "testuser"]);
+        assert(!userDoc.isNull);
+        userObject = User.get(bsonStr(userDoc._id));
+        assert(userObject !is null);
+        assert(bsonStr(userDoc._id) == userObject.id);
+    }
+
+
+    unittest 
+    {
+        writeln("Testing User.getFromLoginName");
+        recreateTestDb();
+        auto userObject = User.getFromLoginName("doesntexists");
+        assert(userObject is null);
+        userObject = User.getFromLoginName("testuser");
+        assert(userObject !is null);
+        auto userDoc = collection("user").findOne(["loginName": "testuser"]);
+        assert(!userDoc.isNull);
+        assert(bsonStr(userDoc._id) == userObject.id);
+    }
+
 
     unittest // getFromAddress + userDocToObject
     {
@@ -110,13 +145,4 @@ version(db_usetestdb)
         assert(User.addressIsLocal("anotherUser@anotherdomain.com"));
         assert(!User.addressIsLocal("random@anotherdomain.com"));
     }
-
-    unittest // getPasswordHash
-    {
-        writeln("Testing User.getPasswordHash");
-        recreateTestDb();
-        assert(User.getPasswordHash("testuser") == "8AQl5bqZMY3vbczoBWJiTFVclKU=");
-        assert(User.getPasswordHash("anotherUser") == "YHOxxOHmvwzceoxYkqJiQWslrmY=");
-    }
-
 }

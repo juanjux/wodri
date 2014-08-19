@@ -9,7 +9,7 @@ struct ApiAttachment
     ulong  size;
 }
 
-class ApiEmail
+final class ApiEmail
 {
     string dbId;
     string from; 

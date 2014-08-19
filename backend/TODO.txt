@@ -1,6 +1,15 @@
 Backend-API:
-    - Alguna forma de devolver el numero total de resultados de busqueda en el API
-      (por ejemplo devuelve un struct { uint resultCount, ApiConversationSummary[] results }
+    `(MISSING) post: /email/draft`
+
+        - Missing/empty fields in the stored draft:
+            - message-id (create when storing) => move to common.utils
+
+        - Attachments: will be downloaded/deleted by a separate RPC, see how to integrate
+          it with the draft save/create RPC (first step: DONT overwrite the email.attachments 
+          when updating the draft).
+
+        - Other fields: Received (list), References (list or string), take from previous
+          email + add ours?
 
 Backend-Retriever:
 

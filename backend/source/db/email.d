@@ -2,15 +2,16 @@ module db.email;
 
 import arsd.htmltotext;
 import db.config;
-import db.utils: removeDups;
+import common.utils: removeDups;
 import db.conversation;
 import db.mongo;
 import db.user;
-import retriever.incomingemail: IncomingEmail, Attachment, HeaderValue;
+import retriever.incomingemail;
 import std.algorithm: among, sort, uniq;
 import std.datetime;
-import std.file: exists;
+import std.file;
 import std.path: baseName;
+import std.regex;
 import std.stdio: File, writeln;
 import std.string;
 import std.typecons;
@@ -90,7 +91,44 @@ final class Email
     TextPart[]   textParts;
     DictionaryList!(HeaderValue, false) headers;
 
-    this() {}
+    this()
+    {
+        extractBodyPeek();
+        loadReceivers();
+    }
+
+
+    this(ApiEmail apiEmail)
+    {
+        HeaderValue field2HeaderValue(string field)
+        {
+            HeaderValue hv;
+            hv.rawValue = field;
+            foreach(ref c; match(field, EMAIL_REGEX))
+                if (c.hit.length) hv.addresses ~= c.hit;
+            return hv;
+        }
+
+        this.from      = field2HeaderValue(apiEmail.from);
+        this.messageId = apiEmail.dbId;
+        this.isoDate   = apiEmail.isoDate;
+        this.deleted   = apiEmail.deleted;
+        enforce(apiEmail.to.length, "Email from ApiEmail constructor should receive a .date");
+        this.headers.addField("to",   field2HeaderValue(apiEmail.to));
+        enforce(apiEmail.date.length, "Email from ApiEmail constructor should receive a .date");
+        this.headers.addField("date", HeaderValue(apiEmail.date));
+        if (apiEmail.cc.length > 0)
+            this.headers.addField("cc",   field2HeaderValue(apiEmail.cc));
+        if (apiEmail.bcc.length > 0)
+            this.headers.addField("bcc",  field2HeaderValue(apiEmail.bcc));
+        if (apiEmail.bodyHtml.length > 0)
+            this.textParts ~= new TextPart("text/html", apiEmail.bodyHtml);
+        if (apiEmail.bodyPlain.length > 0)
+            this.textParts ~= new TextPart("text/plain", apiEmail.bodyPlain);
+        // XXX Attachments: pensar como hacer
+        this();
+    }
+
 
     /** Load from an IncomingEmail object (making mutable copies of the data members).
      * dbId will be an empty string until .store() is called */
@@ -123,10 +161,6 @@ final class Email
 
             this.attachments ~= att;
         }
-
-        extractBodyPeek();
-        loadReceivers();
-
         this();
     }
 
@@ -135,6 +169,7 @@ final class Email
         this(email);
         setOwner(destination);
     }
+
 
     void setOwner(string destinationAddress)
     {
@@ -149,7 +184,7 @@ final class Email
 
     bool hasHeader(string name) const
     {
-        return (name in this.headers) != null;
+        return (name in this.headers) !is null;
     }
 
 
@@ -254,6 +289,8 @@ final class Email
     {
         return textualBodySize() + attachmentsSize();
     }
+
+
     pure ulong attachmentsSize() const
     {
         ulong totalSize;
@@ -261,6 +298,8 @@ final class Email
             totalSize += attachment.size;
         return totalSize;
     }
+
+
     pure ulong textualBodySize() const
     {
         ulong totalSize;
@@ -322,7 +361,6 @@ final class Email
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
-
     static string messageIdToDbId(string messageId)
     {
         const findSelector = parseJsonString(format(`{"message-id": %s}`, Json(messageId).toString));
@@ -332,19 +370,25 @@ final class Email
         return "";
     }
 
+
     /** store or update the email into the DB, returns the DB id */
     string store(Flag!"ForceInsertNew" = No.ForceInsertNew)
+    in
     {
         assert(this.userId !is null);
         assert(this.userId.length);
+    }
+    body
+    {
         if (this.userId is null || !this.userId.length)
             throw new Exception("Cant store email without assigning a user");
+
         Appender!string jsonAppender;
 
         // json for the text parts
         foreach(idx, part; this.textParts)
-            jsonAppender.put("{\"contentType\": " ~ Json(part.ctype).toString ~ ","
-                              "\"content\": "     ~ Json(part.content).toString ~ "},");
+            jsonAppender.put(`{"contentType": ` ~ Json(part.ctype).toString ~ "," ~ 
+                              `"content": `     ~ Json(part.content).toString ~ "},");
         string textPartsJsonStr = jsonAppender.data;
         jsonAppender.clear();
 
@@ -424,10 +468,8 @@ final class Email
                 Json(this.rawEmailPath).toString,
                 Json(this.messageId).toString,
                 Json(this.isoDate).toString,
-                Json(this.from.rawValue).toString,
-                this.from.addresses,
-                Json(this.receivers.rawValue).toString,
-                this.receivers.addresses,
+                Json(this.from.rawValue).toString,      this.from.addresses,
+                Json(this.receivers.rawValue).toString, this.receivers.addresses,
                 rawHeadersStr,
                 textPartsJsonStr,
                 Json(this.bodyPeek).toString,
@@ -476,15 +518,18 @@ final class Email
     }
 
 
+    // FIXME: this should be a constructor of ApiEmail from an Email, just like Conversation
     static ApiEmail getApiEmail(string dbId)
     {
         ApiEmail ret = null;
-        const fieldSelector = ["from": 1,
+        const fieldSelector = [
+             "from": 1,
              "headers": 1,
              "isodate": 1,
              "textParts": 1,
              "deleted": 1,
-             "attachments": 1];
+             "attachments": 1
+        ];
 
         const emailDoc = collection("email").findOne(
                 ["_id": dbId], fieldSelector, QueryFlags.None
@@ -555,10 +600,10 @@ final class Email
         return ret;
     }
 
-
+    /** Returns the raw email as string */
     static string getOriginal(string dbId)
     {
-        const noMail = "Error: could not get raw email";
+        const noMail = "ERROR: could not get raw email";
         const emailDoc = collection("email").findOne(["_id": dbId],
                                                      ["rawEmailPath": 1],
                                                      QueryFlags.None);
@@ -615,12 +660,15 @@ final class Email
 
     /**
      * Completely remove the email from the DB. If there is any conversation
-     * with this emailId as is its only link it will be removed too
+     * with this emailId as is its only link it will be removed too. The attachments
+     * and the rawEmail files will be removed too.
      */
     static void removeById(string dbId, Flag!"UpdateConversation" = Yes.UpdateConversation)
     {
         const emailDoc = collection("email").findOne(["_id": dbId],
-                                                     ["_id": 1],
+                                                     ["_id": 1,
+                                                      "attachments": 1,
+                                                      "rawEmailPath": 1],
                                                      QueryFlags.None);
         if (emailDoc.isNull)
         {
@@ -632,37 +680,38 @@ final class Email
 
         if (Yes.UpdateConversation)
         {
-            // Get the email's Conversation
-            const json = format(`{"links.emailId": {"$in": ["%s"]}}`, emailId);
-            const convDoc = collection("conversation").findOne(parseJsonString(json),
-                                                               ["_id": 1],
-                                                               QueryFlags.None);
-            if (!convDoc.isNull)
+            auto convObject = Conversation.getByEmailId(emailId);
+            if (convObject !is null)
             {
-                auto convObject = Conversation.get(bsonStr(convDoc._id));
-                assert(convObject !is null);
-                enforce(convObject !is null);
-
-                // If this is the only email in the conversation stored on db, delete it
-                auto numLinksInDb = 0;
-                foreach(ref link; convObject.links)
-                {
-                    if (link.emailDbId.length)
-                        numLinksInDb++;
-                }
-
-                if (numLinksInDb < 2)
-                    convObject.remove();
-                else
-                {
-                    // remove the link
-                    convObject.removeLink(emailId);
+                // remove the link from the Conversation (which could trigger a 
+                // removal of the full conversation if it was the last locally stored link) 
+                convObject.removeLink(emailId);
+                if (convObject.dbId.length > 0) // will be 0 if it was removed from the DB
                     convObject.store();
-                }
             }
             else
-                logWarn(format("Email.removeById: no conversation found for email (%s)", dbId));
+                logWarn(
+                    format("Email.removeById: no conversation found for email (%s)", dbId)
+                );
         }
+
+        if (!emailDoc.rawEmailPath.isNull)
+        {
+            auto rawPath = bsonStr(emailDoc.rawEmailPath);
+            if (rawPath.length > 0 && rawPath.exists)
+                std.file.remove(rawPath);
+        }
+
+        foreach(ref attach; emailDoc.attachments)
+        {
+            if (!attach.realPath.isNull)
+            {
+                auto attachRealPath = bsonStr(attach.realPath);
+                if (attachRealPath.exists)
+                    std.file.remove(attachRealPath);
+            }
+        }
+
         // Remove the email from the DB
         collection("email").remove(["_id": emailId]);
     }
@@ -853,18 +902,49 @@ version(db_usetestdb)
 
     unittest // removeById
     {
+        struct EmailFiles
+        {
+            string rawEmail;
+            string[] attachments;
+        }
+
+        // get the files on filesystem from the email (raw an attachments)
+        EmailFiles getEmailFiles(string id)
+        {
+            auto doc = collection("email").findOne(["_id": id]);
+            assert(!doc.isNull);
+
+            auto res = EmailFiles(bsonStr(doc.rawEmailPath));
+
+            foreach(ref attach; doc.attachments)
+            {
+                if (!attach.realPath.isNull)
+                    res.attachments ~= bsonStr(attach.realPath);
+            }
+            return res;
+        }
+
+        void assertNoFiles(EmailFiles ef)
+        {
+            assert(!ef.rawEmail.exists);
+            foreach(ref att; ef.attachments)
+                assert(!att.exists);
+        }
+
         writeln("Testing Email.removeById");
         recreateTestDb();
         auto convs = Conversation.getByTag("inbox", 0, 0);
         auto singleMailConv = convs[0];
-        auto singleConvId = singleMailConv.dbId;
-        auto singleMailId = singleMailConv.links[0].emailDbId;
+        auto singleConvId   = singleMailConv.dbId;
+        auto singleMailId   = singleMailConv.links[0].emailDbId;
 
-        // since this is a single mail conversation, it should be deleted
-        // when the single email is deleted
+        // since this is a single mail conversation, it should be deleted when the single
+        // email is deleted
+        auto emailFiles = getEmailFiles(singleMailId);
         Email.removeById(singleMailId);
         auto emailDoc = collection("email").findOne(["_id": singleMailId]);
         assert(emailDoc.isNull);
+        assertNoFiles(emailFiles);
         auto convDoc = collection("conversation").findOne(["_id": singleConvId]);
         assert(convDoc.isNull);
 
@@ -873,9 +953,11 @@ version(db_usetestdb)
         auto fakeMultiConv = convs[1];
         auto fakeMultiConvId = fakeMultiConv.dbId;
         auto fakeMultiConvEmailId = fakeMultiConv.links[2].emailDbId;
+        emailFiles = getEmailFiles(fakeMultiConvEmailId);
         Email.removeById(fakeMultiConvEmailId);
         emailDoc = collection("email").findOne(["_id": fakeMultiConvEmailId]);
         assert(emailDoc.isNull);
+        assertNoFiles(emailFiles);
         convDoc = collection("conversation").findOne(["_id": fakeMultiConvId]);
         assert(convDoc.isNull);
 
@@ -884,9 +966,11 @@ version(db_usetestdb)
         auto multiConv = convs[3];
         auto multiConvId = multiConv.dbId;
         auto multiConvEmailId = multiConv.links[0].emailDbId;
+        emailFiles = getEmailFiles(multiConvEmailId);
         Email.removeById(multiConvEmailId);
         emailDoc = collection("email").findOne(["_id": multiConvEmailId]);
         assert(emailDoc.isNull);
+        assertNoFiles(emailFiles);
         convDoc = collection("conversation").findOne(["_id": multiConvId]);
         assert(!convDoc.isNull);
         assert(!convDoc.links.isNull);

@@ -1,21 +1,22 @@
 module retriever.incomingemail;
 
-import std.stdio;
-import std.typecons;
-import std.path;
-import std.regex;
-import std.file;
-import std.range;
-import std.conv;
-import std.algorithm;
-import std.string;
-import std.ascii;
-import std.array;
-import std.base64;
-import std.random;
-import std.datetime;
-import vibe.utils.dictionarylist;
 import arsd.characterencodings;
+import common.utils;
+import std.algorithm;
+import std.array;
+import std.ascii;
+import std.base64;
+import std.conv;
+import std.datetime;
+import std.file;
+import std.path;
+import std.random;
+import std.range;
+import std.regex;
+import std.stdio;
+import std.string;
+import std.typecons;
+import vibe.utils.dictionarylist;
 
 version(incomingemail_createtestdata)     version = anyincomingmailtest;
 version(incomingemail_regeneratetestdata) version = anyincomingmailtest;
@@ -32,68 +33,13 @@ auto MSGID_REGEX = ctRegex!(r"[\w@.=%+\-!#\$&'\*/\?\^`\{\}\|~]*\b", "g");
 string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
                         "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/**
- * Try to normalize headers to the most common capitalizations
- * RFC 2822 specifies that headers are case insensitive, but better
- * to be safe than sorry
- */
-private pure string capitalizeHeader(string name)
-{
-    string res = toLower(name);
-    switch(name)
-    {
-        case "domainkey-signature": return "DomainKey-Signature";
-        case "x-spam-setspamtag": return "X-Spam-SetSpamTag";
-        default:
-    }
-
-    const tokens = split(res, "-");
-    string newres;
-    foreach(idx, ref tok; tokens)
-    {
-        if (among(tok, "mime", "dkim", "id", "spf"))
-            newres ~= toUpper(tok);
-        else
-            newres ~= capitalize(tok);
-        if (idx < tokens.length-1)
-            newres ~= "-";
-    }
-
-    return newres;
-}
-
-// yep, I'm lazy
-private string lowStrip(string input)
-{
-    return toLower(strip(input));
-}
-private bool lowStartsWith(string input, string startsw)
-{
-    return lowStrip(input).startsWith(startsw);
-}
-
-private string randomString(uint length)
-{
-    return iota(length).map!(_ => lowercase[uniform(0, $)]).array;
-}
-private string randomFileName(string directory, string extension="")
-{
-    string destPath;
-    do
-    {
-        destPath = format("%d_%s%s",
-                          stdTimeToUnixTime(Clock.currStdTime),
-                          randomString(6),
-                          extension);
-    } while (destPath.exists);
-    return buildPath(directory, destPath);
-}
 
 struct ContentData
 {
     string name;
     string[string] fields;
 }
+
 
 final class MIMEPart
 {
@@ -130,6 +76,37 @@ struct HeaderValue
 }
 
 
+/**
+ * Try to normalize headers to the most common capitalizations
+ * RFC 2822 specifies that headers are case insensitive, but better
+ * to be safe than sorry
+ */
+private pure string capitalizeHeader(string name)
+{
+    string res = toLower(name);
+    switch(name)
+    {
+        case "domainkey-signature": return "DomainKey-Signature";
+        case "x-spam-setspamtag": return "X-Spam-SetSpamTag";
+        default:
+    }
+
+    const tokens = split(res, "-");
+    string newres;
+    foreach(idx, ref tok; tokens)
+    {
+        if (among(tok, "mime", "dkim", "id", "spf"))
+            newres ~= toUpper(tok);
+        else
+            newres ~= capitalize(tok);
+        if (idx < tokens.length-1)
+            newres ~= "-";
+    }
+
+    return newres;
+}
+
+
 final interface IncomingEmail
 {
     void loadFromFile(string emailPath, string attachStore, string rawEmailStore = "");
@@ -147,7 +124,7 @@ final interface IncomingEmail
     void               addHeader(string rawHeader);
     bool               hasHeader(string name) const;
     void               generateMessageId(string domain="");
-    string             printHeaders(Flag!"AsString" asString = No.AsString);
+    string             headersToString();
 }
 
 
@@ -163,29 +140,30 @@ final class IncomingEmailImpl : IncomingEmail
         string       m_rawEmailPath;
         string       lineSep = "\r\n";
     }
-    version(anyincomingmailtest) 
-        package bool generatedMessageId = false; 
+    version(anyincomingmailtest)
+        package bool generatedMessageId = false;
+
 
     this()
     {
         this.rootPart = new MIMEPart();
     }
 
+
     @property Flag!"IsValidEmail" isValid() const
     {
-        // From and Message-ID and at least one of to/cc/bcc/delivered-to
-        if ((getHeader("to").addresses.length  ||
-             getHeader("cc").addresses.length  ||
-             getHeader("bcc").addresses.length ||
-             getHeader("delivered-to").addresses.length))
-            return Yes.IsValidEmail;
-        return No.IsValidEmail;
+        return ((getHeader("to").addresses.length  ||
+                 getHeader("cc").addresses.length  ||
+                 getHeader("bcc").addresses.length ||
+                 getHeader("delivered-to").addresses.length)) ? Yes.IsValidEmail
+                                                              : No.IsValidEmail;
     }
     @property ref DictionaryList!(HeaderValue, false) headers() { return m_headers; }
     @property const(Attachment[]) attachments()  const { return m_attachments; }
     @property ref const(DateTime) date()         const { return m_date; }
     @property string              rawEmailPath() const { return m_rawEmailPath; }
     @property const(MIMEPart[])   textualParts() const { return m_textualParts; }
+
 
     /**
         Return the header if it exists. If not, returns an empty HeaderValue.
@@ -205,7 +183,7 @@ final class IncomingEmailImpl : IncomingEmail
 
     bool hasHeader(string name) const
     {
-        return (name in m_headers) != null;
+        return (name in m_headers) !is null;
     }
 
 
@@ -229,11 +207,16 @@ final class IncomingEmailImpl : IncomingEmail
         currentLine = emailFile.readln();
         if (currentLine.length)
         {
-            this.lineSep = currentLine.endsWith("\r\n")?"\r\n": "\n";
+            // get the style of the line endings used on this email
+            // (RFC emails should be \r\n but when reading from stdin they're usually \n)
+            this.lineSep = currentLine.endsWith("\r\n") ? "\r\n" : "\n";
+
             if (currentLine.startsWith("From "))
-                // mbox format header, ignore
+                // mbox format header, ignore and read next line
                 currentLine = emailFile.readln();
         }
+        else
+            return; // empty input (premature EOF?) => empty email
 
         while (currentLine.length && !emailFile.eof())
         {
@@ -252,7 +235,9 @@ final class IncomingEmailImpl : IncomingEmail
 
             if (currentLine == this.lineSep)
             {
-                // Body mark found
+                // Body mark found (line with only a newline character)
+
+                // load the email content info data from the headers into rootPart
                 getRootContentInfo(this.rootPart);
                 partialBuffer.clear();
                 break;
@@ -260,6 +245,7 @@ final class IncomingEmailImpl : IncomingEmail
             currentLine = emailFile.readln();
         }
 
+        // check date and message-id headers and provide a default if missing
         if (!hasHeader("date"))
             parseDate("NOW");
 
@@ -281,8 +267,7 @@ final class IncomingEmailImpl : IncomingEmail
         }
 
         if (this.rootPart.ctype.name.startsWith("multipart"))
-            parseParts(split(partialBuffer.data, this.lineSep),
-                       this.rootPart, attachStore);
+            parseParts(split(partialBuffer.data, this.lineSep), this.rootPart, attachStore);
         else
             setTextPart(this.rootPart, partialBuffer.data);
 
@@ -302,31 +287,26 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    string printHeaders(Flag!"AsString" asString = No.AsString)
+    string headersToString()
     {
-        Appender!string textheaders;
-        foreach(string name, ref HeaderValue value; m_headers)
+        Appender!string textHeaders;
+        foreach(string name, const ref value; m_headers)
         {
-            if (asString)
-            {
-                textheaders.put(name ~ ":");
-                textheaders.put(value.rawValue ~ this.lineSep);
-            }
-            else
-                write(name, ":", value);
+            textHeaders.put(name ~ ":");
+            textHeaders.put(value.rawValue ~ this.lineSep);
         }
-        return textheaders.data;
+        return textHeaders.data;
     }
 
 
     void generateMessageId(string domain="")
     {
         m_headers.removeAll("message-id");
-        if (!domain.length)
-            domain = randomString(15) ~ ".com";
+        if (domain.length == 0)
+            domain = randomString(10) ~ ".com";
 
         addHeader("Message-ID: <" ~ to!string(stdTimeToUnixTime(Clock.currStdTime)) ~
-                                    randomString(20) ~ "@" ~
+                                    randomString(15) ~ "@" ~
                                     domain ~ "> " ~ this.lineSep);
     }
 
@@ -379,6 +359,7 @@ final class IncomingEmailImpl : IncomingEmail
     {
         // Default to current time so we've some date if the format is broken
         DateTime ldate = to!DateTime(Clock.currTime);
+        // split by newlines removing empty tokens
         auto tokDate   = strip(strDate).split(' ').filter!(a => !a.empty).array;
 
         if (strDate != "NOW" && tokDate.length)
@@ -413,8 +394,9 @@ final class IncomingEmailImpl : IncomingEmail
                         ldate += dur!"minutes"(to!int(tz[3..5])*multiplier);
                     }
                 }
-            } catch(std.conv.ConvException e) { /* Broken date, use default */}
+            } catch(std.conv.ConvException e) { /* Broken date, use default */ }
         }
+        // else: broken date, use default
         m_date = ldate;
     }
 
@@ -473,13 +455,15 @@ final class IncomingEmailImpl : IncomingEmail
             thisPart.parent  = parent;
 
             if (thisPart.ctype.name.lowStartsWith("multipart"))
+            {
                 parseParts(lines[startIndex..endIndex], thisPart, attachStore);
-
+            }
             else if (thisPart.ctype.name.lowStartsWith("message/") ||
                      thisPart.disposition.name.lowStartsWith("attachment") ||
                      thisPart.disposition.name.lowStartsWith("inline"))
+            {
                 setAttachmentPart(thisPart, lines[contentStart..endIndex], attachStore);
-
+            }
             // startsWith to protect against some broken emails with text/html blabla
             else if (thisPart.ctype.name.lowStartsWith("text/plain") ||
                      thisPart.ctype.name.lowStartsWith("text/html"))
@@ -504,18 +488,24 @@ final class IncomingEmailImpl : IncomingEmail
         if ("charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
 
-        if (!part.ctype.name.length)
+        if (part.ctype.name.length == 0)
             part.ctype.name = "text/plain";
 
         string newtext;
         if (part.cTransferEncoding == "quoted-printable")
+        {
             newtext = convertToUtf8Lossy(decodeQuotedPrintable(text),
                                          part.ctype.fields["charset"]);
+        }
         else if (part.cTransferEncoding == "base64")
+        {
             newtext = convertToUtf8Lossy(decodeBase64Stubborn(text),
                                          part.ctype.fields["charset"]);
+        }
         else
+        {
             newtext = text;
+        }
 
         part.textContent = newtext;
         m_textualParts  ~= part;
@@ -548,7 +538,7 @@ final class IncomingEmailImpl : IncomingEmail
 
         string origFileName = part.disposition.fields.get("filename", "");
 
-        if (!origFileName.length) // wild shot, but sometimes it is like that
+        if (origFileName.length == 0) // wild shot, but sometimes it is like that
             origFileName = part.ctype.fields.get("name", "");
 
         auto attachFullPath = randomFileName(attachStore, origFileName.extension);
@@ -616,7 +606,7 @@ final class IncomingEmailImpl : IncomingEmail
         int idx;
         foreach (string line; lines)
         {
-            if (!line.length) // end of headers
+            if (line.length == 0) // end of headers
             {
                 if (partialBuffer.data.length)
                 {
@@ -667,6 +657,8 @@ final class IncomingEmailImpl : IncomingEmail
         }
     }
 
+
+    /** Returns loads the content info obtained from the email headers into "part" */
     private void getRootContentInfo(MIMEPart part)
     {
         if (hasHeader("content-type"))
@@ -705,21 +697,21 @@ final class IncomingEmailImpl : IncomingEmail
  * example, Gmail exports all your email in that format with Google Takeout
  * (https://www.google.com/settings/takeout/custom/gmail)
  *
- * - Split that mbox in single emails running: 
+ * - Split that mbox in single emails running:
  *
- * sh test/incomingmail_createmails.sh 
- * (you only need to do this once) 
+ * sh test/incomingmail_createmails.sh
+ * (you only need to do this once)
 
  * - Replace, for example with "sed", all your real address on * the emails for
- * testuser@testdatabase.com: 
+ * testuser@testdatabase.com:
  *
- * sed -i * 's/myrealemail@gmail.com/testuser@testdatabase.com/g' * 
+ * sed -i * 's/myrealemail@gmail.com/testuser@testdatabase.com/g' *
  *
  * - If you want, remove the chats (gmail gives you chat messages as emails and the tests
- * will fail with them because the to: address is not always yours) 
+ * will fail with them because the to: address is not always yours)
  *
  * - With a stable * version (that is, before your start to hack the code), generate the
- * mime info files with: 
+ * mime info files with:
  *
  * sh test/incomingmail_regenerate_test_data.sh
  * (you only need to do this once, unless you change the mimeinfo format in the function
@@ -730,7 +722,7 @@ final class IncomingEmailImpl : IncomingEmail
  * sh test/test_incomingemail_all.sh
  *
  * to run the tests with all your emails. If you want to run the tests over a single
- * email (usually a problematic email) change the hardcoded email number in the test 
+ * email (usually a problematic email) change the hardcoded email number in the test
  * and run:
  *
  * sh test/test_incomingemail_single.sh
@@ -891,7 +883,7 @@ unittest
             email.loadFromFile(File(e.name), attachStore, rawEmailStore);
 
             auto headerFile = File(buildPath(testDir, "header.txt"), "w");
-            headerFile.write(email.printHeaders(Yes.AsString));
+            headerFile.write(email.headersToString);
             headerFile.close();
 
             auto ap = appender!string;
@@ -971,9 +963,10 @@ unittest
             // TEST: Headers
             if (!email.generatedMessageId)
             {
-                auto fRef = File(buildPath(format("%s_t", e.name), "header.txt"));
-                string headersStr = email.printHeaders(Yes.AsString);
+                auto fRef            = File(buildPath(format("%s_t", e.name), "header.txt"));
+                string headersStr    = email.headersToString();
                 auto refTextAppender = appender!string;
+
                 while(!fRef.eof)
                     refTextAppender.put(fRef.readln());
 

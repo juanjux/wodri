@@ -93,14 +93,28 @@ final class Conversation
     void removeLink(string emailDbId)
     {
         assert(emailDbId.length);
-        if (!emailDbId.length)
-            throw new Exception("Conversation.removeLink must receive an emailDbId ");
+        enforce(emailDbId.length);
 
         MessageLink[] newLinks;
+        bool someReceivedRemaining = false;
+        string lastDate = "";
+
         foreach(link; this.links)
+        {
             if (link.emailDbId != emailDbId)
+            {
                 newLinks ~= link;
+                if (!someReceivedRemaining && link.emailDbId.length)
+                    someReceivedRemaining = true;
+            }
+        }
+
         this.links = newLinks;
+        if (!someReceivedRemaining) // no local emails => remove conversation
+        {
+            this.remove();
+            this.dbId = "";
+        }
     }
 
 
@@ -139,7 +153,7 @@ final class Conversation
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
 
-    // XXX error control
+    // FIXME: error control
     void store()
     {
         auto bson = parseJsonString(this.toJson);
@@ -187,7 +201,7 @@ final class Conversation
 
         auto bson = parseJsonString(jsonApp.data);
         auto convDoc = collection("conversation").findOne(bson);
-        return convDoc.isNull? null: conversationDocToObject(convDoc);
+        return conversationDocToObject(convDoc);
     }
 
     
@@ -202,7 +216,7 @@ final class Conversation
 
         auto bson    = parseJsonString(jsonApp.data);
         auto convDoc = collection("conversation").findOne(bson);
-        auto res     = convDoc.isNull? null: conversationDocToObject(convDoc);
+        auto res     = conversationDocToObject(convDoc);
         return res;
     }
 
@@ -262,7 +276,6 @@ final class Conversation
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    // XXX unittest: comprobar que se actualiza el emailIndexContent
     static Conversation upsert(Email email, const string[] tagsToAdd, 
                                const string[] tagsToRemove)
     {
@@ -322,12 +335,12 @@ final class Conversation
     }
 
 
-    static private Conversation conversationDocToObject(const ref Bson convDoc)
+    static package Conversation conversationDocToObject(const ref Bson convDoc)
     {
-        auto ret = new Conversation();
         if (convDoc.isNull)
-            return ret;
+            return null;
 
+        auto ret         = new Conversation();
         ret.dbId         = bsonStr(convDoc._id);
         ret.userDbId     = bsonStr(convDoc.userId);
         ret.lastDate     = bsonStr(convDoc.lastDate);
@@ -365,36 +378,29 @@ final class Conversation
     // Find any conversation with this email and update the links.[email].deleted field
     static string setEmailDeleted(string dbId, bool setDel)
     {
-        auto json    = format(`{"links.emailId": {"$in": ["%s"]}}`, dbId);
-        auto bson    = parseJsonString(json);
-        auto convDoc = collection("conversation").findOne(bson,
-                                                          ["_id": 1, "links": 1],
-                                                          QueryFlags.None);
-        if (convDoc.isNull)
+        auto conv = Conversation.getByEmailId(dbId);
+        if (conv is null)
         {
             logWarn(format("setEmailDeleted: No conversation found for email with id (%s)", dbId));
             return "";
         }
 
-        int idx = 0;
-        foreach(ref entry; convDoc.links)
+        foreach(ref entry; conv.links)
         {
-            if (!entry.emailId.isNull && bsonStr(entry.emailId) == dbId)
+            if (entry.emailDbId == dbId)
             {
-                if (entry.deleted.isNull || bsonBool(entry.deleted) == setDel)
+                if (entry.deleted == setDel)
+                    logWarn(format("setEmailDeleted: delete state for email (%s) in " 
+                                   "conversation was already %s", dbId, setDel));
+                else
                 {
-                    logWarn(format("setEmailDeleted: entry for email (%s) in conversation is " ~
-                                "null or the deleted state was already %s", dbId, setDel));
-                    return "";
+                    entry.deleted = setDel;
+                    conv.store();
                 }
-                json = format(`{"$set": {"links.%d.deleted": %s}}`, idx, setDel);
-                bson = parseJsonString(json);
-                collection("conversation").update(["_id": bsonStr(convDoc._id)], bson);
                 break;
             }
-            idx++;
         }
-        return bsonStr(convDoc._id);
+        return conv.dbId;
     }
 }
 
@@ -691,6 +697,14 @@ version(db_usetestdb)
         import db.user;
         import retriever.incomingemail;
 
+        void assertConversationInEmailIndex(string emailId, string convId)
+        {
+            auto emailIdxDoc = 
+                collection("emailIndexContents").findOne(["emailDbId": emailId]);
+            assert(!emailIdxDoc.isNull);
+            assert(bsonStr(emailIdxDoc.convId) == convId);
+        }
+
         writeln("Testing Conversation.upsert");
         recreateTestDb();
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test",
@@ -702,7 +716,9 @@ version(db_usetestdb)
         auto user = User.getFromAddress(inEmail.getHeader("to").addresses[0]);
         assert(user !is null);
         string[] tagsToAdd = ["inbox", "anothertag"];
-        // test1: insert as is, should create a new conversation with this email as single member
+
+        // test1: insert as is, should create a new conversation with this email as single
+        // member
         auto dbEmail = new Email(inEmail);
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
@@ -721,6 +737,7 @@ version(db_usetestdb)
         assert(bsonStrArray(convDoc.tags)[0]           == "anothertag");
         assert(bsonStrArray(convDoc.tags)[1]           == "inbox");
         assert(bsonStr(convDoc.lastDate)               == dbEmail.isoDate);
+        assertConversationInEmailIndex(emailId, convId);
 
         auto convObject = Conversation.get(convId);
         assert(convObject !is null);
@@ -757,6 +774,7 @@ version(db_usetestdb)
         assert(bsonStr(convDoc.links[1]["message-id"]) == dbEmail.messageId);
         assert(bsonStr(convDoc.links[1].emailId) == emailId);
         assert(bsonStr(convDoc.lastDate) != dbEmail.isoDate);
+        assertConversationInEmailIndex(emailId, convId);
 
         convObject = Conversation.get(convId);
         assert(convObject !is null);
@@ -793,6 +811,7 @@ version(db_usetestdb)
         assert(bsonStr(convDoc.links[1]["message-id"]) == dbEmail.messageId);
         assert(bsonStr(convDoc.links[1].emailId) == emailId);
         assert(bsonStr(convDoc.lastDate) != dbEmail.isoDate);
+        assertConversationInEmailIndex(emailId, convId);
 
         convObject = Conversation.get(convId);
         assert(convObject !is null);

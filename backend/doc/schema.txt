@@ -93,7 +93,8 @@ times; each list item was an additional header entry in the original email.
 The "destinationAddress" field indicates the destination this email was really
 directed to (an email address can have several destination emails in our system,
 even several to the same user, but every copy as rececived from an external SMTP
-server is directed to a single address).
+server is directed to a single address). It will be empty for emails generated and sent 
+from the system.
 
 
 {

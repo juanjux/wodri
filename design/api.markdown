@@ -80,7 +80,7 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Add tags to the conversation
 `post: /:id/conversationremovetag`
     Remove tags from the conversation
-`(MISSING) post: /conversation/search`
+`post: /conversation/search`
     Search conversations
 
 ## /email
@@ -94,6 +94,9 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Send the email (must have been created as a draft before)
 `(MISSING) post: /email/draft`
     Create a new draft
+`(MISSING) post: /email/:id/addattach
+    Adds an attachment to the specified email (useful to start uploading the
+    attachments while the draft is being edited).
 `get: /:id/emaildelete/`
     Email.deleted = true
 `get: /:id/emailpurge/`

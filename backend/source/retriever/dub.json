@@ -2,7 +2,7 @@
     "targetType": "executable",
     "mainSourceFile": "main.d",
     "license": "LGPL",
-    "sourcePaths": [".", "../db", "../webbackend/source", "../libs"],
+    "sourcePaths": [".", "../db", "../webbackend/source", "../libs", "../common"],
     "excludedSourceFiles": ["test.d",
                             "../webbackend/source/app.d",
                             "../webbackend/source/api.d",

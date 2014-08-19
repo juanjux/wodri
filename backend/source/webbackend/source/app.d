@@ -13,7 +13,11 @@ import db.config: getConfig;
 
 bool checkAuth(string user, string password)
 {
-    return testSimplePasswordHash(User.getPasswordHash(user), password, getConfig.salt);
+    auto dbUser = User.getFromLoginName(user);
+    return dbUser is null ? false 
+                          : testSimplePasswordHash(dbUser.loginHash, 
+                                                   password, 
+                                                   getConfig.salt);
 } 
 
 
@@ -40,17 +44,17 @@ shared static this()
     const config = getConfig();
     auto router = new URLRouter;
 
-  // Log
+    // Log
     setLogFile(buildPath(config.mainDir, "backend", "log", "webbackend.log"), 
                LogLevel.info);
     //setLogLevel(LogLevel.debugV);
 
-  // Auth
+    // Auth
     router.any("*", performBasicAuth("Site Realm", toDelegate(&checkAuth)));
-  // /attachment/[fileName]
+    // /attachment/[fileName]
     router.get(joinPath(joinPath("/", config.URLAttachmentPath), "*"), 
                serveStaticFiles(removeStartSlash(config.URLStaticPath)));
-  // /api/[rest_api]
+    // /api/[rest_api]
     router.registerRestInterface(new ApiImpl);
 
     auto settings = new HTTPServerSettings;
