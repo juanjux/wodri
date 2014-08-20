@@ -18,16 +18,16 @@ enum USER = "testuser";
 enum PASS = "secret";
 enum URL  = "http://127.0.0.1:8080/api";
 
-string callCurl(string apicall, 
-                string operationName, 
-                string id="", 
+string callCurl(string apicall,
+                string operationName,
+                string id="",
                 string method="GET",
                 string postData="")
 {
     auto realId = id.length? "/"~id: "";
     auto dataPart = postData.length? postData: "";
     auto curlCmd = escapeShellCommand(
-            "curl", "-u", USER ~ ":" ~ PASS, "-s", "-X", method, "-H", 
+            "curl", "-u", USER ~ ":" ~ PASS, "-s", "-X", method, "-H",
             "Content-Type: application/json", "--data", dataPart,
             format("%s%s/%s", URL, realId, apicall)
     );
@@ -57,32 +57,40 @@ void deleteEmail(string id, bool purge=false)
     callCurl("emaildelete/" ~ purgeStr, "deleting email", id);
 }
 
-void createDraft()
+
+string emailJson(string dbId, string messageId)
 {
-    //recreateTestDb();
-    auto json = 
-    `{
-        "draftContent": {
-            "dbId": "",
+    auto json = format(
+            `{
+            "dbId": "%s",
+            "messageId": "%s",
             "from": "anotherUser@testdatabase.com",
             "to": "juanjux@gmail.com",
             "cc": "",
             "bcc": "",
             "subject": "test subject 2 ñññ",
-            "isoDate": "2008-05-27T05:42:30Z",
-            "date": "Mon, 27 May 2013 07:42:30 +0200",
+            "isoDate": "2014-05-27T05:42:30Z",
+            "date": "Mon, 27 May 2014 07:42:30 +0200",
             "bodyHtml": "",
             "bodyPlain": "hola mundo",
             "deleted": false,
             "draft": true,
             "attachments": []
-        },
-        "userName": "anotherUser",
-        "dbId": "",
-        "replyDbId": "53f3ce2bff2f69216e00000a",
-    }`;
-    auto res = callCurl("draft/", "updating draft", "", "POST", json);
-    writeln("XXX res: ", res);
+            }`,
+            dbId, messageId);
+    return json;
+}
+
+
+string upsertDraft(string apiEmailJson, string userName, string replyDbId)
+{
+    auto json = format(
+    `{
+        "draftContent": %s,
+        "userName": "%s",
+        "replyDbId": "%s",
+     }`, apiEmailJson, userName, replyDbId);
+    return callCurl("draft/", "updating draft", "", "POST", json).removechars("\"");
 }
 
 
@@ -103,7 +111,7 @@ void deleteConversation(string id, bool purge=false)
 JSONValue getConversations(string tag, uint limit, uint page, bool loadDeleted=false)
 {
     auto loadStr = loadDeleted? "&loadDeleted=1": "";
-    return parseJSON(callCurl(format("%s/tag/?limit=%d&page=%d%s", 
+    return parseJSON(callCurl(format("%s/tag/?limit=%d&page=%d%s",
                                      tag, limit, page, loadStr),
                              "getting conversations"));
 }
@@ -136,11 +144,11 @@ void removeTag(string id, string tag)
 }
 
 
-JSONValue search(string[] terms, 
-            string dateStart, 
-            string dateEnd, 
-            uint limit, 
-            uint page, 
+JSONValue search(string[] terms,
+            string dateStart,
+            string dateEnd,
+            uint limit,
+            uint page,
             int loadDeleted)
 {
     auto json = format(`{"terms":%s,"dateStart":"%s","dateEnd":"%s","limit":%s,"page":%s,"loadDeleted":%s}`,
@@ -353,7 +361,7 @@ void testPurgeEmail()
 {
     writeln("\nTesting GET /api/:id/emaildelete?purge=1");
     recreateTestDb();
-    
+
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversationId = conversations[0]["dbId"].str;
     auto singleConversation = getConversationById(singleConversationId);
@@ -381,7 +389,7 @@ void testPurgeEmail()
     auto reloadedFakeMultiConversation = getConversationById(fakeMultiConversationId);
     enforce(reloadedFakeMultiConversation.type == JSON_TYPE.NULL);
 
-    // Idem for a conversation with two emails in DB. The conversation SHOULD NOT be 
+    // Idem for a conversation with two emails in DB. The conversation SHOULD NOT be
     // removed and only an email should be in the summaries
     recreateTestDb();
     conversations = getConversations("inbox", 20, 0);
@@ -522,7 +530,7 @@ void testSearch()
     enforce(searchRes["totalResultCount"].integer == 3);
     enforce(searchRes["startIndex"].integer == 0);
 
-    // startDate test      
+    // startDate test
     searchRes = search(["some"], "2014-01-01T00:00:00Z", "", 20, 0, 0);
     enforce(searchRes["conversations"].array.length == 2);
     enforce(searchRes["totalResultCount"].integer == 2);
@@ -542,21 +550,66 @@ void testSearch()
 }
 
 
+void testUpsertDraft()
+{
+    writeln("\nTestin POST /api/draft");
+    // Test1: New draft, no reply
+    recreateTestDb();
+    auto email = emailJson("", "");
+    auto newId = upsertDraft(email, "anotherUser", "");
+    JSONValue dbEmail = getEmail(newId);
+    enforce(dbEmail["dbId"].str == newId);
+    auto msgId = dbEmail["messageId"].str;
+    enforce(msgId.endsWith("@testdatabase.com"));
+
+    // Test2: Update draft, no reply
+    email = emailJson(newId, msgId);
+    auto sameId = upsertDraft(email, "anotherUser", "");
+    enforce(sameId == newId);
+    dbEmail = getEmail(sameId);
+    enforce(dbEmail["dbId"].str == sameId);
+
+    // Test3: New draft, reply
+    auto conversations = getConversations("inbox", 20, 0);
+    auto convId1 = conversations[0]["dbId"].str;
+    auto conversation = getConversationById(convId1);
+    auto emailId = conversation["summaries"][0]["dbId"].str;
+
+    email = emailJson("", "");
+    auto newReplyId = upsertDraft(email, "anotherUser", emailId);
+    enforce(newReplyId != newId);
+    dbEmail = getEmail(newReplyId);
+    enforce(dbEmail["dbId"].str == newReplyId);
+    msgId = dbEmail["messageId"].str;
+    enforce(msgId.endsWith("@testdatabase.com"));
+
+    
+    // Test4: Update draft, reply
+    email = emailJson(newReplyId, msgId);
+    auto updateReplyId = upsertDraft(email, "anotherUser", emailId);
+    enforce(updateReplyId == newReplyId);
+    dbEmail = getEmail(updateReplyId);
+    enforce(dbEmail["dbId"].str == updateReplyId);
+    msgId = dbEmail["messageId"].str;
+    enforce(msgId.endsWith("@testdatabase.com"));
+}
+
+
 void main()
 {
-    //testGetTagConversations();
-    //testGetConversation();
-    //testConversationAddTag();
-    //testConversationRemoveTag();
-    //testGetEmail();
-    //testGetRawEmail();
-    //testDeleteEmail();
-    //testPurgeEmail();
-    //testDeleteConversation();
-    //testPurgeConversation();
-    //testUndeleteConversation();
-    //testUnDeleteEmail();
-    //testSearch();
-    createDraft();
+    testGetTagConversations();
+    testGetConversation();
+    testConversationAddTag();
+    testConversationRemoveTag();
+    testGetEmail();
+    testGetRawEmail();
+    testDeleteEmail();
+    testPurgeEmail();
+    testDeleteConversation();
+    testPurgeConversation();
+    testUndeleteConversation();
+    testUnDeleteEmail();
+    testSearch();
+    testUpsertDraft();
     writeln("All CURL tests finished");
 }

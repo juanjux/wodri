@@ -12,6 +12,7 @@ struct ApiAttachment
 final class ApiEmail
 {
     string dbId;
+    string messageId;
     string from; 
     string to; 
     string cc; 

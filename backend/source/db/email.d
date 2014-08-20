@@ -23,6 +23,7 @@ import vibe.inet.path: joinPath;
 import vibe.utils.dictionarylist;
 import webbackend.apiemail;
 
+
 static shared immutable SEARCH_FIELDS = ["to", "subject", "cc", "bcc"];
 
 final class TextPart
@@ -75,6 +76,17 @@ private string headerRaw(Bson emailDoc, string headerName)
 }
 
 
+// XXX unittest
+HeaderValue field2HeaderValue(string field)
+{
+    HeaderValue hv;
+    hv.rawValue = field;
+    foreach(ref c; match(field, EMAIL_REGEX))
+        if (c.hit.length) hv.addresses ~= c.hit;
+    return hv;
+}
+
+
 final class Email
 {
     string       dbId;
@@ -100,27 +112,27 @@ final class Email
     }
 
 
-    // XXX unittest
-    this(ApiEmail apiEmail, string emailDbId, string repliedEmailDbId)
+    this(const ApiEmail apiEmail, string repliedEmailDbId)
     {
-        HeaderValue field2HeaderValue(string field)
-        {
-            HeaderValue hv;
-            hv.rawValue = field;
-            foreach(ref c; match(field, EMAIL_REGEX))
-                if (c.hit.length) hv.addresses ~= c.hit;
-            return hv;
-        }
 
-        bool isNew   = (emailDbId.length == 0);
+        bool isNew   = (apiEmail.dbId.length == 0);
         bool isReply = (repliedEmailDbId.length > 0);
+        enforce(apiEmail.to.length, 
+                "Email from ApiEmail constructor should receive a .to");
+        enforce(apiEmail.date.length, 
+                "Email from ApiEmail constructor should receive a .date");
 
         if (isNew)
         {
-            emailDbId = BsonObjectID.generate().toString;
+            // new: generate a DB id and Message-ID
+            this.dbId = BsonObjectID.generate().toString;
             this.messageId = generateMessageId(domainFromAddress(apiEmail.from));
         }
-        this.dbId = emailDbId;
+        else
+        {
+            this.dbId = apiEmail.dbId;
+            this.messageId = apiEmail.messageId;
+        }
 
         if (isReply)
         {
@@ -128,8 +140,9 @@ final class Email
             auto references = Email.getReferencesFromPrevious(repliedEmailDbId);
             if (references.length == 0)
             {
-                logWarn("Email.this(ApiEmail) was suplied a repliedEmailDbId but no " ~
-                        " email was found with that id: " ~ repliedEmailDbId);
+                logWarn("Email.this(ApiEmail) ["~this.dbId~"] was suplied a " ~ 
+                        "repliedEmailDbId but no email was found with that id: " ~ 
+                        repliedEmailDbId);
                 isReply = false;
                 repliedEmailDbId = "";
             }
@@ -141,27 +154,25 @@ final class Email
         }
 
         // Copy the other fields from the ApiEmail
-        this.from      = field2HeaderValue(apiEmail.from);
-        this.isoDate   = apiEmail.isoDate;
-        this.deleted   = apiEmail.deleted;
-        enforce(apiEmail.to.length, "Email from ApiEmail constructor should receive a .date");
-        this.headers.addField("to",   field2HeaderValue(apiEmail.to));
-        enforce(apiEmail.date.length, "Email from ApiEmail constructor should receive a .date");
+        this.from    = field2HeaderValue(apiEmail.from);
+        this.isoDate = apiEmail.isoDate;
+        this.deleted = apiEmail.deleted;
+        this.headers.addField("to", field2HeaderValue(apiEmail.to));
         this.headers.addField("date", HeaderValue(apiEmail.date));
-        if (apiEmail.subject.length > 0)
-            this.headers.addField("subject", HeaderValue(apiEmail.subject));
-        if (apiEmail.cc.length > 0)
-            this.headers.addField("cc",   field2HeaderValue(apiEmail.cc));
-        if (apiEmail.bcc.length > 0)
-            this.headers.addField("bcc",  field2HeaderValue(apiEmail.bcc));
-        if (apiEmail.bodyHtml.length > 0)
+        this.headers.addField("subject", HeaderValue(apiEmail.subject));
+        this.headers.addField("cc", field2HeaderValue(apiEmail.cc));
+        this.headers.addField("bcc",field2HeaderValue(apiEmail.bcc));
+
+        if (apiEmail.bodyHtml.length)
             this.textParts ~= new TextPart("text/html", apiEmail.bodyHtml);
-        if (apiEmail.bodyPlain.length > 0)
+        if (apiEmail.bodyPlain.length)
             this.textParts ~= new TextPart("text/plain", apiEmail.bodyPlain);
+
         this.headers.addField("mime-type", HeaderValue("1.0"));
         this.headers.addField("sender", this.from);
         // XXX Attachments: pensar como hacer
         this();
+
     }
 
 
@@ -397,7 +408,7 @@ final class Email
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
     /** store or update the email into the DB, returns the DB id */
-    string store(Flag!"ForceInsertNew" = No.ForceInsertNew)
+    string store(Flag!"ForceInsertNew" forceInsert = No.ForceInsertNew)
     in
     {
         assert(this.userId !is null);
@@ -467,7 +478,7 @@ final class Email
         string rawHeadersStr = jsonAppender.data();
         jsonAppender.clear();
 
-        if (Yes.ForceInsertNew || !this.dbId.length)
+        if (forceInsert || !this.dbId.length)
             this.dbId = BsonObjectID.generate().toString;
 
         auto emailInsertJson = format(
@@ -557,6 +568,7 @@ final class Email
              "isodate": 1,
              "textParts": 1,
              "deleted": 1,
+             "message-id": 1,
              "draft": 1,
              "attachments": 1
         ];
@@ -569,6 +581,7 @@ final class Email
         {
             ret = new ApiEmail();
             ret.dbId = dbId;
+            ret.messageId = bsonStr(emailDoc["message-id"]);
 
             // Headers
             if (!emailDoc.headers.isNull)
@@ -868,10 +881,10 @@ final class Email
     }
 
 
-    /** Get the references for an email from the one it is replying to, that is
-     * the previous email references + its message-id
+    /** Get the references for an email from the one it is replying to. It will return
+     * the references for the caller, including the previous email references and 
+     * the previous email msgid appended
      */
-    // XXX unittest
     static string[] getReferencesFromPrevious(string dbId)
     {
         string[] references;
@@ -880,18 +893,15 @@ final class Email
                                                 QueryFlags.None);
         if (!res.isNull)
         {
-            writeln(res.headers);
             string[] inheritedRefs;
+
             if (!res.headers.isNull && !res.headers.references.isNull)
-                inheritedRefs = bsonStrArray(res.headers.references.addresses);
+                inheritedRefs = bsonStrArray(res.headers.references[0].addresses);
 
             references = inheritedRefs ~ bsonStr(res["message-id"]);
         }
-
         return references;
-
     }
-
 }
 
 
@@ -1308,6 +1318,95 @@ version(db_usetestdb)
         assert(searchResults[0].matchingEmailsIdx.length == 2);
         searchResults = Email.search(["some"], startFixedDate, "2014-02-21T00:00:00Z");
         assert(searchResults.length == 2);
+    }
+
+
+    unittest
+    {
+        writeln("Testing Email.getReferencesFromPrevious");
+        assert(Email.getReferencesFromPrevious("doesntexists").length == 0);
+
+        auto convs = Conversation.getByTag("inbox", 0, 0);
+        auto conv = Conversation.get(convs[3].dbId);
+
+        auto refs = Email.getReferencesFromPrevious(conv.links[1].emailDbId);
+        assert(refs.length == 2);
+        auto emailDoc = collection("email").findOne(["_id": conv.links[1].emailDbId]);
+        assert(refs[$-1] == bsonStr(emailDoc["message-id"]));
+
+        refs = Email.getReferencesFromPrevious(conv.links[0].emailDbId);
+        assert(refs.length == 1);
+        emailDoc = collection("email").findOne(["_id": conv.links[0].emailDbId]);
+        assert(refs[0] == bsonStr(emailDoc["message-id"]));
+    }
+
+    
+    unittest
+    {
+        writeln("Testing Email.this(ApiEmail)");
+        auto user = User.getFromAddress("anotherUser@testdatabase.com");
+        auto apiEmail    = new ApiEmail;
+        apiEmail.from    = "testuser@testdatabase.com";
+        apiEmail.to      = "juanjux@gmail.com";
+        apiEmail.subject = "draft subject 1";
+        apiEmail.isoDate = "2014-08-20T15:47:06Z";
+        apiEmail.date    = "Wed, 20 Aug 2014 15:47:06 +02:00";
+        apiEmail.deleted = false;
+        apiEmail.draft   = true;
+        apiEmail.bodyHtml="<strong>I can do html like the cool boys!</strong>";
+
+        // Test1: New draft, no reply
+        auto dbEmail = new Email(apiEmail, "");
+        dbEmail.userId = user.id;
+        dbEmail.store();
+        assert(dbEmail.dbId.length);
+        assert(dbEmail.messageId.endsWith("@testdatabase.com"));
+        assert(!dbEmail.hasHeader("references"));
+        assert(dbEmail.textParts.length == 1);
+
+        // Test2: Update draft, no reply
+        apiEmail.dbId = dbEmail.dbId;
+        apiEmail.messageId = dbEmail.messageId;
+        dbEmail = new Email(apiEmail, "");
+        dbEmail.userId = user.id;
+        dbEmail.store();
+        assert(dbEmail.dbId == apiEmail.dbId);
+        assert(dbEmail.messageId == apiEmail.messageId);
+        assert(!dbEmail.hasHeader("references"));
+        assert(dbEmail.textParts.length == 1);
+        
+        // Test3: New draft, reply
+        auto convs     = Conversation.getByTag("inbox", 0, 0);
+        auto conv      = Conversation.get(convs[3].dbId);
+        auto emailDoc  = collection("email").findOne(["_id": conv.links[1].emailDbId]);
+        auto emailDbId = bsonStr(emailDoc._id);
+        auto emailReferences = bsonStrArray(emailDoc.headers.references[0].addresses);
+
+        apiEmail.dbId      = "";
+        apiEmail.messageId = "";
+        apiEmail.bodyPlain = "I cant do html";
+
+        dbEmail = new Email(apiEmail, emailDbId);
+        dbEmail.userId = user.id;
+        dbEmail.store();
+        assert(dbEmail.dbId.length);
+        assert(dbEmail.messageId.endsWith("@testdatabase.com"));
+        assert(dbEmail.getHeader("references").addresses.length == 
+                emailReferences.length + 1);
+        assert(dbEmail.textParts.length == 2);
+        
+        // Test4: Update draft, reply
+        apiEmail.dbId = dbEmail.dbId;
+        apiEmail.messageId = dbEmail.messageId;
+        apiEmail.bodyHtml = "";
+        dbEmail = new Email(apiEmail, emailDbId);
+        dbEmail.userId = user.id;
+        dbEmail.store();
+        assert(dbEmail.dbId == apiEmail.dbId);
+        assert(dbEmail.messageId == apiEmail.messageId);
+        assert(dbEmail.getHeader("references").addresses.length == 
+                emailReferences.length + 1);
+        assert(dbEmail.textParts.length == 1);
     }
 
 }

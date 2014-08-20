@@ -12,13 +12,17 @@ import std.file;
 T[] removeDups(T)(const T[] input)
 {
     bool[T] dict;
+    T[] result;
 
     foreach(T item; input)
     {
         if (item !in dict)
+        {
             dict[item] = true;
+            result ~= item;
+        }
     }
-    return dict.keys;
+    return result;
 }
 
 
@@ -31,6 +35,9 @@ string randomString(uint length)
 string randomFileName(string directory, string extension="")
 {
     string destPath;
+    // ensure .something
+    if (extension.length > 0 && !extension.startsWith("."))
+        extension = "." ~ extension;
     do
     {
         destPath = format("%d_%s%s",
@@ -112,9 +119,69 @@ pure string capitalizeHeader(string name)
 // | |__| | | | | | |_| ||  __/\__ \ |_
 //  \____/|_| |_|_|\__|\__\___||___/\__|
 
+version(unittest)import std.stdio;
 
-unittest // capitalizeHeader
+unittest 
 {
+    writeln("Testing Utils.removeDups");
+    assert(removeDups(["a", "b", "cde", "fg"]) == ["a", "b", "cde", "fg"]);
+    assert(removeDups(["a", "a", "b", "cde", "cde", "fg"]) == ["a", "b", "cde", "fg"]);
+    assert(removeDups(["a", "b", "cde", "a", "fg", "b"]) == ["a", "b", "cde", "fg"]);
+    int[] empty;
+    assert(removeDups(empty).length == 0);
+    assert(removeDups([3, 5, 16, 23, 5]) == [3, 5, 16, 23]);
+    assert(removeDups([3,3,3,3,3,3,3,3,3,3,3]) == [3]);
+}
+
+unittest
+{
+    writeln("Testing Utils.randomString");
+    assert(randomString(10).length == 10);
+    assert(randomString(1000).length == 1000);
+}
+
+unittest
+{
+    writeln("Testing Utils.randomFileName");
+    auto rf = randomFileName(buildPath("home", "test"), ".jpg");
+    assert(rf.startsWith(buildPath("home", "test")));
+    assert(rf.endsWith(".jpg"));
+    rf = randomFileName("", ".jpg");
+    assert(rf.countUntil("/") == -1);
+    assert(rf.endsWith(".jpg"));
+    rf = randomFileName("", "jpg");
+    assert(rf.endsWith(".jpg"));
+    rf = randomFileName("", "");
+    assert(rf.countUntil(".") == -1);
+}
+
+unittest
+{
+    writeln("Testing Utils.generateMessageId");
+    auto domain = "somedomain.com";
+    auto msgid = generateMessageId(domain);
+    assert(msgid.countUntil(domain) != -1);
+    assert(msgid.endsWith("@" ~ domain));
+    msgid = generateMessageId();
+    assert(msgid.countUntil("@") != -1);
+    assert(!msgid.startsWith("@"));
+    assert(msgid.endsWith(".com"));
+}
+
+
+unittest
+{
+    writeln("Testing Utils.domainFromAddress");
+    assert(domainFromAddress("someaddr@somedomain.com") == "somedomain.com");
+    assert(domainFromAddress("someaddr@") == "");
+    assert(domainFromAddress("someaddr") == "");
+    assert(domainFromAddress("") == "");
+    assert(domainFromAddress("someaddr@somedomain@someother.com") == "somedomain");
+}
+
+unittest
+{
+    writeln("Testing Utils.capitalizeHeader");
     assert(capitalizeHeader("mime-version")   == "MIME-Version");
     assert(capitalizeHeader("subject")        == "Subject");
     assert(capitalizeHeader("received-spf")   == "Received-SPF");

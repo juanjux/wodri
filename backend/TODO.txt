@@ -1,7 +1,4 @@
 Backend-API:
-
-    Unittest everything!!!
-
     `(MISSING) post: /email/draft`
         - Missing/empty fields in the stored draft:
             - message-id (create when storing) => move to common.utils
@@ -11,7 +8,6 @@ Backend-API:
           when updating the draft).
 
 Backend-Retriever:
-    - unittests for all things in utils.d
 
     Later:
     - Use log to log more warnings, specially on db.*

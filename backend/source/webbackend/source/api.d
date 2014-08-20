@@ -74,7 +74,6 @@ final interface Api
     @method(HTTPMethod.POST) @path("draft/")
     string updateDraft(ApiEmail draftContent,
                        string userName, 
-                       string dbId = "",
                        string replyDbId = "");
 
     version(db_usetestdb)
@@ -255,10 +254,9 @@ final class ApiImpl: Api
         // FIXME: get the authenticated user, remove it as a parameter for the call
         string updateDraft(ApiEmail draftContent, 
                 string userName,
-                string dbId = "",
                 string replyDbId = "")
         {
-            auto dbEmail  = new Email(draftContent, dbId, replyDbId);
+            auto dbEmail  = new Email(draftContent, replyDbId);
             auto addrUser = User.getFromAddress(dbEmail.from.addresses[0]);
             auto authUser = User.getFromLoginName(userName);
 
@@ -271,7 +269,8 @@ final class ApiImpl: Api
                               addrUser.loginName, authUser.loginName);
             dbEmail.userId = addrUser.id;
 
-            auto insertNew = dbId.length == 0? Yes.ForceInsertNew: No.ForceInsertNew;
+            auto insertNew = draftContent.dbId.length == 0 ? Yes.ForceInsertNew
+                                                           : No.ForceInsertNew;
             dbEmail.draft = true;
             dbEmail.store(insertNew);
 

@@ -88,12 +88,12 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Get the full Email
 `get: /:id/raw/`
     Get the original raw email
-`(MISSING) post: /email/:id/reply`
-    Create a new draft as reply of the email specified (doesnt send)
 `(MISSING) post: /email/:id/send`
     Send the email (must have been created as a draft before)
 `(MISSING) post: /email/draft`
-    Create a new draft
+    Create a new draft (new or reply of another email)
+`(MISSING) post: /email/draftdiscard`
+    Discard a draft (delete from DB and delete attachments)
 `(MISSING) post: /email/:id/addattach
     Adds an attachment to the specified email (useful to start uploading the
     attachments while the draft is being edited).
