@@ -103,3 +103,7 @@ user clicks on the "expand" link, all the messages will be fully loaded.
 
 * `PUT: /:id/undo/delete/`
     Email.deleted = false
+
+## /batch
+* `POST /trash/empty`
+   Purge all conversations and emails marked as deleted.

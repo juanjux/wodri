@@ -23,8 +23,22 @@ import vibe.inet.path: joinPath;
 import vibe.utils.dictionarylist;
 import webbackend.apiemail;
 
-
 static shared immutable SEARCH_FIELDS = ["to", "subject", "cc", "bcc"];
+
+
+struct DbAttachment
+{
+    Attachment attachment;
+    alias attachment this;
+    string dbId;
+
+    this(Attachment attach)
+    {
+        this.attachment = attach;
+    }
+
+}
+
 
 final class TextPart
 {
@@ -90,20 +104,20 @@ HeaderValue field2HeaderValue(string field)
 
 final class Email
 {
-    string       dbId;
-    string       userId;
-    bool         deleted = false;
-    bool         draft = false;
-    string[]     forwardedTo;
-    string       destinationAddress;
-    string       messageId;
-    HeaderValue  from;
-    HeaderValue  receivers;
-    Attachment[] attachments;
-    string       rawEmailPath;
-    string       bodyPeek;
-    string       isoDate;
-    TextPart[]   textParts;
+    string         dbId;
+    string         userId;
+    bool           deleted = false;
+    bool           draft = false;
+    string[]       forwardedTo;
+    string         destinationAddress;
+    string         messageId;
+    HeaderValue    from;
+    HeaderValue    receivers;
+    DbAttachment[] attachments;
+    string         rawEmailPath;
+    string         bodyPeek;
+    string         isoDate;
+    TextPart[]     textParts;
     DictionaryList!(HeaderValue, false) headers;
 
     this()
@@ -118,15 +132,15 @@ final class Email
 
         bool isNew   = (apiEmail.dbId.length == 0);
         bool isReply = (repliedEmailDbId.length > 0);
-        enforce(apiEmail.to.length, 
+        enforce(apiEmail.to.length,
                 "Email from ApiEmail constructor should receive a .to");
-        enforce(apiEmail.date.length, 
+        enforce(apiEmail.date.length,
                 "Email from ApiEmail constructor should receive a .date");
 
-        this.dbId      = isNew ? BsonObjectID.generate().toString 
+        this.dbId      = isNew ? BsonObjectID.generate().toString
                                : apiEmail.dbId;
-        this.messageId = isNew ? generateMessageId(domainFromAddress(apiEmail.from)) 
-                               : apiEmail.messageId; 
+        this.messageId = isNew ? generateMessageId(domainFromAddress(apiEmail.from))
+                               : apiEmail.messageId;
 
         if (isReply)
         {
@@ -134,8 +148,8 @@ final class Email
             auto references = Email.getReferencesFromPrevious(repliedEmailDbId);
             if (references.length == 0)
             {
-                logWarn("Email.this(ApiEmail) ["~this.dbId~"] was suplied a " ~ 
-                        "repliedEmailDbId but no email was found with that id: " ~ 
+                logWarn("Email.this(ApiEmail) ["~this.dbId~"] was suplied a " ~
+                        "repliedEmailDbId but no email was found with that id: " ~
                         repliedEmailDbId);
                 isReply = false;
                 repliedEmailDbId = "";
@@ -193,12 +207,7 @@ final class Email
 
         foreach(attach; email.attachments)
         {
-            auto att = Attachment(attach.realPath,
-                                   attach.ctype,
-                                   attach.filename,
-                                   attach.contentId,
-                                   attach.size);
-
+            auto att = DbAttachment(attach);
             this.attachments ~= att;
         }
         this();
@@ -425,9 +434,13 @@ final class Email
         // json for the attachments
         foreach(ref attach; this.attachments)
         {
-            jsonAppender.put(`{"contentType": ` ~ Json(attach.ctype).toString     ~ `,` ~
-                             ` "realPath": `    ~ Json(attach.realPath).toString  ~ `,` ~
-                             ` "size": `        ~ Json(attach.size).toString      ~ `,`);
+            if (!attach.dbId.length)
+                attach.dbId = BsonObjectID.generate().toString;
+
+            jsonAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString     ~ `,` ~
+                             ` "realPath": `      ~ Json(attach.realPath).toString  ~ `,` ~
+                             ` "dbId": `          ~ Json(attach.dbId).toString      ~ `,` ~
+                             ` "size": `          ~ Json(attach.size).toString      ~ `,`);
             if (attach.contentId.length)
                 jsonAppender.put(` "contentId": ` ~ Json(attach.contentId).toString ~ `,`);
             if (attach.filename.length)
@@ -603,6 +616,7 @@ final class Email
             {
                 ApiAttachment att;
                 att.size      = to!uint(bsonNumber(attach.size));
+                att.dbId      = bsonStrSafe(attach.dbId);
                 att.ctype     = bsonStrSafe(attach.contentType);
                 att.filename  = bsonStrSafe(attach.fileName);
                 att.contentId = bsonStrSafe(attach.contentId);
@@ -871,13 +885,13 @@ final class Email
 
 
     /** Get the references for an email from the one it is replying to. It will return
-     * the references for the caller, including the previous email references and 
+     * the references for the caller, including the previous email references and
      * the previous email msgid appended
      */
     static string[] getReferencesFromPrevious(string dbId)
     {
         string[] references;
-        const res = collection("email").findOne(["_id": dbId], 
+        const res = collection("email").findOne(["_id": dbId],
                                                 ["headers": 1, "message-id": 1],
                                                 QueryFlags.None);
         if (!res.isNull)
@@ -1147,6 +1161,8 @@ version(db_usetestdb)
         assert(bsonStr(emailDoc.headers.subject[0].rawValue) ==
                 " Fwd: Se ha evitado un inicio de sesión sospechoso");
         assert(emailDoc.attachments.length == 2);
+        assert(bsonStr(emailDoc.attachments[0].dbId).length);
+        assert(bsonStr(emailDoc.attachments[1].dbId).length);
         assert(bsonStr(emailDoc.isodate) == "2013-05-27T05:42:30Z");
         assert(bsonStr(emailDoc.receivers.addresses[0]) == "testuser@testdatabase.com");
         assert(bsonStr(emailDoc.from.addresses[0]) == "someuser@somedomain.com");
@@ -1329,7 +1345,7 @@ version(db_usetestdb)
         assert(refs[0] == bsonStr(emailDoc["message-id"]));
     }
 
-    
+
     unittest
     {
         writeln("Testing Email.this(ApiEmail)");
@@ -1363,7 +1379,7 @@ version(db_usetestdb)
         assert(dbEmail.messageId == apiEmail.messageId);
         assert(!dbEmail.hasHeader("references"));
         assert(dbEmail.textParts.length == 1);
-        
+
         // Test3: New draft, reply
         auto convs     = Conversation.getByTag("inbox", 0, 0);
         auto conv      = Conversation.get(convs[3].dbId);
@@ -1380,10 +1396,10 @@ version(db_usetestdb)
         dbEmail.store();
         assert(dbEmail.dbId.length);
         assert(dbEmail.messageId.endsWith("@testdatabase.com"));
-        assert(dbEmail.getHeader("references").addresses.length == 
+        assert(dbEmail.getHeader("references").addresses.length ==
                 emailReferences.length + 1);
         assert(dbEmail.textParts.length == 2);
-        
+
         // Test4: Update draft, reply
         apiEmail.dbId = dbEmail.dbId;
         apiEmail.messageId = dbEmail.messageId;
@@ -1393,7 +1409,7 @@ version(db_usetestdb)
         dbEmail.store();
         assert(dbEmail.dbId == apiEmail.dbId);
         assert(dbEmail.messageId == apiEmail.messageId);
-        assert(dbEmail.getHeader("references").addresses.length == 
+        assert(dbEmail.getHeader("references").addresses.length ==
                 emailReferences.length + 1);
         assert(dbEmail.textParts.length == 1);
     }

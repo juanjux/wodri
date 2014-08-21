@@ -3,6 +3,7 @@ module webbackend.apiemail;
 struct ApiAttachment
 {
     string Url;
+    string dbId;
     string ctype;
     string filename;
     string contentId;
@@ -13,16 +14,16 @@ final class ApiEmail
 {
     string dbId;
     string messageId;
-    string from; 
-    string to; 
-    string cc; 
-    string bcc; 
-    string subject; 
-    string isoDate; 
-    string date; 
+    string from;
+    string to;
+    string cc;
+    string bcc;
+    string subject;
+    string isoDate;
+    string date;
     string bodyHtml;
     string bodyPlain;
     bool   deleted = false;
     bool   draft   = false;
-    ApiAttachment[] attachments; 
+    ApiAttachment[] attachments;
 }
