@@ -67,6 +67,7 @@ user clicks on the "expand" link, all the messages will be fully loaded.
                      limit: max results to return
                      page: skip (limit * this) elements
 
+XXX REHACER
 
 ## /conversation
 `get: /:id/conversation/`/
@@ -90,13 +91,14 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Get the original raw email
 `(MISSING) post: /email/:id/send`
     Send the email (must have been created as a draft before)
-`(MISSING) post: /email/draft`
+`post: /email/draft`
     Create a new draft (new or reply of another email)
 `(MISSING) post: /email/draftdiscard`
     Discard a draft (delete from DB and delete attachments)
 `(MISSING) post: /email/:id/addattach
     Adds an attachment to the specified email (useful to start uploading the
     attachments while the draft is being edited).
+`(MISSING) post: /email/:id/removeattach
 `get: /:id/emaildelete/`
     Email.deleted = true
 `get: /:id/emailpurge/`

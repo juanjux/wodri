@@ -54,13 +54,17 @@ shared static this()
     // /attachment/[fileName]
     router.get(joinPath(joinPath("/", config.URLAttachmentPath), "*"), 
                serveStaticFiles(removeStartSlash(config.URLStaticPath)));
-    // /api/[rest_api]
-    router.registerRestInterface(new ApiImpl);
+
+    // /conv/*
+    router.registerRestInterface(new MessageImpl);
+    router.registerRestInterface(new SearchImpl);
+    router.registerRestInterface(new DraftImpl);
+    router.registerRestInterface(new ConvImpl);
+    router.registerRestInterface(new TestImpl);
 
     auto settings = new HTTPServerSettings;
     settings.port = 8080;
     settings.bindAddresses = ["127.0.0.1"];
     listenHTTP(settings, router);
 }
-
 // api tests are done from ../../tests/apilivetests.d

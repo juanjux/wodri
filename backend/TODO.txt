@@ -1,11 +1,15 @@
 Backend-API:
-    `(MISSING) post: /email/draft`
-        - Missing/empty fields in the stored draft:
-            - message-id (create when storing) => move to common.utils
+    - /draft/attach (POST + DELETE)
 
-        - Attachments: will be downloaded/deleted by a separate RPC, see how to integrate
-          it with the draft save/create RPC (first step: DONT overwrite the email.attachments 
-          when updating the draft).
+    - draftImpl.updateDraft: get the authenticated user correctly, check:
+    http://forum.rejectedsoftware.com/groups/rejectedsoftware.vibed/thread/20021/
+
+    - move draft into email: post draft => post email, discard draft => delete email + purge,
+      send draft => email/:id/send
+
+    - /batch/emptytrash/ (purge everything)
+
+    - /batch/
 
 Backend-Retriever:
 
@@ -33,6 +37,7 @@ Frontend:
 Contacts:
     - When a message is received and the email is not found on the Contacts collection,
       store as a new contact with Name, Surname, Email, Tags and put the tag "autoinserted".
+
     - Use it for getting the shortnames in the ConversationSummary object.
 
 All:

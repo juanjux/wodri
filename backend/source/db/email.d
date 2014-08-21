@@ -33,10 +33,11 @@ final class TextPart
 
     this(string ctype, string content)
     {
-        this.ctype   = ctype;
-        this.content = content;
+        this.ctype=ctype;
+        this.content=content;
     }
 }
+
 
 private struct EmailAndConvIds
 {
@@ -122,17 +123,10 @@ final class Email
         enforce(apiEmail.date.length, 
                 "Email from ApiEmail constructor should receive a .date");
 
-        if (isNew)
-        {
-            // new: generate a DB id and Message-ID
-            this.dbId = BsonObjectID.generate().toString;
-            this.messageId = generateMessageId(domainFromAddress(apiEmail.from));
-        }
-        else
-        {
-            this.dbId = apiEmail.dbId;
-            this.messageId = apiEmail.messageId;
-        }
+        this.dbId      = isNew ? BsonObjectID.generate().toString 
+                               : apiEmail.dbId;
+        this.messageId = isNew ? generateMessageId(domainFromAddress(apiEmail.from)) 
+                               : apiEmail.messageId; 
 
         if (isReply)
         {
@@ -671,7 +665,7 @@ final class Email
      * Update the email DB record/document and set the deleted field to setDel
      */
     static void setDeleted(string dbId, bool setDel,
-                           Flag!"UpdateConversation" = Yes.UpdateConversation)
+                           Flag!"UpdateConversation" updateConv = Yes.UpdateConversation)
     {
         // Get the email from the DB, check the needed deleted and userId fields
         const emailDoc = collection("email").findOne(["_id": dbId],
@@ -697,7 +691,7 @@ final class Email
         const bsonUpd = parseJsonString(json);
         collection("email").update(["_id": dbId], bsonUpd);
 
-        if (Yes.UpdateConversation)
+        if (updateConv)
             Conversation.setEmailDeleted(dbId, setDel);
     }
 
@@ -707,7 +701,10 @@ final class Email
      * with this emailId as is its only link it will be removed too. The attachments
      * and the rawEmail files will be removed too.
      */
-    static void removeById(string dbId, Flag!"UpdateConversation" = Yes.UpdateConversation)
+    static void removeById(
+            string dbId,
+            Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
+    )
     {
         const emailDoc = collection("email").findOne(["_id": dbId],
                                                      ["_id": 1,
@@ -722,7 +719,7 @@ final class Email
         }
         const emailId = bsonStr(emailDoc._id);
 
-        if (Yes.UpdateConversation)
+        if (updateConv)
         {
             auto convObject = Conversation.getByEmailId(emailId);
             if (convObject !is null)

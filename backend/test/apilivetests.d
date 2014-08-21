@@ -8,6 +8,7 @@ import std.stdio;
 import std.json;
 import std.algorithm;
 import std.exception;
+import std.conv;
 
 /**
  * IMPORTANT: run the db.d tests (test_db.sh) before running these tests so the DB
@@ -17,24 +18,41 @@ import std.exception;
 enum USER = "testuser";
 enum PASS = "secret";
 enum URL  = "http://127.0.0.1:8080/api";
+enum URL2 = "http://127.0.0.1:8080";
+string[string] emptyDict;
 
-string callCurl(string apicall,
-                string operationName,
-                string id="",
+
+string callCurl2(string object,
+                string apiCall,
+                string[string] parameters=emptyDict,
                 string method="GET",
                 string postData="")
 {
-    auto realId = id.length? "/"~id: "";
-    auto dataPart = postData.length? postData: "";
+    Appender!string parametersStr;
+    string joiner = "?";
+    foreach(key, value; parameters)
+    {
+        parametersStr.put(joiner ~ key ~ "=" ~ value);
+        joiner = "&";
+    }
+
+    Appender!string pathStr;
+    pathStr.put(URL2   ~ "/"); 
+    pathStr.put(object ~ "/");
+    if (apiCall.length)            pathStr.put(apiCall ~ "/");
+    if (parametersStr.data.length) pathStr.put(parametersStr.data);
+
+    auto dataPart = postData.length? postData: "{}";
     auto curlCmd = escapeShellCommand(
             "curl", "-u", USER ~ ":" ~ PASS, "-s", "-X", method, "-H",
             "Content-Type: application/json", "--data", dataPart,
-            format("%s%s/%s", URL, realId, apicall)
+            pathStr.data
     );
-    auto retCurl = executeShell(curlCmd);
+
     writeln("\t" ~ curlCmd);
+    auto retCurl = executeShell(curlCmd);
     if (retCurl.status)
-        throw new Exception("bad curl result while " ~ operationName);
+        throw new Exception("bad curl result: " ~ retCurl.output);
 
     return retCurl.output;
 }
@@ -47,14 +65,14 @@ string[] jsonToArray(JSONValue val)
 
 void recreateTestDb()
 {
-    callCurl("testrebuilddb/", "rebuilding test DB");
+    callCurl2("test", "testrebuilddb");
 }
 
 
 void deleteEmail(string id, bool purge=false)
 {
-    auto purgeStr = purge? "?purge=1": "";
-    callCurl("emaildelete/" ~ purgeStr, "deleting email", id);
+    auto purgeStr = format(`{"purge": %s}`, to!int(purge));
+    callCurl2("message", id, emptyDict, "DELETE", purgeStr);
 }
 
 
@@ -90,57 +108,54 @@ string upsertDraft(string apiEmailJson, string userName, string replyDbId)
         "userName": "%s",
         "replyDbId": "%s",
      }`, apiEmailJson, userName, replyDbId);
-    return callCurl("draft/", "updating draft", "", "POST", json).removechars("\"");
-}
 
-
-void unDeleteEmail(string id)
-{
-    callCurl("emailundelete/", "un-deleting email", id);
+    return callCurl2( "draft", "", emptyDict, "POST", json).removechars("\"");
 }
 
 
 void deleteConversation(string id, bool purge=false)
 {
-    auto purgeStr = purge? "?purge=1": "";
-    callCurl("conversationdelete/" ~ purgeStr, "deleting conversation", id);
+    auto purgeStr = format(`{"purge": %s}`, to!int(purge));
+    callCurl2("conv", id, emptyDict, "DELETE", purgeStr);
 }
 
 
 
 JSONValue getConversations(string tag, uint limit, uint page, bool loadDeleted=false)
 {
-    auto loadStr = loadDeleted? "&loadDeleted=1": "";
-    return parseJSON(callCurl(format("%s/tag/?limit=%d&page=%d%s",
-                                     tag, limit, page, loadStr),
-                             "getting conversations"));
+    auto paramsDict = ["limit": to!string(limit),
+                       "page": to!string(page)];
+    if (loadDeleted)
+        paramsDict["loadDeleted"] = "1";
+                       
+    return parseJSON(callCurl2("conv", "tag/"~tag, paramsDict));
 }
 
 
 JSONValue getConversationById(string id)
 {
-    return parseJSON(callCurl("conversation/", "getting conversation by id", id));
+    return parseJSON(callCurl2("conv", id));
 }
 
 
 JSONValue getEmail(string id, Flag!"GetRaw" raw = No.GetRaw)
 {
-    string name = raw == Yes.GetRaw?"raw":"email";
-    return parseJSON(callCurl(name ~ "/", "getting single email", id));
+    auto rawStr = raw ? "/raw" : "";
+    return parseJSON(callCurl2("message", id ~ rawStr));
 }
 
 
 void addTag(string id, string tag)
 {
-    auto json = format(`{"tag": "%s"}`, tag);
-    callCurl("conversationaddtag/", "adding tag", id, "POST", json);
+    auto json = format(`{"tag":"%s"}`, tag);
+    callCurl2("conv", id~"/tag", emptyDict, "POST", json);
 }
 
 
 void removeTag(string id, string tag)
 {
     auto json = format(`{"tag":"%s"}`, tag);
-    callCurl("conversationremovetag/", "removing tag", id, "POST", json);
+    callCurl2("conv", id~"/tag", emptyDict, "DELETE", json);
 }
 
 
@@ -151,9 +166,10 @@ JSONValue search(string[] terms,
             uint page,
             int loadDeleted)
 {
-    auto json = format(`{"terms":%s,"dateStart":"%s","dateEnd":"%s","limit":%s,"page":%s,"loadDeleted":%s}`,
+    auto json = format(`{"terms":%s,"dateStart":"%s","dateEnd":"%s","limit":%s,`~
+                       `"page":%s,"loadDeleted":%s}`,
                        terms, dateStart, dateEnd, limit, page, loadDeleted);
-    return parseJSON(callCurl("search/", "searching", "", "POST", json));
+    return parseJSON(callCurl2("search", "", emptyDict, "POST", json));
 }
 
 void testGetConversation()
@@ -193,7 +209,7 @@ void testGetConversation()
 
 void testGetTagConversations()
 {
-    writeln("\nTesting GET /api/:name/tag/?limit=%d&page=%d");
+    writeln("\nTesting GET /conv/tag/:name/?limit=%s&page=%s");
     recreateTestDb();
     JSONValue conversations;
     conversations = getConversations("inbox", 20, 0);
@@ -232,7 +248,7 @@ void testGetTagConversations()
 
 void testConversationAddTag()
 {
-    writeln("\nTesting POST /api/:id/conversationaddtag");
+    writeln("\nTesting PUT /conv/addtag/:id/:tag/");
     recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto convId = conversations[3]["dbId"].str;
@@ -254,7 +270,7 @@ void testConversationAddTag()
 
 void testConversationRemoveTag()
 {
-    writeln("\tTesting POST /api/:id/conversationremovetag");
+    writeln("\tTesting DELETE /conv/:id/tag/");
     recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto convId = conversations[0]["dbId"].str;
@@ -331,7 +347,7 @@ void testGetEmail()
 
 void testGetRawEmail()
 {
-    writeln("\nTesting GET /api/:id/raw");
+    writeln("\nTesting GET /message/:id/raw");
     recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversation = getConversationById(conversations[3]["dbId"].str);
@@ -344,7 +360,7 @@ void testGetRawEmail()
 
 void testDeleteEmail()
 {
-    writeln("\nTesting GET /api/:id/emaildelete");
+    writeln("\nTesting DELETE /message/:id/");
     recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversation = getConversationById(conversations[0]["dbId"].str);
@@ -359,7 +375,7 @@ void testDeleteEmail()
 
 void testPurgeEmail()
 {
-    writeln("\nTesting GET /api/:id/emaildelete?purge=1");
+    writeln("\nTesting DELETE /message/:id/ (purging)");
     recreateTestDb();
 
     auto conversations = getConversations("inbox", 20, 0);
@@ -409,7 +425,7 @@ void testPurgeEmail()
 
 void testDeleteConversation()
 {
-    writeln("\nTesting GET /api/:id/conversationdelete?purge=0");
+    writeln("\nTesting DELETE /conv/:id/ (no purge)");
     recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto convId = conversations[0]["dbId"].str;
@@ -425,7 +441,7 @@ void testDeleteConversation()
 
 void testPurgeConversation()
 {
-    writeln("\nTesting GET /api:/id/conversationdelete?purge=1");
+    writeln("\nTesting DELETE /conv/:id/ (purging)");
     recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto convId = conversations[3]["dbId"].str;
@@ -442,7 +458,7 @@ void testPurgeConversation()
 
 void testUndeleteConversation()
 {
-    writeln("\nTesting GET /api:/id/conversationundelete");
+    writeln("\nTesting PUT /conv/:id/undo/delete/");
     recreateTestDb();
     auto conversations = getConversations("inbox", 20, 0);
     auto convId = conversations[1]["dbId"].str;
@@ -454,7 +470,13 @@ void testUndeleteConversation()
     auto email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
     enforce(email["deleted"].type == JSON_TYPE.TRUE);
 
-    callCurl("conversationundelete/", "un-deleting conversation", convId);
+    callCurl2(
+            "conv", 
+            convId~"/undo/delete", 
+            emptyDict,
+            "PUT"
+    );
+
     reloadedConv = getConversationById(convId);
     enforce(reloadedConv["tags"].jsonToArray == ["inbox"]);
     enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.FALSE);
@@ -465,13 +487,18 @@ void testUndeleteConversation()
 
 void testUnDeleteEmail()
 {
-    writeln("\nTesting GET /api/:id/emailundelete");
+    writeln("\nTesting PUT /message/:id/undo/delete");
     recreateTestDb();
     auto convId = getConversations("inbox", 20, 0)[1]["dbId"].str;
     auto conv = getConversationById(convId);
     auto emailId = conv["summaries"][0]["dbId"].str;
     deleteEmail(emailId);
-    callCurl("emailundelete/", "un-deleting email", emailId);
+    callCurl2(
+            "message", 
+            emailId~"/undo/delete", 
+            emptyDict,
+            "PUT"
+    );
     auto email = getEmail(emailId);
     email = getEmail(emailId);
     enforce(email["deleted"].type == JSON_TYPE.FALSE);
