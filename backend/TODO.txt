@@ -1,15 +1,9 @@
 Backend-API:
-    - MessageImpl.post: get the authenticated user correctly, check:
-      http://forum.rejectedsoftware.com/groups/rejectedsoftware.vibed/thread/20021/
-
-    - POST /message/: DONT update the attachments[] in Mongo
-
     - /message/:id/attach (POST + DELETE)
-
-    - /batch/emptytrash/ (purge everything marked as deleted)
+    - unittest: POST Email (doest change attachments)
 
 Backend-Retriever:
-    - Email.Store: option to dont update attachments
+    - unittest: Email.store(No.StoreAttachments)
 
     Later:
     - Use log to log more warnings, specially on db.*

@@ -13,11 +13,13 @@ import std.typecons;
 import vibe.core.log;
 import vibe.http.common;
 import vibe.http.server;
+import vibe.internal.meta.funcattr;
 import vibe.web.common;
 import webbackend.apiconversation;
 import webbackend.apiconversationsummary;
 import webbackend.apiemail;
 import webbackend.constants;
+import webbackend.utils;
 
 struct ApiSearchResult
 {
@@ -26,6 +28,11 @@ struct ApiSearchResult
     ulong startIndex;
 }
 
+
+string getRequestUser(HTTPServerRequest req, HTTPServerResponse res)
+{
+    return req.username;
+}
 
 @rootPathFromName
 final interface Message
@@ -37,7 +44,8 @@ final interface Message
     string getRaw(string _id);
 
     @path("/")
-    string post(ApiEmail draftContent, string userName, string replyDbId = "");
+    @before!getRequestUser("_userName")
+    string post(string _userName, ApiEmail draftContent, string replyDbId = "");
 
     @method(HTTPMethod.DELETE) @path("/:id/")
     void deleteEmail(string _id, int purge=0);
@@ -117,10 +125,7 @@ override:
         }
 
 
-        // FIXME: get the authenticated user, remove it as a parameter for the call
-        string post(ApiEmail draftContent, 
-                           string userName,
-                           string replyDbId = "")
+        string post(string userName, ApiEmail draftContent, string replyDbId = "")
         {
             auto dbEmail  = new Email(draftContent, replyDbId);
             auto addrUser = User.getFromAddress(dbEmail.from.addresses[0]);
@@ -138,7 +143,7 @@ override:
             auto insertNew = draftContent.dbId.length == 0 ? Yes.ForceInsertNew
                                                            : No.ForceInsertNew;
             dbEmail.draft = true;
-            dbEmail.store(insertNew);
+            dbEmail.store(insertNew, No.StoreAttachMents);
 
             if (insertNew) // add to the conversation
                 Conversation.upsert(dbEmail, [], []);
@@ -192,7 +197,7 @@ override:
                                                                  cast(bool)loadDeleted);
                 if (apiConvSummary.numMessages > 0)
                     // all msgs had deleted=True
-                    convs ~= apiConvSummary; 
+                    convs ~= apiConvSummary;
             }
 
             auto convsArrayEnd   = convs.length;

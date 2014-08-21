@@ -355,19 +355,16 @@ final class Conversation
         foreach(link; convDoc.links)
         {
             auto emailId = bsonStr(link["emailId"]);
-            //if (!emailId.length)
-            //{
-                //// Not in DB; email referenced in a thread but not received here
-                //continue;
-            //}
-
             ret.addLink(bsonStr(link["message-id"]), emailId, bsonBool(link["deleted"]));
 
-            auto emailSummary = Email.getSummary(emailId);
-            foreach(attach; emailSummary.attachFileNames)
+            if (emailId.length)
             {
-                if (countUntil(ret.attachFileNames, attach) == -1)
-                    ret.attachFileNames ~= attach;
+                auto emailSummary = Email.getSummary(emailId);
+                foreach(attach; emailSummary.attachFileNames)
+                {
+                    if (countUntil(ret.attachFileNames, attach) == -1)
+                        ret.attachFileNames ~= attach;
+                }
             }
         }
         return ret;

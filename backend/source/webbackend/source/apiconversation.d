@@ -20,8 +20,13 @@ final class ApiConversation
         this.subject  = conv.cleanSubject;
 
         foreach(link; conv.links)
+        {
             if (link.emailDbId.length) 
+            {
                 summaries ~= Email.getSummary(link.emailDbId);
+            }
+        }
+
 
     }
 }

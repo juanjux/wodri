@@ -26,7 +26,9 @@ string callCurl2(string object,
                 string apiCall,
                 string[string] parameters=emptyDict,
                 string method="GET",
-                string postData="")
+                string postData="",
+                string user=USER,
+                string pass=PASS)
 {
     Appender!string parametersStr;
     string joiner = "?";
@@ -44,12 +46,12 @@ string callCurl2(string object,
 
     auto dataPart = postData.length? postData: "{}";
     auto curlCmd = escapeShellCommand(
-            "curl", "-u", USER ~ ":" ~ PASS, "-s", "-X", method, "-H",
+            "curl", "-u", user ~ ":" ~ pass, "-s", "-X", method, "-H",
             "Content-Type: application/json", "--data", dataPart,
             pathStr.data
     );
 
-    writeln("\t" ~ curlCmd);
+    writeln("\t" ~ method ~ ": " ~ pathStr.data);
     auto retCurl = executeShell(curlCmd);
     if (retCurl.status)
         throw new Exception("bad curl result: " ~ retCurl.output);
@@ -100,16 +102,15 @@ string emailJson(string dbId, string messageId)
 }
 
 
-string upsertDraft(string apiEmailJson, string userName, string replyDbId)
+string upsertDraft(string apiEmailJson, string replyDbId)
 {
     auto json = format(
     `{
         "draftContent": %s,
-        "userName": "%s",
         "replyDbId": "%s",
-     }`, apiEmailJson, userName, replyDbId);
+     }`, apiEmailJson, replyDbId);
 
-    return callCurl2( "message", "", emptyDict, "POST", json).removechars("\"");
+    return callCurl2( "message", "", emptyDict, "POST", json, "anotherUser", "secret").removechars("\"");
 }
 
 
@@ -583,7 +584,7 @@ void testUpsertDraft()
     // Test1: New draft, no reply
     recreateTestDb();
     auto email = emailJson("", "");
-    auto newId = upsertDraft(email, "anotherUser", "");
+    auto newId = upsertDraft(email, "");
     JSONValue dbEmail = getEmail(newId);
     enforce(dbEmail["dbId"].str == newId);
     auto msgId = dbEmail["messageId"].str;
@@ -591,7 +592,7 @@ void testUpsertDraft()
 
     // Test2: Update draft, no reply
     email = emailJson(newId, msgId);
-    auto sameId = upsertDraft(email, "anotherUser", "");
+    auto sameId = upsertDraft(email, "");
     enforce(sameId == newId);
     dbEmail = getEmail(sameId);
     enforce(dbEmail["dbId"].str == sameId);
@@ -603,7 +604,7 @@ void testUpsertDraft()
     auto emailId = conversation["summaries"][0]["dbId"].str;
 
     email = emailJson("", "");
-    auto newReplyId = upsertDraft(email, "anotherUser", emailId);
+    auto newReplyId = upsertDraft(email, emailId);
     enforce(newReplyId != newId);
     dbEmail = getEmail(newReplyId);
     enforce(dbEmail["dbId"].str == newReplyId);
@@ -613,7 +614,7 @@ void testUpsertDraft()
     
     // Test4: Update draft, reply
     email = emailJson(newReplyId, msgId);
-    auto updateReplyId = upsertDraft(email, "anotherUser", emailId);
+    auto updateReplyId = upsertDraft(email, emailId);
     enforce(updateReplyId == newReplyId);
     dbEmail = getEmail(updateReplyId);
     enforce(dbEmail["dbId"].str == updateReplyId);

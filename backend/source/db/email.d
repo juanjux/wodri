@@ -36,7 +36,6 @@ struct DbAttachment
     {
         this.attachment = attach;
     }
-
 }
 
 
@@ -407,50 +406,10 @@ final class Email
         return map.values;
     }
 
-    // ===================================================================
-    // DB methods, puts these under a version() if other DBs are supported
-    // ===================================================================
-    /** store or update the email into the DB, returns the DB id */
-    string store(Flag!"ForceInsertNew" forceInsert = No.ForceInsertNew)
-    in
+    private string headersToJson()
     {
-        assert(this.userId !is null);
-        assert(this.userId.length);
-    }
-    body
-    {
-        if (this.userId is null || !this.userId.length)
-            throw new Exception("Cant store email without assigning a user");
-
         Appender!string jsonAppender;
 
-        // json for the text parts
-        foreach(idx, part; this.textParts)
-            jsonAppender.put(`{"contentType": ` ~ Json(part.ctype).toString ~ "," ~
-                              `"content": `     ~ Json(part.content).toString ~ "},");
-        string textPartsJsonStr = jsonAppender.data;
-        jsonAppender.clear();
-
-        // json for the attachments
-        foreach(ref attach; this.attachments)
-        {
-            if (!attach.dbId.length)
-                attach.dbId = BsonObjectID.generate().toString;
-
-            jsonAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString     ~ `,` ~
-                             ` "realPath": `      ~ Json(attach.realPath).toString  ~ `,` ~
-                             ` "dbId": `          ~ Json(attach.dbId).toString      ~ `,` ~
-                             ` "size": `          ~ Json(attach.size).toString      ~ `,`);
-            if (attach.contentId.length)
-                jsonAppender.put(` "contentId": ` ~ Json(attach.contentId).toString ~ `,`);
-            if (attach.filename.length)
-                jsonAppender.put(` "fileName": `  ~ Json(attach.filename).toString  ~ `,`);
-            jsonAppender.put("},");
-        }
-        string attachmentsJsonStr = jsonAppender.data();
-        jsonAppender.clear();
-
-        // Json for the headers (see the schema.txt doc)
         bool[string] alreadyDone;
         jsonAppender.put("{");
         foreach(headerName, ref headerValue; this.headers)
@@ -466,6 +425,7 @@ final class Email
 
             // headers can have several values per key and thus be repeated
             // in the foreach iteration but we extract all the first time
+            // with the call to getAll
             if (headerName in alreadyDone)
                 continue;
             alreadyDone[headerName] = true;
@@ -483,13 +443,68 @@ final class Email
         }
         jsonAppender.put("}");
         string rawHeadersStr = jsonAppender.data();
-        jsonAppender.clear();
+        return jsonAppender.data();
+    }
 
-        if (forceInsert || !this.dbId.length)
+
+    private string textPartsToJson()
+    {
+        Appender!string jsonAppender;
+        foreach(idx, part; this.textParts)
+        {
+            jsonAppender.put(`{"contentType": ` ~ Json(part.ctype).toString ~ "," ~
+                              `"content": `     ~ Json(part.content).toString ~ "},");
+        }
+        return jsonAppender.data;
+    }
+
+    private string attachmentsToJson()
+    {
+        Appender!string jsonAppender;
+        // json for the attachments
+        foreach(ref attach; this.attachments)
+        {
+            if (!attach.dbId.length)
+                attach.dbId = BsonObjectID.generate().toString;
+
+            jsonAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString     ~ `,` ~
+                             ` "realPath": `      ~ Json(attach.realPath).toString  ~ `,` ~
+                             ` "dbId": `          ~ Json(attach.dbId).toString      ~ `,` ~
+                             ` "size": `          ~ Json(attach.size).toString      ~ `,`);
+            if (attach.contentId.length)
+                jsonAppender.put(` "contentId": ` ~ Json(attach.contentId).toString ~ `,`);
+            if (attach.filename.length)
+                jsonAppender.put(` "fileName": `  ~ Json(attach.filename).toString  ~ `,`);
+            jsonAppender.put("},");
+        }
+        return jsonAppender.data;
+    }
+
+    // ===================================================================
+    // DB methods, puts these under a version() if other DBs are supported
+    // ===================================================================
+    /** store or update the email into the DB, returns the DB id */
+    string store(Flag!"ForceInsertNew"   forceInsertNew   = No.ForceInsertNew,
+                 Flag!"StoreAttachMents" storeAttachMents = Yes.StoreAttachMents)
+    in
+    {
+        assert(this.userId !is null);
+        assert(this.userId.length);
+    }
+    body
+    {
+        if (this.userId is null || !this.userId.length)
+            throw new Exception("Cant store email without assigning a user");
+
+        string rawHeadersStr    = headersToJson();
+        string textPartsJsonStr = textPartsToJson();
+
+        if (forceInsertNew || !this.dbId.length)
             this.dbId = BsonObjectID.generate().toString;
 
-        auto emailInsertJson = format(
-              `{"_id": %s,` ~
+        Appender!string emailInsertJson;
+        emailInsertJson.put(`{"$set": {`);
+        emailInsertJson.put(format(
               `"deleted": %s,` ~
               `"draft": %s,` ~
               `"userId": "%s",` ~
@@ -501,10 +516,8 @@ final class Email
               `"from": { "rawValue": %s, "addresses": %s },` ~
               `"receivers": { "rawValue": %s, "addresses": %s },`   ~
               `"headers": %s, `    ~
-              `"textParts": [ %s ], ` ~
-              `"bodyPeek": %s, ` ~
-              `"attachments": [ %s ] }`,
-                Json(this.dbId).toString,
+              `"textParts": [ %s ], ` ~ 
+              `"bodyPeek": %s, `,
                 this.deleted,
                 this.draft,
                 this.userId,
@@ -518,11 +531,22 @@ final class Email
                 rawHeadersStr,
                 textPartsJsonStr,
                 Json(this.bodyPeek).toString,
-                attachmentsJsonStr
-        );
-        //writeln(emailInsertJson);
+        ));
 
-        auto bsonData = parseJsonString(emailInsertJson);
+        if (forceInsertNew)
+            emailInsertJson.put(format(`"_id": %s,`, Json(this.dbId).toString));
+
+        if (storeAttachMents)
+        {
+            emailInsertJson.put(
+                    format(`"attachments": [ %s ]`, attachmentsToJson())
+            );
+        }
+
+        emailInsertJson.put("}}");
+        //writeln(emailInsertJson.data);
+
+        auto bsonData = parseJsonString(emailInsertJson.data);
         collection("email").update(["_id": this.dbId], bsonData, UpdateFlags.Upsert);
 
         // store the index document for Mongo's full text search engine
@@ -537,6 +561,11 @@ final class Email
      * Smaller version of the standar email object
      */
     static EmailSummary getSummary(string dbId)
+    in
+    {
+        assert(dbId.length);
+    }
+    body
     {
         auto res = new EmailSummary();
         const fieldSelector = ["from"        : 1,

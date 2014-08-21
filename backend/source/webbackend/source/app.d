@@ -1,25 +1,15 @@
 module app;
 
 import db.config: getConfig;
-import db.user: User;
 import std.path;
 import std.stdio;
 import vibe.core.log;
-import vibe.crypto.passwordhash;
 import vibe.d;
 import vibe.http.fileserver;
 import vibe.inet.path;
 import webbackend.api;
+import webbackend.utils;
 import common.utils;
-
-bool checkAuth(string user, string password)
-{
-    auto dbUser = User.getFromLoginName(user);
-    return dbUser is null ? false
-                          : testSimplePasswordHash(dbUser.loginHash,
-                                                   password,
-                                                   getConfig.salt);
-}
 
 
 shared static this()
