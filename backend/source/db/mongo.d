@@ -25,11 +25,17 @@ version(search_test)      version = db_usebigdb;
 
 private MongoDatabase g_mongoDB;
 
-alias bsonStr      = deserializeBson!string;
-alias bsonId       = deserializeBson!BsonObjectID;
-alias bsonBool     = deserializeBson!bool;
-alias bsonStrArray = deserializeBson!(string[]);
-alias bsonStrHash  = deserializeBson!(string[string]);
+T bsonSafe(T)(Bson bson) { return bson.isNull ? T.init : deserializeBson!T(bson); }
+
+alias bsonStr          = deserializeBson!string;
+alias bsonStrSafe      = bsonSafe!string;
+alias bsonId           = deserializeBson!BsonObjectID;
+alias bsonBool         = deserializeBson!bool;
+alias bsonBoolSafe     = bsonSafe!bool;
+alias bsonStrArray     = deserializeBson!(string[]);
+alias bsonStrArraySafe = bsonSafe!(string[]);
+alias bsonStrHash      = deserializeBson!(string[string]);
+
 double bsonNumber(const Bson input)
 {
     switch(input.type)
@@ -47,7 +53,6 @@ double bsonNumber(const Bson input)
     }
     assert(0);
 }
-
 
 /**
  * Read the /etc/dbconnect.json file, check for missing keys and connect

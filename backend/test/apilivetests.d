@@ -109,7 +109,7 @@ string upsertDraft(string apiEmailJson, string userName, string replyDbId)
         "replyDbId": "%s",
      }`, apiEmailJson, userName, replyDbId);
 
-    return callCurl2( "draft", "", emptyDict, "POST", json).removechars("\"");
+    return callCurl2( "message", "", emptyDict, "POST", json).removechars("\"");
 }
 
 

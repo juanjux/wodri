@@ -177,9 +177,7 @@ final class Conversation
     static Conversation get(string id)
     {
         auto convDoc = collection("conversation").findOne(["_id": id]);
-        if (convDoc.isNull)
-            return null;
-        return Conversation.conversationDocToObject(convDoc);
+        return convDoc.isNull ? null : Conversation.conversationDocToObject(convDoc);
     }
 
 

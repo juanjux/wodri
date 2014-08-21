@@ -1,17 +1,17 @@
 Backend-API:
-    - /draft/attach (POST + DELETE)
+    - /message/:id/attach (POST + DELETE)
 
-    - draftImpl.updateDraft: get the authenticated user correctly, check:
-    http://forum.rejectedsoftware.com/groups/rejectedsoftware.vibed/thread/20021/
+    - POST /message/: DONT update the attachments[] in Mongo
 
-    - move draft into email: post draft => post email, discard draft => delete email + purge,
-      send draft => email/:id/send
+    - MessageImpl.post: get the authenticated user correctly, check:
+      http://forum.rejectedsoftware.com/groups/rejectedsoftware.vibed/thread/20021/
 
-    - /batch/emptytrash/ (purge everything)
+    - /batch/emptytrash/ (purge everything marked as deleted)
 
-    - /batch/
 
 Backend-Retriever:
+    - Email.Store: option to dont update attachments
+    - Adds an ObjectId for the attachments
 
     Later:
     - Use log to log more warnings, specially on db.*
@@ -31,6 +31,8 @@ Backend-Retriever:
     - Sent the new changes in characterencodings.d to Ruppe
 
     - When adding or removing links from a conversation, update conversation.lastDate
+
+    - Review ORMs for D (Hybernated and others)
 
 Frontend:
 

@@ -70,8 +70,8 @@ final class EmailSummary
 private string headerRaw(Bson emailDoc, string headerName)
 {
     if (!emailDoc.headers.isNull &&
-            !emailDoc.headers[headerName].isNull &&
-            !emailDoc.headers[headerName][0].rawValue.isNull)
+        !emailDoc.headers[headerName].isNull &&
+        !emailDoc.headers[headerName][0].rawValue.isNull)
         return bsonStr(emailDoc.headers[headerName][0].rawValue);
     return "";
 }
@@ -602,16 +602,13 @@ final class Email
             foreach(ref attach; emailDoc.attachments)
             {
                 ApiAttachment att;
-                att.size = to!uint(bsonNumber(attach.size));
-                att.ctype = bsonStr(attach.contentType);
-                if (!attach.fileName.isNull)
-                    att.filename = bsonStr(attach.fileName);
-                if (!attach.contentId.isNull)
-                    att.contentId = bsonStr(attach.contentId);
-                if (!attach.realPath.isNull)
-                    att.Url = joinPath("/",
-                            joinPath(getConfig().URLAttachmentPath,
-                                     baseName(bsonStr(attach.realPath))));
+                att.size      = to!uint(bsonNumber(attach.size));
+                att.ctype     = bsonStrSafe(attach.contentType);
+                att.filename  = bsonStrSafe(attach.fileName);
+                att.contentId = bsonStrSafe(attach.contentId);
+                att.Url       = joinPath("/",
+                                         joinPath(getConfig().URLAttachmentPath,
+                                         baseName(bsonStrSafe(attach.realPath))));
                 ret.attachments ~= att;
             }
 
@@ -628,7 +625,7 @@ final class Email
                         if (docCType == "text/html" && !tpart.content.isNull)
                             bodyHtml.put(bsonStr(tpart.content));
                         else
-                            bodyPlain.put(bsonStr(tpart.content));
+                            bodyPlain.put(bsonStrSafe(tpart.content));
                     }
                 }
                 ret.bodyHtml  = bodyHtml.data;
@@ -736,21 +733,15 @@ final class Email
                 );
         }
 
-        if (!emailDoc.rawEmailPath.isNull)
-        {
-            auto rawPath = bsonStr(emailDoc.rawEmailPath);
-            if (rawPath.length > 0 && rawPath.exists)
-                std.file.remove(rawPath);
-        }
+        auto rawPath = bsonStrSafe(emailDoc.rawEmailPath);
+        if (rawPath.length && rawPath.exists)
+            std.file.remove(rawPath);
 
         foreach(ref attach; emailDoc.attachments)
         {
-            if (!attach.realPath.isNull)
-            {
-                auto attachRealPath = bsonStr(attach.realPath);
-                if (attachRealPath.exists)
-                    std.file.remove(attachRealPath);
-            }
+            auto attachRealPath = bsonStrSafe(attach.realPath);
+            if (attachRealPath.length && attachRealPath.exists)
+                std.file.remove(attachRealPath);
         }
 
         // Remove the email from the DB
@@ -790,8 +781,9 @@ final class Email
         {
             foreach(ref attach; emailDoc.attachments)
             {
-                if (!attach.fileName.isNull)
-                    res ~= bsonStr(attach.fileName);
+                string fName = bsonStrSafe(attach.fileName);
+                if (fName.length)
+                    res ~= fName;
             }
         }
         return res;
@@ -893,7 +885,7 @@ final class Email
             string[] inheritedRefs;
 
             if (!res.headers.isNull && !res.headers.references.isNull)
-                inheritedRefs = bsonStrArray(res.headers.references[0].addresses);
+                inheritedRefs = bsonStrArraySafe(res.headers.references[0].addresses);
 
             references = inheritedRefs ~ bsonStr(res["message-id"]);
         }

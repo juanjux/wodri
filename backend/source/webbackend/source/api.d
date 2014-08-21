@@ -30,10 +30,14 @@ struct ApiSearchResult
 @rootPathFromName
 final interface Message
 {
+    @path("/")
     ApiEmail get(string id);
 
     @path("/:id/raw/")
     string getRaw(string _id);
+
+    @path("/")
+    string post(ApiEmail draftContent, string userName, string replyDbId = "");
 
     @method(HTTPMethod.DELETE) @path("/:id/")
     void deleteEmail(string _id, int purge=0);
@@ -55,16 +59,6 @@ final interface Search
             uint page=0,
             int loadDeleted=0
     );
-}
-
-
-@rootPathFromName
-final interface Draft
-{
-    @method(HTTPMethod.POST) @path("/")
-    string updateDraft(ApiEmail draftContent,
-                       string userName, 
-                       string replyDbId = "");
 }
 
 
@@ -120,6 +114,35 @@ override:
         string getRaw(string id)
         {
             return Email.getOriginal(id);
+        }
+
+
+        // FIXME: get the authenticated user, remove it as a parameter for the call
+        string post(ApiEmail draftContent, 
+                           string userName,
+                           string replyDbId = "")
+        {
+            auto dbEmail  = new Email(draftContent, replyDbId);
+            auto addrUser = User.getFromAddress(dbEmail.from.addresses[0]);
+            auto authUser = User.getFromLoginName(userName);
+
+            if (addrUser is null)
+                return "ERROR: no user found for the address " ~ dbEmail.from.addresses[0];
+            if (authUser is null)
+                return "ERROR: no user found in the DB with name: " ~ userName;
+            if (addrUser.id != authUser.id)
+                return format("ERROR: email user (%s) and authenticated user (%s) dont match",
+                              addrUser.loginName, authUser.loginName);
+            dbEmail.userId = addrUser.id;
+
+            auto insertNew = draftContent.dbId.length == 0 ? Yes.ForceInsertNew
+                                                           : No.ForceInsertNew;
+            dbEmail.draft = true;
+            dbEmail.store(insertNew);
+
+            if (insertNew) // add to the conversation
+                Conversation.upsert(dbEmail, [], []);
+            return dbEmail.dbId;
         }
 
 
@@ -182,39 +205,6 @@ override:
         }
 }
 
-final class DraftImpl : Draft
-{
-override:
-        // FIXME: get the authenticated user, remove it as a parameter for the call
-        string updateDraft(ApiEmail draftContent, 
-                           string userName,
-                           string replyDbId = "")
-        {
-            auto dbEmail  = new Email(draftContent, replyDbId);
-            auto addrUser = User.getFromAddress(dbEmail.from.addresses[0]);
-            auto authUser = User.getFromLoginName(userName);
-
-            if (addrUser is null)
-                return "ERROR: no user found for the address " ~ dbEmail.from.addresses[0];
-            if (authUser is null)
-                return "ERROR: no user found in the DB with name: " ~ userName;
-            if (addrUser.id != authUser.id)
-                return format("ERROR: email user (%s) and authenticated user (%s) dont match",
-                              addrUser.loginName, authUser.loginName);
-            dbEmail.userId = addrUser.id;
-
-            auto insertNew = draftContent.dbId.length == 0 ? Yes.ForceInsertNew
-                                                           : No.ForceInsertNew;
-            dbEmail.draft = true;
-            dbEmail.store(insertNew);
-
-            if (insertNew) // add to the conversation
-                Conversation.upsert(dbEmail, [], []);
-            return dbEmail.dbId;
-        }
-
-
-}
 
 final class ConvImpl : Conv
 {

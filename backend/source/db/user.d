@@ -36,10 +36,7 @@ final class User
         auto userResult = collection("user").findOne(
                 parseJsonString(`{"addresses": {"$in": [` ~ Json(address).toString ~ `]}}`)
         );
-
-        if (!userResult.isNull)
-            return userDocToObject(userResult);
-        return null;
+        return userResult.isNull ? null : userDocToObject(userResult);
     }
 
 
@@ -49,7 +46,7 @@ final class User
             return false;
         if (Domain.hasDefaultUser(address.split("@")[1]))
             return true;
-        return getFromAddress(address) !is null;
+        return (getFromAddress(address) !is null);
     }
 
 

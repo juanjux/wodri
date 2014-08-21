@@ -111,6 +111,32 @@ pure string capitalizeHeader(string name)
     return newres;
 }
 
+// XXX unittest
+pure string removeStartSlash(string path)
+{
+    return path.startsWith("/") ? path[1..$] : path;
+}
+
+// XXX unittest
+pure string removeEndSlash(string path)
+{
+    return path.endsWith("/") ? path[0..$-1] : path;
+}
+
+// XXX unittest
+pure string removeStartEndSlashes(string path)
+{
+    return removeStartSlash(removeEndSlash(path));
+}
+
+
+// XXX unittest
+pure string ensureStartSlash(string path)
+{
+    return path.startsWith("/") ? path : "/" ~ path;
+}
+
+
 
 //  _    _       _ _   _            _
 // | |  | |     (_) | | |          | |
