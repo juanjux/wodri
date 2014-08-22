@@ -516,7 +516,7 @@ final class Email
               `"from": { "rawValue": %s, "addresses": %s },` ~
               `"receivers": { "rawValue": %s, "addresses": %s },`   ~
               `"headers": %s, `    ~
-              `"textParts": [ %s ], ` ~ 
+              `"textParts": [ %s ], ` ~
               `"bodyPeek": %s, `,
                 this.deleted,
                 this.draft,
