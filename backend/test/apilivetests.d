@@ -41,8 +41,11 @@ string callCurl2(string object,
     Appender!string pathStr;
     pathStr.put(URL2   ~ "/"); 
     pathStr.put(object ~ "/");
-    if (apiCall.length)            pathStr.put(apiCall ~ "/");
-    if (parametersStr.data.length) pathStr.put(parametersStr.data);
+
+    if (apiCall.length)            
+        pathStr.put(apiCall ~ "/");
+    if (parametersStr.data.length) 
+        pathStr.put(parametersStr.data);
 
     auto dataPart = postData.length? postData: "{}";
     auto curlCmd = escapeShellCommand(
@@ -52,6 +55,7 @@ string callCurl2(string object,
     );
 
     writeln("\t" ~ method ~ ": " ~ pathStr.data);
+    //writeln(curlCmd);
     auto retCurl = executeShell(curlCmd);
     if (retCurl.status)
         throw new Exception("bad curl result: " ~ retCurl.output);
@@ -95,7 +99,16 @@ string emailJson(string dbId, string messageId)
             "bodyPlain": "hola mundo",
             "deleted": false,
             "draft": true,
-            "attachments": []
+            "attachments": [
+                {
+                    "Url": "/attachments/somecode.jpg",
+                    "dbId": "",
+                    "ctype": "image/jpeg",
+                    "filename": "somecode.jpg",
+                    "contentId": "somecontentid",
+                    "size": 1000,
+                }
+            ]
             }`,
             dbId, messageId);
     return json;
@@ -587,6 +600,7 @@ void testUpsertDraft()
     auto newId = upsertDraft(email, "");
     JSONValue dbEmail = getEmail(newId);
     enforce(dbEmail["dbId"].str == newId);
+    enforce(dbEmail["attachments"].array.length == 0);
     auto msgId = dbEmail["messageId"].str;
     enforce(msgId.endsWith("@testdatabase.com"));
 
@@ -611,7 +625,6 @@ void testUpsertDraft()
     msgId = dbEmail["messageId"].str;
     enforce(msgId.endsWith("@testdatabase.com"));
 
-    
     // Test4: Update draft, reply
     email = emailJson(newReplyId, msgId);
     auto updateReplyId = upsertDraft(email, emailId);
@@ -625,19 +638,19 @@ void testUpsertDraft()
 
 void main()
 {
-    testGetTagConversations();
-    testGetConversation();
-    testConversationAddTag();
-    testConversationRemoveTag();
-    testGetEmail();
-    testGetRawEmail();
-    testDeleteEmail();
-    testPurgeEmail();
-    testDeleteConversation();
-    testPurgeConversation();
-    testUndeleteConversation();
-    testUnDeleteEmail();
-    testSearch();
+    //testGetTagConversations();
+    //testGetConversation();
+    //testConversationAddTag();
+    //testConversationRemoveTag();
+    //testGetEmail();
+    //testGetRawEmail();
+    //testDeleteEmail();
+    //testPurgeEmail();
+    //testDeleteConversation();
+    //testPurgeConversation();
+    //testUndeleteConversation();
+    //testUnDeleteEmail();
+    //testSearch();
     testUpsertDraft();
     writeln("All CURL tests finished");
 }

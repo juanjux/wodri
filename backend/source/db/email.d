@@ -10,7 +10,7 @@ import retriever.incomingemail;
 import std.algorithm: among, sort, uniq;
 import std.datetime;
 import std.file;
-import std.path: baseName;
+import std.path: baseName, buildPath;
 import std.regex;
 import std.stdio: File, writeln;
 import std.string;
@@ -126,7 +126,7 @@ final class Email
     }
 
 
-    this(const ApiEmail apiEmail, string repliedEmailDbId)
+    this(const ApiEmail apiEmail, string repliedEmailDbId = "")
     {
 
         bool isNew   = (apiEmail.dbId.length == 0);
@@ -177,7 +177,19 @@ final class Email
 
         this.headers.addField("mime-type", HeaderValue("1.0"));
         this.headers.addField("sender", this.from);
-        // XXX Attachments: pensar como hacer
+
+        foreach(ref apiAttach; apiEmail.attachments)
+        {
+            DbAttachment dbAttach;
+            dbAttach.realPath = buildPath(getConfig.absAttachmentStore, 
+                                          baseName(apiAttach.Url));
+            dbAttach.dbId = apiAttach.dbId;
+            dbAttach.ctype = apiAttach.ctype;
+            dbAttach.filename = apiAttach.filename;
+            dbAttach.contentId = apiAttach.contentId;
+            dbAttach.size = apiAttach.size;
+            this.attachments ~= dbAttach;
+        }
         this();
 
     }
@@ -641,18 +653,21 @@ final class Email
                 ret.isoDate = bsonStr(emailDoc.isodate);
 
             // Attachments
-            foreach(ref attach; emailDoc.attachments)
+            if (!emailDoc.attachments.isNull)
             {
-                ApiAttachment att;
-                att.size      = to!uint(bsonNumber(attach.size));
-                att.dbId      = bsonStrSafe(attach.dbId);
-                att.ctype     = bsonStrSafe(attach.contentType);
-                att.filename  = bsonStrSafe(attach.fileName);
-                att.contentId = bsonStrSafe(attach.contentId);
-                att.Url       = joinPath("/",
-                                         joinPath(getConfig().URLAttachmentPath,
-                                         baseName(bsonStrSafe(attach.realPath))));
-                ret.attachments ~= att;
+                foreach(ref attach; emailDoc.attachments)
+                {
+                    ApiAttachment att;
+                    att.size      = to!uint(bsonNumber(attach.size));
+                    att.dbId      = bsonStrSafe(attach.dbId);
+                    att.ctype     = bsonStrSafe(attach.contentType);
+                    att.filename  = bsonStrSafe(attach.fileName);
+                    att.contentId = bsonStrSafe(attach.contentId);
+                    att.Url       = joinPath("/",
+                                             joinPath(getConfig().URLAttachmentPath,
+                                             baseName(bsonStrSafe(attach.realPath))));
+                    ret.attachments ~= att;
+                }
             }
 
             // Append all parts of the same type
@@ -780,11 +795,14 @@ final class Email
         if (rawPath.length && rawPath.exists)
             std.file.remove(rawPath);
 
-        foreach(ref attach; emailDoc.attachments)
+        if (!emailDoc.attachments.isNull)
         {
-            auto attachRealPath = bsonStrSafe(attach.realPath);
-            if (attachRealPath.length && attachRealPath.exists)
-                std.file.remove(attachRealPath);
+            foreach(ref attach; emailDoc.attachments)
+            {
+                auto attachRealPath = bsonStrSafe(attach.realPath);
+                if (attachRealPath.length && attachRealPath.exists)
+                    std.file.remove(attachRealPath);
+            }
         }
 
         // Remove the email from the DB
@@ -820,7 +838,7 @@ final class Email
     private static string[] extractAttachNamesFromDoc(const ref Bson emailDoc)
     {
         string[] res;
-        if (!emailDoc.isNull)
+        if (!emailDoc.isNull && !emailDoc.attachments.isNull)
         {
             foreach(ref attach; emailDoc.attachments)
             {
@@ -948,10 +966,23 @@ final class Email
 version(db_test)
 version(db_usetestdb)
 {
-    import std.path;
-    import retriever.incomingemail;
     import db.test_support;
+    import retriever.incomingemail;
     import std.digest.md;
+    import std.path;
+    import webbackend.apiemail;
+
+    ApiEmail getTestApiEmail()
+    {
+        auto apiEmail = new ApiEmail();
+        apiEmail.from      = "testuser@testdatabase.com";
+        apiEmail.to        = "juanjo@juanjoalvarez.net";
+        apiEmail.subject   = "test of forceInsertNew";
+        apiEmail.isoDate   = "2014-08-22T09:22:46";
+        apiEmail.date      = "Fri, 22 Aug 2014 09:22:46 +02:00";
+        apiEmail.bodyPlain = "test body";
+        return apiEmail;
+    }
 
     unittest // jsonizeHeader
     {
@@ -1202,6 +1233,50 @@ version(db_usetestdb)
         cursor.popFrontExactly(countUntil(db.test_support.TEST_EMAILS, "spam_notagged_nomsgid"));
         assert(bsonStr(cursor.front["message-id"]).length);
         assert(bsonStr(cursor.front.bodyPeek) == "Well it is speculated that there are over 20,000 hosting companies in this country alone. WIth that ");
+    }
+    
+    unittest 
+    {
+        writeln("Testing Email.store(forceInsertNew)");
+        recreateTestDb();
+        auto apiEmail = getTestApiEmail();
+        auto dbEmail = new Email(apiEmail);
+        dbEmail.userId = "xxx";
+        auto dbIdFirst = dbEmail.store(); // new
+        apiEmail.dbId = dbIdFirst;
+        dbEmail = new Email(apiEmail);
+        dbEmail.userId = "xxx";
+        auto dbIdSame = dbEmail.store(); // no forceInserNew, should have the same id
+        assert(dbIdFirst == dbIdSame);
+
+        dbEmail = new Email(apiEmail);
+        dbEmail.userId = "xxx";
+        auto dbIdDifferent = dbEmail.store(Yes.ForceInsertNew);
+        assert(dbIdDifferent != dbIdFirst);
+    }
+
+    unittest
+    {
+        writeln("Testing Email.store(storeAttachMents");
+        recreateTestDb();
+        auto apiEmail = getTestApiEmail();
+        apiEmail.attachments = [
+            ApiAttachment(joinPath("/" ~ getConfig.URLAttachmentPath, "somefilecode.jpg"), 
+                          "testdbid", "ctype", "fname", "ctId", 1000)
+        ];
+        auto dbEmail = new Email(apiEmail);
+        dbEmail.userId = "xxx";
+        writeln(dbEmail.attachments);
+        // should not store the attachments:
+        auto dbId = dbEmail.store(No.ForceInsertNew, No.StoreAttachMents);
+        auto emailDoc = collection("email").findOne(["_id": dbId]);
+        assert(emailDoc.attachments.isNull);
+
+        // should store the attachments
+        dbEmail.store(No.ForceInsertNew, Yes.StoreAttachMents);
+        emailDoc = collection("email").findOne(["_id": dbId]);
+        assert(!emailDoc.attachments.isNull);
+        assert(emailDoc.attachments.length == 1);
     }
 
     unittest // test email.deleted

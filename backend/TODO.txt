@@ -1,9 +1,8 @@
 Backend-API:
     - /message/:id/attach (POST + DELETE)
-    - unittest: POST Email (doest change attachments)
+    - unittest curl: POST Email (doest change attachments)
 
 Backend-Retriever:
-    - unittest: Email.store(No.StoreAttachments)
 
     Later:
     - Use log to log more warnings, specially on db.*
