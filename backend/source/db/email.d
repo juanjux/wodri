@@ -36,6 +36,15 @@ struct DbAttachment
     {
         this.attachment = attach;
     }
+
+    this (ApiAttachment apiAttach)
+    {
+        this.dbId                 = apiAttach.dbId;
+        this.attachment.ctype     = apiAttach.ctype;
+        this.attachment.filename  = apiAttach.filename;
+        this.attachment.contentId = apiAttach.contentId;
+        this.attachment.size      = apiAttach.size;
+    }
 }
 
 
@@ -459,6 +468,22 @@ final class Email
     }
 
 
+    const(string[]) localReceivers()
+    {
+        string[] allAddresses;
+        string[] localAddresses;
+
+        foreach(headerName; ["to", "cc", "bcc", "delivered-to"])
+            allAddresses ~= getHeader(headerName).addresses;
+
+        foreach(addr; allAddresses)
+            if (User.addressIsLocal(addr))
+                localAddresses ~= addr;
+
+        return localAddresses;
+    }
+
+
     private string textPartsToJson()
     {
         Appender!string jsonAppender;
@@ -470,25 +495,32 @@ final class Email
         return jsonAppender.data;
     }
 
+
     private string attachmentsToJson()
     {
         Appender!string jsonAppender;
-        // json for the attachments
         foreach(ref attach; this.attachments)
-        {
-            if (!attach.dbId.length)
-                attach.dbId = BsonObjectID.generate().toString;
+            jsonAppender.put(attachmentToJson(attach) ~ ",");
+        return jsonAppender.data;
+    }
 
-            jsonAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString     ~ `,` ~
-                             ` "realPath": `      ~ Json(attach.realPath).toString  ~ `,` ~
-                             ` "dbId": `          ~ Json(attach.dbId).toString      ~ `,` ~
-                             ` "size": `          ~ Json(attach.size).toString      ~ `,`);
-            if (attach.contentId.length)
-                jsonAppender.put(` "contentId": ` ~ Json(attach.contentId).toString ~ `,`);
-            if (attach.filename.length)
-                jsonAppender.put(` "fileName": `  ~ Json(attach.filename).toString  ~ `,`);
-            jsonAppender.put("},");
-        }
+
+    /** NOTE: this can change de attach argument adding a dbId if missing */
+    private static string attachmentToJson(ref DbAttachment attach)
+    {
+        Appender!string jsonAppender;
+        if (!attach.dbId.length)
+            attach.dbId = BsonObjectID.generate().toString;
+
+        jsonAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString     ~ `,` ~
+                         ` "realPath": `      ~ Json(attach.realPath).toString  ~ `,` ~
+                         ` "dbId": `          ~ Json(attach.dbId).toString      ~ `,` ~
+                         ` "size": `          ~ Json(attach.size).toString      ~ `,`);
+        if (attach.contentId.length)
+            jsonAppender.put(` "contentId": ` ~ Json(attach.contentId).toString ~ `,`);
+        if (attach.filename.length)
+            jsonAppender.put(` "fileName": `  ~ Json(attach.filename).toString  ~ `,`);
+        jsonAppender.put("}");
         return jsonAppender.data;
     }
 
@@ -568,6 +600,70 @@ final class Email
         return this.dbId;
     }
 
+    // XXX update size with the real size before inserting
+    static string addAttachment(string emailDbId, 
+                                const ApiAttachment apiAttach,
+                                string base64Content)
+    {
+        string attachId;
+
+        if (apiAttach.dbId.length) // dont process emails with a dbId set
+        {
+            logWarn("addAttachment was called with a non empty attachid."~ 
+                    " emailId: " ~ emailDbId ~ " attachId: " ~ apiAttach.dbId);
+            return attachId;
+        }
+
+        // check that the email exists on DB
+        Bson emailDoc = collection("email").findOne(["_id": emailDbId]);
+        if (emailDoc.isNull)
+        {
+            logWarn("addAttachment, could find specified email: " ~ emailDbId);
+            return attachId;
+        }
+
+        // decode the attachment and save the email
+        import arsd.characterencodings: decodeBase64Stubborn;
+        immutable(ubyte)[] attContent = decodeBase64Stubborn(base64Content);
+
+        if (!attContent.length)
+        {
+            logWarn("addAttachment: could not decode apiAttach \"" ~ apiAttach.filename ~ 
+                    "\" for email with ID: " ~ emailDbId);
+            return attachId;
+        }
+
+        string destFilePath = randomFileName(getConfig.absAttachmentStore,
+                                             apiAttach.filename.extension);
+        auto f = File(destFilePath, "w");
+        f.rawWrite(attContent);
+
+        // create the doc and insert into the email.attachments list on DB
+        auto dbAttach     = DbAttachment(apiAttach);
+        dbAttach.dbId     = BsonObjectID.generate().toString;
+        dbAttach.realPath = destFilePath;
+
+        string attachJson = attachmentToJson(dbAttach);
+        string pushJson   = format(`{"$push": {"attachments": %s}}`, attachJson);
+        collection("email").update(["_id": emailDbId], parseJsonString(pushJson));
+
+        return dbAttach.dbId;
+    }
+
+
+    static void deleteAttachment(string emailDbId, string attachmentId)
+    {
+        if (!emailDbId.length || !attachmentId.length)
+        {
+            logWarn("deleteAttachment: email id or attachment id empty");
+            return;
+        }
+
+        auto json = format(
+                `{"$pull": {"attachments": {"dbId": %s}}}`, Json(attachmentId).toString
+        );
+        collection("email").update(["_id": emailDbId], parseJsonString(json));
+    }
 
     /**
      * Smaller version of the standar email object
@@ -810,22 +906,6 @@ final class Email
     }
 
 
-    const(string[]) localReceivers()
-    {
-        string[] allAddresses;
-        string[] localAddresses;
-
-        foreach(headerName; ["to", "cc", "bcc", "delivered-to"])
-            allAddresses ~= getHeader(headerName).addresses;
-
-        foreach(addr; allAddresses)
-            if (User.addressIsLocal(addr))
-                localAddresses ~= addr;
-
-        return localAddresses;
-    }
-
-
     static void setConversationInEmailIndex(string emailId, string convId)
     {
         const json = format(`{"$set": {"convId": %s}}`, Json(convId).toString);
@@ -970,6 +1050,7 @@ version(db_usetestdb)
     import retriever.incomingemail;
     import std.digest.md;
     import std.path;
+    import std.range;
     import webbackend.apiemail;
 
     ApiEmail getTestApiEmail()
@@ -982,6 +1063,15 @@ version(db_usetestdb)
         apiEmail.date      = "Fri, 22 Aug 2014 09:22:46 +02:00";
         apiEmail.bodyPlain = "test body";
         return apiEmail;
+    }
+
+    auto getEmailCursorAtPosition(ulong pos)
+    {
+        auto cursor = collection("email").find();
+        cursor.sort(["_id": 1]);
+        assert(!cursor.empty);
+        cursor.popFrontExactly(pos);
+        return cursor;
     }
 
     unittest // jsonizeHeader
@@ -1206,15 +1296,10 @@ version(db_usetestdb)
 
     unittest // email.store()
     {
-        import std.range;
-
         writeln("Testing Email.store");
         recreateTestDb();
         // recreateTestDb already calls email.store, check that the inserted email is fine
-        auto cursor = collection("email").find();
-        cursor.sort(parseJsonString(`{"_id": 1}`));
-        assert(!cursor.empty);
-        auto emailDoc = cursor.front; // email 0
+        auto emailDoc = getEmailCursorAtPosition(0).front;
         assert(emailDoc.headers.references[0].addresses.length == 1);
         assert(bsonStr(emailDoc.headers.references[0].addresses[0]) ==
                 "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
@@ -1230,7 +1315,9 @@ version(db_usetestdb)
         assert(bsonStr(emailDoc.bodyPeek) == "Some text inside the email plain part");
 
         // check generated msgid
-        cursor.popFrontExactly(countUntil(db.test_support.TEST_EMAILS, "spam_notagged_nomsgid"));
+        auto cursor = getEmailCursorAtPosition(
+                countUntil(db.test_support.TEST_EMAILS, "spam_notagged_nomsgid")
+        );
         assert(bsonStr(cursor.front["message-id"]).length);
         assert(bsonStr(cursor.front.bodyPeek) == "Well it is speculated that there are over 20,000 hosting companies in this country alone. WIth that ");
     }
@@ -1266,7 +1353,7 @@ version(db_usetestdb)
         ];
         auto dbEmail = new Email(apiEmail);
         dbEmail.userId = "xxx";
-        writeln(dbEmail.attachments);
+
         // should not store the attachments:
         auto dbId = dbEmail.store(No.ForceInsertNew, No.StoreAttachMents);
         auto emailDoc = collection("email").findOne(["_id": dbId]);
@@ -1279,9 +1366,55 @@ version(db_usetestdb)
         assert(emailDoc.attachments.length == 1);
     }
 
+    unittest // Email.addAttachment 
+    {
+        writeln("Testing Email.addAttachment");
+        recreateTestDb();
+
+        // add
+        auto emailDoc = getEmailCursorAtPosition(0).front;
+        auto emailDbId = bsonStr(emailDoc._id);
+
+        ApiAttachment apiAttach;
+        apiAttach.ctype = "text/plain";
+        apiAttach.filename = "helloworld.txt";
+        apiAttach.contentId = "someContentId";
+        apiAttach.size = 12;
+        string base64content = "aGVsbG8gd29ybGQ="; // "hello world"
+        auto attachId = Email.addAttachment(emailDbId, apiAttach, base64content);
+
+        emailDoc = getEmailCursorAtPosition(0).front;
+        assert(emailDoc.attachments.length == 3);
+        auto attachDoc = emailDoc.attachments[2];
+        assert(attachId == bsonStr(attachDoc.dbId));
+        auto realPath = bsonStr(attachDoc.realPath);
+        assert(realPath.exists);
+        auto f = File(realPath, "r");
+        ubyte[500] buffer;
+        auto readBuf = f.rawRead(buffer);
+        string fileContent = cast(string)readBuf.idup;
+        assert(fileContent == "hello world");
+    }
+
+    unittest // Email.deleteAttachment
+    {
+        writeln("Testing Email.deleteAttachment");
+        recreateTestDb();
+        auto emailDoc = getEmailCursorAtPosition(0).front;
+        auto emailDbId = bsonStr(emailDoc._id);
+        assert(emailDoc.attachments.length == 2);
+        auto firstAttachId = bsonStr(emailDoc.attachments[0].dbId);
+        Email.deleteAttachment(emailDbId, firstAttachId);
+
+        emailDoc = getEmailCursorAtPosition(0).front;
+        assert(emailDoc.attachments.length == 1);
+        assert(bsonStr(emailDoc.attachments[0].dbId) != firstAttachId);
+    }
+
     unittest // test email.deleted
     {
         writeln("Testing Email.deleted");
+        recreateTestDb();
         // insert a new email with deleted = true
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend",
                                                 "test", "testemails");
@@ -1326,29 +1459,29 @@ version(db_usetestdb)
         findJson = `{"$text": {"$search": "text inside"}}`;
         cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(!cursor.empty);
-        string res = cursor.front.text.toString;
-        assert(countUntil(res, "text inside") == 165);
+        string res = bsonStr(cursor.front.text);
+        assert(countUntil(res, "text inside") == 157);
 
         findJson = `{"$text": {"$search": "email"}}`;
         cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(!cursor.empty);
-        assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
+        assert(countUntil(toLower(bsonStr(cursor.front.text)), "email") != -1);
         cursor.popFront;
-        assert(countUntil(toLower(cursor.front.text.toString), "email") != -1);
+        assert(countUntil(toLower(bsonStr(cursor.front.text)), "email") != -1);
         cursor.popFront;
         assert(cursor.empty);
 
         findJson = `{"$text": {"$search": "inicio de sesión"}}`;
         cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(!cursor.empty);
-        res = cursor.front.text.toString;
+        res = bsonStr(cursor.front.text);
         auto foundPos = countUntil(res, "inicio de sesión");
         assert(foundPos != -1);
 
         findJson = `{"$text": {"$search": "inicio de sesion"}}`;
         cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(!cursor.empty);
-        res = cursor.front.text.toString;
+        res = bsonStr(cursor.front.text);
         auto foundPos2 = countUntil(res, "inicio de sesión");
         assert(foundPos == foundPos2);
 

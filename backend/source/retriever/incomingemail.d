@@ -107,17 +107,17 @@ private pure string capitalizeHeader(string name)
 }
 
 
-final interface IncomingEmail
+interface IncomingEmail
 {
     void loadFromFile(string emailPath, string attachStore, string rawEmailStore = "");
     void loadFromFile(File emailFile,   string attachStore, string rawEmailStore = "");
 
+    @property Flag!"IsValidEmail" isValid() const;
     @property ref DictionaryList!(HeaderValue, false) headers();
     @property ref const(DateTime) date() const;
-    @property const(MIMEPart[])   textualParts() const;
     @property const(Attachment[]) attachments() const;
     @property string              rawEmailPath() const;
-    @property Flag!"IsValidEmail" isValid() const;
+    @property const(MIMEPart[])   textualParts() const;
 
     const(HeaderValue) getHeader(string name) const;
     void               removeHeader(string name); // removes ALL even if repeated
@@ -149,7 +149,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    @property Flag!"IsValidEmail" isValid() const
+    override @property Flag!"IsValidEmail" isValid() const
     {
         return ((getHeader("to").addresses.length  ||
                  getHeader("cc").addresses.length  ||
@@ -157,42 +157,41 @@ final class IncomingEmailImpl : IncomingEmail
                  getHeader("delivered-to").addresses.length)) ? Yes.IsValidEmail
                                                               : No.IsValidEmail;
     }
-    @property ref DictionaryList!(HeaderValue, false) headers() { return m_headers; }
-    @property const(Attachment[]) attachments()  const { return m_attachments; }
-    @property ref const(DateTime) date()         const { return m_date; }
-    @property string              rawEmailPath() const { return m_rawEmailPath; }
-    @property const(MIMEPart[])   textualParts() const { return m_textualParts; }
+    override @property ref DictionaryList!(HeaderValue, false) headers() { return m_headers; }
+    override @property ref const(DateTime) date()         const { return m_date; }
+    override @property const(Attachment[]) attachments()  const { return m_attachments; }
+    override @property string              rawEmailPath() const { return m_rawEmailPath; }
+    override @property const(MIMEPart[])   textualParts() const { return m_textualParts; }
 
 
     /**
         Return the header if it exists. If not, returns an empty HeaderValue.
         Useful when you want a default empty value.
     */
-    const(HeaderValue) getHeader(string name) const
+    override const(HeaderValue) getHeader(string name) const
     {
         return hasHeader(name)? m_headers[name]: HeaderValue("", []);
     }
 
 
-    void removeHeader(string name)
+    override void removeHeader(string name)
     {
         m_headers.removeAll(name);
     }
 
 
-    bool hasHeader(string name) const
+    override bool hasHeader(string name) const
     {
         return (name in m_headers) !is null;
     }
 
 
-    void loadFromFile(string emailPath, string attachStore, string rawEmailStore="")
+    override void loadFromFile(string emailPath, string attachStore, string rawEmailStore="")
     {
         loadFromFile(File(emailPath), attachStore, rawEmailStore);
     }
 
-
-    void loadFromFile(File emailFile, string attachStore, string rawEmailStore = "")
+    override void loadFromFile(File emailFile, string attachStore, string rawEmailStore = "")
     {
         Appender!string stdinLines;
         Appender!string partialBuffer;
@@ -228,7 +227,7 @@ final class IncomingEmailImpl : IncomingEmail
                 // buffer (with the text of the previous lines without the current line)
                 // as new header
                 addHeader(partialBuffer.data);
-                partialBuffer.clear();
+                partialBuffer = appender!string;
             }
             partialBuffer.put(currentLine);
 
@@ -238,7 +237,7 @@ final class IncomingEmailImpl : IncomingEmail
 
                 // load the email content info data from the headers into rootPart
                 getRootContentInfo(this.rootPart);
-                partialBuffer.clear();
+                partialBuffer = appender!string;
                 break;
             }
             currentLine = emailFile.readln();
@@ -275,7 +274,6 @@ final class IncomingEmailImpl : IncomingEmail
         if (rawEmailStore.length)
         {
             auto destFilePath = randomFileName(rawEmailStore);
-
             if (inputIsStdInput)
                 File(destFilePath, "w").write(stdinLines.data);
             else
@@ -286,7 +284,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    string headersToString()
+    override string headersToString()
     {
         Appender!string textHeaders;
         foreach(string name, const ref value; m_headers)
@@ -298,7 +296,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    void addHeader(string raw)
+    override void addHeader(string raw)
     {
         immutable idxSeparator = countUntil(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
@@ -598,7 +596,7 @@ final class IncomingEmailImpl : IncomingEmail
                 if (partialBuffer.data.length)
                 {
                     addPartHeader(partialBuffer.data);
-                    partialBuffer.clear();
+                    partialBuffer = appender!string;
                 }
                 break;
             }
@@ -606,7 +604,7 @@ final class IncomingEmailImpl : IncomingEmail
             if (partialBuffer.data.length && !among(line[0], ' ', '\t'))
             {
                 addPartHeader(partialBuffer.data);
-                partialBuffer.clear();
+                partialBuffer = appender!string;
             }
             partialBuffer.put(line);
             ++idx;

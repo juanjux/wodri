@@ -52,6 +52,12 @@ final interface Message
 
     @method(HTTPMethod.PUT) @path(":id/undo/delete/")
     void unDeleteEmail(string _id);
+
+    @method(HTTPMethod.PUT) @path(":id/attachment/")
+    string putAttachment(string _id, ApiAttachment attachment, string base64Content);
+
+    @method(HTTPMethod.DELETE) @path(":id/attachment/")
+    void deleteAttachment(string _id, string attachmentId);
 }
 
 
@@ -164,6 +170,19 @@ override:
         {
             Email.setDeleted(id, false, Yes.UpdateConversation);
         }
+
+
+        string putAttachment(string _id, ApiAttachment attachment, string base64Content)
+        {
+            return Email.addAttachment(_id, attachment, base64Content);
+        }
+
+
+        void deleteAttachment(string _id, string attachmentId)
+        {
+            Email.deleteAttachment(_id, attachmentId);
+        }
+
 }
 
 

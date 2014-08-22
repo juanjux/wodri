@@ -638,19 +638,19 @@ void testUpsertDraft()
 
 void main()
 {
-    //testGetTagConversations();
-    //testGetConversation();
-    //testConversationAddTag();
-    //testConversationRemoveTag();
-    //testGetEmail();
-    //testGetRawEmail();
-    //testDeleteEmail();
-    //testPurgeEmail();
-    //testDeleteConversation();
-    //testPurgeConversation();
-    //testUndeleteConversation();
-    //testUnDeleteEmail();
-    //testSearch();
+    testGetTagConversations();
+    testGetConversation();
+    testConversationAddTag();
+    testConversationRemoveTag();
+    testGetEmail();
+    testGetRawEmail();
+    testDeleteEmail();
+    testPurgeEmail();
+    testDeleteConversation();
+    testPurgeConversation();
+    testUndeleteConversation();
+    testUnDeleteEmail();
+    testSearch();
     testUpsertDraft();
     writeln("All CURL tests finished");
 }

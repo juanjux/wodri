@@ -38,13 +38,15 @@ string randomFileName(string directory, string extension="")
     // ensure .something
     if (extension.length > 0 && !extension.startsWith("."))
         extension = "." ~ extension;
+
+    // yep, not 100% warranteed to be unique but incredibly improbable, still FIXME
     do
     {
         destPath = format("%d_%s%s",
                           stdTimeToUnixTime(Clock.currStdTime),
-                          randomString(6),
+                          randomString(10),
                           extension);
-    } while (destPath.exists);
+    } while (destPath.exists); 
     return buildPath(directory, destPath);
 }
 

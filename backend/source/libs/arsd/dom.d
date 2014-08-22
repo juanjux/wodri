@@ -1732,7 +1732,7 @@ class Element {
 	}
 
 	///.
-	Element replaceChild(Element find, Element replace) 
+	Element replaceChild(Element find, Element replace)
 		in {
 			assert(find !is null);
 			assert(replace !is null);
@@ -1906,7 +1906,7 @@ class Element {
 	{
 		auto e = Element.make(this.tagName);
 		e.parentDocument = this.parentDocument;
-		e.attributes = this.attributes.dup;
+		e.attributes = this.attributes.aadup;
 		e.selfClosed = this.selfClosed;
 		foreach(child; children) {
 			e.appendChild(child.cloned);
@@ -1923,7 +1923,7 @@ class Element {
 		// shallow clone
 		auto e = Element.make(this.tagName);
 		e.parentDocument = this.parentDocument;
-		e.attributes = this.attributes.dup;
+		e.attributes = this.attributes.aadup;
 		e.selfClosed = this.selfClosed;
 		return e;
 	}
@@ -2019,7 +2019,7 @@ class Element {
 	// I moved these from Form because they are generally useful.
 	// Ideally, I'd put them in arsd.html and use UFCS, but that doesn't work with the opDispatch here.
 	/// Tags: HTML, HTML5
-	// FIXME: add overloads for other label types... 
+	// FIXME: add overloads for other label types...
 	Element addField(string label, string name, string type = "text", FormFieldOptions fieldOptions = FormFieldOptions.none) {
 		auto fs = this;
 		auto i = fs.addChild("label");
@@ -2295,56 +2295,14 @@ dchar parseEntity(in dchar[] entity) {
 		case "trade": return '\u2122';
 
 		case "hellip": return '\u2026';
+		case "ndash": return '\u2013';
 		case "mdash": return '\u2014';
+		case "lsquo": return '\u2018';
+		case "rsquo": return '\u2019';
 
-		/*
-		case "cent":
-		case "pound":
-		case "sect":
-		case "deg":
-		case "micro"
-		*/
-		/*
-		case "egrave":
-			return '\u0038';
-		case "Egrave":
-			return '\u00c8';
-		case "times":
-			return '\u00d7';
-		case "hellip":
-			return '\u2026';
-		case "laquo":
-			return '\u00ab';
-		case "raquo":
-			return '\u00bb';
-		case "lsquo":
-			return '\u2018';
-		case "rsquo":
-			return '\u2019';
-		case "ldquo":
-			return '\u201c';
-		case "rdquo":
-			return '\u201d';
-		case "reg":
-			return '\u00ae';
-		case "trade":
-			return '\u2122';
-		case "nbsp":
-			return '\u00a0';
-		case "copy":
-			return '\u00a9';
-		case "eacute":
-			return '\u00e9';
-		case "mdash": return '\u2014';
-		case "ndash":
-			return '\u2013';
-		case "Omicron":
-			return '\u039f';
-		case "omicron":
-			return '\u03bf';
-		case "middot":
-			return '\u00b7';
-		*/
+		case "Omicron": return '\u039f'; 
+		case "omicron": return '\u03bf'; 
+
 		// and handling numeric entities
 		default:
 			if(entity[1] == '#') {
@@ -2368,7 +2326,7 @@ dchar parseEntity(in dchar[] entity) {
 					return cast(dchar) p;
 				}
 			} else
-				return '?';
+				return '\ufffd'; // replacement character diamond thing
 	}
 
 	assert(0);
@@ -2679,7 +2637,7 @@ class TextNode : Element {
 
 	///.
 	string contents;
-	// alias contents content; // I just mistype this a lot, 
+	// alias contents content; // I just mistype this a lot,
 }
 
 /**
@@ -3443,7 +3401,7 @@ class Document : FileResource {
 	/// Concatenates any consecutive text nodes
 	/*
 	void normalize() {
-		
+
 	}
 	*/
 
@@ -3475,7 +3433,7 @@ class Document : FileResource {
 	/// Return true if you want the node appended to the document.
 	bool delegate(string) parseSawPhpCode;
 
-	/// if it sees a <?xxx> that is not php or asp   
+	/// if it sees a <?xxx> that is not php or asp
 	/// it calls this function with the contents.
 	/// <?SOMETHING foo> calls parseSawQuestionInstruction("?SOMETHING foo")
 	/// Unlike the php/asp ones, this ends on the first > it sees, without requiring ?>.
@@ -4460,7 +4418,7 @@ class Document : FileResource {
 			return null;
 		return e.content;
 	}
-	
+
 	/// Sets a meta tag in the document header. It is kinda hacky to work easily for both Facebook open graph and traditional html meta tags/
 	void setMeta(string name, string value) {
 		string thing = name.indexOf(":") == -1 ? "name" : "property";
@@ -4479,7 +4437,7 @@ class Document : FileResource {
 	}
 
 	///.
-	Form createForm() 
+	Form createForm()
 		out(ret) {
 			assert(ret !is null);
 		}
@@ -4491,7 +4449,7 @@ class Document : FileResource {
 	Element createElement(string name) {
 		if(loose)
 			name = name.toLower();
-	
+
 		auto e = Element.make(name);
 		e.parentDocument = this;
 
@@ -4700,7 +4658,7 @@ int intFromHex(string hex) {
 				}
 			return tid;
 		}
-	
+
 	///.
 	string[] lexSelector(string selector) {
 
@@ -4997,7 +4955,7 @@ int intFromHex(string hex) {
 				/*
 					Like with the < operator, this is best used to find some parent of a particular known element.
 
-					Say you have an anchor inside a 
+					Say you have an anchor inside a
 				*/
 		}
 
@@ -5764,7 +5722,7 @@ private T[] insertAfter(T)(T[] arr, int position, T[] what) {
 	int a = 0;
 	foreach(i; arr[0..position+1])
 		ret[a++] = i;
-	
+
 	foreach(i; what)
 		ret[a++] = i;
 
@@ -5781,7 +5739,7 @@ package bool isInArray(T)(T item, T[] arr) {
 	return false;
 }
 
-private string[string] dup(in string[string] arr) {
+private string[string] aadup(in string[string] arr) {
 	string[string] ret;
 	foreach(k, v; arr)
 		ret[k] = v;
@@ -6044,11 +6002,15 @@ class Utf8Stream {
 		+/
 }
 
+void fillForm(T)(Form form, T obj, string name) { 
+	import arsd.database; 
+	fillData((k, v) => form.setValue(k, v), obj, name); 
+} 
 
 /*
 Copyright: Adam D. Ruppe, 2010 - 2013
 License:   <a href="http://www.boost.org/LICENSE_1_0.txt">Boost License 1.0</a>.
-Authors: Adam D. Ruppe, with contributions by Nick Sabalausky and Trass3r
+Authors: Adam D. Ruppe, with contributions by Nick Sabalausky and Trass3r among others
 
         Copyright Adam D. Ruppe 2010-2013.
 Distributed under the Boost Software License, Version 1.0.
