@@ -157,7 +157,11 @@ final class Conversation
     void store()
     {
         auto bson = parseJsonString(this.toJson);
-        collection("conversation").update(["_id": this.dbId], bson, UpdateFlags.Upsert);
+        collection("conversation").update(
+                ["_id": this.dbId], 
+                bson,
+                UpdateFlags.Upsert
+        );
     }
 
 

@@ -39,14 +39,14 @@ string saveRejectedEmail(Email email)
 
 
 // XXX test when I've the full cicle tests
-void saveAndLogRejectedEmail(Email email, 
-                             Flag!"IsValidEmail" isValid, 
+void saveAndLogRejectedEmail(Email email,
+                             Flag!"IsValidEmail" isValid,
                              bool tooBig,
                              const string[] localReceivers)
 {
     auto failedEmailPath = saveRejectedEmail(email);
     auto f = File(failedEmailPath, "a");
-    f.writeln("\n\n===NOT DELIVERY BECAUSE OF===", 
+    f.writeln("\n\n===NOT DELIVERY BECAUSE OF===",
                     isValid == !isValid? "\nInvalid headers":"",
                     !localReceivers.length? "\nInvalid destination":"",
                     tooBig? "\nMessage too big":"");
@@ -59,7 +59,7 @@ void saveAndLogRejectedEmail(Email email,
 
 
 // XXX test when I've the integration tests
-/** Store a new email in DB and upsert a conversation every local receiver 
+/** Store a new email in DB and upsert a conversation every local receiver
  */
 void processEmailForAddress(string destination, Email email)
 {
@@ -83,7 +83,7 @@ version(not_maintest)
 int main()
 {
     const config = getConfig();
-    setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"), 
+    setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"),
                LogLevel.info);
 
     auto inEmail = new IncomingEmailImpl();
@@ -104,7 +104,7 @@ int main()
                 processEmailForAddress(destination, dbEmail);
         } catch (Exception e)
         {
-            string exceptionReport = "Email failed to save on DB because of exception:\n" ~ 
+            string exceptionReport = "Email failed to save on DB because of exception:\n" ~
                                      e.msg;
             auto f = File(saveRejectedEmail(dbEmail), "a");
             f.writeln(exceptionReport);
@@ -113,7 +113,7 @@ int main()
     }
     else
         // XXX rebound the message using the output route
-        saveAndLogRejectedEmail(dbEmail, isValid, tooBig, 
+        saveAndLogRejectedEmail(dbEmail, isValid, tooBig,
                                 to!(string[])(localReceivers));
     return 0; // return != 0 == Postfix rebound the message. Avoid
 }
@@ -129,6 +129,6 @@ int main()
 
 
 version(maintest)
-unittest 
+unittest
 {
 }

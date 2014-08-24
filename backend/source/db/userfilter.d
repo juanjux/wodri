@@ -2,6 +2,7 @@ module db.userfilter;
 
 import std.string;
 import std.algorithm;
+import std.typecons;
 import vibe.core.log;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
@@ -226,7 +227,7 @@ version(db_usetestdb)
         // this will change the outer "tags" hash
         Email reInstance(Match match, Action action)
         {
-            auto inEmail = new IncomingEmailImpl();
+            auto inEmail = scoped!IncomingEmailImpl();
             inEmail.loadFromFile(buildPath(testEmailDir, "with_2megs_attachment"),
                                  buildPath(testDir, "attachments"));
             auto dbEmail  = new Email(inEmail);
@@ -234,7 +235,7 @@ version(db_usetestdb)
             dbEmail.userId = "fakeuserid";
             // a little kludge so I dont have to store this email to get an id
             dbEmail.dbId = Email.messageIdToDbId(dbEmail.messageId);
-            auto filter   = new UserFilter(match, action);
+            auto filter   = scoped!UserFilter(match, action);
             tagsToAdd = [];
             tagsToRemove = [];
             filter.apply(dbEmail, tagsToAdd, tagsToRemove);

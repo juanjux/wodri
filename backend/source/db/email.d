@@ -1,21 +1,23 @@
 module db.email;
 
+import arsd.characterencodings: decodeBase64Stubborn;
 import arsd.htmltotext;
 import common.utils;
+import db.attachcontainer;
 import db.config;
 import db.conversation;
 import db.mongo;
 import db.user;
-import retriever.incomingemail;
 import std.algorithm: among, sort, uniq;
 import std.datetime;
 import std.file;
-import std.path: baseName, buildPath;
+import std.path: baseName, buildPath, extension;
 import std.regex;
 import std.stdio: File, writeln;
 import std.string;
 import std.typecons;
 import std.utf: count, toUTFindex;
+import retriever.incomingemail;
 import vibe.core.log;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
@@ -24,29 +26,6 @@ import vibe.utils.dictionarylist;
 import webbackend.apiemail;
 
 static shared immutable SEARCH_FIELDS = ["to", "subject", "cc", "bcc"];
-
-
-struct DbAttachment
-{
-    Attachment attachment;
-    alias attachment this;
-    string dbId;
-
-    this(Attachment attach)
-    {
-        this.attachment = attach;
-    }
-
-    this (ApiAttachment apiAttach)
-    {
-        this.dbId                 = apiAttach.dbId;
-        this.attachment.ctype     = apiAttach.ctype;
-        this.attachment.filename  = apiAttach.filename;
-        this.attachment.contentId = apiAttach.contentId;
-        this.attachment.size      = apiAttach.size;
-    }
-}
-
 
 final class TextPart
 {
@@ -99,8 +78,7 @@ private string headerRaw(Bson emailDoc, string headerName)
 }
 
 
-// XXX unittest
-HeaderValue field2HeaderValue(string field)
+private HeaderValue field2HeaderValue(string field)
 {
     HeaderValue hv;
     hv.rawValue = field;
@@ -121,7 +99,8 @@ final class Email
     string         messageId;
     HeaderValue    from;
     HeaderValue    receivers;
-    DbAttachment[] attachments;
+    AttachContainer attachments;
+    alias attachments this;
     string         rawEmailPath;
     string         bodyPeek;
     string         isoDate;
@@ -189,15 +168,7 @@ final class Email
 
         foreach(ref apiAttach; apiEmail.attachments)
         {
-            DbAttachment dbAttach;
-            dbAttach.realPath = buildPath(getConfig.absAttachmentStore, 
-                                          baseName(apiAttach.Url));
-            dbAttach.dbId = apiAttach.dbId;
-            dbAttach.ctype = apiAttach.ctype;
-            dbAttach.filename = apiAttach.filename;
-            dbAttach.contentId = apiAttach.contentId;
-            dbAttach.size = apiAttach.size;
-            this.attachments ~= dbAttach;
+            this.attachments.add(apiAttach);
         }
         this();
 
@@ -227,8 +198,7 @@ final class Email
 
         foreach(attach; email.attachments)
         {
-            auto att = DbAttachment(attach);
-            this.attachments ~= att;
+            this.attachments.add(attach, BsonObjectID.generate().toString);
         }
         this();
     }
@@ -354,22 +324,13 @@ final class Email
     }
 
 
-    pure ulong size() const
+    ulong size() const
     {
-        return textualBodySize() + attachmentsSize();
+        return textualBodySize() + this.attachments.totalSize();
     }
 
 
-    pure ulong attachmentsSize() const
-    {
-        ulong totalSize;
-        foreach(ref attachment; this.attachments)
-            totalSize += attachment.size;
-        return totalSize;
-    }
-
-
-    pure ulong textualBodySize() const
+    ulong textualBodySize() const
     {
         ulong totalSize;
         foreach(textualPart; this.textParts)
@@ -496,35 +457,6 @@ final class Email
     }
 
 
-    private string attachmentsToJson()
-    {
-        Appender!string jsonAppender;
-        foreach(ref attach; this.attachments)
-            jsonAppender.put(attachmentToJson(attach) ~ ",");
-        return jsonAppender.data;
-    }
-
-
-    /** NOTE: this can change de attach argument adding a dbId if missing */
-    private static string attachmentToJson(ref DbAttachment attach)
-    {
-        Appender!string jsonAppender;
-        if (!attach.dbId.length)
-            attach.dbId = BsonObjectID.generate().toString;
-
-        jsonAppender.put(`{"contentType": `   ~ Json(attach.ctype).toString     ~ `,` ~
-                         ` "realPath": `      ~ Json(attach.realPath).toString  ~ `,` ~
-                         ` "dbId": `          ~ Json(attach.dbId).toString      ~ `,` ~
-                         ` "size": `          ~ Json(attach.size).toString      ~ `,`);
-        if (attach.contentId.length)
-            jsonAppender.put(` "contentId": ` ~ Json(attach.contentId).toString ~ `,`);
-        if (attach.filename.length)
-            jsonAppender.put(` "fileName": `  ~ Json(attach.filename).toString  ~ `,`);
-        jsonAppender.put("}");
-        return jsonAppender.data;
-    }
-
-    // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
     /** store or update the email into the DB, returns the DB id */
@@ -583,7 +515,7 @@ final class Email
         if (storeAttachMents)
         {
             emailInsertJson.put(
-                    format(`"attachments": [ %s ]`, attachmentsToJson())
+                    format(`"attachments": [ %s ]`, attachments.toJson)
             );
         }
 
@@ -600,22 +532,23 @@ final class Email
         return this.dbId;
     }
 
-    // XXX update size with the real size before inserting
-    static string addAttachment(string emailDbId, 
-                                const ApiAttachment apiAttach,
-                                string base64Content)
+
+    /** Adds an attachment to the email on the DB */
+    static string addAttachment(string emailDbId,
+                                       const ApiAttachment apiAttach,
+                                       string base64Content)
     {
         string attachId;
 
-        if (apiAttach.dbId.length) // dont process emails with a dbId set
+        if (apiAttach.dbId.length) // dont process attachs with a dbId set
         {
-            logWarn("addAttachment was called with a non empty attachid."~ 
+            logWarn("addAttachment was called with a non empty attachid."~
                     " emailId: " ~ emailDbId ~ " attachId: " ~ apiAttach.dbId);
             return attachId;
         }
 
         // check that the email exists on DB
-        Bson emailDoc = collection("email").findOne(["_id": emailDbId]);
+        auto emailDoc = collection("email").findOne(["_id": emailDbId]);
         if (emailDoc.isNull)
         {
             logWarn("addAttachment, could find specified email: " ~ emailDbId);
@@ -623,31 +556,28 @@ final class Email
         }
 
         // decode the attachment and save the email
-        import arsd.characterencodings: decodeBase64Stubborn;
-        immutable(ubyte)[] attContent = decodeBase64Stubborn(base64Content);
-
+        auto attContent = decodeBase64Stubborn(base64Content);
         if (!attContent.length)
         {
-            logWarn("addAttachment: could not decode apiAttach \"" ~ apiAttach.filename ~ 
+            logWarn("addAttachment: could not decode apiAttach \"" ~ apiAttach.filename ~
                     "\" for email with ID: " ~ emailDbId);
             return attachId;
         }
 
-        string destFilePath = randomFileName(getConfig.absAttachmentStore,
-                                             apiAttach.filename.extension);
+        auto destFilePath = randomFileName(getConfig.absAttachmentStore,
+                                           apiAttach.filename.extension);
         auto f = File(destFilePath, "w");
         f.rawWrite(attContent);
 
         // create the doc and insert into the email.attachments list on DB
-        auto dbAttach     = DbAttachment(apiAttach);
-        dbAttach.dbId     = BsonObjectID.generate().toString;
+        auto dbAttach     = new DbAttachment(apiAttach);
+        attachId          = BsonObjectID.generate().toString;
+        dbAttach.dbId     = attachId;
         dbAttach.realPath = destFilePath;
-
-        string attachJson = attachmentToJson(dbAttach);
-        string pushJson   = format(`{"$push": {"attachments": %s}}`, attachJson);
+        dbAttach.size     = attContent.length;
+        string pushJson   = format(`{"$push": {"attachments": %s}}`, dbAttach.toJson);
         collection("email").update(["_id": emailDbId], parseJsonString(pushJson));
-
-        return dbAttach.dbId;
+        return attachId;
     }
 
 
@@ -815,8 +745,11 @@ final class Email
     /**
      * Update the email DB record/document and set the deleted field to setDel
      */
-    static void setDeleted(string dbId, bool setDel,
-                           Flag!"UpdateConversation" updateConv = Yes.UpdateConversation)
+    static void setDeleted(
+            string dbId,
+            bool setDel,
+            Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
+    )
     {
         // Get the email from the DB, check the needed deleted and userId fields
         const emailDoc = collection("email").findOne(["_id": dbId],
@@ -824,16 +757,16 @@ final class Email
                                                      QueryFlags.None);
         if (emailDoc.isNull || emailDoc.deleted.isNull)
         {
-            logWarn(format("setDeleted: Trying to set deleted (%s) of email with id (%s) " ~
-                        "not in DB or with missing deleted field", setDel, dbId));
+            logWarn(format("setDeleted: Trying to set deleted (%s) of email with " ~
+                           "id (%s) not in DB or with missing deleted field", setDel, dbId));
             return;
         }
 
         const dbDeleted = bsonBool(emailDoc.deleted);
         if (dbDeleted == setDel)
         {
-            logWarn(format("setDeleted: Trying to set deleted to (%s) but email with id " ~
-                        "(%s) already was in that state", setDel, dbId));
+            logWarn(format("setDeleted: Trying to set deleted to (%s) but email "
+                           "with id (%s) already was in that state", setDel, dbId));
             return;
         }
 
@@ -864,8 +797,8 @@ final class Email
                                                      QueryFlags.None);
         if (emailDoc.isNull)
         {
-            logWarn(format("Email.removeById: Trying to remove email with id (%s) not in DB",
-                           dbId));
+            logWarn(format("Email.removeById: Trying to remove email with id (%s) " ~
+                           " not in DB", dbId));
             return;
         }
         const emailId = bsonStr(emailDoc._id);
@@ -883,7 +816,8 @@ final class Email
             }
             else
                 logWarn(
-                    format("Email.removeById: no conversation found for email (%s)", dbId)
+                    format("Email.removeById: no conversation found for email (%s)", 
+                           dbId)
                 );
         }
 
@@ -906,6 +840,9 @@ final class Email
     }
 
 
+    /** Updates the emailIndexContent reverse link to the Conversation (used for
+     * speed purposes)
+     */
     static void setConversationInEmailIndex(string emailId, string convId)
     {
         const json = format(`{"$set": {"convId": %s}}`, Json(convId).toString);
@@ -961,9 +898,11 @@ final class Email
     }
 
 
-    private static EmailAndConvIds[] searchEmailsGetIds(const string[] needles,
-                                               string dateStart = "",
-                                               string dateEnd = "")
+    private static EmailAndConvIds[] searchEmailsGetIds(
+            const string[] needles,
+            string dateStart = "",
+            string dateEnd = ""
+    )
     {
         EmailAndConvIds[] res;
         foreach(needle; needles)
@@ -1015,7 +954,7 @@ final class Email
      * the references for the caller, including the previous email references and
      * the previous email msgid appended
      */
-    static string[] getReferencesFromPrevious(string dbId)
+    private static string[] getReferencesFromPrevious(string dbId)
     {
         string[] references;
         const res = collection("email").findOne(["_id": dbId],
@@ -1046,12 +985,9 @@ final class Email
 version(db_test)
 version(db_usetestdb)
 {
-    import db.test_support;
-    import retriever.incomingemail;
     import std.digest.md;
-    import std.path;
     import std.range;
-    import webbackend.apiemail;
+    import db.test_support;
 
     ApiEmail getTestApiEmail()
     {
@@ -1130,7 +1066,7 @@ version(db_usetestdb)
         assert(!conv.links[1].deleted);
     }
 
-    unittest // removeById
+    unittest // Email.removeById
     {
         struct EmailFiles
         {
@@ -1321,8 +1257,8 @@ version(db_usetestdb)
         assert(bsonStr(cursor.front["message-id"]).length);
         assert(bsonStr(cursor.front.bodyPeek) == "Well it is speculated that there are over 20,000 hosting companies in this country alone. WIth that ");
     }
-    
-    unittest 
+
+    unittest
     {
         writeln("Testing Email.store(forceInsertNew)");
         recreateTestDb();
@@ -1348,7 +1284,7 @@ version(db_usetestdb)
         recreateTestDb();
         auto apiEmail = getTestApiEmail();
         apiEmail.attachments = [
-            ApiAttachment(joinPath("/" ~ getConfig.URLAttachmentPath, "somefilecode.jpg"), 
+            ApiAttachment(joinPath("/" ~ getConfig.URLAttachmentPath, "somefilecode.jpg"),
                           "testdbid", "ctype", "fname", "ctId", 1000)
         ];
         auto dbEmail = new Email(apiEmail);
@@ -1366,7 +1302,7 @@ version(db_usetestdb)
         assert(emailDoc.attachments.length == 1);
     }
 
-    unittest // Email.addAttachment 
+    unittest // Email.addAttachment
     {
         writeln("Testing Email.addAttachment");
         recreateTestDb();

@@ -1,10 +1,8 @@
 Backend-API:
     - /message/:id/attach (POST + DELETE): curl tests
-    - use base64 for encoding
+        => use base64 for encoding
 
 Backend-Retriever:
-    - Make an "Attachments" object that contains the attachments and the methods
-      related to it to unload a little the Email class.
 
     Later:
     - Use log to log more warnings, specially on db.*

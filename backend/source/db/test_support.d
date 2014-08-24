@@ -10,6 +10,7 @@ import std.file;
 import std.path;
 import std.process;
 import std.string;
+import std.typecons;
 import vibe.db.mongo.mongo;
 
 
@@ -60,7 +61,7 @@ version(anytestdb)
 
         foreach(mailname; TEST_EMAILS)
         {
-            auto inEmail = new IncomingEmailImpl();
+            auto inEmail = scoped!IncomingEmailImpl();
             inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
                                  getConfig.absAttachmentStore,
                                  getConfig.absRawEmailStore);

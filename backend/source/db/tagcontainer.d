@@ -45,10 +45,6 @@ struct TagContainer
             if (m_tags[key]) res++;
         return res;
     }
-
-
-
-
 }
 
 

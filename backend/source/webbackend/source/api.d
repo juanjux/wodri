@@ -35,7 +35,7 @@ string getRequestUser(HTTPServerRequest req, HTTPServerResponse res)
 }
 
 @rootPathFromName
-final interface Message
+interface Message
 {
     @path("/")
     ApiEmail get(string id);
@@ -62,7 +62,7 @@ final interface Message
 
 
 @rootPathFromName
-final interface Search
+interface Search
 {
     @method(HTTPMethod.POST) @path("/")
     ApiSearchResult search(
@@ -77,7 +77,7 @@ final interface Search
 
 
 @rootPathFromName
-final interface Conv
+interface Conv
 {
     ApiConversation get(string id);
 
@@ -106,7 +106,7 @@ final interface Conv
 
 
 @rootPathFromName
-final interface Test
+interface Test
 {
     version(db_usetestdb)
     {
@@ -257,7 +257,9 @@ override:
             // set "deleted" tag and set all links to deleted.
             foreach(link; conv.receivedLinks)
             {
-                Email.setDeleted(link.emailDbId, true, No.UpdateConversation);
+                Email.setDeleted(link.emailDbId, 
+                                        true, 
+                                        No.UpdateConversation);
                 link.deleted = true;
             }
             conv.addTag("deleted");
@@ -276,7 +278,9 @@ override:
             // undelete the email links and the emails
             foreach(link; conv.receivedLinks)
             {
-                Email.setDeleted(link.emailDbId, false, No.UpdateConversation);
+                Email.setDeleted(link.emailDbId, 
+                                        false, 
+                                        No.UpdateConversation);
                 link.deleted = false;
             }
             conv.removeTag("deleted");

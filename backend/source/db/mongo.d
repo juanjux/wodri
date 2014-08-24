@@ -47,7 +47,8 @@ double bsonNumber(const Bson input)
         case Bson.Type.long_:
             return to!double(deserializeBson!long(input));
         default:
-            auto err = format("Bson input is not of numeric type but: %s", input.type);
+            auto err = format("Bson input is not of numeric type but: %s", 
+                              input.type);
             logError(err);
             throw new Exception(err);
     }
