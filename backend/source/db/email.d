@@ -580,7 +580,8 @@ final class Email
         return attachId;
     }
 
-
+    
+    /** Deletes an attachment from the DB and from the disk */
     static void deleteAttachment(string emailDbId, string attachmentId)
     {
         if (!emailDbId.length || !attachmentId.length)
@@ -589,10 +590,46 @@ final class Email
             return;
         }
 
+        auto emailDoc = collection("email").findOne(
+                ["_id": emailDbId],
+                ["_id": 1, "attachments": 1],
+                QueryFlags.None
+        );
+
+        if (emailDoc.isNull || emailDoc.attachments.isNull)
+        {
+            logWarn(format("deleteAttachment: delete for email [%s] and attach [%s] was " ~
+                           "requested but email or attachments missing on DB", 
+                           emailDbId, attachmentId));
+            return;
+        }
+
+        string filePath;
+        bool found = false;
+        foreach(ref attachDoc; emailDoc.attachments)
+        {
+            if (bsonStrSafe(attachDoc.dbId) == attachmentId)
+            {
+                found = true;
+                filePath = bsonStrSafe(attachDoc.realPath);
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            logWarn(format("deleteAttachment: email [%s] doesnt have an attachment with " ~
+                           "dbId [%s]", emailDbId, attachmentId));
+            return;
+        }
+
         auto json = format(
                 `{"$pull": {"attachments": {"dbId": %s}}}`, Json(attachmentId).toString
         );
         collection("email").update(["_id": emailDbId], parseJsonString(json));
+
+        if (filePath.length && filePath.exists)
+            remove(filePath);
     }
 
     /**
@@ -1339,12 +1376,14 @@ version(db_usetestdb)
         auto emailDoc = getEmailCursorAtPosition(0).front;
         auto emailDbId = bsonStr(emailDoc._id);
         assert(emailDoc.attachments.length == 2);
-        auto firstAttachId = bsonStr(emailDoc.attachments[0].dbId);
-        Email.deleteAttachment(emailDbId, firstAttachId);
+        auto attachId = bsonStr(emailDoc.attachments[0].dbId);
+        auto attachPath = bsonStr(emailDoc.attachments[0].realPath);
+        Email.deleteAttachment(emailDbId, attachId);
 
         emailDoc = getEmailCursorAtPosition(0).front;
         assert(emailDoc.attachments.length == 1);
-        assert(bsonStr(emailDoc.attachments[0].dbId) != firstAttachId);
+        assert(bsonStr(emailDoc.attachments[0].dbId) != attachId);
+        assert(!attachPath.exists);
     }
 
     unittest // test email.deleted

@@ -1,14 +1,18 @@
 #!/usr/bin/env rdmd
-import std.digest.md;
-import std.process;
-import std.typecons;
-import std.array;
-import std.string;
-import std.stdio;
-import std.json;
+import core.thread;
 import std.algorithm;
-import std.exception;
+import std.array;
+import std.datetime: dur;
 import std.conv;
+import std.digest.md;
+import std.exception;
+import std.file;
+import std.json;
+import std.path;
+import std.process;
+import std.stdio;
+import std.string;
+import std.typecons;
 
 /**
  * IMPORTANT: run the db.d tests (test_db.sh) before running these tests so the DB
@@ -39,12 +43,13 @@ string callCurl2(string object,
     }
 
     Appender!string pathStr;
-    pathStr.put(URL2   ~ "/"); 
+    pathStr.put(URL2   ~ "/");
     pathStr.put(object ~ "/");
 
-    if (apiCall.length)            
+    if (apiCall.length)
         pathStr.put(apiCall ~ "/");
-    if (parametersStr.data.length) 
+
+    if (parametersStr.data.length)
         pathStr.put(parametersStr.data);
 
     auto dataPart = postData.length? postData: "{}";
@@ -56,6 +61,7 @@ string callCurl2(string object,
 
     writeln("\t" ~ method ~ ": " ~ pathStr.data);
     //writeln(curlCmd);
+
     auto retCurl = executeShell(curlCmd);
     if (retCurl.status)
         throw new Exception("bad curl result: " ~ retCurl.output);
@@ -115,7 +121,7 @@ string emailJson(string dbId, string messageId)
 }
 
 
-string upsertDraft(string apiEmailJson, string replyDbId)
+JSONValue upsertDraft(string apiEmailJson, string replyDbId)
 {
     auto json = format(
     `{
@@ -123,7 +129,9 @@ string upsertDraft(string apiEmailJson, string replyDbId)
         "replyDbId": "%s",
      }`, apiEmailJson, replyDbId);
 
-    return callCurl2( "message", "", emptyDict, "POST", json, "anotherUser", "secret").removechars("\"");
+    return parseJSON(
+            callCurl2( "message", "", emptyDict, "POST", json, "anotherUser", "secret")
+    );
 }
 
 
@@ -141,7 +149,7 @@ JSONValue getConversations(string tag, uint limit, uint page, bool loadDeleted=f
                        "page": to!string(page)];
     if (loadDeleted)
         paramsDict["loadDeleted"] = "1";
-                       
+
     return parseJSON(callCurl2("conv", "tag/"~tag, paramsDict));
 }
 
@@ -186,6 +194,36 @@ JSONValue search(string[] terms,
     return parseJSON(callCurl2("search", "", emptyDict, "POST", json));
 }
 
+
+JSONValue addAttachment(string emailId)
+{
+    string base64Content = "aGVsbG8gd29ybGQ="; // "hello world"
+    auto postData = format(`{"attachment":`~
+                          `{"Url": "",`~
+                          `"dbId": "",`~
+                          `"ctype": "text/plain",`~
+                          `"filename": "test.txt",`~
+                          `"contentId": "somecontentid",`~
+                          `"size": 12345},`~
+                      `"base64Content": "%s"}`, base64Content);
+
+    return parseJSON(
+            callCurl2("message", emailId~"/attachment", emptyDict, "PUT", postData)
+    );
+}
+
+void deleteAttachment(string emailId, string attachId)
+{
+    callCurl2(
+            "message", 
+            emailId~"/attachment", 
+            emptyDict, 
+            "DELETE", 
+            format(`{"attachmentId": "%s"}`, attachId)
+    );
+}
+
+/// Actual tests start here
 void testGetConversation()
 {
     writeln("\nTesting GET /api/:id/conversation/");
@@ -485,8 +523,8 @@ void testUndeleteConversation()
     enforce(email["deleted"].type == JSON_TYPE.TRUE);
 
     callCurl2(
-            "conv", 
-            convId~"/undo/delete", 
+            "conv",
+            convId~"/undo/delete",
             emptyDict,
             "PUT"
     );
@@ -508,8 +546,8 @@ void testUnDeleteEmail()
     auto emailId = conv["summaries"][0]["dbId"].str;
     deleteEmail(emailId);
     callCurl2(
-            "message", 
-            emailId~"/undo/delete", 
+            "message",
+            emailId~"/undo/delete",
             emptyDict,
             "PUT"
     );
@@ -521,7 +559,7 @@ void testUnDeleteEmail()
 
 void testSearch()
 {
-    writeln("\nTestin POST /api/search");
+    writeln("\nTesting POST /search/");
     recreateTestDb();
     auto searchRes = search(["some"], "", "", 20, 0, 0);
     enforce(searchRes["conversations"].array.length == 3);
@@ -590,6 +628,65 @@ void testSearch()
     enforce(searchRes["startIndex"].integer == 0);
 }
 
+void testAddAttach()
+{
+    writeln("\nTesting PUT /email/:id/attachment/");
+    recreateTestDb();
+    auto convId = getConversations("inbox", 20, 0)[2]["dbId"].str;
+    auto conv = getConversationById(convId);
+    auto emailId = conv["summaries"][0]["dbId"].str;
+
+    auto emailDocPrev = getEmail(emailId);
+    enforce(emailDocPrev["attachments"].array.length == 1);
+    auto attachId = addAttachment(emailDocPrev["dbId"].str).str;
+
+    auto emailDocPost = getEmail(emailId);
+    enforce(emailDocPost["attachments"].array.length == 2);
+    auto testAttach = emailDocPost["attachments"].array[1];
+    enforce(testAttach["dbId"].str == attachId);
+    enforce(testAttach["contentId"].str == "somecontentid");
+    enforce(testAttach["filename"].str == "test.txt");
+    enforce(testAttach["size"].integer == 11);
+    enforce(testAttach["dbId"].str.length);
+    auto url = testAttach["Url"].str[1..$];
+    auto filePath = absolutePath(buildNormalizedPath(
+                __FILE__.dirName,
+                "attachments",
+                baseName(url))
+    );
+    enforce(filePath.exists);
+    enforce(readText(filePath) == "hello world");
+}
+
+
+void testRemoveAttach()
+{
+    writeln("\nTesting DELETE /email/:id/attachment/:attachid");
+    recreateTestDb();
+
+    auto convId = getConversations("inbox", 20, 0)[2]["dbId"].str;
+    auto conv = getConversationById(convId);
+    auto emailId = conv["summaries"][0]["dbId"].str;
+    auto emailDocPrev = getEmail(emailId);
+    enforce(emailDocPrev["attachments"].array.length == 1);
+
+    auto attachId = addAttachment(emailDocPrev["dbId"].str).str;
+    auto emailDocPre = getEmail(emailId);
+    enforce(emailDocPre["attachments"].array.length == 2);
+    auto url = emailDocPre["attachments"].array[1]["Url"].str[1..$];
+    auto filePath = absolutePath(buildNormalizedPath(
+                __FILE__.dirName,
+                "attachments",
+                baseName(url))
+    );
+    enforce(filePath.exists);
+
+    deleteAttachment(emailId, attachId);
+    auto emailDocPost = getEmail(emailId);
+    enforce(emailDocPost["attachments"].array.length == 1);
+    enforce(emailDocPost["attachments"].array[0]["dbId"].str != attachId);
+    enforce(!filePath.exists);
+}
 
 void testUpsertDraft()
 {
@@ -597,7 +694,7 @@ void testUpsertDraft()
     // Test1: New draft, no reply
     recreateTestDb();
     auto email = emailJson("", "");
-    auto newId = upsertDraft(email, "");
+    auto newId = upsertDraft(email, "").str;
     JSONValue dbEmail = getEmail(newId);
     enforce(dbEmail["dbId"].str == newId);
     enforce(dbEmail["attachments"].array.length == 0);
@@ -606,7 +703,7 @@ void testUpsertDraft()
 
     // Test2: Update draft, no reply
     email = emailJson(newId, msgId);
-    auto sameId = upsertDraft(email, "");
+    auto sameId = upsertDraft(email, "").str;
     enforce(sameId == newId);
     dbEmail = getEmail(sameId);
     enforce(dbEmail["dbId"].str == sameId);
@@ -618,7 +715,7 @@ void testUpsertDraft()
     auto emailId = conversation["summaries"][0]["dbId"].str;
 
     email = emailJson("", "");
-    auto newReplyId = upsertDraft(email, emailId);
+    auto newReplyId = upsertDraft(email, emailId).str;
     enforce(newReplyId != newId);
     dbEmail = getEmail(newReplyId);
     enforce(dbEmail["dbId"].str == newReplyId);
@@ -627,7 +724,7 @@ void testUpsertDraft()
 
     // Test4: Update draft, reply
     email = emailJson(newReplyId, msgId);
-    auto updateReplyId = upsertDraft(email, emailId);
+    auto updateReplyId = upsertDraft(email, emailId).str;
     enforce(updateReplyId == newReplyId);
     dbEmail = getEmail(updateReplyId);
     enforce(dbEmail["dbId"].str == updateReplyId);
@@ -652,5 +749,7 @@ void main()
     testUnDeleteEmail();
     testSearch();
     testUpsertDraft();
+    testAddAttach();
+    testRemoveAttach();
     writeln("All CURL tests finished");
 }

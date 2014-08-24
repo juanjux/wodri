@@ -1,43 +1,60 @@
 # OBJECTS
 
 ## MessageSummary
-XXX update
 Used to produce a list of messages from a conversation without
 fully loading the mails (all the messages shown as a header when you load a
 conversation, that is all except the last one or the one you click to expand) .
 The relevant parts when clicked (full body, mimetypes, To, Cc, Bcc, link to
 attachments) can be loaded without reloading what we already have.
 
-- Subject
-- From
-- Date
-- Attachment filenames
-- First words of the text
-- Author avatar icon URL
+- dbId
+- numMessages
+- lastDate
+- subject
+- shortAuthors
+- attachFileNames
+- tags
 
 ## Message
 Same fields as the MessageSummary plus:
 
-- BodyHtml
-- BodyPlain
-- Attachment URLs
+- messageId
+- from
+- to
+- cc
+- bcc
+- bodyHtml
+- bodyPlain
+- attachments
+- deleted
+- draft
 
 ## ConversationSummary
 These are the entries shown on a tag list.
 
-- NumMessages
-- Authors
-- Attachment filenames
-- Subject
-- Tags
-- Date of the last message
+- dbId
+- numMessages
+- shortAuthors
+- attachFileNames
+- subject
+- tags
+- lastDate
 
 ## Conversation
-These are show when the user click on a conversation summary on the tag list. 
+These are show when the user click on a conversation summary on the tag list.
 
-- Messages: list of MessageSummary and/or Message objects ordered by date.
-- Subject
-- Tags
+- dbId
+- summaries: list of MessageSummary objects ordered by date.
+- subject
+- tags
+
+## Attachment
+- Url (direct)
+- dbId
+- ctype
+- filename
+- contentId
+- size
 
 The messages list will contain messages and/or messagessummaries (identified by
 its "MessageType" field in the JSON data). Usually, the last message of the
@@ -75,7 +92,7 @@ user clicks on the "expand" link, all the messages will be fully loaded.
     Add tags to the conversation
 
 * `DELETE: /:id/tag/`
-    Remove tags 
+    Remove tags
 
 ## /message
 * `GET: /:id/`
@@ -90,15 +107,15 @@ user clicks on the "expand" link, all the messages will be fully loaded.
 * `POST: /` (draftContent=ApiEmail, userName=string, replyDbId=string)
     Create a new draft (new or reply of another email)
 
-* `(MISSING) POST: /:id/attach (XXX params)`
+* `POST: /:id/attach (attachment=attachDoc, base64content=contents)`
     Adds an attachment to the specified email (returns the attachment id)
 
-* `(MISSING) DELETE: /:id/attach/ (attachId=string)`
+* `DELETE: /:id/attach/ (attachId=string)`
     Removes the specified attachment
 
 * `DELETE: /:id/` (purge=0)
     If purge is 0, set the Email.deleted to true. If purge = 1 removes the email,
-    its raw file copy, its attachments, and its conversations if it was the only 
+    its raw file copy, its attachments, and its conversations if it was the only
     remaining email.
 
 * `PUT: /:id/undo/delete/`

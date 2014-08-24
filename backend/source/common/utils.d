@@ -8,6 +8,7 @@ import std.range;
 import std.ascii;
 import std.random;
 import std.file;
+import vibe.core.log;
 
 T[] removeDups(T)(const T[] input)
 {

@@ -1,6 +1,5 @@
 Backend-API:
-    - /message/:id/attach (POST + DELETE): curl tests
-        => use base64 for encoding
+    QUE TODO VAYA AUTENTIFICADO POR USUARIO!!!!
 
 Backend-Retriever:
 

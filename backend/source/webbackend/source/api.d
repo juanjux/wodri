@@ -54,7 +54,9 @@ interface Message
     void unDeleteEmail(string _id);
 
     @method(HTTPMethod.PUT) @path(":id/attachment/")
-    string putAttachment(string _id, ApiAttachment attachment, string base64Content);
+    string putAttachment(string _id,
+                         ApiAttachment attachment,
+                         string base64Content);
 
     @method(HTTPMethod.DELETE) @path(":id/attachment/")
     void deleteAttachment(string _id, string attachmentId);
@@ -172,7 +174,9 @@ override:
         }
 
 
-        string putAttachment(string _id, ApiAttachment attachment, string base64Content)
+        string putAttachment(string _id,
+                             ApiAttachment attachment,
+                             string base64Content)
         {
             return Email.addAttachment(_id, attachment, base64Content);
         }
@@ -257,8 +261,8 @@ override:
             // set "deleted" tag and set all links to deleted.
             foreach(link; conv.receivedLinks)
             {
-                Email.setDeleted(link.emailDbId, 
-                                        true, 
+                Email.setDeleted(link.emailDbId,
+                                        true,
                                         No.UpdateConversation);
                 link.deleted = true;
             }
@@ -278,8 +282,8 @@ override:
             // undelete the email links and the emails
             foreach(link; conv.receivedLinks)
             {
-                Email.setDeleted(link.emailDbId, 
-                                        false, 
+                Email.setDeleted(link.emailDbId,
+                                        false,
                                         No.UpdateConversation);
                 link.deleted = false;
             }
