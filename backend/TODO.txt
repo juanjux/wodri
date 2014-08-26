@@ -2,7 +2,7 @@ Backend-API:
     - search with auth (see below)
 
 Backend-Retriever:
-    - missing tests (utils.d && isXXXOwnedBy)
+    - missing tests (Email.isOwnedBy && Conversation.isOwnedBy)
     - add emailIndexContents.userId, add the userId discriminator to Email.search
     - conversation.getByTag: add "attachNames" to every link to avoid reading all the emails
       when retrieving a conversation just to get the attachment filenames 

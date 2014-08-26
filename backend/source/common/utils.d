@@ -114,26 +114,24 @@ pure string capitalizeHeader(string name)
     return newres;
 }
 
-// XXX unittest
 pure string removeStartSlash(string path)
 {
     return path.startsWith("/") ? path[1..$] : path;
 }
 
-// XXX unittest
+
 pure string removeEndSlash(string path)
 {
     return path.endsWith("/") ? path[0..$-1] : path;
 }
 
-// XXX unittest
+
 pure string removeStartEndSlashes(string path)
 {
     return removeStartSlash(removeEndSlash(path));
 }
 
 
-// XXX unittest
 pure string ensureStartSlash(string path)
 {
     return path.startsWith("/") ? path : "/" ~ path;
@@ -216,4 +214,40 @@ unittest
     assert(capitalizeHeader("received-spf")   == "Received-SPF");
     assert(capitalizeHeader("dkim-signature") == "DKIM-Signature");
     assert(capitalizeHeader("message-id")     == "Message-ID");
+}
+
+unittest
+{
+    writeln("Testing Utils.lowStartsWith");
+    assert(lowStartsWith("abcDEF", "abcd"));
+    assert(lowStartsWith("hijk", ""));
+}
+
+
+unittest
+{
+    writeln("Testing Utils.lowStrip");
+    assert(lowStrip(" \tabcDEF") == "abcdef");
+    assert(lowStrip(" ABCdef \t \n") == "abcdef");
+}
+
+
+unittest
+{
+    writeln("Testing Utils.removeStartSlash/End/StartEnd");
+    assert(removeStartSlash("abcDEF") == "abcDEF");
+    assert(removeStartSlash("/abcdef") == "abcdef");
+    assert(removeStartSlash("/abcdef/") == "abcdef/");
+    assert(removeStartSlash("///abcdef") == "//abcdef");
+
+    assert(removeEndSlash("abcDEF") == "abcDEF");
+    assert(removeEndSlash("abcDEF/") == "abcDEF");
+    assert(removeEndSlash("abcDEF///") == "abcDEF//");
+    assert(removeEndSlash("/abcDEF/") == "/abcDEF");
+
+    assert(removeStartEndSlashes("abcDEF") == "abcDEF");
+    assert(removeStartEndSlashes("/abcDEF") == "abcDEF");
+    assert(removeStartEndSlashes("//abcDEF//") == "/abcDEF/");
+    assert(removeStartEndSlashes("abcDEF//") == "abcDEF/");
+
 }
