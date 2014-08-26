@@ -5,6 +5,7 @@ import db.config: getConfig;
 import db.email;
 import db.mongo;
 import db.tagcontainer;
+import db.user;
 import std.algorithm;
 import std.path;
 import std.regex;
@@ -223,16 +224,21 @@ final class Conversation
     }
 
 
-    static Conversation[] getByTag(string tagName, uint limit, uint page,
+    static Conversation[] getByTag(string tagName,
+                                   string userId,
+                                   uint limit=0, 
+                                   uint page=0,
                                    Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
         Conversation[] ret;
 
         Appender!string jsonApp;
-        jsonApp.put(format(`{"tags": {"$in": ["%s"]},`, tagName));
+        jsonApp.put(format(`{"tags": {"$in": [%s]},`, Json(tagName).toString));
+
         if (!withDeleted)
             jsonApp.put(`"tags":{"$nin":["deleted"]},`);
-        jsonApp.put("}");
+
+        jsonApp.put(format(`"userId": %s}`, Json(userId).toString));
 
         auto bson   = parseJsonString(jsonApp.data);
         auto cursor = collection("conversation").find(
@@ -338,7 +344,7 @@ final class Conversation
     }
 
 
-    static package Conversation conversationDocToObject(const ref Bson convDoc)
+    static private Conversation conversationDocToObject(const ref Bson convDoc)
     {
         if (convDoc.isNull)
             return null;
@@ -353,14 +359,13 @@ final class Conversation
             ret.addTag(tag);
 
         assert(!convDoc.links.isNull);
-        enforce(!convDoc.links.isNull, 
-                format("Internal Error, links for conversation %s null", ret.dbId));
-
         foreach(link; convDoc.links)
         {
             auto emailId = bsonStr(link["emailId"]);
             ret.addLink(bsonStr(link["message-id"]), emailId, bsonBool(link["deleted"]));
 
+            // FIXME: instead of reading ALL the email docs to get the attachments, store
+            // a list of attach filenames inside the Conversation document=>link
             if (emailId.length)
             {
                 auto emailSummary = Email.getSummary(emailId);
@@ -405,6 +410,21 @@ final class Conversation
 }
 
 
+// XXX return loaded Conversation object or null
+// XXX unittest
+bool isConversationOwnedBy(string convId, string userName)
+{
+    auto userId = User.getIdFromLoginName(userName);
+    if (!userId.length)
+        return false;
+
+    auto convDoc = collection("conversation").findOne(["_id": convId, "userId": userId],
+                                               ["_id": 1],
+                                               QueryFlags.None);
+    return !convDoc.isNull;
+}
+
+
 //  _    _       _ _   _            _
 // | |  | |     (_) | | |          | |
 // | |  | |_ __  _| |_| |_ ___  ___| |_
@@ -424,17 +444,19 @@ version(db_usetestdb)
         writeln("Testing Conversation.get/conversationDocToObject");
         recreateTestDb();
 
-        auto convs = Conversation.getByTag("inbox", 0, 0);
+        auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
+        assert(convs.length == 1);
         auto conv  = Conversation.get(convs[0].dbId);
         assert(conv !is null);
         assert(conv.lastDate.length); // this email date is set to NOW
         assert(conv.hasTag("inbox"));
         assert(conv.numTags == 1);
-        assert(conv.links.length == 1);
-        assert(!conv.attachFileNames.length);
-        assert(conv.cleanSubject == " Tired of Your Hosting Company?");
+        assert(conv.links.length == 2);
+        assert(conv.attachFileNames == ["google.png", "profilephoto.jpeg"]);
+        assert(conv.cleanSubject == ` some subject "and quotes" and noquotes`);
         assert(conv.links[0].deleted == false);
 
+        convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         conv = Conversation.get(convs[1].dbId);
         assert(conv !is null);
         assert(conv.lastDate == "2014-06-10T12:51:10Z");
@@ -461,12 +483,12 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.remove");
         recreateTestDb();
-        auto convs = Conversation.getByTag("inbox", 0, 0);
-        assert(convs.length == 4);
+        auto convs = Conversation.getByTag( "inbox", USER_TO_ID["anotherUser"]);
+        assert(convs.length == 3);
         const id = convs[0].dbId;
         convs[0].remove();
-        convs = Conversation.getByTag("inbox", 0, 0);
-        assert(convs.length == 3);
+        convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
+        assert(convs.length == 2);
         foreach(conv; convs)
             assert(conv.dbId != id);
     }
@@ -475,7 +497,7 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.hasLink");
         recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", 0, 0)[0];
+        auto conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
         const emailDbId = conv.links[0].emailDbId;
         const emailMsgId = conv.links[0].messageId;
         assert(conv.hasLink(emailMsgId, emailDbId));
@@ -488,7 +510,7 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.addLink");
         recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", 0, 0)[0];
+        auto conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[0];
         assert(conv.links.length == 1);
         // check it doesnt add the same link twice
         const emailDbId = conv.links[0].emailDbId;
@@ -509,7 +531,7 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.removeLink");
         recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", 0, 0)[1];
+        auto conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[1];
         assert(conv.links.length == 3);
         const link0 = conv.links[0];
         const link1 = conv.links[1];
@@ -527,19 +549,19 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.receivedLinks");
         recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", 0, 0)[0];
+        auto conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[0];
         assert(conv.links.length == 1);
         assert(conv.receivedLinks.length == 1);
 
-        conv = Conversation.getByTag("inbox", 0, 0)[1];
+        conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[1];
         assert(conv.links.length == 3);
         assert(conv.receivedLinks.length == 1);
 
-        conv = Conversation.getByTag("inbox", 0, 0)[2];
+        conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[2];
         assert(conv.links.length == 1);
         assert(conv.receivedLinks.length == 1);
 
-        conv = Conversation.getByTag("inbox", 0, 0)[3];
+        conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
         assert(conv.links.length == 2);
         assert(conv.receivedLinks.length == 2);
         auto convId = conv.dbId;
@@ -556,12 +578,12 @@ version(db_usetestdb)
         writeln("Testing Conversation.setEmailDeleted");
         recreateTestDb();
 
-        auto conv = Conversation.getByTag("inbox", 0, 0)[0];
+        auto conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
         conv.setEmailDeleted(conv.links[0].emailDbId, true);
-        conv = Conversation.getByTag("inbox", 0, 0)[0];
+        conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
         assert(conv.links[0].deleted);
         conv.setEmailDeleted(conv.links[0].emailDbId, false);
-        conv = Conversation.getByTag("inbox", 0, 0)[0];
+        conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
         assert(!conv.links[0].deleted);
     }
 
@@ -570,15 +592,14 @@ version(db_usetestdb)
         writeln("Testing Conversation.remove");
         recreateTestDb();
 
-        auto convs = Conversation.getByTag("inbox", 0, 0);
-        assert(convs.length == 4);
+        auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
+        assert(convs.length == 3);
         auto copyConvs = convs.dup;
         convs[0].remove();
-        auto newconvs = Conversation.getByTag("inbox", 0, 0);
-        assert(newconvs.length == 3);
+        auto newconvs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
+        assert(newconvs.length == 2);
         assert(newconvs[0].dbId == copyConvs[1].dbId);
         assert(newconvs[1].dbId == copyConvs[2].dbId);
-        assert(newconvs[2].dbId == copyConvs[3].dbId);
     }
 
     unittest // Conversation.store
@@ -586,16 +607,16 @@ version(db_usetestdb)
         writeln("Testing Conversation.store");
         recreateTestDb();
 
-        auto convs = Conversation.getByTag("inbox", 0, 0);
-        assert(convs.length == 4);
+        auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
+        assert(convs.length == 3);
         // update existing (id doesnt change)
         convs[0].addTag("newtag");
         convs[0].addLink("someMessageId");
         auto oldDbId = convs[0].dbId;
         convs[0].store();
 
-        auto convs2 = Conversation.getByTag("inbox", 0, 0);
-        assert(convs2.length == 4);
+        auto convs2 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
+        assert(convs2.length == 3);
         assert(convs2[0].dbId == oldDbId);
         assert(convs2[0].hasTag("inbox"));
         assert(convs2[0].hasTag("newtag"));
@@ -605,8 +626,8 @@ version(db_usetestdb)
         // create new (new dbId)
         convs2[0].dbId = BsonObjectID.generate().toString;
         convs2[0].store();
-        auto convs3 = Conversation.getByTag("inbox", 0, 0);
-        assert(convs3.length == 5);
+        auto convs3 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
+        assert(convs3.length == 4);
 
         bool found = false;
         foreach(conv; convs3)
@@ -636,40 +657,39 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.getByTag");
         recreateTestDb();
-        auto convs = Conversation.getByTag("inbox", 0, 0);
-        assert(convs.length == 4);
-        assert(convs[0].lastDate > convs[3].lastDate);
+        auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
+        assert(convs.length == 3);
+        assert(convs[0].lastDate > convs[2].lastDate);
         assert(convs[0].links[0].deleted == false);
 
-        auto convs2 = Conversation.getByTag("inbox", 2, 0);
+        auto convs2 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 2, 0);
         assert(convs2.length == 2);
         assert(convs2[0].dbId == convs[0].dbId);
         assert(convs2[1].dbId == convs[1].dbId);
         assert(convs2[0].links[0].deleted == false);
         assert(convs2[1].links[0].deleted == false);
 
-        auto convs3 = Conversation.getByTag("inbox", 2, 1);
-        assert(convs3.length == 2);
+        auto convs3 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 2, 1);
+        assert(convs3.length == 1);
         assert(convs3[0].dbId == convs[2].dbId);
-        assert(convs3[1].dbId == convs[3].dbId);
 
-        auto convs4 = Conversation.getByTag("inbox", 1000, 0);
+        auto convs4 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 1000, 0);
         assert(convs4[0].dbId == convs[0].dbId);
         assert(convs4[1].dbId == convs[1].dbId);
         assert(convs4[2].dbId == convs[2].dbId);
-        assert(convs4[3].dbId == convs[3].dbId);
         assert(convs4[0].links[0].deleted == false);
         assert(convs4[1].links[0].deleted == false);
         assert(convs4[2].links[0].deleted == false);
-        assert(convs4[3].links[0].deleted == false);
 
         // check that it doesnt returns the deleted convs
         auto len1 = convs4.length;
         Conversation.addTagDb(convs4[0].dbId, "deleted");
-        convs4 = Conversation.getByTag("inbox", 1000, 0);
+        convs4 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 1000, 0);
         assert(convs4.length == len1-1);
         // except when using Yes.WithDeleted
-        convs4 = Conversation.getByTag("inbox", 1000, 0, Yes.WithDeleted);
+        convs4 = Conversation.getByTag(
+                "inbox", USER_TO_ID["anotherUser"], 1000, 0, Yes.WithDeleted
+        );
         assert(convs4.length == len1);
     }
 
@@ -677,7 +697,7 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.addTagDb");
         recreateTestDb();
-        auto convs = Conversation.getByTag("inbox", 0, 0);
+        auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
         assert(convs.length);
         auto dbId = convs[0].dbId;
         Conversation.addTagDb(dbId, "testTag");

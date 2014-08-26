@@ -30,6 +30,12 @@ final class User
         return getFromDirectField("loginName", login);
     }
 
+    static string getIdFromLoginName(string login)
+    {
+        auto userResult = collection("user").findOne(["loginName": login]);
+        return userResult.isNull? "": bsonStrSafe(userResult._id);
+    }
+
 
     static User getFromAddress(string address)
     {

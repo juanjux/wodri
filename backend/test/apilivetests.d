@@ -14,12 +14,7 @@ import std.stdio;
 import std.string;
 import std.typecons;
 
-/**
- * IMPORTANT: run the db.d tests (test_db.sh) before running these tests so the DB
- * is loaded
- */
-
-enum USER = "testuser";
+string USER = "anotherUser";
 enum PASS = "secret";
 enum URL  = "http://127.0.0.1:8080/api";
 enum URL2 = "http://127.0.0.1:8080";
@@ -27,12 +22,12 @@ string[string] emptyDict;
 
 
 string callCurl2(string object,
-                string apiCall,
-                string[string] parameters=emptyDict,
-                string method="GET",
-                string postData="",
-                string user=USER,
-                string pass=PASS)
+                 string apiCall,
+                 string[string] parameters=emptyDict,
+                 string method="GET",
+                 string postData="",
+                 string user=USER,
+                 string pass=PASS)
 {
     Appender!string parametersStr;
     string joiner = "?";
@@ -60,7 +55,7 @@ string callCurl2(string object,
     );
 
     writeln("\t" ~ method ~ ": " ~ pathStr.data);
-    //writeln(curlCmd);
+    //writeln("\t" ~ curlCmd);
 
     auto retCurl = executeShell(curlCmd);
     if (retCurl.status)
@@ -77,6 +72,7 @@ string[] jsonToArray(JSONValue val)
 
 void recreateTestDb()
 {
+    USER = "anotherUser";
     callCurl2("test", "testrebuilddb");
 }
 
@@ -129,9 +125,7 @@ JSONValue upsertDraft(string apiEmailJson, string replyDbId)
         "replyDbId": "%s",
      }`, apiEmailJson, replyDbId);
 
-    return parseJSON(
-            callCurl2( "message", "", emptyDict, "POST", json, "anotherUser", "secret")
-    );
+    return parseJSON(callCurl2("message", "", emptyDict, "POST", json));
 }
 
 
@@ -143,7 +137,12 @@ void deleteConversation(string id, bool purge=false)
 
 
 
-JSONValue getConversations(string tag, uint limit, uint page, bool loadDeleted=false)
+JSONValue getConversations(
+        string tag,
+        uint limit,
+        uint page,
+        bool loadDeleted=false
+)
 {
     auto paramsDict = ["limit": to!string(limit),
                        "page": to!string(page)];
@@ -215,10 +214,10 @@ JSONValue addAttachment(string emailId)
 void deleteAttachment(string emailId, string attachId)
 {
     callCurl2(
-            "message", 
-            emailId~"/attachment", 
-            emptyDict, 
-            "DELETE", 
+            "message",
+            emailId~"/attachment",
+            emptyDict,
+            "DELETE",
             format(`{"attachmentId": "%s"}`, attachId)
     );
 }
@@ -226,15 +225,13 @@ void deleteAttachment(string emailId, string attachId)
 /// Actual tests start here
 void testGetConversation()
 {
-    writeln("\nTesting GET /api/:id/conversation/");
+    writeln("\nTesting GET /conv/:id/");
     recreateTestDb();
-    JSONValue conversations;
-    conversations = getConversations("inbox", 20, 0);
-
-    auto convId1 = conversations[0]["dbId"].str;
-    auto convId2 = conversations[1]["dbId"].str;
-    auto convId3 = conversations[2]["dbId"].str;
-    auto convId4 = conversations[3]["dbId"].str;
+    USER = "anotherUser";
+    auto conversations = getConversations("inbox", 20, 0);
+    auto convId1  = conversations[0]["dbId"].str;
+    auto convId2  = conversations[1]["dbId"].str;
+    auto convId3  = conversations[2]["dbId"].str;
     enforce(convId1.length);
 
     auto conversation  = getConversationById(convId2);
@@ -244,19 +241,22 @@ void testGetConversation()
 
     auto conversation2 = getConversationById(convId1);
     auto conversation3 = getConversationById(convId3);
-    auto conversation4 = getConversationById(convId4);
 
     // delete email, check that the returned email summaries have that email.deleted=true
-    conversations = getConversations("inbox", 20, 0);
-    auto twoEmailsConvId = conversations[3]["dbId"].str;
+    USER = "testuser";
+    conversations = getConversations("inbox", 20, 0, false);
+    auto twoEmailsConvId = conversations[0]["dbId"].str;
     auto conversationSingleEmail = getConversationById(twoEmailsConvId);
     enforce(conversationSingleEmail["summaries"].array.length == 2);
+
     // delete the first email of this conversation
-    deleteEmail(conversationSingleEmail["summaries"].array[0]["dbId"].str);
+    deleteEmail(conversationSingleEmail["summaries"].array[0]["dbId"].str, false);
     auto conversationSingleEmailReload = getConversationById(twoEmailsConvId);
     // first should be deleted, second shouldn't
-    enforce(conversationSingleEmailReload["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
-    enforce(conversationSingleEmailReload["summaries"].array[1]["deleted"].type == JSON_TYPE.FALSE);
+    enforce(conversationSingleEmailReload["summaries"].array[0]["deleted"].type ==
+            JSON_TYPE.TRUE);
+    enforce(conversationSingleEmailReload["summaries"].array[1]["deleted"].type ==
+            JSON_TYPE.FALSE);
 }
 
 void testGetTagConversations()
@@ -272,24 +272,23 @@ void testGetTagConversations()
 
     enforce(conversations[0]["numMessages"].integer == 1 &&
            conversations[1]["numMessages"].integer == 3 &&
-           conversations[2]["numMessages"].integer == 1 &&
-           conversations[3]["numMessages"].integer == 2);
+           conversations[2]["numMessages"].integer == 1);
 
     enforce(conversations[0]["lastDate"].str > conversations[1]["lastDate"].str &&
-           conversations[1]["lastDate"].str > conversations[2]["lastDate"].str &&
-           conversations[2]["lastDate"].str > conversations[3]["lastDate"].str);
+           conversations[1]["lastDate"].str > conversations[2]["lastDate"].str);
     auto newerDate = conversations[0]["lastDate"].str;
-    auto olderDate = conversations[3]["lastDate"].str;
+    auto olderDate = conversations[2]["lastDate"].str;
 
     enforce(jsonToArray(conversations[0]["shortAuthors"])    == ["SupremacyHosting.com Sales"]);
-    enforce(jsonToArray(conversations[3]["shortAuthors"])    == ["Test Sender", "Some User"]);
-    enforce(jsonToArray(conversations[3]["attachFileNames"]) == ["google.png", "profilephoto.jpeg"]);
+    enforce(jsonToArray(conversations[2]["shortAuthors"])    == ["Some Random User"]);
+    enforce(jsonToArray(conversations[2]["attachFileNames"]) == ["C++ Pocket Reference.pdf"]);
 
     conversations = getConversations("inbox", 2, 0);
     enforce(conversations[0]["lastDate"].str == newerDate);
 
     conversations = getConversations("inbox", 2, 1);
-    enforce(conversations[1]["lastDate"].str == olderDate);
+    enforce(conversations[0]["lastDate"].str == olderDate);
+
 
     // XXX: when /conversationaddtag is implemented add test:
     // 1. Set tag "deleted" to a conversation
@@ -302,8 +301,9 @@ void testConversationAddTag()
 {
     writeln("\nTesting PUT /conv/addtag/:id/:tag/");
     recreateTestDb();
-    auto conversations = getConversations("inbox", 20, 0);
-    auto convId = conversations[3]["dbId"].str;
+    USER = "testuser";
+    auto conversations = getConversations("inbox", 20, 0, false);
+    auto convId = conversations[0]["dbId"].str;
     addTag(convId, "newtag");
     auto conv = getConversationById(convId);
     enforce(jsonToArray(conv["tags"]) == ["inbox", "newtag"]);
@@ -341,14 +341,13 @@ void testConversationRemoveTag()
 
 void testGetEmail()
 {
-    writeln("\nTesting GET /api/:id/email");
+    writeln("\nTesting GET /message/:id/");
     recreateTestDb();
 
+    USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversation = getConversationById(conversations[0]["dbId"].str);
-
-    JSONValue email;
-    email = getEmail(singleConversation["summaries"][0]["dbId"].str);
+    auto email = getEmail(singleConversation["summaries"][0]["dbId"].str);
     enforce(email["dbId"].str == singleConversation["summaries"][0]["dbId"].str);
     enforce(strip(email["from"].str) ==  "SupremacyHosting.com Sales <brian@supremacyhosting.com>");
     enforce(strip(email["subject"].str) == "Tired of Your Hosting Company?");
@@ -359,8 +358,10 @@ void testGetEmail()
     enforce(toHexString(md5Of(email["bodyHtml"].str)) == "1425A9DB565D0AD15BAA02E43978B75A");
     enforce(email["attachments"].array.length == 0);
 
-    singleConversation = getConversationById(conversations[3]["dbId"].str);
-    email = getEmail(singleConversation["summaries"][0]["dbId"].str);
+    USER = "testuser";
+    conversations = getConversations("inbox", 20, 0, false);
+    singleConversation = getConversationById(conversations[0]["dbId"].str);
+    email = getEmail(singleConversation["summaries"][0]["dbId"].str, No.GetRaw);
     enforce(email["dbId"].str == singleConversation["summaries"][0]["dbId"].str);
     enforce(strip(email["from"].str) ==  "Test Sender <someuser@insomedomain.com>");
     enforce(strip(email["subject"].str) == "some subject \"and quotes\" and noquotes");
@@ -371,7 +372,7 @@ void testGetEmail()
     enforce(toHexString(md5Of(email["bodyHtml"].str)) == "710774126557E2D8219DCE10761B5838");
     enforce(email["attachments"].array.length == 0);
 
-    email = getEmail(singleConversation["summaries"][1]["dbId"].str);
+    email = getEmail(singleConversation["summaries"][1]["dbId"].str, No.GetRaw);
     enforce(email["dbId"].str == singleConversation["summaries"][1]["dbId"].str);
     enforce(strip(email["from"].str) ==  "Some User <someuser@somedomain.com>");
     enforce(strip(email["subject"].str) == "Fwd: Se ha evitado un inicio de sesión sospechoso");
@@ -401,8 +402,9 @@ void testGetRawEmail()
 {
     writeln("\nTesting GET /message/:id/raw");
     recreateTestDb();
-    auto conversations = getConversations("inbox", 20, 0);
-    auto singleConversation = getConversationById(conversations[3]["dbId"].str);
+    USER = "testuser";
+    auto conversations = getConversations("inbox", 20, 0, false);
+    auto singleConversation = getConversationById(conversations[0]["dbId"].str);
     auto rawText = getEmail(singleConversation["summaries"][1]["dbId"].str, Yes.GetRaw).str;
     // if this fails, check first the you didn't clean the messeges (rerun test_db.sh)
     enforce(toHexString(md5Of(rawText)) == "55E0B6D2FCA0C06A886C965DC24D1EBE");
@@ -430,6 +432,7 @@ void testPurgeEmail()
     writeln("\nTesting DELETE /message/:id/ (purging)");
     recreateTestDb();
 
+    USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
     auto singleConversationId = conversations[0]["dbId"].str;
     auto singleConversation = getConversationById(singleConversationId);
@@ -460,8 +463,9 @@ void testPurgeEmail()
     // Idem for a conversation with two emails in DB. The conversation SHOULD NOT be
     // removed and only an email should be in the summaries
     recreateTestDb();
+    USER = "testuser";
     conversations = getConversations("inbox", 20, 0);
-    auto multiConversationId = conversations[3]["dbId"].str;
+    auto multiConversationId = conversations[0]["dbId"].str;
     auto multiConversation = getConversationById(multiConversationId);
     emailId = multiConversation["summaries"][0]["dbId"].str;
     deleteEmail(emailId, true);
@@ -479,6 +483,7 @@ void testDeleteConversation()
 {
     writeln("\nTesting DELETE /conv/:id/ (no purge)");
     recreateTestDb();
+    USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
     auto convId = conversations[0]["dbId"].str;
     auto conv = getConversationById(convId);
@@ -495,8 +500,9 @@ void testPurgeConversation()
 {
     writeln("\nTesting DELETE /conv/:id/ (purging)");
     recreateTestDb();
+    USER = "testuser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto convId = conversations[3]["dbId"].str;
+    auto convId = conversations[0]["dbId"].str;
     auto conv = getConversationById(convId);
     deleteConversation(convId, true);
     auto reloadedConv = getConversationById(convId);
@@ -512,6 +518,7 @@ void testUndeleteConversation()
 {
     writeln("\nTesting PUT /conv/:id/undo/delete/");
     recreateTestDb();
+    USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
     auto convId = conversations[1]["dbId"].str;
     auto conv = getConversationById(convId);
@@ -541,6 +548,7 @@ void testUnDeleteEmail()
 {
     writeln("\nTesting PUT /message/:id/undo/delete");
     recreateTestDb();
+    USER = "anotherUser";
     auto convId = getConversations("inbox", 20, 0)[1]["dbId"].str;
     auto conv = getConversationById(convId);
     auto emailId = conv["summaries"][0]["dbId"].str;

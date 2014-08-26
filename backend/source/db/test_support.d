@@ -23,6 +23,8 @@ version(search_test)      version = db_usebigdb;
 
 version(anytestdb)
 {
+    string[string] USER_TO_ID;
+
     immutable (string[]) TEST_EMAILS = ["multipart_mixed_rel_alternative_attachments",
                                         "simple_alternative_noattach",
                                         "spam_tagged",
@@ -52,8 +54,10 @@ version(anytestdb)
                                               "userrule2.json" : "userrule",];
 
         foreach(file_, coll; jsonfile2collection)
-            collection(coll).insert(parseJsonString(readText(buildPath(backendTestDataDir_, 
-                                                                       file_))));
+        {
+            auto fixture = readText(buildPath(backendTestDataDir_, file_));
+            collection(coll).insert(parseJsonString(fixture));
+        }
 
         string backendTestEmailsDir = buildPath(
                 getConfig().mainDir, "backend", "test", "testemails"
@@ -73,6 +77,13 @@ version(anytestdb)
             assert(dbEmail.isValid, "Email is not valid");
             auto emailId = dbEmail.store();
             Conversation.upsert(dbEmail, ["inbox"], []);
+        }
+
+        // load the tests userIds
+        auto usersCursor = collection("user").find();
+        foreach(user; usersCursor)
+        {
+            USER_TO_ID[bsonStr(user.loginName)] = bsonStr(user._id);
         }
     }
 }

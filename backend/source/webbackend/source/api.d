@@ -37,29 +37,37 @@ string getRequestUser(HTTPServerRequest req, HTTPServerResponse res)
 @rootPathFromName
 interface Message
 {
-    @path("/")
-    ApiEmail get(string id);
+    @path("/:id/")
+    @before!getRequestUser("_userName")
+    ApiEmail get(string _userName, string _id);
 
     @path("/:id/raw/")
-    string getRaw(string _id);
+    @before!getRequestUser("_userName")
+    string getRaw(string _userName, string _id);
 
     @path("/")
     @before!getRequestUser("_userName")
     string post(string _userName, ApiEmail draftContent, string replyDbId = "");
 
-    @method(HTTPMethod.DELETE) @path("/:id/")
-    void deleteEmail(string _id, int purge=0);
+    @method(HTTPMethod.DELETE)
+    @path("/:id/")
+    @before!getRequestUser("_userName")
+    void deleteEmail(string _userName, string _id, int purge=0);
 
     @method(HTTPMethod.PUT) @path(":id/undo/delete/")
-    void unDeleteEmail(string _id);
+    @before!getRequestUser("_userName")
+    void unDeleteEmail(string _userName, string _id);
 
     @method(HTTPMethod.PUT) @path(":id/attachment/")
-    string putAttachment(string _id,
+    @before!getRequestUser("_userName")
+    string putAttachment(string _userName,
+                         string _id,
                          ApiAttachment attachment,
                          string base64Content);
 
     @method(HTTPMethod.DELETE) @path(":id/attachment/")
-    void deleteAttachment(string _id, string attachmentId);
+    @before!getRequestUser("_userName")
+    void deleteAttachment(string _userName, string _id, string attachmentId);
 }
 
 
@@ -67,6 +75,7 @@ interface Message
 interface Search
 {
     @method(HTTPMethod.POST) @path("/")
+    // XXX auth by user
     ApiSearchResult search(
             string[] terms,
             string dateStart="",
@@ -81,29 +90,38 @@ interface Search
 @rootPathFromName
 interface Conv
 {
-    ApiConversation get(string id);
+    @path("/:id/")
+    @before!getRequestUser("_userName")
+    ApiConversation get(string _userName, string _id);
 
     @method(HTTPMethod.DELETE) @path("/:id/")
-    void deleteConversation(string _id, int purge=0);
+    @before!getRequestUser("_userName")
+    void deleteConversation(string _userName, string _id, int purge=0);
+
+    // Undelete (if not previously purged!)
+    @method(HTTPMethod.PUT) @path(":id/undo/delete/")
+    @before!getRequestUser("_userName")
+    void unDeleteConversation(string _userName, string _id);
 
     // Get conversations with the tag ":id"  (its not really an id but a tagname)
     @method(HTTPMethod.GET) @path("tag/:id/")
+    @before!getRequestUser("_userName")
     ApiConversationSummary[] getTagConversations(string _id,
+                                                 string _userName,
                                                  uint limit=DEFAULT_CONVERSATIONS_LIMIT,
                                                  uint page=0,
                                                  int loadDeleted=0);
 
-    // Undelete (if not purged!)
-    @method(HTTPMethod.PUT) @path(":id/undo/delete/")
-    void unDeleteConversation(string _id);
 
     // Add a tag to the conversation
     @method(HTTPMethod.POST) @path(":id/tag/")
-    void conversationAddTag(string _id, string tag);
+    @before!getRequestUser("_userName")
+    void conversationAddTag(string _userName, string _id, string tag);
 
     // Removed a tag from a conversation
     @method(HTTPMethod.DELETE) @path(":id/tag/")
-    void conversationRemoveTag(string _id, string tag);
+    @before!getRequestUser("_userName")
+    void conversationRemoveTag(string _userName, string _id, string tag);
 }
 
 
@@ -121,21 +139,24 @@ interface Test
 final class MessageImpl : Message
 {
 override:
-        ApiEmail get(string id)
+        ApiEmail get(string userName, string id)
         {
-            return Email.getApiEmail(id);
+            return id.isEmailOwnedBy(userName) ? Email.getApiEmail(id)
+                                               : null;
         }
 
 
-        string getRaw(string id)
+        string getRaw(string userName, string id)
         {
-            return Email.getOriginal(id);
+            return id.isEmailOwnedBy(userName) ? Email.getOriginal(id)
+                                               : null;
         }
 
 
         string post(string userName, ApiEmail draftContent, string replyDbId = "")
         {
             auto dbEmail  = new Email(draftContent, replyDbId);
+            // XXX add a new call to compare two with a single roundtrip
             auto addrUser = User.getFromAddress(dbEmail.from.addresses[0]);
             auto authUser = User.getFromLoginName(userName);
 
@@ -159,32 +180,42 @@ override:
         }
 
 
-        void deleteEmail(string id, int purge=0)
+        void deleteEmail(string userName, string id, int purge=0)
         {
-            if (purge != 0)
+            if (!id.isEmailOwnedBy(userName))
+            {
+                return;
+            }
+
+            if (purge)
                 Email.removeById(id);
             else
                 Email.setDeleted(id, true);
         }
 
 
-        void unDeleteEmail(string id)
+        void unDeleteEmail(string userName, string id)
         {
-            Email.setDeleted(id, false, Yes.UpdateConversation);
+            if (id.isEmailOwnedBy(userName))
+                Email.setDeleted(id, false, Yes.UpdateConversation);
         }
 
 
-        string putAttachment(string _id,
+        string putAttachment(string userName,
+                             string _id,
                              ApiAttachment attachment,
                              string base64Content)
         {
-            return Email.addAttachment(_id, attachment, base64Content);
+            return _id.isEmailOwnedBy(userName)
+                ? Email.addAttachment(_id, attachment, base64Content)
+                : "";
         }
 
 
-        void deleteAttachment(string _id, string attachmentId)
+        void deleteAttachment(string userName, string _id, string attachmentId)
         {
-            Email.deleteAttachment(_id, attachmentId);
+            if (_id.isEmailOwnedBy(userName))
+                Email.deleteAttachment(_id, attachmentId);
         }
 
 }
@@ -237,15 +268,23 @@ override:
 final class ConvImpl : Conv
 {
 override:
-        ApiConversation get(string id)
+        ApiConversation get(string userName, string id)
         {
-            auto conv = Conversation.get(id);
-            return conv is null? null: new ApiConversation(conv);
+            if (id.isConversationOwnedBy(userName))
+            {
+                auto conv = Conversation.get(id);
+                if (conv !is null)
+                    return new ApiConversation(conv);
+            }
+            return null;
         }
 
 
-        void deleteConversation(string _id, int purge=0)
+        void deleteConversation(string userName, string _id, int purge=0)
         {
+            if (!_id.isConversationOwnedBy(userName))
+                return;
+
             auto conv = Conversation.get(_id);
             if (conv is null)
                 return;
@@ -257,24 +296,26 @@ override:
                 conv.remove();
                 return;
             }
-
-            // set "deleted" tag and set all links to deleted.
-            foreach(link; conv.receivedLinks)
+            // do not purge, just add the deleted tag and set emails as deleted
+            else
             {
-                Email.setDeleted(link.emailDbId,
-                                        true,
-                                        No.UpdateConversation);
-                link.deleted = true;
-            }
-            conv.addTag("deleted");
 
-            // update the conversation with the new tag and links on DB
-            conv.store();
+                foreach(link; conv.receivedLinks)
+                {
+                    Email.setDeleted(link.emailDbId, true, No.UpdateConversation);
+                    link.deleted = true;
+                }
+                conv.addTag("deleted");
+                conv.store();
+            }
         }
 
 
-        void unDeleteConversation(string _id)
+        void unDeleteConversation(string userName, string _id)
         {
+            if (!_id.isConversationOwnedBy(userName))
+                return;
+
             auto conv = Conversation.get(_id);
             if (conv is null)
                 return;
@@ -291,8 +332,10 @@ override:
             conv.store();
         }
 
+
         /** Returns an ApiConversationSummary for every Conversation in the tag */
         ApiConversationSummary[] getTagConversations(string _id,
+                                                     string userName,
                                                      uint limit=DEFAULT_CONVERSATIONS_LIMIT,
                                                      uint page=0,
                                                      int loadDeleted=0)
@@ -300,6 +343,7 @@ override:
             ApiConversationSummary[] ret;
             auto conversations = Conversation.getByTag(
                     _id,
+                    User.getIdFromLoginName(userName),
                     limit,
                     page,
                     cast(Flag!"WithDeleted")loadDeleted
@@ -315,8 +359,12 @@ override:
             return ret;
         }
 
-        void conversationAddTag(string id, string tag)
+
+        void conversationAddTag(string userName, string id, string tag)
         {
+            if (!id.isConversationOwnedBy(userName))
+                return;
+
             auto conv = Conversation.get(id);
             if (conv is null)
                 return;
@@ -326,8 +374,11 @@ override:
         }
 
 
-        void conversationRemoveTag(string id, string tag)
+        void conversationRemoveTag(string userName, string id, string tag)
         {
+            if (!id.isConversationOwnedBy(userName))
+                return;
+
             auto conv = Conversation.get(id);
             if (conv is null)
                 return;

@@ -316,7 +316,7 @@ final class Email
 
             ret = onlyValue?
                 format("%s,", Json(strHeader).toString()):
-                format("\"%s\": %s,", headerName, Json(strHeader).toString());
+                format("\"%s\": %s,", headerName, Json(strHeader).toString);
         }
         if (onlyValue && !ret.length)
             ret = `"",`;
@@ -1011,6 +1011,20 @@ final class Email
 }
 
 
+// XXX return loaded Email object or null
+// XXX unittest
+bool isEmailOwnedBy(string emailId, string userName)
+{
+    auto userId = User.getIdFromLoginName(userName);
+    if (!userId.length)
+        return false;
+
+    auto emailDoc = collection("email").findOne(["_id": emailId, "userId": userId],
+                                                ["_id": 1],
+                                                QueryFlags.None);
+    return !emailDoc.isNull;
+}
+
 //  _    _       _ _   _            _
 // | |  | |     (_) | | |          | |
 // | |  | |_ __  _| |_| |_ ___  ___| |_
@@ -1029,7 +1043,7 @@ version(db_usetestdb)
     ApiEmail getTestApiEmail()
     {
         auto apiEmail = new ApiEmail();
-        apiEmail.from      = "testuser@testdatabase.com";
+        apiEmail.from      = "anotherUser@testdatabase.com";
         apiEmail.to        = "juanjo@juanjoalvarez.net";
         apiEmail.subject   = "test of forceInsertNew";
         apiEmail.isoDate   = "2014-08-22T09:22:46";
@@ -1057,7 +1071,7 @@ version(db_usetestdb)
         inEmail.loadFromFile(testMailPath, getConfig.attachmentStore);
         auto emailDb = new Email(inEmail);
 
-        assert(emailDb.jsonizeHeader("to")   ==
+        assert(emailDb.jsonizeHeader("to") ==
                 `"to": " Test User2 <testuser@testdatabase.com>",`);
         assert(emailDb.jsonizeHeader("Date", Yes.RemoveQuotes, Yes.OnlyValue) ==
                 `" Sat, 25 Dec 2010 13:31:57 +0100",`);
@@ -1136,7 +1150,7 @@ version(db_usetestdb)
 
         writeln("Testing Email.removeById");
         recreateTestDb();
-        auto convs = Conversation.getByTag("inbox", 0, 0);
+        auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         auto singleMailConv = convs[0];
         auto singleConvId   = singleMailConv.dbId;
         auto singleMailId   = singleMailConv.links[0].emailDbId;
@@ -1166,7 +1180,7 @@ version(db_usetestdb)
 
         // conversation with more emails in the DB, the link of the email to
         // remove should be deleted but the conversation should be keept in DB
-        auto multiConv = convs[3];
+        auto multiConv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
         auto multiConvId = multiConv.dbId;
         auto multiConvEmailId = multiConv.links[0].emailDbId;
         emailFiles = getEmailFiles(multiConvEmailId);
@@ -1187,7 +1201,7 @@ version(db_usetestdb)
         writeln("Testing Email.getSummary");
         recreateTestDb();
 
-        auto convs    = Conversation.getByTag("inbox", 0, 0);
+        auto convs    = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         auto conv     = Conversation.get(convs[2].dbId);
         assert(conv !is null);
         auto summary = Email.getSummary(conv.links[0].emailDbId);
@@ -1228,7 +1242,7 @@ version(db_usetestdb)
         writeln("Testing Email.getApiEmail");
         recreateTestDb();
 
-        auto convs    = Conversation.getByTag("inbox", 0, 0);
+        auto convs    = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         auto conv     = Conversation.get(convs[2].dbId);
         assert(conv !is null);
         auto apiEmail = Email.getApiEmail(conv.links[0].emailDbId);
@@ -1256,7 +1270,7 @@ version(db_usetestdb)
         writeln("Testing Email.getOriginal");
         recreateTestDb();
 
-        auto convs = Conversation.getByTag("inbox", 0, 0);
+        auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         auto conv = Conversation.get(convs[2].dbId);
         assert(conv !is null);
         auto apiEmail = Email.getApiEmail(conv.links[0].emailDbId);
@@ -1398,7 +1412,7 @@ version(db_usetestdb)
         inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
                              getConfig.absAttachmentStore);
         auto dbEmail = new Email(inEmail);
-        auto user = User.getFromAddress("testuser@testdatabase.com");
+        auto user = User.getFromAddress("anotherUser@testdatabase.com");
         dbEmail.userId = user.id;
         dbEmail.deleted = true;
         auto id = dbEmail.store();
@@ -1543,8 +1557,8 @@ version(db_usetestdb)
         writeln("Testing Email.getReferencesFromPrevious");
         assert(Email.getReferencesFromPrevious("doesntexists").length == 0);
 
-        auto convs = Conversation.getByTag("inbox", 0, 0);
-        auto conv = Conversation.get(convs[3].dbId);
+        auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
+        auto conv = Conversation.get(convs[0].dbId);
 
         auto refs = Email.getReferencesFromPrevious(conv.links[1].emailDbId);
         assert(refs.length == 2);
@@ -1563,7 +1577,7 @@ version(db_usetestdb)
         writeln("Testing Email.this(ApiEmail)");
         auto user = User.getFromAddress("anotherUser@testdatabase.com");
         auto apiEmail    = new ApiEmail;
-        apiEmail.from    = "testuser@testdatabase.com";
+        apiEmail.from    = "anotherUser@testdatabase.com";
         apiEmail.to      = "juanjux@gmail.com";
         apiEmail.subject = "draft subject 1";
         apiEmail.isoDate = "2014-08-20T15:47:06Z";
@@ -1593,8 +1607,8 @@ version(db_usetestdb)
         assert(dbEmail.textParts.length == 1);
 
         // Test3: New draft, reply
-        auto convs     = Conversation.getByTag("inbox", 0, 0);
-        auto conv      = Conversation.get(convs[3].dbId);
+        auto convs     = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
+        auto conv      = Conversation.get(convs[0].dbId);
         auto emailDoc  = collection("email").findOne(["_id": conv.links[1].emailDbId]);
         auto emailDbId = bsonStr(emailDoc._id);
         auto emailReferences = bsonStrArray(emailDoc.headers.references[0].addresses);

@@ -1,7 +1,12 @@
 Backend-API:
-    QUE TODO VAYA AUTENTIFICADO POR USUARIO!!!!
+    - search with auth (see below)
 
 Backend-Retriever:
+    - missing tests (utils.d && isXXXOwnedBy)
+    - add emailIndexContents.userId, add the userId discriminator to Email.search
+    - conversation.getByTag: add "attachNames" to every link to avoid reading all the emails
+      when retrieving a conversation just to get the attachment filenames 
+    - general hunting of XXX and FIXMEs
 
     Later:
     - Use log to log more warnings, specially on db.*
