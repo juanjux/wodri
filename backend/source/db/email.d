@@ -27,7 +27,7 @@ import webbackend.apiemail;
 
 static shared immutable SEARCH_FIELDS = ["to", "subject", "cc", "bcc"];
 
-final class TextPart
+struct TextPart
 {
     string ctype;
     string content;
@@ -48,7 +48,7 @@ private struct EmailAndConvIds
 
 struct SearchResult
 {
-    Conversation conversation;
+    const Conversation conversation;
     ulong[] matchingEmailsIdx;
 }
 
@@ -64,17 +64,6 @@ final class EmailSummary
     string avatarUrl;
     bool deleted = false;
     bool draft = false;
-}
-
-
-/** Paranoic retrieval of emailDoc headers */
-private string headerRaw(Bson emailDoc, string headerName)
-{
-    if (!emailDoc.headers.isNull &&
-        !emailDoc.headers[headerName].isNull &&
-        !emailDoc.headers[headerName][0].rawValue.isNull)
-        return bsonStr(emailDoc.headers[headerName][0].rawValue);
-    return "";
 }
 
 
@@ -109,16 +98,19 @@ final class Email
 
     this()
     {
-        extractBodyPeek();
-        loadReceivers();
+        if (!this.bodyPeek.length)
+            extractBodyPeek();
+
+        if (!this.receivers.addresses.length)
+            loadReceivers();
     }
 
 
-    this(const ApiEmail apiEmail, string repliedEmailDbId = "")
+    this(in ApiEmail apiEmail, in string repliedEmailDbId = "")
     {
 
-        bool isNew   = (apiEmail.dbId.length == 0);
-        bool isReply = (repliedEmailDbId.length > 0);
+        immutable isNew   = (apiEmail.dbId.length == 0);
+        immutable isReply = (repliedEmailDbId.length > 0);
         enforce(apiEmail.to.length,
                 "Email from ApiEmail constructor should receive a .to");
         enforce(apiEmail.date.length,
@@ -138,8 +130,6 @@ final class Email
                 logWarn("Email.this(ApiEmail) ["~this.dbId~"] was suplied a " ~
                         "repliedEmailDbId but no email was found with that id: " ~
                         repliedEmailDbId);
-                isReply = false;
-                repliedEmailDbId = "";
             }
             else
             {
@@ -159,9 +149,9 @@ final class Email
         this.headers.addField("bcc",field2HeaderValue(apiEmail.bcc));
 
         if (apiEmail.bodyHtml.length)
-            this.textParts ~= new TextPart("text/html", apiEmail.bodyHtml);
+            this.textParts ~= TextPart("text/html", apiEmail.bodyHtml);
         if (apiEmail.bodyPlain.length)
-            this.textParts ~= new TextPart("text/plain", apiEmail.bodyPlain);
+            this.textParts ~= TextPart("text/plain", apiEmail.bodyPlain);
 
         this.headers.addField("mime-type", HeaderValue("1.0"));
         this.headers.addField("sender", this.from);
@@ -177,9 +167,14 @@ final class Email
 
     /** Load from an IncomingEmail object (making mutable copies of the data members).
      * dbId will be an empty string until .store() is called */
-    this(IncomingEmail email)
+    this(in IncomingEmail email)
     {
-        this.messageId    = email.getHeader("message-id").addresses[0];
+        const msgIdHdr = email.getHeader("message-id");
+        if (msgIdHdr.addresses.length)
+            this.messageId  = msgIdHdr.addresses[0];
+        else
+            logWarn("Message didnt have any Message-id!");
+
         auto frHeader     = email.getHeader("from");
         this.from         = HeaderValue(frHeader.rawValue, frHeader.addresses.dup);
         this.rawEmailPath = email.rawEmailPath;
@@ -194,7 +189,7 @@ final class Email
         }
 
         foreach(const part; email.textualParts)
-            this.textParts ~= new TextPart(part.ctype.name, part.textContent);
+            this.textParts ~= TextPart(part.ctype.name, part.textContent);
 
         foreach(attach; email.attachments)
         {
@@ -203,14 +198,14 @@ final class Email
         this();
     }
 
-    this(IncomingEmail email, string destination)
+    this(in IncomingEmail email, in string destination)
     {
         this(email);
         setOwner(destination);
     }
 
 
-    void setOwner(string destinationAddress)
+    void setOwner(in string destinationAddress)
     {
         const user = User.getFromAddress(destinationAddress);
         if (user is null)
@@ -221,15 +216,24 @@ final class Email
     }
 
 
-    bool hasHeader(string name) const
+    bool hasHeader(in string name) const
     {
         return (name in this.headers) !is null;
     }
 
 
-    HeaderValue getHeader(string name)
+    HeaderValue getHeader(in string name) const
     {
-        return hasHeader(name)? this.headers[name]: HeaderValue("", []);
+        // FIXME: remove when the bug related with the postblit
+        // constructor in dmd 2.0.66 is fixed
+        HeaderValue hv;
+        if (this.hasHeader(name))
+        {
+            hv.rawValue  = this.headers[name].rawValue.idup;
+            hv.addresses = this.headers[name].addresses.dup;
+            return hv;
+        }
+        return hv;
     }
 
 
@@ -237,13 +241,13 @@ final class Email
     {
         // this is needed because string index != letters index for any non-ascii string
 
-        const relevantPlain = maybeBodyNoFormat();
+        immutable relevantPlain = maybeBodyNoFormat();
         // numer of unicode characters in the string
-        const numChars = std.utf.count(relevantPlain);
+        immutable numChars = std.utf.count(relevantPlain);
         // whatever is lower of the configured body peek length or the UTF string length
-        const peekUntilUtfLen = min(numChars, getConfig().bodyPeekLength);
+        immutable peekUntilUtfLen = min(numChars, getConfig().bodyPeekLength);
         // convert the index of the number of UTF chars in the string to an array index
-        const peekUntilArrayLen = toUTFindex(relevantPlain, peekUntilUtfLen);
+        immutable peekUntilArrayLen = toUTFindex(relevantPlain, peekUntilUtfLen);
         // and get the substring until that index
         this.bodyPeek = peekUntilUtfLen? relevantPlain[0..peekUntilArrayLen]: "";
     }
@@ -265,7 +269,6 @@ final class Email
             logError(err);
             return;
         }
-
         this.receivers = getHeader(realReceiverField);
     }
 
@@ -304,19 +307,17 @@ final class Email
     }
 
 
-    private string jsonizeHeader(string headerName,
-                                 Flag!"RemoveQuotes" removeQuotes = No.RemoveQuotes,
-                                 Flag!"OnlyValue" onlyValue       = No.OnlyValue)
+    private string jsonizeHeader(in string headerName,
+                                 in Flag!"RemoveQuotes" removeQuotes = No.RemoveQuotes,
+                                 in Flag!"OnlyValue" onlyValue       = No.OnlyValue)
     {
         string ret;
         const hdr = getHeader(headerName);
         if (hdr.rawValue.length)
         {
-            const strHeader = removeQuotes? removechars(hdr.rawValue, "\""): hdr.rawValue;
-
-            ret = onlyValue?
-                format("%s,", Json(strHeader).toString()):
-                format("\"%s\": %s,", headerName, Json(strHeader).toString);
+            const strHeader = removeQuotes ? removechars(hdr.rawValue, "\""): hdr.rawValue;
+            ret = onlyValue ? format("%s,", Json(strHeader).toString())
+                            : format("\"%s\": %s,", headerName, Json(strHeader).toString);
         }
         if (onlyValue && !ret.length)
             ret = `"",`;
@@ -325,12 +326,14 @@ final class Email
 
 
     ulong size() const
+    nothrow
     {
         return textualBodySize() + this.attachments.totalSize();
     }
 
 
     ulong textualBodySize() const
+    nothrow
     {
         ulong totalSize;
         foreach(textualPart; this.textParts)
@@ -339,7 +342,7 @@ final class Email
     }
 
 
-    @property Flag!"IsValidEmail" isValid()
+    @property Flag!"IsValidEmail" isValid() const
     {
         // From and Message-ID and at least one of to/cc/bcc/delivered-to
         if ((getHeader("to").addresses.length  ||
@@ -352,12 +355,12 @@ final class Email
 
 
     /** NOTE: * - dateStart and dateEnd should be GMT */
-    static SearchResult[] search(const string[] needles,
-                                 string dateStart="",
-                                 string dateEnd="")
+    static const(SearchResult)[] search(in string[] needles,
+                                 in string dateStart="",
+                                 in string dateEnd="")
     {
         // Get an list of matching email IDs
-        auto matchingEmailAndConvIds = searchEmailsGetIds(needles, dateStart, dateEnd);
+        const matchingEmailAndConvIds = searchEmailsGetIds(needles, dateStart, dateEnd);
 
         // keep the found conversations+matches indexes, the key is the conversation dbId
         SearchResult[string] map;
@@ -365,7 +368,7 @@ final class Email
         // For every id, get the conversation (with MessageSummaries loaded)
         foreach(emailAndConvId; matchingEmailAndConvIds)
         {
-            auto conv = Conversation.get(emailAndConvId.convId);
+            const conv = Conversation.get(emailAndConvId.convId);
             assert(conv !is null);
 
             uint indexMatching = -1;
@@ -388,12 +391,14 @@ final class Email
         return map.values;
     }
 
+
     private string headersToJson()
     {
         Appender!string jsonAppender;
 
         bool[string] alreadyDone;
         jsonAppender.put("{");
+
         foreach(headerName, ref headerValue; this.headers)
         {
             // mongo doesnt allow $ or . on key names, any header with these chars
@@ -412,7 +417,7 @@ final class Email
                 continue;
             alreadyDone[headerName] = true;
 
-            auto allValues = this.headers.getAll(headerName);
+            const allValues = this.headers.getAll(headerName);
             jsonAppender.put(format(`"%s": [`, toLower(headerName)));
             foreach(ref hv; allValues)
             {
@@ -424,12 +429,11 @@ final class Email
             jsonAppender.put("],");
         }
         jsonAppender.put("}");
-        string rawHeadersStr = jsonAppender.data();
-        return jsonAppender.data();
+        return jsonAppender.data;
     }
 
 
-    const(string[]) localReceivers()
+    string[] localReceivers() const
     {
         string[] allAddresses;
         string[] localAddresses;
@@ -460,8 +464,8 @@ final class Email
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
     /** store or update the email into the DB, returns the DB id */
-    string store(Flag!"ForceInsertNew"   forceInsertNew   = No.ForceInsertNew,
-                 Flag!"StoreAttachMents" storeAttachMents = Yes.StoreAttachMents)
+    string store(in Flag!"ForceInsertNew"   forceInsertNew   = No.ForceInsertNew,
+                 in Flag!"StoreAttachMents" storeAttachMents = Yes.StoreAttachMents)
     in
     {
         assert(this.userId !is null);
@@ -472,8 +476,8 @@ final class Email
         if (this.userId is null || !this.userId.length)
             throw new Exception("Cant store email without assigning a user");
 
-        string rawHeadersStr    = headersToJson();
-        string textPartsJsonStr = textPartsToJson();
+        immutable rawHeadersStr    = headersToJson();
+        immutable textPartsJsonStr = textPartsToJson();
 
         if (forceInsertNew || !this.dbId.length)
             this.dbId = BsonObjectID.generate().toString;
@@ -522,7 +526,7 @@ final class Email
         emailInsertJson.put("}}");
         //writeln(emailInsertJson.data);
 
-        auto bsonData = parseJsonString(emailInsertJson.data);
+        const bsonData = parseJsonString(emailInsertJson.data);
         collection("email").update(["_id": this.dbId], bsonData, UpdateFlags.Upsert);
 
         // store the index document for Mongo's full text search engine
@@ -534,9 +538,9 @@ final class Email
 
 
     /** Adds an attachment to the email on the DB */
-    static string addAttachment(string emailDbId,
-                                       const ApiAttachment apiAttach,
-                                       string base64Content)
+    static string addAttachment(in string emailDbId,
+                                in ApiAttachment apiAttach,
+                                in string base64Content)
     {
         string attachId;
 
@@ -548,7 +552,7 @@ final class Email
         }
 
         // check that the email exists on DB
-        auto emailDoc = collection("email").findOne(["_id": emailDbId]);
+        immutable emailDoc = collection("email").findOne(["_id": emailDbId]);
         if (emailDoc.isNull)
         {
             logWarn("addAttachment, could find specified email: " ~ emailDbId);
@@ -556,7 +560,7 @@ final class Email
         }
 
         // decode the attachment and save the email
-        auto attContent = decodeBase64Stubborn(base64Content);
+        immutable attContent = decodeBase64Stubborn(base64Content);
         if (!attContent.length)
         {
             logWarn("addAttachment: could not decode apiAttach \"" ~ apiAttach.filename ~
@@ -564,25 +568,25 @@ final class Email
             return attachId;
         }
 
-        auto destFilePath = randomFileName(getConfig.absAttachmentStore,
-                                           apiAttach.filename.extension);
+        immutable destFilePath = randomFileName(getConfig.absAttachmentStore,
+                                                apiAttach.filename.extension);
         auto f = File(destFilePath, "w");
         f.rawWrite(attContent);
 
         // create the doc and insert into the email.attachments list on DB
-        auto dbAttach     = new DbAttachment(apiAttach);
-        attachId          = BsonObjectID.generate().toString;
-        dbAttach.dbId     = attachId;
-        dbAttach.realPath = destFilePath;
-        dbAttach.size     = attContent.length;
-        string pushJson   = format(`{"$push": {"attachments": %s}}`, dbAttach.toJson);
+        auto dbAttach      = new DbAttachment(apiAttach);
+        attachId           = BsonObjectID.generate().toString;
+        dbAttach.dbId      = attachId;
+        dbAttach.realPath  = destFilePath;
+        dbAttach.size      = attContent.length;
+        immutable pushJson = format(`{"$push": {"attachments": %s}}`, dbAttach.toJson);
         collection("email").update(["_id": emailDbId], parseJsonString(pushJson));
         return attachId;
     }
 
-    
+
     /** Deletes an attachment from the DB and from the disk */
-    static void deleteAttachment(string emailDbId, string attachmentId)
+    static void deleteAttachment(in string emailDbId, in string attachmentId)
     {
         if (!emailDbId.length || !attachmentId.length)
         {
@@ -590,7 +594,7 @@ final class Email
             return;
         }
 
-        auto emailDoc = collection("email").findOne(
+        immutable emailDoc = collection("email").findOne(
                 ["_id": emailDbId],
                 ["_id": 1, "attachments": 1],
                 QueryFlags.None
@@ -599,7 +603,7 @@ final class Email
         if (emailDoc.isNull || emailDoc.attachments.isNull)
         {
             logWarn(format("deleteAttachment: delete for email [%s] and attach [%s] was " ~
-                           "requested but email or attachments missing on DB", 
+                           "requested but email or attachments missing on DB",
                            emailDbId, attachmentId));
             return;
         }
@@ -623,7 +627,7 @@ final class Email
             return;
         }
 
-        auto json = format(
+        immutable json = format(
                 `{"$pull": {"attachments": {"dbId": %s}}}`, Json(attachmentId).toString
         );
         collection("email").update(["_id": emailDbId], parseJsonString(json));
@@ -635,7 +639,7 @@ final class Email
     /**
      * Smaller version of the standar email object
      */
-    static EmailSummary getSummary(string dbId)
+    static EmailSummary getSummary(in string dbId)
     in
     {
         assert(dbId.length);
@@ -643,16 +647,19 @@ final class Email
     body
     {
         auto res = new EmailSummary();
-        const fieldSelector = ["from"        : 1,
-                               "headers"     : 1,
-                               "isodate"     : 1,
-                               "bodyPeek"    : 1,
-                               "deleted"     : 1,
-                               "draft"       : 1,
-                               "attachments" : 1];
+        immutable fieldSelector = ["from"        : 1,
+                                   "headers"     : 1,
+                                   "isodate"     : 1,
+                                   "bodyPeek"    : 1,
+                                   "deleted"     : 1,
+                                   "draft"       : 1,
+                                   "attachments" : 1];
 
-        const emailDoc = collection("email").findOne(["_id": dbId], fieldSelector,
-                                                     QueryFlags.None);
+        immutable emailDoc = collection("email").findOne(
+                ["_id": dbId],
+                fieldSelector,
+                QueryFlags.None
+        );
 
         if (!emailDoc.isNull)
         {
@@ -670,10 +677,10 @@ final class Email
 
 
     // FIXME: this should be a constructor of ApiEmail from an Email, just like Conversation
-    static ApiEmail getApiEmail(string dbId)
+    static ApiEmail getApiEmail(in string dbId)
     {
         ApiEmail ret = null;
-        const fieldSelector = [
+        immutable fieldSelector = [
              "from": 1,
              "headers": 1,
              "isodate": 1,
@@ -684,7 +691,7 @@ final class Email
              "attachments": 1
         ];
 
-        const emailDoc = collection("email").findOne(
+        immutable emailDoc = collection("email").findOne(
                 ["_id": dbId], fieldSelector, QueryFlags.None
         );
 
@@ -756,13 +763,15 @@ final class Email
         return ret;
     }
 
+
     /** Returns the raw email as string */
-    static string getOriginal(string dbId)
+    static string getOriginal(in string dbId)
     {
-        const noMail = "ERROR: could not get raw email";
-        const emailDoc = collection("email").findOne(["_id": dbId],
-                                                     ["rawEmailPath": 1],
-                                                     QueryFlags.None);
+        immutable noMail = "ERROR: could not get raw email";
+        immutable emailDoc = collection("email").findOne(
+                ["_id": dbId], ["rawEmailPath": 1], QueryFlags.None
+        );
+
         if (!emailDoc.isNull && !emailDoc.rawEmailPath.isNull)
         {
             const rawPath = bsonStr(emailDoc.rawEmailPath);
@@ -783,15 +792,15 @@ final class Email
      * Update the email DB record/document and set the deleted field to setDel
      */
     static void setDeleted(
-            string dbId,
-            bool setDel,
-            Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
+            in string dbId,
+            in bool setDel,
+            in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
     )
     {
         // Get the email from the DB, check the needed deleted and userId fields
-        const emailDoc = collection("email").findOne(["_id": dbId],
-                                                     ["deleted": 1],
-                                                     QueryFlags.None);
+        immutable emailDoc = collection("email").findOne(
+                ["_id": dbId], ["deleted": 1], QueryFlags.None
+        );
         if (emailDoc.isNull || emailDoc.deleted.isNull)
         {
             logWarn(format("setDeleted: Trying to set deleted (%s) of email with " ~
@@ -799,7 +808,7 @@ final class Email
             return;
         }
 
-        const dbDeleted = bsonBool(emailDoc.deleted);
+        immutable dbDeleted = bsonBool(emailDoc.deleted);
         if (dbDeleted == setDel)
         {
             logWarn(format("setDeleted: Trying to set deleted to (%s) but email "
@@ -808,9 +817,8 @@ final class Email
         }
 
         // Update the document
-        const json    = format(`{"$set": {"deleted": %s}}`, setDel);
-        const bsonUpd = parseJsonString(json);
-        collection("email").update(["_id": dbId], bsonUpd);
+        immutable json = format(`{"$set": {"deleted": %s}}`, setDel);
+        collection("email").update(["_id": dbId], parseJsonString(json));
 
         if (updateConv)
             Conversation.setEmailDeleted(dbId, setDel);
@@ -823,22 +831,22 @@ final class Email
      * and the rawEmail files will be removed too.
      */
     static void removeById(
-            string dbId,
-            Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
+            in string dbId,
+            in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
     )
     {
-        const emailDoc = collection("email").findOne(["_id": dbId],
-                                                     ["_id": 1,
-                                                      "attachments": 1,
-                                                      "rawEmailPath": 1],
-                                                     QueryFlags.None);
+        immutable emailDoc = collection("email").findOne(
+                ["_id": dbId],
+                ["_id": 1, "attachments": 1, "rawEmailPath": 1],
+                QueryFlags.None
+        );
         if (emailDoc.isNull)
         {
             logWarn(format("Email.removeById: Trying to remove email with id (%s) " ~
                            " not in DB", dbId));
             return;
         }
-        const emailId = bsonStr(emailDoc._id);
+        immutable emailId = bsonStr(emailDoc._id);
 
         if (updateConv)
         {
@@ -853,12 +861,12 @@ final class Email
             }
             else
                 logWarn(
-                    format("Email.removeById: no conversation found for email (%s)", 
+                    format("Email.removeById: no conversation found for email (%s)",
                            dbId)
                 );
         }
 
-        auto rawPath = bsonStrSafe(emailDoc.rawEmailPath);
+        immutable rawPath = bsonStrSafe(emailDoc.rawEmailPath);
         if (rawPath.length && rawPath.exists)
             std.file.remove(rawPath);
 
@@ -866,12 +874,11 @@ final class Email
         {
             foreach(ref attach; emailDoc.attachments)
             {
-                auto attachRealPath = bsonStrSafe(attach.realPath);
+                immutable attachRealPath = bsonStrSafe(attach.realPath);
                 if (attachRealPath.length && attachRealPath.exists)
                     std.file.remove(attachRealPath);
             }
         }
-
         // Remove the email from the DB
         collection("email").remove(["_id": emailId]);
     }
@@ -880,10 +887,10 @@ final class Email
     /** Updates the emailIndexContent reverse link to the Conversation (used for
      * speed purposes)
      */
-    static void setConversationInEmailIndex(string emailId, string convId)
+    static void setConversationInEmailIndex(in string emailId, in string convId)
     {
-        const json = format(`{"$set": {"convId": %s}}`, Json(convId).toString);
-        const bson = parseJsonString(json);
+        immutable json = format(`{"$set": {"convId": %s}}`, Json(convId).toString);
+        const bson     = parseJsonString(json);
         collection("emailIndexContents").update(["emailDbId": emailId], bson);
     }
 
@@ -896,7 +903,7 @@ final class Email
         {
             foreach(ref attach; emailDoc.attachments)
             {
-                string fName = bsonStrSafe(attach.fileName);
+                immutable fName = bsonStrSafe(attach.fileName);
                 if (fName.length)
                     res ~= fName;
             }
@@ -906,8 +913,12 @@ final class Email
 
 
     private void storeTextIndex()
+    in
     {
         assert(this.dbId.length);
+    }
+    body
+    {
         if (!this.dbId.length)
         {
             logError("Email.storeTextIndex: trying to store an email index without email id");
@@ -915,30 +926,31 @@ final class Email
         }
 
         // body
-        auto maybeText = maybeBodyNoFormat();
+        immutable maybeText = maybeBodyNoFormat();
 
         // searchable headers (currently, to, from, cc, bcc and subject)
         Appender!string headerIndexText;
         headerIndexText.put("from:"~strip(this.from.rawValue)~"\n");
         foreach(hdrKey; SEARCH_FIELDS)
         {
-            string hdrOrEmpty = hdrKey in headers? strip(headers[hdrKey].rawValue): "";
+            immutable hdrOrEmpty = hdrKey in headers? strip(headers[hdrKey].rawValue): "";
             headerIndexText.put(hdrKey ~ ":" ~ hdrOrEmpty ~ "\n");
         }
 
-        auto opData = ["text": headerIndexText.data ~ "\n\n" ~ maybeText,
-                       "emailDbId": this.dbId,
-                       "isoDate": this.isoDate];
-        collection("emailIndexContents").update(["emailDbId": this.dbId],
-                                                opData,
-                                                UpdateFlags.Upsert);
+        immutable opData = ["text": headerIndexText.data ~ "\n\n" ~ maybeText,
+                            "emailDbId": this.dbId,
+                            "isoDate": this.isoDate];
+
+        collection("emailIndexContents").update(
+                ["emailDbId": this.dbId], opData, UpdateFlags.Upsert
+        );
     }
 
 
-    private static EmailAndConvIds[] searchEmailsGetIds(
-            const string[] needles,
-            string dateStart = "",
-            string dateEnd = ""
+    private static const(EmailAndConvIds[]) searchEmailsGetIds(
+            in string[] needles,
+            in string dateStart = "",
+            in string dateEnd = ""
     )
     {
         EmailAndConvIds[] res;
@@ -963,9 +975,8 @@ final class Email
             else
                 findJson.put("}");
 
-            auto bson = parseJsonString(findJson.data);
             auto emailIdsCursor = collection("emailIndexContents").find(
-                    bson,
+                    parseJsonString(findJson.data),
                     ["emailDbId": 1, "convId": 1],
                     QueryFlags.None
             ).sort(["lastDate": -1]);
@@ -977,10 +988,15 @@ final class Email
     }
 
 
-    static string messageIdToDbId(string messageId)
+    static string messageIdToDbId(in string messageId)
     {
-        const findSelector = parseJsonString(format(`{"message-id": %s}`, Json(messageId).toString));
-        const res = collection("email").findOne(findSelector, ["_id": 1], QueryFlags.None);
+        const findSelector = parseJsonString(
+                format(`{"message-id": %s}`, Json(messageId).toString)
+        );
+
+        immutable res = collection("email").findOne(
+                findSelector, ["_id": 1], QueryFlags.None
+        );
         if (!res.isNull)
             return bsonStr(res["_id"]);
         return "";
@@ -991,37 +1007,47 @@ final class Email
      * the references for the caller, including the previous email references and
      * the previous email msgid appended
      */
-    private static string[] getReferencesFromPrevious(string dbId)
+    private static string[] getReferencesFromPrevious(in string dbId)
     {
         string[] references;
-        const res = collection("email").findOne(["_id": dbId],
-                                                ["headers": 1, "message-id": 1],
-                                                QueryFlags.None);
+        immutable res = collection("email").findOne(
+                ["_id": dbId], ["headers": 1, "message-id": 1], QueryFlags.None
+        );
         if (!res.isNull)
         {
             string[] inheritedRefs;
 
             if (!res.headers.isNull && !res.headers.references.isNull)
                 inheritedRefs = bsonStrArraySafe(res.headers.references[0].addresses);
-
             references = inheritedRefs ~ bsonStr(res["message-id"]);
         }
         return references;
+    }
+
+
+    /** Paranoic retrieval of emailDoc headers */
+    private static string headerRaw(const ref Bson emailDoc, in string headerName)
+    {
+        if (!emailDoc.headers.isNull &&
+            !emailDoc.headers[headerName].isNull &&
+            !emailDoc.headers[headerName][0].rawValue.isNull)
+            return bsonStr(emailDoc.headers[headerName][0].rawValue);
+        return "";
     }
 }
 
 
 // XXX return loaded Email object or null
 // XXX unittest
-bool isEmailOwnedBy(string emailId, string userName)
+bool isEmailOwnedBy(in string emailId, in string userName)
 {
-    auto userId = User.getIdFromLoginName(userName);
+    immutable userId = User.getIdFromLoginName(userName);
     if (!userId.length)
         return false;
 
-    auto emailDoc = collection("email").findOne(["_id": emailId, "userId": userId],
-                                                ["_id": 1],
-                                                QueryFlags.None);
+    immutable emailDoc = collection("email").findOne(
+            ["_id": emailId, "userId": userId], ["_id": 1], QueryFlags.None
+    );
     return !emailDoc.isNull;
 }
 
@@ -1226,15 +1252,15 @@ version(db_usetestdb)
         assert(!summary.attachFileNames.length);
     }
 
-    unittest // headerRaw
+    unittest // Email.headerRaw
     {
         writeln("Testing Email.headerRaw");
         auto bson = parseJsonString("{}");
         auto emailDoc = collection("email").findOne(bson);
 
-        assert(headerRaw(emailDoc, "delivered-to") == " testuser@testdatabase.com");
-        assert(headerRaw(emailDoc, "date") == " Mon, 27 May 2013 07:42:30 +0200");
-        assert(!headerRaw(emailDoc, "inventedHere").length);
+        assert(Email.headerRaw(emailDoc, "delivered-to") == " testuser@testdatabase.com");
+        assert(Email.headerRaw(emailDoc, "date") == " Mon, 27 May 2013 07:42:30 +0200");
+        assert(!Email.headerRaw(emailDoc, "inventedHere").length);
     }
 
     unittest // getApiEmail
@@ -1489,9 +1515,9 @@ version(db_usetestdb)
         auto conv  = Conversation.get(results[0].convId);
         assert(conv.links[1].emailDbId == results[0].emailId);
 
-        results = Email.searchEmailsGetIds(["some"]);
-        assert(results.length == 4);
-        foreach(ref result; results)
+        auto results2 = Email.searchEmailsGetIds(["some"]);
+        assert(results2.length == 4);
+        foreach(ref result; results2)
         {
             conv = Conversation.get(result.convId);
             bool found = false;
@@ -1506,18 +1532,18 @@ version(db_usetestdb)
             assert(found);
         }
 
-        results = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z");
-        assert(results.length == 4);
+        auto results3 = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z");
+        assert(results3.length == 4);
 
-        results = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z", "2013-05-28T00:00:00Z");
-        assert(results.length == 2);
+        auto results4 = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z", "2013-05-28T00:00:00Z");
+        assert(results4.length == 2);
 
         string startFixedDate = "2005-01-01T00:00:00Z";
-        results = Email.searchEmailsGetIds(["some"], startFixedDate, "2018-12-12T00:00:00Z");
-        assert(results.length == 4);
+        auto results5 = Email.searchEmailsGetIds(["some"], startFixedDate, "2018-12-12T00:00:00Z");
+        assert(results5.length == 4);
 
-        results = Email.searchEmailsGetIds(["some"], startFixedDate, "2013-05-28T00:00:00Z");
-        assert(results.length == 2);
+        auto results6 = Email.searchEmailsGetIds(["some"], startFixedDate, "2013-05-28T00:00:00Z");
+        assert(results6.length == 2);
     }
 
 
@@ -1531,24 +1557,24 @@ version(db_usetestdb)
         assert(searchResults.length == 1);
         assert(searchResults[0].matchingEmailsIdx == [1]);
 
-        searchResults = Email.search(["some"]);
-        assert(searchResults.length == 3);
+        auto searchResults2 = Email.search(["some"]);
+        assert(searchResults2.length == 3);
 
-        searchResults = Email.search(["some"], "2010-01-21T14:32:20Z");
-        assert(searchResults.length == 3);
-        searchResults = Email.search(["some"], "2013-05-28T14:32:20Z");
-        assert(searchResults.length == 2);
-        searchResults = Email.search(["some"], "2018-05-28T14:32:20Z");
-        assert(searchResults.length == 0);
+        auto searchResults3 = Email.search(["some"], "2010-01-21T14:32:20Z");
+        assert(searchResults3.length == 3);
+        auto searchResults4 = Email.search(["some"], "2013-05-28T14:32:20Z");
+        assert(searchResults4.length == 2);
+        auto searchResults4b = Email.search(["some"], "2018-05-28T14:32:20Z");
+        assert(searchResults4b.length == 0);
 
         string startFixedDate = "2005-01-01T00:00:00Z";
-        searchResults = Email.search(["some"], startFixedDate, "2018-12-12T00:00:00Z");
-        assert(searchResults.length == 3);
-        searchResults = Email.search(["some"], startFixedDate, "2013-05-28T00:00:00Z");
-        assert(searchResults.length == 1);
-        assert(searchResults[0].matchingEmailsIdx.length == 2);
-        searchResults = Email.search(["some"], startFixedDate, "2014-02-21T00:00:00Z");
-        assert(searchResults.length == 2);
+        auto searchResults5 = Email.search(["some"], startFixedDate, "2018-12-12T00:00:00Z");
+        assert(searchResults5.length == 3);
+        auto searchResults5b = Email.search(["some"], startFixedDate, "2013-05-28T00:00:00Z");
+        assert(searchResults5b.length == 1);
+        assert(searchResults5b[0].matchingEmailsIdx.length == 2);
+        auto searchResults5c = Email.search(["some"], startFixedDate, "2014-02-21T00:00:00Z");
+        assert(searchResults5c.length == 2);
     }
 
 

@@ -2,11 +2,14 @@ Backend-API:
     - search with auth (see below)
 
 Backend-Retriever:
+    - see why there are so many invalid emails when inserting all into DB
     - missing tests (Email.isOwnedBy && Conversation.isOwnedBy)
+    - Email.get(id) and Email.emailDocToObject
     - add emailIndexContents.userId, add the userId discriminator to Email.search
     - conversation.getByTag: add "attachNames" to every link to avoid reading all the emails
       when retrieving a conversation just to get the attachment filenames 
     - general hunting of XXX and FIXMEs
+    - unittest for every curl call for wrong auth user
 
     Later:
     - Use log to log more warnings, specially on db.*
@@ -42,7 +45,6 @@ All:
     - Authentication with scrypt hashing instead of MD5
     - Run dub with code converage option
     - Import cleanup (only imports and symbols really used)
-    - Const, immutable, pure, nothrow, in, out, safe et all
     - See how to get around Mongo's 16MB document limit for bigger emails
       (GridFS?) Check is some email of my collection is bigger than 16MB without
       attachments (=> no)

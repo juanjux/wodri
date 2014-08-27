@@ -14,7 +14,7 @@ import common.utils;
 
 shared static this()
 {
-    const config = getConfig();
+    immutable config = getConfig();
     auto router = new URLRouter;
 
     // Log

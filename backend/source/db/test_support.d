@@ -104,11 +104,14 @@ version(db_insertalltest)
         string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
         string rawEmailStore   = buildPath(backendTestDir, "rawemails");
         string attachmentStore = buildPath(backendTestDir, "attachments");
+        string invalidLogPath  = buildPath(backendTestDir, "invalid_mails.log");
+
         int[string] brokenEmails;
         StopWatch sw;
         StopWatch totalSw;
         ulong totalTime = 0;
-        ulong count = 0;
+        ulong count     = 0;
+        auto invalidLog = File(invalidLogPath, "w");
 
         foreach (ref DirEntry e; getSortedEmailFilesList(origEmailDir))
         {
@@ -116,9 +119,10 @@ version(db_insertalltest)
             //if (to!int(e.name.baseName) < 10072) continue; // For testing from some email forward
             writeln(e.name, "...");
 
-            totalSw.start();
             if (baseName(e.name) in brokenEmails)
                 continue;
+
+            totalSw.start();
             auto inEmail = new IncomingEmailImpl();
 
             sw.start();
@@ -138,6 +142,8 @@ version(db_insertalltest)
                 if (!localReceivers.length)
                 {
                     writeln("SKIPPING, not local receivers");
+                    totalSw.stop();
+                    totalSw.reset();
                     continue; // probably a message from the "sent" folder
                 }
                 sw.stop(); writeln("localReceivers(): ", sw.peek().msecs); sw.reset();
@@ -151,19 +157,20 @@ version(db_insertalltest)
                 auto convId = Conversation.upsert(dbEmail, ["inbox"], []).dbId;
 
                 sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
-            }
-            else
-                writeln("SKIPPING, invalid email");
 
-            totalSw.stop();
-            if (dbEmail.isValid)
-            {
+                totalSw.stop();
                 auto emailTime = totalSw.peek().msecs;
                 totalTime += emailTime;
                 ++count;
                 writeln("Total time for this email: ", emailTime);
             }
-            writeln("Valid emails until now: ", count); writeln;
+            else
+            {
+                writeln("SKIPPING, invalid email");
+                invalidLog.write("------------------");
+                invalidLog.write(dbEmail.rawEmailPath ~ "\n");
+            }
+
             totalSw.reset();
         }
 

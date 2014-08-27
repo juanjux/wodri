@@ -46,7 +46,7 @@ struct Action
 
 final class UserFilter
 {
-    package
+    private
     {
         Match match;
         Action action;
@@ -74,19 +74,23 @@ final class UserFilter
         if (this.match.withHtml)
         {
             bool hasHtml = false;
-            foreach(subpart; email.textParts)
+            foreach(ref subpart; email.textParts)
+            {
                 if (subpart.ctype == "text/html")
                     hasHtml = true;
+            }
             if (!hasHtml)
                 return false;
         }
 
         foreach(matchHeaderName, matchHeaderFilter; this.match.headerMatches)
+        {
             if (countUntil(email.getHeader(matchHeaderName).rawValue,
                            matchHeaderFilter) == -1)
                 return false;
+        }
 
-        foreach(part; email.textParts)
+        foreach(ref part; email.textParts)
         {
             foreach(string bodyMatch; this.match.bodyMatches)
                 if (countUntil(part.content, bodyMatch) == -1)
@@ -95,7 +99,7 @@ final class UserFilter
 
         if (this.match.totalSizeType != SizeRuleType.None)
         {
-            auto emailSize = email.size();
+            immutable emailSize = email.size();
             if (this.match.totalSizeType == SizeRuleType.GreaterThan &&
                 emailSize < this.match.totalSizeValue)
             {
@@ -141,21 +145,21 @@ final class UserFilter
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
 
-    static const(UserFilter[]) getByAddress(string address)
+    static UserFilter[] getByAddress(in string address)
     {
         UserFilter[] res;
-        auto userRuleFindJson = parseJsonString(
+        const userRuleFindJson = parseJsonString(
                 format(`{"destinationAccounts": {"$in": ["%s"]}}`, address)
         );
-        auto userRuleCursor   = collection("userrule").find(userRuleFindJson);
+        auto userRuleCursor = collection("userrule").find(userRuleFindJson);
 
-        foreach(ref rule; userRuleCursor)
+        foreach(ref Bson rule; userRuleCursor)
         {
             Match match;
             Action action;
             try
             {
-                auto sizeRule = bsonStr(rule.match_sizeRuleType);
+                immutable sizeRule = bsonStr(rule.match_sizeRuleType);
                 switch(sizeRule)
                 {
                     case "None":
@@ -224,7 +228,7 @@ version(db_usetestdb)
         string[] tagsToAdd;
         string[] tagsToRemove;
 
-        // this will change the outer "tags" hash
+        // this will change the outer "tagsToAdd/tagsToRemove" dicts
         Email reInstance(Match match, Action action)
         {
             auto inEmail = scoped!IncomingEmailImpl();

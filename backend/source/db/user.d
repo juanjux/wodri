@@ -19,34 +19,35 @@ final class User
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
-    static User get(string id)
+    static User get(in string id)
     {
         return getFromDirectField("_id", id);
     }
 
 
-    static User getFromLoginName(string login)
+    static User getFromLoginName(in string login)
     {
         return getFromDirectField("loginName", login);
     }
 
-    static string getIdFromLoginName(string login)
+    static string getIdFromLoginName(in string login)
     {
-        auto userResult = collection("user").findOne(["loginName": login]);
+        immutable userResult = collection("user").findOne(["loginName": login]);
         return userResult.isNull? "": bsonStrSafe(userResult._id);
     }
 
 
-    static User getFromAddress(string address)
+    static User getFromAddress(in string address)
     {
-        auto userResult = collection("user").findOne(
+        immutable userResult = collection("user").findOne(
                 parseJsonString(`{"addresses": {"$in": [` ~ Json(address).toString ~ `]}}`)
         );
-        return userResult.isNull ? null : userDocToObject(userResult);
+        return userResult.isNull ? null 
+                                 : userDocToObject(userResult);
     }
 
 
-    static bool addressIsLocal(string address)
+    static bool addressIsLocal(in string address)
     {
         if (!address.length)
             return false;
@@ -56,14 +57,14 @@ final class User
     }
 
 
-    private static User getFromDirectField(string fieldName, string fieldValue)
+    private static User getFromDirectField(in string fieldName, in string fieldValue)
     {
-        auto userResult = collection("user").findOne([fieldName: fieldValue]);
+        immutable userResult = collection("user").findOne([fieldName: fieldValue]);
         return userResult.isNull ? null : userDocToObject(userResult); 
     }
 
 
-    static private User userDocToObject(ref Bson userDoc)
+    static private User userDocToObject(const ref Bson userDoc)
     {
         auto ret = new User();
         if (userDoc.isNull)

@@ -31,11 +31,13 @@ struct RetrieverConfig
     string URLStaticPath;
 
     @property string absAttachmentStore() const
+    nothrow
     {
         return buildPath(this.mainDir, this.attachmentStore);
     }
 
     @property string absRawEmailStore() const
+    nothrow
     {
         return buildPath(this.mainDir, this.rawEmailStore);
     }
@@ -57,7 +59,7 @@ shared static this()
         throw new Exception(err);
     }
 
-    void checkNotNull(string[] keys)
+    void checkNotNull(in string[] keys)
     {
         string[] missingKeys = [];
         foreach(key; keys)
@@ -86,13 +88,13 @@ shared static this()
     g_config.smtpEncription       = to!uint(bsonNumber(dbConfig.smtpEncription));
     g_config.smtpPort             = to!ulong(bsonNumber(dbConfig.smtpPort));
     g_config.salt                 = bsonStr(dbConfig.salt);
-    auto dbPath                  = bsonStr(dbConfig.rawEmailStore);
+    auto dbPath                   = bsonStr(dbConfig.rawEmailStore);
     // If the db path starts with '/' interpret it as absolute
     g_config.rawEmailStore        = dbPath.startsWith(dirSeparator)?
                                                            dbPath:
                                                            buildPath(g_config.mainDir,
                                                                      dbPath);
-    auto attachPath              = bsonStr(dbConfig.attachmentStore);
+    auto attachPath               = bsonStr(dbConfig.attachmentStore);
     g_config.attachmentStore      = attachPath.startsWith(dirSeparator)?
                                                                attachPath:
                                                                buildPath(g_config.mainDir,
@@ -104,7 +106,7 @@ shared static this()
     g_config.URLStaticPath        = bsonStr(dbConfig.URLStaticPath);
 }
 
-ref const(RetrieverConfig) getConfig() { return g_config; }
+ref immutable(RetrieverConfig) getConfig() { return g_config; }
 
 // testing config
 version(anytestdb)

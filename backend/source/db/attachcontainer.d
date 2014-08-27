@@ -52,19 +52,22 @@ struct AttachContainer
 {
     private DbAttachment[] m_attachs;
 
-    // XXX implement the range interface
+    // FIXME: implement the range interface
     @property const(DbAttachment[]) list() const
+    nothrow
     {
         return m_attachs;
     }
 
     @property ulong length() const
+    nothrow
     {
         return m_attachs.length;
     }
 
 
     ulong totalSize() const
+    nothrow
     {
         ulong totalSize;
         foreach(ref attachment; m_attachs)
@@ -73,7 +76,8 @@ struct AttachContainer
     }
 
 
-    const(DbAttachment) add(T)(const T attach, string dbId="")
+    const(DbAttachment) add(T)(const ref T attach, in string dbId="") 
+    if (is(T: ApiAttachment) || is(T: Attachment))
     {
         auto dbattach = new DbAttachment(attach);
         if (dbId.length)

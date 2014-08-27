@@ -26,7 +26,5 @@ final class ApiConversation
                 summaries ~= Email.getSummary(link.emailDbId);
             }
         }
-
-
     }
 }

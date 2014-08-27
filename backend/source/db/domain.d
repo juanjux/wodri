@@ -9,11 +9,11 @@ final class Domain
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
-    static Flag!"HasDefaultUser" hasDefaultUser(string domainName)
+    static Flag!"HasDefaultUser" hasDefaultUser(in string domainName)
     {
-        auto domain = collection("domain").findOne(["name": domainName],
-                                                   ["defaultUser": 1],
-                                                   QueryFlags.None);
+        immutable domain = collection("domain").findOne(
+                ["name": domainName], ["defaultUser": 1], QueryFlags.None
+        );
         if (!domain.isNull &&
             !domain.defaultUser.isNull &&
             bsonStr(domain.defaultUser).length)

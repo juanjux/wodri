@@ -10,7 +10,8 @@ import std.random;
 import std.file;
 import vibe.core.log;
 
-T[] removeDups(T)(const T[] input)
+T[] removeDups(T)(in T[] input)
+pure nothrow
 {
     bool[T] dict;
     T[] result;
@@ -27,18 +28,20 @@ T[] removeDups(T)(const T[] input)
 }
 
 
-string randomString(uint length)
+string randomString(in uint length)
 {
     return iota(length).map!(_ => lowercase[uniform(0, $)]).array;
 }
 
 
-string randomFileName(string directory, string extension="")
+string randomFileName(in string directory, in string extension="")
 {
     string destPath;
+    string ext = extension;
+
     // ensure .something
-    if (extension.length > 0 && !extension.startsWith("."))
-        extension = "." ~ extension;
+    if (ext.length > 0 && !ext.startsWith("."))
+        ext = "." ~ ext;
 
     // yep, not 100% warranteed to be unique but incredibly improbable, still FIXME
     do
@@ -46,36 +49,39 @@ string randomFileName(string directory, string extension="")
         destPath = format("%d_%s%s",
                           stdTimeToUnixTime(Clock.currStdTime),
                           randomString(10),
-                          extension);
-    } while (destPath.exists); 
+                          ext);
+    } while (destPath.exists);
     return buildPath(directory, destPath);
 }
 
 
-pure bool lowStartsWith(string input, string startsw)
+bool lowStartsWith(in string input, in string startsw)
+pure
 {
     return lowStrip(input).startsWith(startsw);
 }
 
 
-pure string lowStrip(string input)
+string lowStrip(in string input)
+pure
 {
     return toLower(strip(input));
 }
 
 
-string generateMessageId(string domain="")
+string generateMessageId(in string domain="")
 {
-    if (domain.length == 0)
-        domain = randomString(10) ~ ".com";
+    string dom = domain;
+    if (dom.length == 0)
+        dom = randomString(10) ~ ".com";
 
-    auto curDate = stdTimeToUnixTime(Clock.currStdTime);
-    auto preDomain = randomString(15);
-    return preDomain ~ "@" ~ domain;
+    immutable preDomain = randomString(15);
+    return preDomain ~ "@" ~ dom;
 }
 
 
-string domainFromAddress(string address)
+string domainFromAddress(in string address)
+pure
 {
     if (countUntil(address, "@") == -1)
         return "";
@@ -89,9 +95,9 @@ string domainFromAddress(string address)
  * RFC 2822 specifies that headers are case insensitive, but better
  * to be safe than sorry
  */
-pure string capitalizeHeader(string name)
+string capitalizeHeader(in string name)
+pure
 {
-    string res = toLower(name);
     switch(name)
     {
         case "domainkey-signature": return "DomainKey-Signature";
@@ -99,40 +105,43 @@ pure string capitalizeHeader(string name)
         default:
     }
 
-    const tokens = split(res, "-");
-    string newres;
+    const tokens = split(toLower(name), "-");
+    string result;
     foreach(idx, ref tok; tokens)
     {
         if (among(tok, "mime", "dkim", "id", "spf"))
-            newres ~= toUpper(tok);
+            result ~= toUpper(tok);
         else
-            newres ~= capitalize(tok);
+            result ~= capitalize(tok);
         if (idx < tokens.length-1)
-            newres ~= "-";
+            result ~= "-";
     }
-
-    return newres;
+    return result;
 }
 
-pure string removeStartSlash(string path)
+string removeStartSlash(in string path)
+pure nothrow
 {
     return path.startsWith("/") ? path[1..$] : path;
 }
 
 
-pure string removeEndSlash(string path)
+string removeEndSlash(string path)
+pure nothrow
 {
     return path.endsWith("/") ? path[0..$-1] : path;
 }
 
 
-pure string removeStartEndSlashes(string path)
+string removeStartEndSlashes(in string path)
+pure nothrow
 {
     return removeStartSlash(removeEndSlash(path));
 }
 
 
-pure string ensureStartSlash(string path)
+string ensureStartSlash(in string path)
+pure nothrow
 {
     return path.startsWith("/") ? path : "/" ~ path;
 }
@@ -148,7 +157,7 @@ pure string ensureStartSlash(string path)
 
 version(unittest)import std.stdio;
 
-unittest 
+unittest
 {
     writeln("Testing Utils.removeDups");
     assert(removeDups(["a", "b", "cde", "fg"]) == ["a", "b", "cde", "fg"]);

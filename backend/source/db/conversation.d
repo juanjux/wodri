@@ -20,7 +20,8 @@ import vibe.db.mongo.mongo;
  * From removes variants of "Re:"/"RE:"/"re:" in the subject
  */
 auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
-private string clearSubject(string subject)
+
+private string clearSubject(in string subject)
 {
     return replaceAll!(x => "")(subject, SUBJECT_CLEAN_REGEX);
 }
@@ -45,15 +46,15 @@ final class Conversation
     string cleanSubject;
     private TagContainer m_tags;
 
-    bool     hasTag(string tag)     const { return m_tags.has(tag);  }
-    bool     hasTags(string[] tags) const { return m_tags.has(tags); }
-    void     addTag(string tag)           { m_tags.add(tag);         }
-    void     removeTag(string tag)        { m_tags.remove(tag);      }
+    bool     hasTag(in string tag) const { return m_tags.has(tag);  }
+    bool     hasTags(in string[] tags) const { return m_tags.has(tags); }
+    void     addTag(in string tag)           { m_tags.add(tag);         }
+    void     removeTag(in string tag)        { m_tags.remove(tag);      }
     string[] tagsArray()            const { return m_tags.array;     }
     uint     numTags()              const { return m_tags.length;    }
 
 
-    bool hasLink(string messageId, string emailDbId)
+    bool hasLink(in string messageId, in string emailDbId)
     {
         foreach(ref link; this.links)
             if (link.messageId == messageId && link.emailDbId == emailDbId)
@@ -64,7 +65,7 @@ final class Conversation
 
     /** Adds a new link (email in the thread) to the conversation */
     // FIXME: update this.lastDate
-    void addLink(string messageId, string emailDbId="", bool deleted=false)
+    void addLink(in string messageId, in string emailDbId="", in bool deleted=false)
     {
         assert(messageId.length);
         if (!messageId.length)
@@ -76,6 +77,8 @@ final class Conversation
 
 
     /** Return only the links that are in the DB */
+    // FIXME: the result is changed on the Api, see workarounds (changeLink() 
+    // or something like that)
     MessageLink*[] receivedLinks()
     {
         MessageLink*[] res;
@@ -88,10 +91,10 @@ final class Conversation
     }
 
 
-    // FIXME: ugly copy of the entire links list, I probably should use some container
+    // FIXME: naive copy of the entire links list, I probably should use some container
     // with fast removal or this could have problems with threads with hundreds of messages
     // FIXME: update this.lastDate
-    void removeLink(string emailDbId)
+    void removeLink(in string emailDbId)
     {
         assert(emailDbId.length);
         enforce(emailDbId.length);
@@ -120,7 +123,8 @@ final class Conversation
 
 
     /** Update the lastDate field if the argument is newer*/
-    private void updateLastDate(string newIsoDate)
+    private void updateLastDate(in string newIsoDate)
+    nothrow
     {
         if (!this.lastDate.length || this.lastDate < newIsoDate)
             this.lastDate = newIsoDate;
@@ -130,7 +134,7 @@ final class Conversation
     private string toJson()
     {
         auto linksApp = appender!string;
-        foreach(link; this.links)
+        foreach(const ref link; this.links)
             linksApp.put(format(`{"message-id": "%s",` ~
                                 `"emailId": "%s",` ~
                                 `"deleted": %s},`,
@@ -157,10 +161,9 @@ final class Conversation
     // FIXME: error control
     void store()
     {
-        auto bson = parseJsonString(this.toJson);
         collection("conversation").update(
                 ["_id": this.dbId], 
-                bson,
+                parseJsonString(this.toJson),
                 UpdateFlags.Upsert
         );
     }
@@ -179,10 +182,10 @@ final class Conversation
 
 
     /** Returns null if no Conversation with those references was found. */
-    static Conversation get(string id)
+    static Conversation get(in string id)
     {
-        auto convDoc = collection("conversation").findOne(["_id": id]);
-        return convDoc.isNull ? null : Conversation.conversationDocToObject(convDoc);
+        immutable convDoc = collection("conversation").findOne(["_id": id]);
+        return convDoc.isNull ? null : Conversation.docToObject(convDoc);
     }
 
 
@@ -190,8 +193,9 @@ final class Conversation
      * Return the first Conversation that has ANY of the references contained in its
      * links. Returns null if no Conversation with those references was found.
      */
-    static Conversation getByReferences(string userId, const string[] references,
-                                        Flag!"WithDeleted" withDeleted = No.WithDeleted)
+    static Conversation getByReferences(in string userId, 
+                                        in string[] references,
+                                        in Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
         string[] reversed = references.dup;
         reverse(reversed);
@@ -202,14 +206,15 @@ final class Conversation
             jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
         jsonApp.put("}");
 
-        auto bson = parseJsonString(jsonApp.data);
-        auto convDoc = collection("conversation").findOne(bson);
-        return conversationDocToObject(convDoc);
+        immutable convDoc = collection("conversation").findOne(
+                parseJsonString(jsonApp.data)
+        );
+        return docToObject(convDoc);
     }
 
     
-    static Conversation getByEmailId(string emailId, 
-                                     Flag!"WithDeleted" withDeleted = No.WithDeleted)
+    static Conversation getByEmailId(in string emailId, 
+                                     in Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
         Appender!string jsonApp;
         jsonApp.put(format(`{"links.emailId": {"$in": %s},`, [emailId]));
@@ -217,82 +222,77 @@ final class Conversation
             jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
         jsonApp.put("}");
 
-        auto bson    = parseJsonString(jsonApp.data);
-        auto convDoc = collection("conversation").findOne(bson);
-        auto res     = conversationDocToObject(convDoc);
-        return res;
+        immutable convDoc = collection("conversation").findOne(parseJsonString(jsonApp.data));
+        return docToObject(convDoc);
     }
 
 
-    static Conversation[] getByTag(string tagName,
-                                   string userId,
-                                   uint limit=0, 
-                                   uint page=0,
-                                   Flag!"WithDeleted" withDeleted = No.WithDeleted)
+    static Conversation[] getByTag(in string tagName,
+                                   in string userId,
+                                   in uint limit=0, 
+                                   in uint page=0,
+                                   in Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
-        Conversation[] ret;
-
         Appender!string jsonApp;
         jsonApp.put(format(`{"tags": {"$in": [%s]},`, Json(tagName).toString));
-
         if (!withDeleted)
             jsonApp.put(`"tags":{"$nin":["deleted"]},`);
-
         jsonApp.put(format(`"userId": %s}`, Json(userId).toString));
 
-        auto bson   = parseJsonString(jsonApp.data);
         auto cursor = collection("conversation").find(
-                bson,
+                parseJsonString(jsonApp.data),
                 Bson(null),
                 QueryFlags.None,
                 page*limit // skip
         ).sort(["lastDate": -1]);
         cursor.limit(limit);
 
+        Conversation[] ret;
         foreach(ref doc; cursor)
         {
             if (!doc.isNull)
-                    ret ~= Conversation.conversationDocToObject(doc);
+                    ret ~= Conversation.docToObject(doc);
         }
         return ret;
     }
 
 
-    version(unittest)
-    private static void addTagDb(string dbId, string tag)
+    version(unittest) // support functions for testing
     {
-        assert(dbId.length);
-        assert(tag.length);
+        private static void addTagDb(in string dbId, in string tag)
+        {
+            assert(dbId.length);
+            assert(tag.length);
 
-        auto json = format(`{"$push":{"tags":"%s"}}`, tag);
-        auto bson = parseJsonString(json);
-        collection("conversation").update(["_id": dbId], bson);
-    }
+            auto json = format(`{"$push":{"tags":"%s"}}`, tag);
+            auto bson = parseJsonString(json);
+            collection("conversation").update(["_id": dbId], bson);
+        }
 
-    version(unittest)
-    private static void removeTagDb(string dbId, string tag)
-    {
-        assert(dbId.length);
-        assert(tag.length);
+        private static void removeTagDb(in string dbId, in string tag)
+        {
+            assert(dbId.length);
+            assert(tag.length);
 
-        auto json = format(`{"$pull":{"tags":"%s"}}`, tag);
-        auto bson = parseJsonString(json);
-        collection("conversation").update(["_id": dbId], bson);
+            auto json = format(`{"$pull":{"tags":"%s"}}`, tag);
+            auto bson = parseJsonString(json);
+            collection("conversation").update(["_id": dbId], bson);
+        }
     }
 
     /**
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    static Conversation upsert(Email email,
-                               const string[] tagsToAdd, 
-                               const string[] tagsToRemove)
+    static Conversation upsert(in Email email,
+                               in string[] tagsToAdd, 
+                               in string[] tagsToRemove)
     {
         assert(email.userId.length);
         assert(email.dbId.length);
 
-        const references = email.getHeader("references").addresses;
-        const messageId  = email.messageId;
+        const references     = email.getHeader("references").addresses;
+        immutable messageId  = email.messageId;
 
         auto conv = Conversation.getByReferences(email.userId, references ~ messageId);
         if (conv is null)
@@ -344,10 +344,13 @@ final class Conversation
     }
 
 
-    static private Conversation conversationDocToObject(const ref Bson convDoc)
+    static private Conversation docToObject(const ref Bson convDoc)
     {
+
         if (convDoc.isNull)
             return null;
+
+        assert(!convDoc.links.isNull);
 
         auto ret         = new Conversation();
         ret.dbId         = bsonStr(convDoc._id);
@@ -358,18 +361,17 @@ final class Conversation
         foreach(tag; bsonStrArray(convDoc.tags))
             ret.addTag(tag);
 
-        assert(!convDoc.links.isNull);
         foreach(link; convDoc.links)
         {
-            auto emailId = bsonStr(link["emailId"]);
+            immutable emailId = bsonStr(link["emailId"]);
             ret.addLink(bsonStr(link["message-id"]), emailId, bsonBool(link["deleted"]));
 
             // FIXME: instead of reading ALL the email docs to get the attachments, store
             // a list of attach filenames inside the Conversation document=>link
             if (emailId.length)
             {
-                auto emailSummary = Email.getSummary(emailId);
-                foreach(attach; emailSummary.attachFileNames)
+                const emailSummary = Email.getSummary(emailId);
+                foreach(const ref attach; emailSummary.attachFileNames)
                 {
                     if (countUntil(ret.attachFileNames, attach) == -1)
                         ret.attachFileNames ~= attach;
@@ -381,7 +383,7 @@ final class Conversation
 
 
     // Find any conversation with this email and update the links.[email].deleted field
-    static string setEmailDeleted(string dbId, bool setDel)
+    static string setEmailDeleted(in string dbId, in bool setDel)
     {
         auto conv = Conversation.getByEmailId(dbId);
         if (conv is null)
@@ -414,7 +416,7 @@ final class Conversation
 // XXX unittest
 bool isConversationOwnedBy(string convId, string userName)
 {
-    auto userId = User.getIdFromLoginName(userName);
+    immutable userId = User.getIdFromLoginName(userName);
     if (!userId.length)
         return false;
 
@@ -439,9 +441,9 @@ version(db_usetestdb)
     import db.test_support;
     import db.user;
 
-    unittest // Conversation.get/conversationDocToObject
+    unittest // Conversation.get/docToObject
     {
-        writeln("Testing Conversation.get/conversationDocToObject");
+        writeln("Testing Conversation.get/docToObject");
         recreateTestDb();
 
         auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
@@ -779,7 +781,8 @@ version(db_usetestdb)
                            getConfig().attachmentStore);
         dbEmail = new Email(inEmail);
         auto testMsgId = "testreference@blabla.testdomain.com";
-        inEmail.headers["message-id"].addresses[0] = testMsgId;
+        inEmail.removeHeader("message-id");
+        inEmail.addHeader("Message-ID: " ~ testMsgId);
         dbEmail.messageId = testMsgId;
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");

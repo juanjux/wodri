@@ -41,9 +41,9 @@ struct ContentData
 }
 
 
-final class MIMEPart
+private struct MIMEPart
 {
-    MIMEPart parent;
+    MIMEPart *parent = null;
     MIMEPart[] subparts;
     ContentData ctype;
     ContentData disposition;
@@ -73,6 +73,8 @@ struct HeaderValue
 {
     string rawValue;
     string[] addresses;
+    // FIXME: postblit constructor copying both values (cant do now
+    // because of DMD 2.0.66 bug)
 }
 
 
@@ -81,7 +83,7 @@ struct HeaderValue
  * RFC 2822 specifies that headers are case insensitive, but better
  * to be safe than sorry
  */
-private pure string capitalizeHeader(string name)
+private pure string capitalizeHeader(in string name)
 {
     string res = toLower(name);
     switch(name)
@@ -91,7 +93,7 @@ private pure string capitalizeHeader(string name)
         default:
     }
 
-    const tokens = split(res, "-");
+    immutable tokens = split(res, "-");
     string newres;
     foreach(idx, ref tok; tokens)
     {
@@ -109,20 +111,25 @@ private pure string capitalizeHeader(string name)
 
 interface IncomingEmail
 {
-    void loadFromFile(string emailPath, string attachStore, string rawEmailStore = "");
-    void loadFromFile(File emailFile,   string attachStore, string rawEmailStore = "");
+    void loadFromFile(in string emailPath,
+                      in string attachStore,
+                      in string rawEmailStore = "");
+    void loadFromFile(File emailFile,
+                      in string attachStore,
+                      in string rawEmailStore = "");
 
     @property Flag!"IsValidEmail" isValid() const;
-    @property ref DictionaryList!(HeaderValue, false) headers();
+    @property ref const(DictionaryList!(HeaderValue, false)) headers() const;
     @property ref const(DateTime) date() const;
     @property const(Attachment[]) attachments() const;
     @property string              rawEmailPath() const;
+    // XXX ref const?
     @property const(MIMEPart[])   textualParts() const;
 
-    const(HeaderValue) getHeader(string name) const;
-    void               removeHeader(string name); // removes ALL even if repeated
-    void               addHeader(string rawHeader);
-    bool               hasHeader(string name) const;
+    const(HeaderValue) getHeader(in string name) const;
+    void               removeHeader(in string name); // removes ALL even if repeated
+    void               addHeader(in string rawHeader);
+    bool               hasHeader(in string name) const;
     string             headersToString();
 }
 
@@ -143,12 +150,6 @@ final class IncomingEmailImpl : IncomingEmail
         package bool generatedMessageId = false;
 
 
-    this()
-    {
-        this.rootPart = new MIMEPart();
-    }
-
-
     override @property Flag!"IsValidEmail" isValid() const
     {
         return ((getHeader("to").addresses.length  ||
@@ -157,7 +158,10 @@ final class IncomingEmailImpl : IncomingEmail
                  getHeader("delivered-to").addresses.length)) ? Yes.IsValidEmail
                                                               : No.IsValidEmail;
     }
-    override @property ref DictionaryList!(HeaderValue, false) headers() { return m_headers; }
+    override @property ref const(DictionaryList!(HeaderValue, false)) headers() const
+    {
+        return m_headers;
+    }
     override @property ref const(DateTime) date()         const { return m_date; }
     override @property const(Attachment[]) attachments()  const { return m_attachments; }
     override @property string              rawEmailPath() const { return m_rawEmailPath; }
@@ -168,38 +172,42 @@ final class IncomingEmailImpl : IncomingEmail
         Return the header if it exists. If not, returns an empty HeaderValue.
         Useful when you want a default empty value.
     */
-    override const(HeaderValue) getHeader(string name) const
+    override const(HeaderValue) getHeader(in string name) const
     {
         return hasHeader(name)? m_headers[name]: HeaderValue("", []);
     }
 
 
-    override void removeHeader(string name)
+    override void removeHeader(in string name)
     {
         m_headers.removeAll(name);
     }
 
 
-    override bool hasHeader(string name) const
+    override bool hasHeader(in string name) const
     {
         return (name in m_headers) !is null;
     }
 
 
-    override void loadFromFile(string emailPath, string attachStore, string rawEmailStore="")
+    override void loadFromFile(in string emailPath,
+                               in string attachStore,
+                               in string rawEmailStore="")
     {
         loadFromFile(File(emailPath), attachStore, rawEmailStore);
     }
 
-    override void loadFromFile(File emailFile, string attachStore, string rawEmailStore = "")
+    override void loadFromFile(File emailFile,
+                               in string attachStore,
+                               in string rawEmailStore = "")
     {
         Appender!string stdinLines;
         Appender!string partialBuffer;
         string currentLine;
 
-        bool inputIsStdInput = (rawEmailStore.length &&
-                                among(emailFile,
-                                std.stdio.stdin, std.stdio.stderr));
+        immutable bool inputIsStdInput = (rawEmailStore.length &&
+                                          among(emailFile,
+                                          std.stdio.stdin, std.stdio.stderr));
 
         // === Header ===
         currentLine = emailFile.readln();
@@ -236,7 +244,7 @@ final class IncomingEmailImpl : IncomingEmail
                 // Body mark found (line with only a newline character)
 
                 // load the email content info data from the headers into rootPart
-                getRootContentInfo(this.rootPart);
+                getRootContentInfo();
                 partialBuffer = appender!string;
                 break;
             }
@@ -296,15 +304,15 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    override void addHeader(string raw)
+    override void addHeader(in string raw)
     {
         immutable idxSeparator = countUntil(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
             return; // Not header, probably mbox indicator or broken header
 
         HeaderValue value;
-        string name     = raw[0..idxSeparator];
-        string valueStr = decodeEncodedWord(raw[idxSeparator+1..$]);
+        immutable string name     = raw[0..idxSeparator];
+        immutable string valueStr = decodeEncodedWord(raw[idxSeparator+1..$]);
 
         if (valueStr.endsWith("\r\n"))
             value.rawValue = valueStr[0..$-2];
@@ -340,12 +348,12 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    private void parseDate(string strDate)
+    private void parseDate(in string strDate)
     {
         // Default to current time so we've some date if the format is broken
         DateTime ldate = to!DateTime(Clock.currTime);
         // split by newlines removing empty tokens
-        auto tokDate   = strip(strDate).split(' ').filter!(a => !a.empty).array;
+        immutable string[] tokDate = strip(strDate).split(' ').filter!(a => !a.empty).array;
 
         if (strDate != "NOW" && tokDate.length)
         {
@@ -361,20 +369,21 @@ final class IncomingEmailImpl : IncomingEmail
                         ++posAdjust;
                     // else like: 4 Jan 2005 07:04:19 -0000
 
-                    auto month     = to!int(countUntil(MONTH_CODES, tokDate[1+posAdjust])+1);
-                    auto year      = to!int(tokDate[2+posAdjust]);
-                    auto day       = to!int(tokDate[0+posAdjust]);
-                    auto hmsTokens = tokDate[3+posAdjust].split(":");
-                    auto hour      = to!int(hmsTokens[0]);
-                    auto minute    = to!int(hmsTokens[1]);
-                    int second     = hmsTokens.length > 2? to!int(hmsTokens[2]):0;
-                    string tz      = tokDate[4+posAdjust];
+                    immutable int month = to!int(countUntil(MONTH_CODES, tokDate[1+posAdjust])+1);
+                    immutable int year  = to!int(tokDate[2+posAdjust]);
+                    immutable int day   = to!int(tokDate[0+posAdjust]);
+
+                    immutable string[] hmsTokens = tokDate[3+posAdjust].split(":");
+                    immutable int hour   = to!int(hmsTokens[0]);
+                    immutable int minute = to!int(hmsTokens[1]);
+                    immutable int second = hmsTokens.length > 2 ? to!int(hmsTokens[2]) : 0;
+                    immutable string tz  = tokDate[4+posAdjust];
                     ldate = DateTime(Date(year, month, day), TimeOfDay(hour, minute, second));
 
                     // The date is saved on UTC, so we add/substract the TZ
                     if (tz.length == 5 && tz[1..$] != "0000")
                     {
-                        int multiplier = tz[0] == '+'? -1: 1;
+                        immutable int multiplier = tz[0] == '+'? -1: 1;
                         ldate += dur!"hours"(to!int(tz[1..3])*multiplier);
                         ldate += dur!"minutes"(to!int(tz[3..5])*multiplier);
                     }
@@ -386,14 +395,15 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    private void parseParts(string[] lines, MIMEPart parent, string attachStore)
+    // Note: modified MIMEPart (parent) to add itself as son
+    private void parseParts(in string[] lines, ref MIMEPart parent, in string attachStore)
     {
-        int startIndex = -1;
-        string boundaryPart = format("--%s", parent.ctype.fields["boundary"]);
-        string boundaryEnd  = format("%s--", boundaryPart);
+        immutable boundaryPart = format("--%s", parent.ctype.fields["boundary"]);
+        immutable boundaryEnd  = format("%s--", boundaryPart);
 
         // Find the starting boundary
-        foreach (int i, ref string line; lines)
+        int startIndex = -1;
+        foreach (int i, const ref string line; lines)
         {
             if (strip(line) == boundaryPart)
             {
@@ -412,7 +422,7 @@ final class IncomingEmailImpl : IncomingEmail
             // Find the next boundary
             foreach(int j, string bline; lines[startIndex..$])
             {
-                auto stripBline = strip(bline);
+                immutable stripBline = strip(bline);
                 if (stripBline == boundaryPart)
                 {
                     // start of anidated part
@@ -431,13 +441,13 @@ final class IncomingEmailImpl : IncomingEmail
             if (endIndex == -1)
                 return;
 
-            MIMEPart thisPart = new MIMEPart();
             // parsePartHeaders updates thisPart by reference and returns the real content
+            MIMEPart thisPart;
             // start index
-            int contentStart = startIndex + parsePartHeaders(thisPart,
-                                                             lines[startIndex..endIndex]);
+            int contentStart = startIndex +
+                               parsePartHeaders(thisPart, lines[startIndex..endIndex]);
             parent.subparts ~= thisPart;
-            thisPart.parent  = parent;
+            thisPart.parent  = &parent;
 
             if (thisPart.ctype.name.lowStartsWith("multipart"))
             {
@@ -468,7 +478,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    private void setTextPart(MIMEPart part, string text)
+    private void setTextPart(ref MIMEPart part, in string text)
     {
         if ("charset" !in part.ctype.fields)
             part.ctype.fields["charset"] = "latin1";
@@ -507,7 +517,10 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    private void setAttachmentPart(MIMEPart part, string[] lines, string attachStore)
+    // Modifies part
+    private void setAttachmentPart(
+            ref MIMEPart part, in string[] lines, in string attachStore
+    )
     {
         immutable(ubyte)[] attContent;
         version(unittest) bool wasEncoded = false;
@@ -522,11 +535,10 @@ final class IncomingEmailImpl : IncomingEmail
             attContent = cast(immutable(ubyte)[]) join(lines, this.lineSep);
 
         string origFileName = part.disposition.fields.get("filename", "");
-
-        if (origFileName.length == 0) // wild shot, but sometimes it is like that
+        if (!origFileName.length) // wild shot, but sometimes it is "name" instead
             origFileName = part.ctype.fields.get("name", "");
 
-        auto attachFullPath = randomFileName(attachStore, origFileName.extension);
+        immutable string attachFullPath = randomFileName(attachStore, origFileName.extension);
         File(attachFullPath, "w").rawWrite(attContent);
 
         Attachment att;
@@ -548,19 +560,19 @@ final class IncomingEmailImpl : IncomingEmail
 
 
     // Returns the start index of the real content after the part headers
-    private int parsePartHeaders(MIMEPart part, string[] lines)
+    private int parsePartHeaders(ref MIMEPart part, in string[] lines)
     {
         void addPartHeader(string text)
         {
-            auto idxSeparator = countUntil(text, ":");
+            immutable long idxSeparator = countUntil(text, ":");
             if (idxSeparator == -1 || (idxSeparator+1 > text.length))
                 // Some email generators (or idiots with a script that got a job at
                 // Yahoo!) dont put a CRLF after the part header in the text/plain part
                 // but something like "----------"
                 return;
 
-            string name  = lowStrip(text[0..idxSeparator]);
-            string value = text[idxSeparator+1..$];
+            immutable string name  = lowStrip(text[0..idxSeparator]);
+            immutable string value = text[idxSeparator+1..$];
 
             switch(name)
             {
@@ -613,7 +625,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    private void parseContentHeader(ref ContentData contentData, string headerText)
+    private void parseContentHeader(ref ContentData contentData, in string headerText)
     {
         if (headerText.length == 0)
             return;
@@ -630,13 +642,13 @@ final class IncomingEmailImpl : IncomingEmail
         {
             foreach(string param; valueTokens[1..$])
             {
-                param        = strip(removechars(param, "\""));
-                auto eqIndex = countUntil(param, "=");
+                param = strip(removechars(param, "\""));
+                immutable long eqIndex = countUntil(param, "=");
                 if (eqIndex == -1)
                     continue;
 
-                auto key   = lowStrip(param[0..eqIndex]);
-                auto value = strip(param[eqIndex+1..$]);
+                immutable string key   = lowStrip(param[0..eqIndex]);
+                immutable string value = strip(param[eqIndex+1..$]);
                 contentData.fields[key] = value;
             }
         }
@@ -644,24 +656,27 @@ final class IncomingEmailImpl : IncomingEmail
 
 
     /** Returns loads the content info obtained from the email headers into "part" */
-    private void getRootContentInfo(MIMEPart part)
+    private void getRootContentInfo()
     {
         if (hasHeader("content-type"))
-            parseContentHeader(part.ctype, headers["content-type"].rawValue);
+            parseContentHeader(this.rootPart.ctype, headers["content-type"].rawValue);
 
         if (hasHeader("content-disposition"))
-            parseContentHeader(part.disposition, headers["content-disposition"].rawValue);
+            parseContentHeader(
+                    this.rootPart.disposition, headers["content-disposition"].rawValue
+            );
 
         if (hasHeader("content-transfer-encoding"))
-            part.cTransferEncoding = lowStrip(
+            this.rootPart.cTransferEncoding = lowStrip(
                                        removechars(
-                                         headers["content-transfer-encoding"].rawValue,
-                                         "\""
-                                     ));
+                                             headers["content-transfer-encoding"].rawValue,
+                                             "\""
+            ));
 
         // set a default charset if missing
-        if (!part.ctype.name.startsWith("multipart") && "charset" !in part.ctype.fields)
-            part.ctype.fields["charset"] = "latin1";
+        if (!this.rootPart.ctype.name.startsWith("multipart") &&
+            "charset" !in this.rootPart.ctype.fields)
+            this.rootPart.ctype.fields["charset"] = "latin1";
     }
 }
 
@@ -715,7 +730,7 @@ final class IncomingEmailImpl : IncomingEmail
 
 version(unittest)
 {
-    void visitParts(MIMEPart part)
+    void visitParts(const ref MIMEPart part)
     {
         writeln("===========");
         writeln("CType Name: "          , part.ctype.name);
@@ -724,7 +739,7 @@ version(unittest)
         writeln("CDisposition Fields: " , part.disposition.fields);
         writeln("CID: "                 , part.contentId);
         writeln("Subparts: "            , part.subparts.length);
-        writeln("Object hash: "         , part.toHash());
+        writeln("Struct address: "      , &part);
         writeln("===========");
 
         foreach(subpart; part.subparts)
@@ -895,14 +910,14 @@ unittest
             writeln(part.ctype.name, ":", &part);
 
         assert("date" in email.headers);
-        email.headers.removeAll("references");
+        email.removeHeader("references");
         email.addHeader("References: <30140609205429.01E5AC000035B@1xj.tpn.terra.com>\r\n");
         assert(email.headers["references"].addresses.length == 1, "must have one reference");
 
-        email.headers.removeAll("references");
+        email.removeHeader("references");
         email.addHeader("References: <20140609205429.01E5AC000035B@1xj.tpn.terra.com> <otracosa@algo.cosa.com>");
         assert(email.headers["references"].addresses.length == 2, "must have two referneces");
-        //auto f2 = File("/home/juanjux/webmail/backend/test/dates.txt");
+        //auto f2 = File("/home/juanjux/wodri/backend/test/dates.txt");
         //while(!f2.eof)
         //{
             //auto line = strip(f2.readln());

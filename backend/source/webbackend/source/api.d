@@ -183,9 +183,7 @@ override:
         void deleteEmail(string userName, string id, int purge=0)
         {
             if (!id.isEmailOwnedBy(userName))
-            {
                 return;
-            }
 
             if (purge)
                 Email.removeById(id);

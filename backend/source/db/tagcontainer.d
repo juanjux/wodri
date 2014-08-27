@@ -7,13 +7,17 @@ struct TagContainer
 {
     private bool[string] m_tags;
 
-    bool has(string tag) const { return m_tags.get(toLower(tag), false); } 
-    bool has(string[] tags)  const
+    bool has(in string tag) const 
+    { 
+        return m_tags.get(toLower(tag), false); 
+    }
+
+    bool has(in string[] tags) const
     {
         bool hasAll = true;
-        foreach(tag; tags) 
+        foreach(tag; tags)
         {
-            if (!has(tag)) 
+            if (!has(tag))
             {
                 hasAll = false;
                 break;
@@ -21,15 +25,33 @@ struct TagContainer
         }
         return hasAll;
     }
-    bool opIndex(string name) const { return has(name); } 
 
-    void add(string tag) { m_tags[toLower(tag)] = true; }
-    void add(const string[] tags) { foreach(tag; tags) add(tag); }
+    bool opIndex(in string name) const 
+    { 
+        return has(name); 
+    }
 
-    void remove(string tag) { m_tags[toLower(tag)] = false; }
-    void remove(const string[] tags) { foreach(tag; tags) remove(tag); }
+    void add(in string tag) 
+    { 
+        m_tags[toLower(tag)] = true; 
+    }
 
-    const string[] array() const
+    void add(in string[] tags) 
+    { 
+        foreach(tag; tags) add(tag); 
+    }
+
+    void remove(in string tag) 
+    { 
+        m_tags[toLower(tag)] = false; 
+    }
+
+    void remove(in string[] tags) 
+    { 
+        foreach(tag; tags) remove(tag); 
+    }
+
+    string[] array() const
     {
         string[] res;
         foreach(key, value; m_tags)
@@ -42,7 +64,7 @@ struct TagContainer
     {
         uint res = 0;
         foreach(key, value; m_tags)
-            if (m_tags[key]) res++;
+            if (m_tags[key]) ++res;
         return res;
     }
 }

@@ -23,15 +23,15 @@ else version = not_maintest;
 
 
 // XXX test when I've the full cicle tests
-string saveRejectedEmail(Email email)
+string saveRejectedEmail(in Email email)
 {
-    const config = getConfig();
-    auto failedEmailDir = buildPath(config.mainDir, "backend", "log", "failed_emails");
+    immutable config = getConfig();
+    immutable failedEmailDir = buildPath(config.mainDir, "backend", "log", "failed_emails");
     if (!failedEmailDir.exists)
         mkdir(failedEmailDir);
 
     // Save a copy of the denied email in failedEmailPath and log the event
-    auto failedEmailPath = buildPath(failedEmailDir, baseName(email.rawEmailPath));
+    immutable failedEmailPath = buildPath(failedEmailDir, baseName(email.rawEmailPath));
     copy(email.rawEmailPath, failedEmailPath);
     remove(email.rawEmailPath);
     return failedEmailPath;
@@ -39,12 +39,12 @@ string saveRejectedEmail(Email email)
 
 
 // XXX test when I've the full cicle tests
-void saveAndLogRejectedEmail(Email email,
-                             Flag!"IsValidEmail" isValid,
-                             bool tooBig,
-                             const string[] localReceivers)
+void saveAndLogRejectedEmail(in Email email,
+                             in Flag!"IsValidEmail" isValid,
+                             in bool tooBig,
+                             in string[] localReceivers)
 {
-    auto failedEmailPath = saveRejectedEmail(email);
+    immutable failedEmailPath = saveRejectedEmail(email);
     auto f = File(failedEmailPath, "a");
     f.writeln("\n\n===NOT DELIVERY BECAUSE OF===",
                     isValid == !isValid? "\nInvalid headers":"",
@@ -61,38 +61,39 @@ void saveAndLogRejectedEmail(Email email,
 // XXX test when I've the integration tests
 /** Store a new email in DB and upsert a conversation every local receiver
  */
-void processEmailForAddress(string destination, Email email)
+void processEmailForAddress(in string destination, Email email)
 {
     email.setOwner(destination);
     email.store(Yes.ForceInsertNew);
-    bool[string] tags = ["inbox": true];
+    string[] tagsToAdd = ["inbox"];
+    string[] tagsToRemove;
 
     if (email.hasHeader("x-spam-setspamtag"))
-        tags["spam"] = true;
+        tagsToAdd ~= "spam";
 
     // Apply the user-defined filters (if any)
     const userFilters = UserFilter.getByAddress(destination);
     foreach(filter; userFilters)
-        filter.apply(email, tags);
+        filter.apply(email, tagsToAdd, tagsToRemove);
 
-    Conversation.upsert(email, tags, []);
+    Conversation.upsert(email, tagsToAdd, tagsToRemove);
 }
 
 // XXX test when I've the full cycle tests
 version(not_maintest)
 int main()
 {
-    const config = getConfig();
+    immutable config = getConfig();
     setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"),
                LogLevel.info);
 
     auto inEmail = new IncomingEmailImpl();
     inEmail.loadFromFile(std.stdio.stdin, config.attachmentStore, config.rawEmailStore);
 
-    auto dbEmail         = new Email(inEmail);
-    bool tooBig          = (dbEmail.size() > config.incomingMessageLimit);
-    auto isValid         = dbEmail.isValid();
-    auto sortedReceivers = dbEmail.localReceivers();
+    auto dbEmail          = new Email(inEmail);
+    immutable bool tooBig = (dbEmail.size() > config.incomingMessageLimit);
+    immutable isValid     = dbEmail.isValid();
+    auto sortedReceivers  = dbEmail.localReceivers();
     sort(sortedReceivers);
     const localReceivers = uniq(sortedReceivers).array;
 
@@ -104,8 +105,8 @@ int main()
                 processEmailForAddress(destination, dbEmail);
         } catch (Exception e)
         {
-            string exceptionReport = "Email failed to save on DB because of exception:\n" ~
-                                     e.msg;
+            immutable exceptionReport = "Email failed to save on DB because of exception:\n" ~
+                                         e.msg;
             auto f = File(saveRejectedEmail(dbEmail), "a");
             f.writeln(exceptionReport);
             logError(exceptionReport);

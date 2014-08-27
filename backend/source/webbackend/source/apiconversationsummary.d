@@ -25,7 +25,7 @@ final class ApiConversationSummary
     string[]       attachFileNames;
     const string[] tags;
 
-    this (const Conversation conv, bool withDeleted = false)
+    this (in Conversation conv, in bool withDeleted = false)
     {
         this.dbId     = conv.dbId;
         this.lastDate = conv.lastDate;
@@ -40,7 +40,7 @@ final class ApiConversationSummary
             this.numMessages += 1;
             if (link.emailDbId.length)
             {
-                auto emailSummary  = Email.getSummary(link.emailDbId);
+                const emailSummary = Email.getSummary(link.emailDbId);
                 this.shortAuthors ~= match(emailSummary.from, EMAIL_REGEX)
                                     .pre.translate(['<': ' ', '>': ' ']).strip();
 

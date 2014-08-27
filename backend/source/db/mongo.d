@@ -25,7 +25,10 @@ version(search_test)      version = db_usebigdb;
 
 private MongoDatabase g_mongoDB;
 
-T bsonSafe(T)(Bson bson) { return bson.isNull ? T.init : deserializeBson!T(bson); }
+T bsonSafe(T)(const Bson bson) 
+{ 
+    return bson.isNull ? T.init : deserializeBson!T(bson); 
+}
 
 alias bsonStr          = deserializeBson!string;
 alias bsonStrSafe      = bsonSafe!string;
@@ -63,27 +66,29 @@ shared static this()
     auto mandatoryKeys = ["host", "name",  "password", "port", "testname", "type", "user"];
     sort(mandatoryKeys);
 
-    auto dbData = parseJSON(readText("/etc/webmail/dbconnect.json"));
-    auto sortedKeys = dbData.object.keys.dup;
+    immutable dbData = parseJSON(readText("/etc/webmail/dbconnect.json"));
+    string[] sortedKeys = dbData.object.keys.dup;
     sort(sortedKeys);
 
     const keysDiff = setDifference(sortedKeys, mandatoryKeys).array;
     enforce(!keysDiff.length, "Mandatory keys missing on dbconnect.json config file: %s"
                               ~ to!string(keysDiff));
     enforce(dbData["type"].str == "mongodb", "Only MongoDB is currently supported");
-    string connectStr = format("mongodb://%s:%s@%s:%s/%s?safe=true",
-                               dbData["user"].str,
-                               dbData["password"].str,
-                               dbData["host"].str,
-                               dbData["port"].integer,
-                               "admin");
+    immutable connectStr = format(
+            "mongodb://%s:%s@%s:%s/%s?safe=true",
+            dbData["user"].str,
+            dbData["password"].str,
+            dbData["host"].str,
+            dbData["port"].integer,
+            "admin"
+    );
 
     version(db_usetestdb)
-        auto dbName = dbData["testname"].str;
+        immutable dbName = dbData["testname"].str;
     else version(db_usebigdb)
-        auto dbName = dbData["testname"].str~"_all"; // FIXME: add another setting
+        immutable dbName = dbData["testname"].str~"_all"; // FIXME: add another setting
     else
-        auto dbName = dbData["name"].str;
+        immutable dbName = dbData["name"].str;
 
     g_mongoDB = connectMongoDB(connectStr).getDatabase(dbName);
     ensureIndexes();

@@ -7,10 +7,9 @@ import vibe.http.server;
 import std.functional: toDelegate;
 
 
-
 bool checkAuth(string user, string password)
 {
-    auto dbUser = User.getFromLoginName(user);
+    const dbUser = User.getFromLoginName(user);
     return dbUser is null ? false
                           : testSimplePasswordHash(dbUser.loginHash,
                                                    password,
