@@ -1034,22 +1034,23 @@ final class Email
             return bsonStr(emailDoc.headers[headerName][0].rawValue);
         return "";
     }
+
+
+    // XXX return loaded Email object or null
+    static bool isOwnedBy(in string emailId, in string userName)
+    {
+        immutable userId = User.getIdFromLoginName(userName);
+        if (!userId.length)
+            return false;
+
+        immutable emailDoc = collection("email").findOne(
+                ["_id": emailId, "userId": userId], ["_id": 1], QueryFlags.None
+        );
+        return !emailDoc.isNull;
+    }
 }
 
 
-// XXX return loaded Email object or null
-// XXX unittest
-bool isEmailOwnedBy(in string emailId, in string userName)
-{
-    immutable userId = User.getIdFromLoginName(userName);
-    if (!userId.length)
-        return false;
-
-    immutable emailDoc = collection("email").findOne(
-            ["_id": emailId, "userId": userId], ["_id": 1], QueryFlags.None
-    );
-    return !emailDoc.isNull;
-}
 
 //  _    _       _ _   _            _
 // | |  | |     (_) | | |          | |
@@ -1666,6 +1667,37 @@ version(db_usetestdb)
         assert(dbEmail.textParts.length == 1);
     }
 
+    unittest // isOwnedBy
+    {
+        writeln("Testing Email.isOwnedBy");
+        recreateTestDb();
+        auto user1 = User.getFromAddress("testuser@testdatabase.com");
+        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
+        assert(user1 !is null);
+        assert(user2 !is null);
+
+        auto cursor = getEmailCursorAtPosition(0);
+        auto email1 = cursor.front;
+        assert(Email.isOwnedBy(bsonStr(email1._id), user1.loginName));
+        
+        cursor.popFront();
+        auto email2 = cursor.front;
+        assert(Email.isOwnedBy(bsonStr(email2._id), user1.loginName));
+
+        cursor.popFront();
+        auto email3 = cursor.front;
+        assert(Email.isOwnedBy(bsonStr(email3._id), user2.loginName));
+
+        cursor.popFront();
+        auto email4 = cursor.front;
+        assert(Email.isOwnedBy(bsonStr(email4._id), user2.loginName));
+
+        cursor.popFront();
+        auto email5 = cursor.front;
+        assert(Email.isOwnedBy(bsonStr(email5._id), user2.loginName));
+    }
+
+
 }
 
 version(search_test)
@@ -1673,7 +1705,7 @@ version(search_test)
     unittest  // search
     {
         writeln("Testing Email.search times");
-        // last test on my laptop: about 277 msecs for 18 results with emailsummaries loaded
+        // last test on my laptop: about 230 msecs for 18 results with emailsummaries loaded
         StopWatch sw;
         sw.start();
         auto searchRes = Email.search(["testing"]);

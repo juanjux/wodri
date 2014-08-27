@@ -141,14 +141,14 @@ final class MessageImpl : Message
 override:
         ApiEmail get(string userName, string id)
         {
-            return id.isEmailOwnedBy(userName) ? Email.getApiEmail(id)
+            return Email.isOwnedBy(id, userName) ? Email.getApiEmail(id)
                                                : null;
         }
 
 
         string getRaw(string userName, string id)
         {
-            return id.isEmailOwnedBy(userName) ? Email.getOriginal(id)
+            return Email.isOwnedBy(id, userName) ? Email.getOriginal(id)
                                                : null;
         }
 
@@ -182,7 +182,7 @@ override:
 
         void deleteEmail(string userName, string id, int purge=0)
         {
-            if (!id.isEmailOwnedBy(userName))
+            if (!Email.isOwnedBy(id, userName))
                 return;
 
             if (purge)
@@ -194,26 +194,26 @@ override:
 
         void unDeleteEmail(string userName, string id)
         {
-            if (id.isEmailOwnedBy(userName))
+            if (Email.isOwnedBy(id, userName))
                 Email.setDeleted(id, false, Yes.UpdateConversation);
         }
 
 
         string putAttachment(string userName,
-                             string _id,
+                             string id,
                              ApiAttachment attachment,
                              string base64Content)
         {
-            return _id.isEmailOwnedBy(userName)
-                ? Email.addAttachment(_id, attachment, base64Content)
+            return Email.isOwnedBy(id, userName)
+                ? Email.addAttachment(id, attachment, base64Content)
                 : "";
         }
 
 
-        void deleteAttachment(string userName, string _id, string attachmentId)
+        void deleteAttachment(string userName, string id, string attachmentId)
         {
-            if (_id.isEmailOwnedBy(userName))
-                Email.deleteAttachment(_id, attachmentId);
+            if (Email.isOwnedBy(id, userName))
+                Email.deleteAttachment(id, attachmentId);
         }
 
 }
@@ -268,7 +268,7 @@ final class ConvImpl : Conv
 override:
         ApiConversation get(string userName, string id)
         {
-            if (id.isConversationOwnedBy(userName))
+            if (Conversation.isOwnedBy(id, userName))
             {
                 auto conv = Conversation.get(id);
                 if (conv !is null)
@@ -278,12 +278,12 @@ override:
         }
 
 
-        void deleteConversation(string userName, string _id, int purge=0)
+        void deleteConversation(string userName, string id, int purge=0)
         {
-            if (!_id.isConversationOwnedBy(userName))
+            if (!Conversation.isOwnedBy(id, userName))
                 return;
 
-            auto conv = Conversation.get(_id);
+            auto conv = Conversation.get(id);
             if (conv is null)
                 return;
 
@@ -309,12 +309,12 @@ override:
         }
 
 
-        void unDeleteConversation(string userName, string _id)
+        void unDeleteConversation(string userName, string id)
         {
-            if (!_id.isConversationOwnedBy(userName))
+            if (!Conversation.isOwnedBy(id, userName))
                 return;
 
-            auto conv = Conversation.get(_id);
+            auto conv = Conversation.get(id);
             if (conv is null)
                 return;
 
@@ -332,7 +332,7 @@ override:
 
 
         /** Returns an ApiConversationSummary for every Conversation in the tag */
-        ApiConversationSummary[] getTagConversations(string _id,
+        ApiConversationSummary[] getTagConversations(string id,
                                                      string userName,
                                                      uint limit=DEFAULT_CONVERSATIONS_LIMIT,
                                                      uint page=0,
@@ -340,7 +340,7 @@ override:
         {
             ApiConversationSummary[] ret;
             auto conversations = Conversation.getByTag(
-                    _id,
+                    id,
                     User.getIdFromLoginName(userName),
                     limit,
                     page,
@@ -360,7 +360,7 @@ override:
 
         void conversationAddTag(string userName, string id, string tag)
         {
-            if (!id.isConversationOwnedBy(userName))
+            if (!Conversation.isOwnedBy(id, userName))
                 return;
 
             auto conv = Conversation.get(id);
@@ -374,7 +374,7 @@ override:
 
         void conversationRemoveTag(string userName, string id, string tag)
         {
-            if (!id.isConversationOwnedBy(userName))
+            if (!Conversation.isOwnedBy(id, userName))
                 return;
 
             auto conv = Conversation.get(id);

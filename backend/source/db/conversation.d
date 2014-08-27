@@ -77,7 +77,7 @@ final class Conversation
 
 
     /** Return only the links that are in the DB */
-    // FIXME: the result is changed on the Api, see workarounds (changeLink() 
+    // FIXME: the result is changed on the Api, see workarounds (changeLink()
     // or something like that)
     MessageLink*[] receivedLinks()
     {
@@ -162,7 +162,7 @@ final class Conversation
     void store()
     {
         collection("conversation").update(
-                ["_id": this.dbId], 
+                ["_id": this.dbId],
                 parseJsonString(this.toJson),
                 UpdateFlags.Upsert
         );
@@ -193,7 +193,7 @@ final class Conversation
      * Return the first Conversation that has ANY of the references contained in its
      * links. Returns null if no Conversation with those references was found.
      */
-    static Conversation getByReferences(in string userId, 
+    static Conversation getByReferences(in string userId,
                                         in string[] references,
                                         in Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
@@ -212,8 +212,8 @@ final class Conversation
         return docToObject(convDoc);
     }
 
-    
-    static Conversation getByEmailId(in string emailId, 
+
+    static Conversation getByEmailId(in string emailId,
                                      in Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
         Appender!string jsonApp;
@@ -229,7 +229,7 @@ final class Conversation
 
     static Conversation[] getByTag(in string tagName,
                                    in string userId,
-                                   in uint limit=0, 
+                                   in uint limit=0,
                                    in uint page=0,
                                    in Flag!"WithDeleted" withDeleted = No.WithDeleted)
     {
@@ -285,7 +285,7 @@ final class Conversation
      * and date
      */
     static Conversation upsert(in Email email,
-                               in string[] tagsToAdd, 
+                               in string[] tagsToAdd,
                                in string[] tagsToRemove)
     {
         assert(email.userId.length);
@@ -397,7 +397,7 @@ final class Conversation
             if (entry.emailDbId == dbId)
             {
                 if (entry.deleted == setDel)
-                    logWarn(format("setEmailDeleted: delete state for email (%s) in " 
+                    logWarn(format("setEmailDeleted: delete state for email (%s) in "
                                    "conversation was already %s", dbId, setDel));
                 else
                 {
@@ -409,22 +409,22 @@ final class Conversation
         }
         return conv.dbId;
     }
+
+
+    static bool isOwnedBy(string convId, string userName)
+    {
+        immutable userId = User.getIdFromLoginName(userName);
+        if (!userId.length)
+            return false;
+
+        auto convDoc = collection("conversation").findOne(["_id": convId, "userId": userId],
+                                                   ["_id": 1],
+                                                   QueryFlags.None);
+        return !convDoc.isNull;
+    }
 }
 
 
-// XXX return loaded Conversation object or null
-// XXX unittest
-bool isConversationOwnedBy(string convId, string userName)
-{
-    immutable userId = User.getIdFromLoginName(userName);
-    if (!userId.length)
-        return false;
-
-    auto convDoc = collection("conversation").findOne(["_id": convId, "userId": userId],
-                                               ["_id": 1],
-                                               QueryFlags.None);
-    return !convDoc.isNull;
-}
 
 
 //  _    _       _ _   _            _
@@ -721,7 +721,7 @@ version(db_usetestdb)
 
         void assertConversationInEmailIndex(string emailId, string convId)
         {
-            auto emailIdxDoc = 
+            auto emailIdxDoc =
                 collection("emailIndexContents").findOne(["emailDbId": emailId]);
             assert(!emailIdxDoc.isNull);
             assert(bsonStr(emailIdxDoc.convId) == convId);
@@ -903,7 +903,7 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.getByEmailId");
         recreateTestDb();
-        
+
         auto user1 = User.getFromAddress("testuser@testdatabase.com");
         auto conv = Conversation.getByReferences(user1.id,
                 ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
@@ -918,9 +918,33 @@ version(db_usetestdb)
 
     unittest // clearSubject
     {
-        writeln("Testing conversation.clearSubject");
+        writeln("Testing Conversation.clearSubject");
         assert(clearSubject("RE: polompos") == "polompos");
         assert(clearSubject("Re: cosa RE: otracosa re: mascosas") == "cosa otracosa mascosas");
         assert(clearSubject("Pok and something Re: things") == "Pok and something things");
+    }
+
+    unittest // isOwnedBy
+    {
+        writeln("Testing Conversation.isOwnedBy");
+        recreateTestDb();
+        auto user1 = User.getFromAddress("testuser@testdatabase.com");
+        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
+        assert(user1 !is null);
+        assert(user2 !is null);
+        assert(user1.id.length);
+        assert(user2.id.length);
+
+        auto conv = Conversation.getByReferences(user1.id,
+                ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
+        assert(conv !is null);
+        assert(conv.dbId.length);
+        assert(Conversation.isOwnedBy(conv.dbId, user1.loginName));
+
+        conv = Conversation.getByReferences(user2.id,
+            ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
+        assert(conv !is null);
+        assert(conv.dbId.length);
+        assert(Conversation.isOwnedBy(conv.dbId, user2.loginName));
     }
 }

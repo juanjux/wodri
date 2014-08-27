@@ -2,10 +2,10 @@ Backend-API:
     - search with auth (see below)
 
 Backend-Retriever:
-    - see why there are so many invalid emails when inserting all into DB
-    - missing tests (Email.isOwnedBy && Conversation.isOwnedBy)
-    - Email.get(id) and Email.emailDocToObject
+    - lazy: evaluate any *id parameter to see if I can make it lazy (check that it is only
+      used once inside the function).
     - add emailIndexContents.userId, add the userId discriminator to Email.search
+    - Email.get(id) and Email.emailDocToObject
     - conversation.getByTag: add "attachNames" to every link to avoid reading all the emails
       when retrieving a conversation just to get the attachment filenames 
     - general hunting of XXX and FIXMEs
