@@ -1,14 +1,20 @@
 module common.utils;
 
-import std.datetime;
-import std.path;
-import std.string;
 import std.algorithm;
-import std.range;
 import std.ascii;
-import std.random;
+import std.datetime;
 import std.file;
+import std.path;
+import std.random;
+import std.range;
+import std.regex;
+import std.string;
 import vibe.core.log;
+
+/**
+ * From removes variants of "Re:"/"RE:"/"re:" in the subject
+ */
+auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 
 T[] removeDups(T)(in T[] input)
 pure nothrow

@@ -75,8 +75,9 @@ interface Message
 interface Search
 {
     @method(HTTPMethod.POST) @path("/")
-    // XXX auth by user
+    @before!getRequestUser("_userName")
     ApiSearchResult search(
+            string _userName,
             string[] terms,
             string dateStart="",
             string dateEnd="",
@@ -223,6 +224,7 @@ final class SearchImpl : Search
 {
 override:
         ApiSearchResult search(
+                string userName,
                 string[] terms,
                 string dateStart="",
                 string dateEnd="",
@@ -234,14 +236,20 @@ override:
             ApiSearchResult ret;
             ApiConversationSummary[] convs;
 
+            immutable userId = User.getIdFromLoginName(userName);
+            if (!userId.length)
+            {
+                logWarn("Wrong user: ", userName);
+                return ret;
+            }
+
             if (limit <= 0 || page < 0)
             {
                 logWarn("Api.search: returning empty array because limit<=0 or page<0");
                 return ret;
             }
 
-            auto results = Email.search(terms, dateStart, dateEnd);
-
+            auto results = Email.search(terms, userId, dateStart, dateEnd);
             foreach(ref result; results)
             {
                 assert(result.conversation !is null);

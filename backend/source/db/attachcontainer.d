@@ -8,7 +8,7 @@ import std.typecons;
 import webbackend.apiemail: ApiAttachment;
 import vibe.data.json;
 
-class DbAttachment
+struct DbAttachment
 {
     Attachment attachment;
     alias attachment this;
@@ -79,7 +79,7 @@ struct AttachContainer
     const(DbAttachment) add(T)(const ref T attach, in string dbId="") 
     if (is(T: ApiAttachment) || is(T: Attachment))
     {
-        auto dbattach = new DbAttachment(attach);
+        auto dbattach = DbAttachment(attach);
         if (dbId.length)
             dbattach.dbId = dbId;
         this.m_attachs ~= dbattach;

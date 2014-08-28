@@ -104,3 +104,15 @@ private void ensureIndexes()
     collection("email").ensureIndex(["message-id": 1, "userId": 1, "isoDate": 1]);
     collection("emailIndexContents").ensureIndex(["emailDbId": 1]);
 }
+
+
+/** Shortcut for a common case of getting a doc with/without some fields */
+// FIXME: make the conversion of fields to map (or json string) at compile time
+Bson findOneById(in string coll, in string id, in string[] fields ...)
+{
+    uint[string] map;
+    foreach(field; fields)
+        map[field] = 1;
+
+    return collection(coll).findOne(["_id": id], map, QueryFlags.None);
+}

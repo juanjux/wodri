@@ -1,6 +1,7 @@
 module db.conversation;
 
 import core.time: TimeException;
+import common.utils;
 import db.config: getConfig;
 import db.email;
 import db.mongo;
@@ -16,10 +17,6 @@ import vibe.core.log;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
 
-/**
- * From removes variants of "Re:"/"RE:"/"re:" in the subject
- */
-auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 
 private string clearSubject(in string subject)
 {
@@ -31,6 +28,7 @@ struct MessageLink
 {
     string messageId;
     string emailDbId;
+    string[] attachNames;
     bool deleted;
 }
 
@@ -42,7 +40,6 @@ final class Conversation
     string lastDate;
 
     MessageLink[] links;
-    string[] attachFileNames;
     string cleanSubject;
     private TagContainer m_tags;
 
@@ -65,14 +62,20 @@ final class Conversation
 
     /** Adds a new link (email in the thread) to the conversation */
     // FIXME: update this.lastDate
-    void addLink(in string messageId, in string emailDbId="", in bool deleted=false)
+    void addLink(in string messageId, in string[] attachNames, in string emailDbId="",
+                 in bool deleted=false)
     {
         assert(messageId.length);
         if (!messageId.length)
-            throw new Exception("Conversation.addLink: First MessageId parameter " ~
+        {
+           throw new Exception("Conversation.addLink: First MessageId parameter " ~
                                 "must have length");
+        }
+
         if (!hasLink(messageId, emailDbId))
-            this.links ~= MessageLink(messageId, emailDbId, deleted);
+        {
+            this.links ~= MessageLink(messageId, emailDbId, attachNames.dup, deleted);
+        }
     }
 
 
@@ -137,9 +140,11 @@ final class Conversation
         foreach(const ref link; this.links)
             linksApp.put(format(`{"message-id": "%s",` ~
                                 `"emailId": "%s",` ~
+                                `"attachNames": %s,`
                                 `"deleted": %s},`,
                                 link.messageId,
                                 link.emailDbId,
+                                link.attachNames,
                                 link.deleted));
         return format(`
         {
@@ -184,7 +189,7 @@ final class Conversation
     /** Returns null if no Conversation with those references was found. */
     static Conversation get(in string id)
     {
-        immutable convDoc = collection("conversation").findOne(["_id": id]);
+        immutable convDoc = findOneById("conversation", id);
         return convDoc.isNull ? null : Conversation.docToObject(convDoc);
     }
 
@@ -203,12 +208,12 @@ final class Conversation
         jsonApp.put(format(`{"userId":"%s","links.message-id":{"$in":%s},`,
                            userId, reversed));
         if (!withDeleted)
+        {
             jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
+        }
         jsonApp.put("}");
 
-        immutable convDoc = collection("conversation").findOne(
-                parseJsonString(jsonApp.data)
-        );
+        immutable convDoc = collection("conversation").findOne(parseJsonString(jsonApp.data));
         return docToObject(convDoc);
     }
 
@@ -306,16 +311,19 @@ final class Conversation
         conv.m_tags.add(tagsToAdd);
         conv.m_tags.remove(tagsToRemove);
 
-        // add our references; addLink() only adds the new ones
+        // add the email's references: addLink() only adds the new ones
+        string[] empty;
         foreach(reference; references)
-            conv.addLink(reference, Email.messageIdToDbId(reference), email.deleted);
+        {
+            conv.addLink(reference, empty, Email.messageIdToDbId(reference), email.deleted);
+        }
 
         bool wasInConversation = false;
         if (conv.dbId.length)
         {
             // existing conversation: see if this email msgid is on the conversation links,
             // (can happen if an email referring to this one entered the system before this
-            // email); if so update the conversation with the EmailId
+            // email); if so update the link with the full data we've now
             foreach(ref entry; conv.links)
             {
                 if (entry.messageId == messageId)
@@ -323,6 +331,10 @@ final class Conversation
                     entry.emailDbId   = email.dbId;
                     entry.deleted     = email.deleted;
                     wasInConversation = true;
+                    foreach(ref attach; email.attachments.list)
+                    {
+                        entry.attachNames ~= attach.filename;
+                    }
                     break;
                 }
             }
@@ -331,7 +343,11 @@ final class Conversation
             conv.dbId = BsonObjectID.generate().toString;
 
         if (!wasInConversation)
-            conv.addLink(messageId, email.dbId, email.deleted);
+        {
+            // get the attachFileNames and add this email to the conversation
+            const emailSummary = Email.getSummary(email.dbId);
+            conv.addLink(messageId, emailSummary.attachFileNames, email.dbId, email.deleted);
+        }
 
         // update the conversation cleaned subject (last one wins)
         if (email.hasHeader("subject"))
@@ -339,7 +355,12 @@ final class Conversation
 
         conv.store();
 
-        Email.setConversationInEmailIndex(email.dbId, conv.dbId);
+        // update the emailIndexContent reverse link to the Conversation
+        // (for madz speed)
+        const indexBson = parseJsonString(
+                format(`{"$set": {"convId": "%s"}}`, conv.dbId)
+        );
+        collection("emailIndexContents").update(["emailDbId": email.dbId], indexBson);
         return conv;
     }
 
@@ -364,19 +385,8 @@ final class Conversation
         foreach(link; convDoc.links)
         {
             immutable emailId = bsonStr(link["emailId"]);
-            ret.addLink(bsonStr(link["message-id"]), emailId, bsonBool(link["deleted"]));
-
-            // FIXME: instead of reading ALL the email docs to get the attachments, store
-            // a list of attach filenames inside the Conversation document=>link
-            if (emailId.length)
-            {
-                const emailSummary = Email.getSummary(emailId);
-                foreach(const ref attach; emailSummary.attachFileNames)
-                {
-                    if (countUntil(ret.attachFileNames, attach) == -1)
-                        ret.attachFileNames ~= attach;
-                }
-            }
+            const attachNames = bsonStrArraySafe(link["attachNames"]);
+            ret.addLink(bsonStr(link["message-id"]), attachNames, emailId, bsonBool(link["deleted"]));
         }
         return ret;
     }
@@ -417,7 +427,7 @@ final class Conversation
         if (!userId.length)
             return false;
 
-        auto convDoc = collection("conversation").findOne(["_id": convId, "userId": userId],
+        immutable convDoc = collection("conversation").findOne(["_id": convId, "userId": userId],
                                                    ["_id": 1],
                                                    QueryFlags.None);
         return !convDoc.isNull;
@@ -454,7 +464,7 @@ version(db_usetestdb)
         assert(conv.hasTag("inbox"));
         assert(conv.numTags == 1);
         assert(conv.links.length == 2);
-        assert(conv.attachFileNames == ["google.png", "profilephoto.jpeg"]);
+        assert(conv.links[1].attachNames == ["google.png", "profilephoto.jpeg"]);
         assert(conv.cleanSubject == ` some subject "and quotes" and noquotes`);
         assert(conv.links[0].deleted == false);
 
@@ -465,7 +475,9 @@ version(db_usetestdb)
         assert(conv.hasTag("inbox"));
         assert(conv.numTags == 1);
         assert(conv.links.length == 3);
-        assert(!conv.attachFileNames.length);
+        assert(!conv.links[0].attachNames.length);
+        assert(!conv.links[1].attachNames.length);
+        assert(!conv.links[2].attachNames.length);
         assert(conv.cleanSubject == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
         assert(conv.links[0].deleted == false);
 
@@ -475,8 +487,8 @@ version(db_usetestdb)
         assert(conv.hasTag("inbox"));
         assert(conv.numTags == 1);
         assert(conv.links.length == 1);
-        assert(conv.attachFileNames.length == 1);
-        assert(conv.attachFileNames[0] == "C++ Pocket Reference.pdf");
+        assert(conv.links[0].attachNames.length == 1);
+        assert(conv.links[0].attachNames[0] == "C++ Pocket Reference.pdf");
         assert(conv.cleanSubject == " Attachment test");
         assert(conv.links[0].deleted == false);
     }
@@ -518,15 +530,18 @@ version(db_usetestdb)
         const emailDbId = conv.links[0].emailDbId;
         const emailMsgId = conv.links[0].messageId;
         const deleted = conv.links[0].deleted;
-        conv.addLink(emailMsgId, emailDbId, deleted);
+        string[] attachs = ["someAttachName", "anotherAttachName"];
+        conv.addLink(emailMsgId, attachs, emailDbId, deleted);
         assert(conv.links.length == 1);
+        assert(!conv.links[0].attachNames.length);
 
         // check that it adds a new link
-        conv.addLink("someMessageId", "someEmailDbId", false);
+        conv.addLink("someMessageId", attachs, "someEmailDbId", false);
         assert(conv.links.length == 2);
         assert(conv.links[1].messageId == "someMessageId");
         assert(conv.links[1].emailDbId == "someEmailDbId");
         assert(!conv.links[1].deleted);
+        assert(conv.links[1].attachNames == attachs);
     }
 
     unittest // Conversation.removeLink
@@ -613,7 +628,8 @@ version(db_usetestdb)
         assert(convs.length == 3);
         // update existing (id doesnt change)
         convs[0].addTag("newtag");
-        convs[0].addLink("someMessageId");
+        string[] attachNames = ["one", "two"];
+        convs[0].addLink("someMessageId", attachNames);
         auto oldDbId = convs[0].dbId;
         convs[0].store();
 
@@ -624,6 +640,7 @@ version(db_usetestdb)
         assert(convs2[0].hasTag("newtag"));
         assert(convs2[0].numTags == 2);
         assert(convs2[0].links[1].messageId == "someMessageId");
+        assert(convs2[0].links[1].attachNames == attachNames);
 
         // create new (new dbId)
         convs2[0].dbId = BsonObjectID.generate().toString;
@@ -641,7 +658,7 @@ version(db_usetestdb)
                 assert(conv.lastDate == convs2[0].lastDate);
                 assert(conv.numTags == convs2[0].numTags);
                 assert(convs2[0].hasTags(conv.tagsArray));
-                assert(conv.attachFileNames == convs2[0].attachFileNames);
+                assert(conv.links[0].attachNames == convs2[0].links[0].attachNames);
                 assert(conv.cleanSubject == convs2[0].cleanSubject);
                 foreach(idx, link; conv.links)
                 {
@@ -715,8 +732,6 @@ version(db_usetestdb)
 
     unittest // upsert
     {
-        import db.email;
-        import db.user;
         import retriever.incomingemail;
 
         void assertConversationInEmailIndex(string emailId, string convId)
@@ -746,7 +761,7 @@ version(db_usetestdb)
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         auto emailId = dbEmail.store();
         auto convId  = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
-        auto convDoc = collection("conversation").findOne(["_id": convId]);
+        auto convDoc = findOneById("conversation", convId);
 
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId)                 == user.id);
@@ -769,7 +784,7 @@ version(db_usetestdb)
         assert(convObject.hasTags(tagsToAdd));
         assert(convObject.links[0].messageId == inEmail.getHeader("message-id").addresses[0]);
         assert(convObject.links[0].emailDbId == emailId);
-        assert(!convObject.attachFileNames.length);
+        assert(!convObject.links[0].attachNames.length);
         assert(convObject.links[0].deleted == false);
 
 
@@ -788,7 +803,7 @@ version(db_usetestdb)
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         emailId = dbEmail.store();
         convId = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
-        convDoc = collection("conversation").findOne(["_id": convId]);
+        convDoc = findOneById("conversation", convId);
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == user.id);
         assert(convDoc.links.type == Bson.Type.array);
@@ -808,7 +823,7 @@ version(db_usetestdb)
         assert(convObject.links[1].messageId == inEmail.getHeader("message-id").addresses[0]);
         assert(convObject.links[1].messageId == dbEmail.messageId);
         assert(convObject.links[1].emailDbId == emailId);
-        assert(!convObject.attachFileNames.length);
+        assert(!convObject.links[1].attachNames.length);
         assert(convObject.links[0].deleted == false);
 
         // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
@@ -824,7 +839,7 @@ version(db_usetestdb)
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
         emailId = dbEmail.store();
         convId  = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
-        convDoc = collection("conversation").findOne(["_id": convId]);
+        convDoc = findOneById("conversation", convId);
 
         assert(!convDoc.isNull);
         assert(bsonStr(convDoc.userId) == user.id);
@@ -845,9 +860,10 @@ version(db_usetestdb)
         assert(convObject.links[1].messageId == inEmail.getHeader("message-id").addresses[0]);
         assert(convObject.links[1].messageId == dbEmail.messageId);
         assert(convObject.links[1].emailDbId == emailId);
-        assert(convObject.attachFileNames.length == 1);
-        assert(convObject.attachFileNames[0] == "C++ Pocket Reference.pdf");
+        assert(!convObject.links[1].attachNames.length);
         assert(convObject.links[1].deleted == false);
+        assert(convObject.links[0].attachNames.length);
+        assert(convObject.links[0].attachNames[0] == "C++ Pocket Reference.pdf");
     }
 
     unittest // Conversation.getByReferences

@@ -1,15 +1,13 @@
 Backend-API:
-    - search with auth (see below)
+    - POST /message/:id/send
+    Use vibe.d smtp module and the configured smtphost, smtplogin and smtppass, connect
+    to the configured SMTP, send the generated raw email: class OutgoingEmail with a 
+    constructor from Email, update the document with sendDate: (date) and remove draft 
+    status.
 
 Backend-Retriever:
-    - lazy: evaluate any *id parameter to see if I can make it lazy (check that it is only
-      used once inside the function).
-    - add emailIndexContents.userId, add the userId discriminator to Email.search
-    - Email.get(id) and Email.emailDocToObject
-    - conversation.getByTag: add "attachNames" to every link to avoid reading all the emails
-      when retrieving a conversation just to get the attachment filenames 
-    - general hunting of XXX and FIXMEs
     - unittest for every curl call for wrong auth user
+    - general hunting of XXX and FIXMEs
 
     Later:
     - Use log to log more warnings, specially on db.*
@@ -29,8 +27,6 @@ Backend-Retriever:
     - Sent the new changes in characterencodings.d to Ruppe
 
     - When adding or removing links from a conversation, update conversation.lastDate
-
-    - Review ORMs for D (Hybernated and others)
 
 Frontend:
 

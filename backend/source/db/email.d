@@ -167,40 +167,40 @@ final class Email
 
     /** Load from an IncomingEmail object (making mutable copies of the data members).
      * dbId will be an empty string until .store() is called */
-    this(in IncomingEmail email)
+    this(in IncomingEmail inEmail)
     {
-        const msgIdHdr = email.getHeader("message-id");
+        const msgIdHdr = inEmail.getHeader("message-id");
         if (msgIdHdr.addresses.length)
             this.messageId  = msgIdHdr.addresses[0];
         else
             logWarn("Message didnt have any Message-id!");
 
-        auto frHeader     = email.getHeader("from");
+        auto frHeader     = inEmail.getHeader("from");
         this.from         = HeaderValue(frHeader.rawValue, frHeader.addresses.dup);
-        this.rawEmailPath = email.rawEmailPath;
+        this.rawEmailPath = inEmail.rawEmailPath;
         this.isoDate      = BsonDate(
-                                SysTime(email.date, TimeZone.getTimeZone("GMT"))
+                                SysTime(inEmail.date, TimeZone.getTimeZone("GMT"))
                             ).toString;
 
-        foreach(headerName, const ref headerItem; email.headers)
+        foreach(headerName, const ref headerItem; inEmail.headers)
         {
             auto hdr = HeaderValue(headerItem.rawValue, headerItem.addresses.dup);
             this.headers.addField(headerName, hdr);
         }
 
-        foreach(const part; email.textualParts)
+        foreach(const part; inEmail.textualParts)
             this.textParts ~= TextPart(part.ctype.name, part.textContent);
 
-        foreach(attach; email.attachments)
+        foreach(attach; inEmail.attachments)
         {
             this.attachments.add(attach, BsonObjectID.generate().toString);
         }
         this();
     }
 
-    this(in IncomingEmail email, in string destination)
+    this(in IncomingEmail inEmail, in string destination)
     {
-        this(email);
+        this(inEmail);
         setOwner(destination);
     }
 
@@ -356,11 +356,13 @@ final class Email
 
     /** NOTE: * - dateStart and dateEnd should be GMT */
     static const(SearchResult)[] search(in string[] needles,
-                                 in string dateStart="",
-                                 in string dateEnd="")
+                                        in string userId,
+                                        in string dateStart="",
+                                        in string dateEnd="")
     {
         // Get an list of matching email IDs
-        const matchingEmailAndConvIds = searchEmailsGetIds(needles, dateStart, dateEnd);
+        const matchingEmailAndConvIds = searchEmailsGetIds(needles, userId,
+                                                           dateStart, dateEnd);
 
         // keep the found conversations+matches indexes, the key is the conversation dbId
         SearchResult[string] map;
@@ -433,6 +435,18 @@ final class Email
     }
 
 
+    private string textPartsToJson()
+    {
+        Appender!string jsonAppender;
+        foreach(idx, part; this.textParts)
+        {
+            jsonAppender.put(`{"contentType": ` ~ Json(part.ctype).toString ~ "," ~
+                              `"content": `     ~ Json(part.content).toString ~ "},");
+        }
+        return jsonAppender.data;
+    }
+
+
     string[] localReceivers() const
     {
         string[] allAddresses;
@@ -446,18 +460,6 @@ final class Email
                 localAddresses ~= addr;
 
         return localAddresses;
-    }
-
-
-    private string textPartsToJson()
-    {
-        Appender!string jsonAppender;
-        foreach(idx, part; this.textParts)
-        {
-            jsonAppender.put(`{"contentType": ` ~ Json(part.ctype).toString ~ "," ~
-                              `"content": `     ~ Json(part.content).toString ~ "},");
-        }
-        return jsonAppender.data;
     }
 
 
@@ -552,7 +554,7 @@ final class Email
         }
 
         // check that the email exists on DB
-        immutable emailDoc = collection("email").findOne(["_id": emailDbId]);
+        immutable emailDoc = findOneById("email", emailDbId);
         if (emailDoc.isNull)
         {
             logWarn("addAttachment, could find specified email: " ~ emailDbId);
@@ -574,7 +576,7 @@ final class Email
         f.rawWrite(attContent);
 
         // create the doc and insert into the email.attachments list on DB
-        auto dbAttach      = new DbAttachment(apiAttach);
+        auto dbAttach      = DbAttachment(apiAttach);
         attachId           = BsonObjectID.generate().toString;
         dbAttach.dbId      = attachId;
         dbAttach.realPath  = destFilePath;
@@ -594,12 +596,7 @@ final class Email
             return;
         }
 
-        immutable emailDoc = collection("email").findOne(
-                ["_id": emailDbId],
-                ["_id": 1, "attachments": 1],
-                QueryFlags.None
-        );
-
+        immutable emailDoc = findOneById("email", emailDbId, "_id", "attachments");
         if (emailDoc.isNull || emailDoc.attachments.isNull)
         {
             logWarn(format("deleteAttachment: delete for email [%s] and attach [%s] was " ~
@@ -647,19 +644,8 @@ final class Email
     body
     {
         auto res = new EmailSummary();
-        immutable fieldSelector = ["from"        : 1,
-                                   "headers"     : 1,
-                                   "isodate"     : 1,
-                                   "bodyPeek"    : 1,
-                                   "deleted"     : 1,
-                                   "draft"       : 1,
-                                   "attachments" : 1];
-
-        immutable emailDoc = collection("email").findOne(
-                ["_id": dbId],
-                fieldSelector,
-                QueryFlags.None
-        );
+        immutable emailDoc = findOneById("email", dbId, "from", "headers", "isodate",
+                                         "bodyPeek", "deleted", "draft", "attachments");
 
         if (!emailDoc.isNull)
         {
@@ -680,20 +666,9 @@ final class Email
     static ApiEmail getApiEmail(in string dbId)
     {
         ApiEmail ret = null;
-        immutable fieldSelector = [
-             "from": 1,
-             "headers": 1,
-             "isodate": 1,
-             "textParts": 1,
-             "deleted": 1,
-             "message-id": 1,
-             "draft": 1,
-             "attachments": 1
-        ];
-
-        immutable emailDoc = collection("email").findOne(
-                ["_id": dbId], fieldSelector, QueryFlags.None
-        );
+        immutable emailDoc = findOneById("email", dbId, "from", "headers", "isodate",
+                                         "textParts", "deleted", "message-id", "draft",
+                                         "attachments");
 
         if (!emailDoc.isNull)
         {
@@ -767,11 +742,7 @@ final class Email
     /** Returns the raw email as string */
     static string getOriginal(in string dbId)
     {
-        immutable noMail = "ERROR: could not get raw email";
-        immutable emailDoc = collection("email").findOne(
-                ["_id": dbId], ["rawEmailPath": 1], QueryFlags.None
-        );
-
+        immutable emailDoc = findOneById("email", dbId, "rawEmailPath");
         if (!emailDoc.isNull && !emailDoc.rawEmailPath.isNull)
         {
             const rawPath = bsonStr(emailDoc.rawEmailPath);
@@ -784,7 +755,7 @@ final class Email
                 return app.data;
             }
         }
-        return noMail;
+        return "ERROR: could not get raw email";
     }
 
 
@@ -798,9 +769,7 @@ final class Email
     )
     {
         // Get the email from the DB, check the needed deleted and userId fields
-        immutable emailDoc = collection("email").findOne(
-                ["_id": dbId], ["deleted": 1], QueryFlags.None
-        );
+        immutable emailDoc = findOneById("email", dbId, "deleted");
         if (emailDoc.isNull || emailDoc.deleted.isNull)
         {
             logWarn(format("setDeleted: Trying to set deleted (%s) of email with " ~
@@ -835,11 +804,7 @@ final class Email
             in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
     )
     {
-        immutable emailDoc = collection("email").findOne(
-                ["_id": dbId],
-                ["_id": 1, "attachments": 1, "rawEmailPath": 1],
-                QueryFlags.None
-        );
+        immutable emailDoc = findOneById("email", dbId, "_id", "attachments", "rawEmailPath");
         if (emailDoc.isNull)
         {
             logWarn(format("Email.removeById: Trying to remove email with id (%s) " ~
@@ -882,18 +847,6 @@ final class Email
         // Remove the email from the DB
         collection("email").remove(["_id": emailId]);
     }
-
-
-    /** Updates the emailIndexContent reverse link to the Conversation (used for
-     * speed purposes)
-     */
-    static void setConversationInEmailIndex(in string emailId, in string convId)
-    {
-        immutable json = format(`{"$set": {"convId": %s}}`, Json(convId).toString);
-        const bson     = parseJsonString(json);
-        collection("emailIndexContents").update(["emailDbId": emailId], bson);
-    }
-
 
     // Get an email document, return the attachment filenames in an array
     private static string[] extractAttachNamesFromDoc(const ref Bson emailDoc)
@@ -939,6 +892,7 @@ final class Email
 
         immutable opData = ["text": headerIndexText.data ~ "\n\n" ~ maybeText,
                             "emailDbId": this.dbId,
+                            "userId": this.userId,
                             "isoDate": this.isoDate];
 
         collection("emailIndexContents").update(
@@ -947,17 +901,23 @@ final class Email
     }
 
 
-    private static const(EmailAndConvIds[]) searchEmailsGetIds(
-            in string[] needles,
-            in string dateStart = "",
-            in string dateEnd = ""
-    )
+    private static const(EmailAndConvIds[]) searchEmailsGetIds(in string[] needles,
+                                                               in string userId,
+                                                               in string dateStart = "",
+                                                               in string dateEnd = "")
+    in
+    {
+        assert(userId.length);
+    }
+    body
     {
         EmailAndConvIds[] res;
         foreach(needle; needles)
         {
             Appender!string findJson;
             findJson.put(format(`{"$text": {"$search": "\"%s\""}`, needle));
+
+            findJson.put(format(`,"userId":%s`, Json(userId).toString));
 
             if (dateStart.length && dateEnd.length)
                 findJson.put(format(`,"isoDate": {"$gt": %s, "$lt": %s}}`,
@@ -1010,9 +970,7 @@ final class Email
     private static string[] getReferencesFromPrevious(in string dbId)
     {
         string[] references;
-        immutable res = collection("email").findOne(
-                ["_id": dbId], ["headers": 1, "message-id": 1], QueryFlags.None
-        );
+        immutable res = findOneById("email", dbId, "headers", "message-id");
         if (!res.isNull)
         {
             string[] inheritedRefs;
@@ -1468,13 +1426,17 @@ version(db_usetestdb)
     {
         writeln("Testing Email.storeTextIndex");
         recreateTestDb();
+
         auto findJson = `{"$text": {"$search": "DOESNTEXISTS"}}`;
         auto cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(cursor.empty);
 
+        auto user1 = User.getFromAddress("testuser@testdatabase.com");
+        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
         findJson = `{"$text": {"$search": "text inside"}}`;
         cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(!cursor.empty);
+        assert(bsonStr(cursor.front.userId) == user1.id);
         string res = bsonStr(cursor.front.text);
         assert(countUntil(res, "text inside") == 157);
 
@@ -1490,6 +1452,7 @@ version(db_usetestdb)
         findJson = `{"$text": {"$search": "inicio de sesión"}}`;
         cursor = collection("emailIndexContents").find(parseJsonString(findJson));
         assert(!cursor.empty);
+        assert(bsonStr(cursor.front.userId) == user1.id);
         res = bsonStr(cursor.front.text);
         auto foundPos = countUntil(res, "inicio de sesión");
         assert(foundPos != -1);
@@ -1511,13 +1474,15 @@ version(db_usetestdb)
     {
         writeln("Testing Email.searchEmailsGetIds");
         recreateTestDb();
-        auto results = Email.searchEmailsGetIds(["inicio de sesión"]);
+        auto user1 = User.getFromAddress("testuser@testdatabase.com");
+        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
+        auto results = Email.searchEmailsGetIds(["inicio de sesión"], user1.id);
         assert(results.length == 1);
         auto conv  = Conversation.get(results[0].convId);
         assert(conv.links[1].emailDbId == results[0].emailId);
 
-        auto results2 = Email.searchEmailsGetIds(["some"]);
-        assert(results2.length == 4);
+        auto results2 = Email.searchEmailsGetIds(["some"], user1.id);
+        assert(results2.length == 2);
         foreach(ref result; results2)
         {
             conv = Conversation.get(result.convId);
@@ -1533,18 +1498,21 @@ version(db_usetestdb)
             assert(found);
         }
 
-        auto results3 = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z");
-        assert(results3.length == 4);
+        auto results3 = Email.searchEmailsGetIds(["some"], user2.id, "2014-06-01T14:32:20Z");
+        assert(results3.length == 1);
 
-        auto results4 = Email.searchEmailsGetIds(["some"], "2010-01-21T14:32:20Z", "2013-05-28T00:00:00Z");
-        assert(results4.length == 2);
+        auto results4 = Email.searchEmailsGetIds(["some"], user2.id, "2014-06-01T14:32:20Z",
+                                                 "2014-08-01T00:00:00Z");
+        assert(results4.length == 1);
 
         string startFixedDate = "2005-01-01T00:00:00Z";
-        auto results5 = Email.searchEmailsGetIds(["some"], startFixedDate, "2018-12-12T00:00:00Z");
-        assert(results5.length == 4);
+        auto results5 = Email.searchEmailsGetIds(["some"], user2.id, startFixedDate,
+                                                 "2018-12-12T00:00:00Z");
+        assert(results5.length == 2);
 
-        auto results6 = Email.searchEmailsGetIds(["some"], startFixedDate, "2013-05-28T00:00:00Z");
-        assert(results6.length == 2);
+        auto results6 = Email.searchEmailsGetIds(["some"], user2.id, startFixedDate,
+                                                 "2014-06-01T00:00:00Z");
+        assert(results6.length == 1);
     }
 
 
@@ -1554,27 +1522,32 @@ version(db_usetestdb)
         // with several messages grouped (this, less results sometimes)
         writeln("Testing Email.search");
         recreateTestDb();
-        auto searchResults = Email.search(["inicio de sesión"]);
+        auto user1 = User.getFromAddress("testuser@testdatabase.com");
+        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
+        auto searchResults = Email.search(["inicio de sesión"], user1.id);
         assert(searchResults.length == 1);
         assert(searchResults[0].matchingEmailsIdx == [1]);
 
-        auto searchResults2 = Email.search(["some"]);
-        assert(searchResults2.length == 3);
+        auto searchResults2 = Email.search(["some"], user2.id);
+        assert(searchResults2.length == 2);
 
-        auto searchResults3 = Email.search(["some"], "2010-01-21T14:32:20Z");
-        assert(searchResults3.length == 3);
-        auto searchResults4 = Email.search(["some"], "2013-05-28T14:32:20Z");
-        assert(searchResults4.length == 2);
-        auto searchResults4b = Email.search(["some"], "2018-05-28T14:32:20Z");
+        auto searchResults3 = Email.search(["some"], user2.id, "2014-06-01T14:32:20Z");
+        assert(searchResults3.length == 1);
+        auto searchResults4 = Email.search(["some"], user2.id, "2014-08-01T14:32:20Z");
+        assert(searchResults4.length == 0);
+        auto searchResults4b = Email.search(["some"], user2.id, "2018-05-28T14:32:20Z");
         assert(searchResults4b.length == 0);
 
         string startFixedDate = "2005-01-01T00:00:00Z";
-        auto searchResults5 = Email.search(["some"], startFixedDate, "2018-12-12T00:00:00Z");
-        assert(searchResults5.length == 3);
-        auto searchResults5b = Email.search(["some"], startFixedDate, "2013-05-28T00:00:00Z");
+        auto searchResults5 = Email.search(["some"], user2.id, startFixedDate,
+                                           "2018-12-12T00:00:00Z");
+        assert(searchResults5.length == 2);
+        auto searchResults5b = Email.search(["some"], user2.id, startFixedDate,
+                                            "2014-02-01T00:00:00Z");
         assert(searchResults5b.length == 1);
-        assert(searchResults5b[0].matchingEmailsIdx.length == 2);
-        auto searchResults5c = Email.search(["some"], startFixedDate, "2014-02-21T00:00:00Z");
+        assert(searchResults5b[0].matchingEmailsIdx.length == 1);
+        auto searchResults5c = Email.search(["some"], user2.id, startFixedDate,
+                                            "2015-02-21T00:00:00Z");
         assert(searchResults5c.length == 2);
     }
 
@@ -1679,7 +1652,7 @@ version(db_usetestdb)
         auto cursor = getEmailCursorAtPosition(0);
         auto email1 = cursor.front;
         assert(Email.isOwnedBy(bsonStr(email1._id), user1.loginName));
-        
+
         cursor.popFront();
         auto email2 = cursor.front;
         assert(Email.isOwnedBy(bsonStr(email2._id), user1.loginName));

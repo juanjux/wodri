@@ -1,5 +1,6 @@
 module webbackend.apiconversationsummary;
 
+import common.utils;
 import db.conversation;
 import db.email;
 import db.mongo;
@@ -11,7 +12,6 @@ import std.regex;
 import std.stdio;
 import std.string;
 
-auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 auto NAME_CLEAN_REGEX = ctRegex!(r"[<>]", "g");
 
 
