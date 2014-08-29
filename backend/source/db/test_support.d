@@ -65,7 +65,7 @@ version(anytestdb)
 
         foreach(mailname; TEST_EMAILS)
         {
-            auto inEmail = scoped!IncomingEmailImpl();
+            auto inEmail = new IncomingEmail();
             inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
                                  getConfig.absAttachmentStore,
                                  getConfig.absRawEmailStore);
@@ -75,7 +75,7 @@ version(anytestdb)
             assert(user !is null);
             auto dbEmail = new Email(inEmail, destination);
             assert(dbEmail.isValid, "Email is not valid");
-            auto emailId = dbEmail.store();
+            auto emailId = Email.dbDriver.store(dbEmail);
             Conversation.upsert(dbEmail, ["inbox"], []);
         }
 

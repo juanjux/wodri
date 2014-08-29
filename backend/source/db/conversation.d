@@ -315,7 +315,7 @@ final class Conversation
         string[] empty;
         foreach(reference; references)
         {
-            conv.addLink(reference, empty, Email.messageIdToDbId(reference), email.deleted);
+            conv.addLink(reference, empty, Email.dbDriver.messageIdToDbId(reference), email.deleted);
         }
 
         bool wasInConversation = false;
@@ -345,7 +345,7 @@ final class Conversation
         if (!wasInConversation)
         {
             // get the attachFileNames and add this email to the conversation
-            const emailSummary = Email.getSummary(email.dbId);
+            const emailSummary = Email.dbDriver.getSummary(email.dbId);
             conv.addLink(messageId, emailSummary.attachFileNames, email.dbId, email.deleted);
         }
 
@@ -746,7 +746,7 @@ version(db_usetestdb)
         recreateTestDb();
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test",
                                                "testemails");
-        auto inEmail = new IncomingEmailImpl();
+        auto inEmail = new IncomingEmail();
         inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                                      getConfig().attachmentStore);
 
@@ -759,7 +759,7 @@ version(db_usetestdb)
         auto dbEmail = new Email(inEmail);
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        auto emailId = dbEmail.store();
+        auto emailId = Email.dbDriver.store(dbEmail);
         auto convId  = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         auto convDoc = findOneById("conversation", convId);
 
@@ -791,7 +791,7 @@ version(db_usetestdb)
         // test2: insert as a msgid of a reference already on a conversation, check that the right
         // conversationId is returned and the emailId added to its entry in the conversation.links
         recreateTestDb();
-        inEmail = new IncomingEmailImpl();
+        inEmail = new IncomingEmail();
         inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                            getConfig().attachmentStore);
         dbEmail = new Email(inEmail);
@@ -801,7 +801,7 @@ version(db_usetestdb)
         dbEmail.messageId = testMsgId;
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        emailId = dbEmail.store();
+        emailId = Email.dbDriver.store(dbEmail);
         convId = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         convDoc = findOneById("conversation", convId);
         assert(!convDoc.isNull);
@@ -829,7 +829,7 @@ version(db_usetestdb)
         // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
         // is added to that conversation
         recreateTestDb();
-        inEmail = new IncomingEmailImpl();
+        inEmail = new IncomingEmail();
         inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
                            getConfig().attachmentStore);
         string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
@@ -837,7 +837,7 @@ version(db_usetestdb)
         dbEmail = new Email(inEmail);
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        emailId = dbEmail.store();
+        emailId = Email.dbDriver.store(dbEmail);
         convId  = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         convDoc = findOneById("conversation", convId);
 

@@ -23,7 +23,7 @@ final class ApiConversation
         {
             if (link.emailDbId.length) 
             {
-                summaries ~= Email.getSummary(link.emailDbId);
+                summaries ~= Email.dbDriver.getSummary(link.emailDbId);
             }
         }
     }

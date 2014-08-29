@@ -14,6 +14,7 @@ import std.traits;
 import std.typecons;
 import std.utf;
 import vibe.core.log;
+import vibe.data.bson;
 import vibe.data.json;
 import vibe.db.mongo.mongo;
 

@@ -109,32 +109,7 @@ private pure string capitalizeHeader(in string name)
 }
 
 
-interface IncomingEmail
-{
-    void loadFromFile(in string emailPath,
-                      in string attachStore,
-                      in string rawEmailStore = "");
-    void loadFromFile(File emailFile,
-                      in string attachStore,
-                      in string rawEmailStore = "");
-
-    @property Flag!"IsValidEmail" isValid() const;
-    @property ref const(DictionaryList!(HeaderValue, false)) headers() const;
-    @property ref const(DateTime) date() const;
-    @property const(Attachment[]) attachments() const;
-    @property string              rawEmailPath() const;
-    // XXX ref const?
-    @property const(MIMEPart[])   textualParts() const;
-
-    const(HeaderValue) getHeader(in string name) const;
-    void               removeHeader(in string name); // removes ALL even if repeated
-    void               addHeader(in string rawHeader);
-    bool               hasHeader(in string name) const;
-    string             headersToString();
-}
-
-
-final class IncomingEmailImpl : IncomingEmail
+final class IncomingEmail
 {
     private
     {
@@ -150,7 +125,7 @@ final class IncomingEmailImpl : IncomingEmail
         package bool generatedMessageId = false;
 
 
-    override @property Flag!"IsValidEmail" isValid() const
+    @property Flag!"IsValidEmail" isValid() const
     {
         return ((getHeader("to").addresses.length  ||
                  getHeader("cc").addresses.length  ||
@@ -158,46 +133,46 @@ final class IncomingEmailImpl : IncomingEmail
                  getHeader("delivered-to").addresses.length)) ? Yes.IsValidEmail
                                                               : No.IsValidEmail;
     }
-    override @property ref const(DictionaryList!(HeaderValue, false)) headers() const
+    @property ref const(DictionaryList!(HeaderValue, false)) headers() const
     {
         return m_headers;
     }
-    override @property ref const(DateTime) date()         const { return m_date; }
-    override @property const(Attachment[]) attachments()  const { return m_attachments; }
-    override @property string              rawEmailPath() const { return m_rawEmailPath; }
-    override @property const(MIMEPart[])   textualParts() const { return m_textualParts; }
+    @property ref const(DateTime) date()         const { return m_date; }
+    @property const(Attachment[]) attachments()  const { return m_attachments; }
+    @property string              rawEmailPath() const { return m_rawEmailPath; }
+    @property const(MIMEPart[])   textualParts() const { return m_textualParts; }
 
 
     /**
         Return the header if it exists. If not, returns an empty HeaderValue.
         Useful when you want a default empty value.
     */
-    override const(HeaderValue) getHeader(in string name) const
+    const(HeaderValue) getHeader(in string name) const
     {
         return hasHeader(name)? m_headers[name]: HeaderValue("", []);
     }
 
 
-    override void removeHeader(in string name)
+    void removeHeader(in string name)
     {
         m_headers.removeAll(name);
     }
 
 
-    override bool hasHeader(in string name) const
+    bool hasHeader(in string name) const
     {
         return (name in m_headers) !is null;
     }
 
 
-    override void loadFromFile(in string emailPath,
+    void loadFromFile(in string emailPath,
                                in string attachStore,
                                in string rawEmailStore="")
     {
         loadFromFile(File(emailPath), attachStore, rawEmailStore);
     }
 
-    override void loadFromFile(File emailFile,
+    void loadFromFile(File emailFile,
                                in string attachStore,
                                in string rawEmailStore = "")
     {
@@ -292,7 +267,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    override string headersToString()
+    string headersToString()
     {
         Appender!string textHeaders;
         foreach(string name, const ref value; m_headers)
@@ -304,7 +279,7 @@ final class IncomingEmailImpl : IncomingEmail
     }
 
 
-    override void addHeader(in string raw)
+    void addHeader(in string raw)
     {
         immutable idxSeparator = countUntil(raw, ":");
         if (idxSeparator == -1 || (idxSeparator+1 > raw.length))
@@ -879,7 +854,7 @@ unittest
             if (!testAttachDir.exists)
                 mkdir(testAttachDir);
 
-            auto email = new IncomingEmailImpl();
+            auto email = new IncomingEmail();
             email.loadFromFile(File(e.name), attachStore, rawEmailStore);
 
             auto headerFile = File(buildPath(testDir, "header.txt"), "w");
@@ -901,7 +876,7 @@ unittest
         writeln("Starting single email test...");
         auto filenumber = 20013;
         auto emailFile  = File(format("%s/%d", origEmailDir, filenumber), "r");
-        auto email      = new IncomingEmailImpl();
+        auto email      = new IncomingEmail();
         email.loadFromFile(emailFile, attachStore, rawEmailStore);
         assert(email.isValid);
 
@@ -945,7 +920,7 @@ unittest
             if (baseName(e.name) in brokenEmails || baseName(e.name) in skipEmails)
                 continue;
 
-            auto email = new IncomingEmailImpl();
+            auto email = new IncomingEmail();
             email.loadFromFile(File(e.name), attachStore, emailStore);
             assert(email.isValid);
 

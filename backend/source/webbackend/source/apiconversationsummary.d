@@ -40,7 +40,7 @@ final class ApiConversationSummary
             this.numMessages += 1;
             if (link.emailDbId.length)
             {
-                const emailSummary = Email.getSummary(link.emailDbId);
+                const emailSummary = Email.dbDriver.getSummary(link.emailDbId);
                 this.shortAuthors ~= match(emailSummary.from, EMAIL_REGEX)
                                     .pre.translate(['<': ' ', '>': ' ']).strip();
 

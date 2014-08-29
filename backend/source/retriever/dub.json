@@ -14,7 +14,7 @@
     "name": "retriever",
     "importPaths": [".", "../libs"],
     "buildRequirements": ["requireBoundsCheck", "disallowDeprecations"],
-    "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing"],
+    "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing", "MongoDriver"],
     "subConfigurations": {"smtp": "ssl"},
 
     "configurations": [

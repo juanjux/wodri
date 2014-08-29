@@ -15,9 +15,9 @@ import std.string;
 import std.typecons;
 
 string USER = "anotherUser";
-enum PASS = "secret";
-enum URL  = "http://127.0.0.1:8080/api";
-enum URL2 = "http://127.0.0.1:8080";
+enum PASS   = "secret";
+enum URL    = "http://127.0.0.1:8080/api";
+enum URL2   = "http://127.0.0.1:8080";
 string[string] emptyDict;
 
 

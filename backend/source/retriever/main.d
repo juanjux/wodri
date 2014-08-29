@@ -87,7 +87,7 @@ int main()
     setLogFile(buildPath(config.mainDir, "backend", "log", "retriever.log"),
                LogLevel.info);
 
-    auto inEmail = new IncomingEmailImpl();
+    auto inEmail = new IncomingEmail();
     inEmail.loadFromFile(std.stdio.stdin, config.attachmentStore, config.rawEmailStore);
 
     auto dbEmail          = new Email(inEmail);

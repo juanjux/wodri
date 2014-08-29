@@ -231,14 +231,14 @@ version(db_usetestdb)
         // this will change the outer "tagsToAdd/tagsToRemove" dicts
         Email reInstance(Match match, Action action)
         {
-            auto inEmail = scoped!IncomingEmailImpl();
+            auto inEmail = scoped!IncomingEmail();
             inEmail.loadFromFile(buildPath(testEmailDir, "with_2megs_attachment"),
                                  buildPath(testDir, "attachments"));
             auto dbEmail  = new Email(inEmail);
             dbEmail.destinationAddress = "foo@foo.com";
             dbEmail.userId = "fakeuserid";
             // a little kludge so I dont have to store this email to get an id
-            dbEmail.dbId = Email.messageIdToDbId(dbEmail.messageId);
+            dbEmail.dbId = Email.dbDriver.messageIdToDbId(dbEmail.messageId);
             auto filter   = scoped!UserFilter(match, action);
             tagsToAdd = [];
             tagsToRemove = [];
