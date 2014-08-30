@@ -13,43 +13,54 @@ struct EmailAndConvIds
 
 interface EmailDbInterface
 {
-    static Email get(in string id); // XXX
+    Email get(in string id);
+
     EmailSummary getSummary(in string dbId);
+
     string generateNewId();
+
     bool isOwnedBy(in string id, in string name);
+
     const(EmailAndConvIds[]) searchEmails(
             in string[] needles,
             in string userId,
             in string dateStart = "",
             in string dateEnd = ""
     );
-    // XXX make this a constructor of ApiEmail from Email
-    ApiEmail getApiEmail(in string dbId);
+
     string store(
             Email email,
             in Flag!"ForceInsertNew" forceInsertNew = No.ForceInsertNew,
             in Flag!"StoreAttachMents" storeAttachMents = Yes.StoreAttachMents
     );
+
     string addAttachment(
             in string emailDbId,
             in ApiAttachment apiAttach,
             in string base64Content
     );
+
     void deleteAttachment(
             in string emailDbId,
             in string attachmentId
     );
+
     string getOriginal(in string dbId);
+
     void setDeleted(
             in string dbId,
             in bool setDel,
             in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
     );
+
     void removeById(
             in string dbId,
             in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
     );
+
     void storeTextIndex(in Email email);
+
     string messageIdToDbId(in string messageId);
+
     string[] getReferencesFromPrevious(in string dbId);
 }

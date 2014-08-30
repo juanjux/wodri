@@ -6,9 +6,7 @@ Backend-API:
     status.
 
 Backend-Retriever:
-    - see why the search test returns 0 results
-    - conversation.dbDriver and ConversationDbMongo
-    - email: load headers, body and attachments lazily
+    - more separate db drivers: config, user, userfilter, conversation, domain
     - unittest for every curl call for wrong auth user
     - general hunting of XXX and FIXMEs
 

@@ -13,7 +13,7 @@
     "version": "0.0.1",
     "name": "retriever",
     "importPaths": [".", "../libs"],
-    "buildRequirements": ["requireBoundsCheck", "disallowDeprecations"],
+    "buildRequirements": ["requireBoundsCheck"],
     "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing", "MongoDriver"],
     "subConfigurations": {"smtp": "ssl"},
 
@@ -75,7 +75,7 @@
             "name": "db_insertalltest",
             "versions": ["db_usebigdb", "db_insertalltest"],
             "excludedSourceFiles": ["test.d", "main.d"],
-            "dflags": ["-main", "-unittest"],
+            "dflags": ["-main", "-unittest", "-O", "-boundscheck=off"],
             "targetName": "test",
         },
         {

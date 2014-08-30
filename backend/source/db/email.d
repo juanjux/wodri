@@ -10,6 +10,7 @@ import db.emaildbinterface;
 import db.emaildbmongo;
 import db.mongo;
 import db.user;
+import retriever.incomingemail;
 import std.algorithm: among, sort, uniq;
 import std.datetime;
 import std.file;
@@ -19,7 +20,6 @@ import std.stdio: File, writeln;
 import std.string;
 import std.typecons;
 import std.utf: count, toUTFindex;
-import retriever.incomingemail;
 import vibe.core.log;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
@@ -39,7 +39,6 @@ struct TextPart
         this.content=content;
     }
 }
-
 
 
 struct SearchResult
@@ -75,7 +74,7 @@ private HeaderValue field2HeaderValue(string field)
 
 final class Email
 {
-    static EmailDbInterface dbDriver = null;
+    private static EmailDbInterface dbDriver = null;
 
     string         dbId;
     string         userId;
@@ -96,7 +95,6 @@ final class Email
 
     static this()
     {
-
         version(MongoDriver)
             dbDriver = new EmailDbMongo();
         version(SqliteDriver)
@@ -108,14 +106,7 @@ final class Email
 
     this()
     {
-
-        if (!this.bodyPeek.length)
-            extractBodyPeek();
-
-        if (!this.receivers.addresses.length)
-            loadReceivers();
     }
-
 
     this(in ApiEmail apiEmail, in string repliedEmailDbId = "")
     {
@@ -171,8 +162,7 @@ final class Email
         {
             this.attachments.add(apiAttach);
         }
-        this();
-
+        finishInitialization();
     }
 
 
@@ -208,13 +198,22 @@ final class Email
             this.attachments.add(attach, id);
             //this.attachments.add(attach, Email.dbDriver.generateNewId());
         }
-        this();
+        finishInitialization();
     }
 
     this(in IncomingEmail inEmail, in string destination)
     {
         this(inEmail);
         setOwner(destination);
+    }
+
+
+    void finishInitialization()
+    {
+        if (!this.bodyPeek.length)
+            extractBodyPeek();
+        if (!this.receivers.addresses.length)
+            loadReceivers();
     }
 
 
@@ -437,7 +436,8 @@ final class Email
             jsonAppender.put(format(`"%s": [`, toLower(headerName)));
             foreach(ref hv; allValues)
             {
-                jsonAppender.put(format(`{"rawValue": %s`, Json(hv.rawValue).toString));
+                jsonAppender.put(format(`{"name": %s`, Json(headerName).toString));
+                jsonAppender.put(format(`,"rawValue": %s`, Json(hv.rawValue).toString));
                 if (hv.addresses.length)
                     jsonAppender.put(format(`,"addresses": %s`, to!string(hv.addresses)));
                 jsonAppender.put("},");
@@ -475,6 +475,50 @@ final class Email
                 localAddresses ~= addr;
 
         return localAddresses;
+    }
+
+
+    // Proxies for the dbDriver functions used outside this class
+    string store(in Flag!"ForceInsertNew" forceNew = No.ForceInsertNew,
+                 in Flag!"StoreAttachMents" storeAttachs = Yes.StoreAttachMents)
+    {
+        return dbDriver.store(this, forceNew, storeAttachs);
+    }
+
+    static Email get(in string dbId) { return dbDriver.get(dbId); }
+
+    static EmailSummary getSummary(in string dbId) { return dbDriver.getSummary(dbId); }
+
+    static string getOriginal(in string id) { return dbDriver.getOriginal(id); }
+
+    static string messageIdToDbId(in string id) { return dbDriver.messageIdToDbId(id); }
+
+    static bool isOwnedBy(in string emailId, in string userName) 
+    { 
+        return dbDriver.isOwnedBy(emailId, userName);
+    }
+
+    static string addAttachment(in string id, in ApiAttachment apiAttach, in string content)
+    {
+        return dbDriver.addAttachment(id, apiAttach, content);
+    }
+
+    static void deleteAttachment(in string id, in string attachId)
+    {
+        dbDriver.deleteAttachment(id, attachId);
+    }
+
+    static void setDeleted(in string id, 
+                           in bool setDel, 
+                           in Flag!"UpdateConversation" update = Yes.UpdateConversation)
+    {
+        dbDriver.setDeleted(id, setDel, update);
+    }
+
+    static void removeById(in string id, 
+                           in Flag!"UpdateConversation" update = Yes.UpdateConversation)
+    {
+        dbDriver.removeById(id, update);
     }
 }
 
@@ -600,9 +644,9 @@ version(db_usetestdb)
         auto id = Email.dbDriver.store(dbEmail);
 
         // check that the doc has the deleted
-        // XXX traer con Email.get cuando este implementado para quitar dependencia de mongo
-        auto emailDoc = collection("email").findOne(["_id": id]);
-        assert(bsonBool(emailDoc.deleted));
+        auto dbEmail2 = Email.get(id);
+        assert(dbEmail2 !is null);
+        assert(dbEmail2.deleted);
 
         // check that the conversation has the link.deleted for this email set to true
         Conversation.upsert(dbEmail, ["inbox"], []);
@@ -665,7 +709,7 @@ version(search_test)
         writeln("Testing Email.search times");
         auto user1 = User.getFromAddress("testuser@testdatabase.com");
         auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
-        // last test on my laptop: about 230 msecs for 18 results with emailsummaries loaded
+        // last test on my laptop: about 40 msecs for 84 results with 33000 emails loaded
         StopWatch sw;
         sw.start();
         auto searchRes = Email.search(["testing"], user1.id);

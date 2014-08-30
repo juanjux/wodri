@@ -75,7 +75,7 @@ version(anytestdb)
             assert(user !is null);
             auto dbEmail = new Email(inEmail, destination);
             assert(dbEmail.isValid, "Email is not valid");
-            auto emailId = Email.dbDriver.store(dbEmail);
+            auto emailId = dbEmail.store();
             Conversation.upsert(dbEmail, ["inbox"], []);
         }
 
@@ -123,7 +123,7 @@ version(db_insertalltest)
                 continue;
 
             totalSw.start();
-            auto inEmail = new IncomingEmailImpl();
+            auto inEmail = new IncomingEmail();
 
             sw.start();
             inEmail.loadFromFile(File(e.name), attachmentStore);

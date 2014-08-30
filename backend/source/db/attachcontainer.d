@@ -5,7 +5,8 @@ import retriever.incomingemail: Attachment;
 import std.path;
 import std.array;
 import std.typecons;
-import webbackend.apiemail: ApiAttachment;
+import std.stdio;
+import webbackend.apiemail;
 import vibe.data.json;
 
 struct DbAttachment
@@ -83,6 +84,12 @@ struct AttachContainer
         if (dbId.length)
             dbattach.dbId = dbId;
         this.m_attachs ~= dbattach;
+        return this.m_attachs[$-1];
+    }
+
+    const(DbAttachment) add(const ref DbAttachment attach)
+    {
+        this.m_attachs ~= attach;
         return this.m_attachs[$-1];
     }
 

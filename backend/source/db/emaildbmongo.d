@@ -7,10 +7,11 @@ import common.utils;
 import db.attachcontainer: DbAttachment;
 import db.config;
 import db.conversation;
-import db.email: Email, EmailSummary;
+import db.email: Email, EmailSummary, TextPart;
 import db.emaildbinterface;
 import db.mongo;
 import db.user;
+import retriever.incomingemail: HeaderValue;
 import std.file;
 import std.path: baseName, buildPath, extension;
 import std.range;
@@ -26,7 +27,7 @@ import webbackend.apiemail;
 final class EmailDbMongo : EmailDbInterface
 {
     // non-interface helpers
-    
+
     /** Paranoic retrieval of emailDoc headers */
     private static string headerRaw(const ref Bson emailDoc, in string headerName)
     {
@@ -67,6 +68,76 @@ final class EmailDbMongo : EmailDbInterface
 
 
 override: // interface methods
+
+    Email get(in string dbId)
+    {
+        immutable emailDoc = findOneById("email", dbId);
+        if (emailDoc.isNull || emailDoc.headers.isNull)
+        {
+            logWarn(format("Requested email with id %s is null or has null headers", dbId));
+            return null;
+        }
+
+        auto ret               = new Email();
+        ret.dbId               = dbId;
+        ret.userId             = bsonStr(emailDoc["userId"]);
+        ret.deleted            = bsonBool(emailDoc["deleted"]);
+        ret.draft              = bsonBool(emailDoc["draft"]);
+        ret.forwardedTo        = bsonStrArraySafe(emailDoc["forwardedTo"]);
+        ret.destinationAddress = bsonStr(emailDoc["destinationAddress"]);
+        ret.messageId          = bsonStr(emailDoc["message-id"]);
+        ret.from               = HeaderValue(bsonStrSafe(emailDoc["from"].rawValue),
+                                             bsonStrArraySafe(emailDoc["from"].addresses));
+        ret.receivers          = HeaderValue(bsonStr(emailDoc["receivers"].rawValue),
+                                             bsonStrArray(emailDoc["receivers"].addresses));
+        ret.rawEmailPath       = bsonStrSafe(emailDoc["rawEmailPath"]);
+        ret.bodyPeek           = bsonStrSafe(emailDoc["bodyPeek"]);
+        ret.isoDate            = bsonStr(emailDoc["isodate"]);
+
+        foreach(ref docHeader; emailDoc.headers)
+        {
+            foreach(ref headerItem; docHeader)
+            {
+                ret.headers.addField(
+                    bsonStr(headerItem.name),
+                    HeaderValue(bsonStr(headerItem.rawValue),
+                                bsonStrArraySafe(headerItem.addresses))
+                );
+            }
+        }
+
+        // Attachments
+        if (!emailDoc.attachments.isNull)
+        {
+            foreach(ref attach; emailDoc.attachments)
+            {
+                DbAttachment att;
+                att.dbId      = bsonStr(attach.dbId);
+                att.ctype     = bsonStrSafe(attach.contentType);
+                att.filename  = bsonStrSafe(attach.fileName);
+                att.contentId = bsonStrSafe(attach.contentId);
+                att.size      = to!uint(bsonNumber(attach.size));
+                att.realPath  = bsonStr(attach.realPath);
+                ret.attachments.add(att);
+            }
+        }
+
+        // Append all parts of the same type
+        if (!emailDoc.textParts.isNull)
+        {
+            foreach(ref docTPart; emailDoc.textParts)
+            {
+                auto textPart = TextPart(
+                        bsonStrSafe(docTPart.contentType),
+                        bsonStrSafe(docTPart.content)
+                );
+                ret.textParts ~= textPart;
+            }
+        }
+        return ret;
+    }
+
+
     /**
      * Returns a smaller version of the standar email object
      */
@@ -160,83 +231,6 @@ override: // interface methods
                 res ~= EmailAndConvIds(bsonStr(item.emailDbId), bsonStr(item.convId));
         }
         return removeDups(res);
-    }
-
-
-    // FIXME: this should be a constructor of ApiEmail from an Email, just like Conversation
-    ApiEmail getApiEmail(in string dbId)
-    {
-        ApiEmail ret = null;
-        immutable emailDoc = findOneById("email", dbId, "from", "headers", "isodate",
-                                         "textParts", "deleted", "message-id", "draft",
-                                         "attachments");
-
-        if (!emailDoc.isNull)
-        {
-            ret = new ApiEmail();
-            ret.dbId = dbId;
-            ret.messageId = bsonStr(emailDoc["message-id"]);
-
-            // Headers
-            if (!emailDoc.headers.isNull)
-            {
-                ret.to      = EmailDbMongo.headerRaw(emailDoc, "to");
-                ret.cc      = EmailDbMongo.headerRaw(emailDoc, "cc");
-                ret.bcc     = EmailDbMongo.headerRaw(emailDoc, "bcc");
-                ret.date    = EmailDbMongo.headerRaw(emailDoc, "date");
-                ret.subject = EmailDbMongo.headerRaw(emailDoc, "subject");
-                ret.deleted = bsonBool(emailDoc.deleted);
-                ret.draft   = bsonBool(emailDoc.draft);
-            }
-
-            if (!emailDoc.deleted.isNull)
-                ret.deleted = bsonBool(emailDoc.deleted);
-
-            if (!emailDoc.from.rawValue.isNull)
-                ret.from = bsonStr(emailDoc.from.rawValue);
-
-            if (!emailDoc.isodate.isNull)
-                ret.isoDate = bsonStr(emailDoc.isodate);
-
-            // Attachments
-            if (!emailDoc.attachments.isNull)
-            {
-                foreach(ref attach; emailDoc.attachments)
-                {
-                    ApiAttachment att;
-                    att.size      = to!uint(bsonNumber(attach.size));
-                    att.dbId      = bsonStrSafe(attach.dbId);
-                    att.ctype     = bsonStrSafe(attach.contentType);
-                    att.filename  = bsonStrSafe(attach.fileName);
-                    att.contentId = bsonStrSafe(attach.contentId);
-                    att.Url       = joinPath("/",
-                                             joinPath(getConfig().URLAttachmentPath,
-                                             baseName(bsonStrSafe(attach.realPath))));
-                    ret.attachments ~= att;
-                }
-            }
-
-            // Append all parts of the same type
-            if (!emailDoc.textParts.isNull)
-            {
-                Appender!string bodyPlain;
-                Appender!string bodyHtml;
-                foreach(ref tpart; emailDoc.textParts)
-                {
-                    if (!tpart.contentType.isNull)
-                    {
-                        auto docCType = bsonStr(tpart.contentType);
-                        if (docCType == "text/html" && !tpart.content.isNull)
-                            bodyHtml.put(bsonStr(tpart.content));
-                        else
-                            bodyPlain.put(bsonStrSafe(tpart.content));
-                    }
-                }
-                ret.bodyHtml  = bodyHtml.data;
-                ret.bodyPlain = bodyPlain.data;
-            }
-        }
-        return ret;
     }
 
 
@@ -465,7 +459,7 @@ override: // interface methods
         headerIndexText.put("from:"~strip(email.from.rawValue)~"\n");
         foreach(hdrKey; HEADER_SEARCH_FIELDS)
         {
-            immutable hdrOrEmpty = hdrKey in email.headers 
+            immutable hdrOrEmpty = hdrKey in email.headers
                                               ? strip(email.headers[hdrKey].rawValue)
                                               : "";
             headerIndexText.put(hdrKey ~ ":" ~ hdrOrEmpty ~ "\n");
@@ -586,12 +580,11 @@ override: // interface methods
 
         // store the index document for Mongo's full text search engine
         if (getConfig().storeTextIndex)
-            Email.dbDriver.storeTextIndex(email);
+            storeTextIndex(email);
 
         return email.dbId;
     }
 }
-
 } // end version(MongoDriver)
 
 
@@ -686,34 +679,6 @@ version(db_usetestdb)
         assert(!summary.attachFileNames.length);
     }
 
-    unittest // getApiEmail
-    {
-        writeln("Testing EmailDbMongo.getApiEmail");
-        recreateTestDb();
-
-        auto emailMongo = scoped!EmailDbMongo();
-        auto convs    = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-        auto conv     = Conversation.get(convs[2].dbId);
-        assert(conv !is null);
-        auto apiEmail = emailMongo.getApiEmail(conv.links[0].emailDbId);
-
-        assert(apiEmail.dbId == conv.links[0].emailDbId);
-        assert(apiEmail.from == " Some Random User <someuser@somedomain.com>");
-        assert(apiEmail.to == " Test User1 <anotherUser@anotherdomain.com>");
-        assert(apiEmail.cc == "");
-        assert(apiEmail.bcc == "");
-        assert(apiEmail.subject == " Attachment test");
-        assert(apiEmail.isoDate == "2014-01-21T14:32:20Z");
-        assert(apiEmail.date == " Tue, 21 Jan 2014 15:32:20 +0100");
-        assert(apiEmail.attachments.length == 1);
-        assert(apiEmail.attachments[0].ctype == "application/pdf");
-        assert(apiEmail.attachments[0].filename == "C++ Pocket Reference.pdf");
-        assert(apiEmail.attachments[0].size == 1363761);
-        assert(toHexString(md5Of(apiEmail.bodyHtml)) == "15232B94D39F8EA5A902BB78100C50A7");
-        assert(toHexString(md5Of(apiEmail.bodyPlain))== "CB492B7DF9B5C170D7C87527940EFF3B");
-        assert(apiEmail.attachments[0].Url.startsWith("/attachment/"));
-        assert(apiEmail.attachments[0].Url.endsWith(".pdf"));
-    }
 
     unittest // searchEmails
     {
@@ -767,11 +732,10 @@ version(db_usetestdb)
         writeln("Testing EmailDbMongo.getOriginal");
         recreateTestDb();
 
+        auto emailMongo = scoped!EmailDbMongo();
         auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         auto conv = Conversation.get(convs[2].dbId);
         assert(conv !is null);
-        auto apiEmail = Email.dbDriver.getApiEmail(conv.links[0].emailDbId);
-        auto emailMongo = scoped!EmailDbMongo();
         auto rawText = emailMongo.getOriginal(conv.links[0].emailDbId);
 
         assert(toHexString(md5Of(rawText)) == "CFA0B90028C9E6C5130C5526ABB61F1F");
@@ -833,9 +797,10 @@ version(db_usetestdb)
     {
         writeln("Testing EmailDbMongo.setDeleted");
         recreateTestDb();
-        string messageId = "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com";
-        auto dbId = Email.dbDriver.messageIdToDbId(messageId);
+
         auto emailMongo = scoped!EmailDbMongo();
+        string messageId = "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com";
+        auto dbId = emailMongo.messageIdToDbId(messageId);
 
         emailMongo.setDeleted(dbId, true);
         auto emailDoc = collection("email").findOne(["_id": dbId]);
@@ -1106,5 +1071,48 @@ version(db_usetestdb)
         emailDoc = collection("email").findOne(["_id": dbId]);
         assert(!emailDoc.attachments.isNull);
         assert(emailDoc.attachments.length == 1);
+    }
+
+    unittest // get
+    {
+        writeln("Testing EmailDbMongo.get");
+        recreateTestDb();
+
+        auto emailMongo = scoped!EmailDbMongo();
+        auto emailDoc = EmailDbMongo.getEmailCursorAtPosition(0).front;
+        auto emailId  = bsonStr(emailDoc._id);
+        auto noEmail = emailMongo.get("noid");
+        assert(noEmail is null);
+
+        auto email    = emailMongo.get(emailId);
+        assert(email.dbId.length);
+        assert(!email.deleted);
+        assert(!email.draft);
+        assert(email.from == HeaderValue(" Some User <someuser@somedomain.com>",
+                                         ["someuser@somedomain.com"]));
+        assert(email.isoDate == "2013-05-27T05:42:30Z");
+        assert(email.bodyPeek == "Some text inside the email plain part");
+        assert(email.forwardedTo.length == 0);
+        assert(email.destinationAddress == "testuser@testdatabase.com");
+        assert(email.messageId == 
+                "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
+        assert(email.receivers == HeaderValue(" Test User1 <testuser@testdatabase.com>",
+                                              ["testuser@testdatabase.com"]));
+        assert(email.rawEmailPath.length);
+        assert(email.attachments.length == 2);
+        assert(email.attachments.list[0].ctype == "image/png");
+        assert(email.attachments.list[0].filename == "google.png");
+        assert(email.attachments.list[0].contentId == "<google>");
+        assert(email.attachments.list[0].size == 6321L);
+        assert(email.attachments.list[0].dbId.length);
+        assert(email.attachments.list[1].ctype == "image/jpeg");
+        assert(email.attachments.list[1].filename == "profilephoto.jpeg");
+        assert(email.attachments.list[1].contentId == "<profilephoto>");
+        assert(email.attachments.list[1].size == 1063L);
+        assert(email.attachments.list[1].dbId.length);
+        assert(email.textParts.length == 2);
+        assert(strip(email.textParts[0].content) == "Some text inside the email plain part");
+        assert(email.textParts[0].ctype == "text/plain");
+        assert(email.textParts[1].ctype == "text/html");
     }
 }

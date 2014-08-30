@@ -7,7 +7,7 @@
     "importPaths": [".", ".."],
     "sourcePaths": [".", ".."],
     "excludedSourceFiles": ["../retriever/main.d", "../retriever/test.d", "livetests.d", "test.d"],
-    "buildRequirements": ["requireBoundsCheck", "disallowDeprecations"],
+    "buildRequirements": ["requireBoundsCheck"],
     "dependencies": {
         "vibe-d": "~master",
     },

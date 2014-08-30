@@ -315,7 +315,7 @@ final class Conversation
         string[] empty;
         foreach(reference; references)
         {
-            conv.addLink(reference, empty, Email.dbDriver.messageIdToDbId(reference), email.deleted);
+            conv.addLink(reference, empty, Email.messageIdToDbId(reference), email.deleted);
         }
 
         bool wasInConversation = false;
@@ -345,7 +345,7 @@ final class Conversation
         if (!wasInConversation)
         {
             // get the attachFileNames and add this email to the conversation
-            const emailSummary = Email.dbDriver.getSummary(email.dbId);
+            const emailSummary = Email.getSummary(email.dbId);
             conv.addLink(messageId, emailSummary.attachFileNames, email.dbId, email.deleted);
         }
 
@@ -759,7 +759,7 @@ version(db_usetestdb)
         auto dbEmail = new Email(inEmail);
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        auto emailId = Email.dbDriver.store(dbEmail);
+        auto emailId = dbEmail.store();
         auto convId  = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         auto convDoc = findOneById("conversation", convId);
 
@@ -801,7 +801,7 @@ version(db_usetestdb)
         dbEmail.messageId = testMsgId;
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        emailId = Email.dbDriver.store(dbEmail);
+        emailId = dbEmail.store();
         convId = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         convDoc = findOneById("conversation", convId);
         assert(!convDoc.isNull);
@@ -837,7 +837,7 @@ version(db_usetestdb)
         dbEmail = new Email(inEmail);
         dbEmail.setOwner(dbEmail.localReceivers()[0]);
         assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        emailId = Email.dbDriver.store(dbEmail);
+        emailId = dbEmail.store();
         convId  = Conversation.upsert(dbEmail, tagsToAdd, []).dbId;
         convDoc = findOneById("conversation", convId);
 

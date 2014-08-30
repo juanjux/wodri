@@ -142,14 +142,14 @@ final class MessageImpl : Message
 override:
         ApiEmail get(string userName, string id)
         {
-            return Email.dbDriver.isOwnedBy(id, userName) ? Email.dbDriver.getApiEmail(id)
-                                                          : null;
+            return Email.isOwnedBy(id, userName) ? new ApiEmail(Email.get(id))
+                                                 : null;
         }
 
 
         string getRaw(string userName, string id)
         {
-            return Email.dbDriver.isOwnedBy(id, userName) ? Email.dbDriver.getOriginal(id)
+            return Email.isOwnedBy(id, userName) ? Email.getOriginal(id)
                                                : null;
         }
 
@@ -173,7 +173,7 @@ override:
             auto insertNew = draftContent.dbId.length == 0 ? Yes.ForceInsertNew
                                                            : No.ForceInsertNew;
             dbEmail.draft = true;
-            Email.dbDriver.store(dbEmail, insertNew, No.StoreAttachMents);
+            dbEmail.store(insertNew, No.StoreAttachMents);
 
             if (insertNew) // add to the conversation
                 Conversation.upsert(dbEmail, [], []);
@@ -183,20 +183,20 @@ override:
 
         void deleteEmail(string userName, string id, int purge=0)
         {
-            if (!Email.dbDriver.isOwnedBy(id, userName))
+            if (!Email.isOwnedBy(id, userName))
                 return;
 
             if (purge)
-                Email.dbDriver.removeById(id);
+                Email.removeById(id);
             else
-                Email.dbDriver.setDeleted(id, true);
+                Email.setDeleted(id, true);
         }
 
 
         void unDeleteEmail(string userName, string id)
         {
-            if (Email.dbDriver.isOwnedBy(id, userName))
-                Email.dbDriver.setDeleted(id, false, Yes.UpdateConversation);
+            if (Email.isOwnedBy(id, userName))
+                Email.setDeleted(id, false, Yes.UpdateConversation);
         }
 
 
@@ -205,16 +205,16 @@ override:
                              ApiAttachment attachment,
                              string base64Content)
         {
-            return Email.dbDriver.isOwnedBy(id, userName)
-                ? Email.dbDriver.addAttachment(id, attachment, base64Content)
-                : "";
+            return Email.isOwnedBy(id, userName)
+                                    ? Email.addAttachment(id, attachment, base64Content)
+                                    : "";
         }
 
 
         void deleteAttachment(string userName, string id, string attachmentId)
         {
-            if (Email.dbDriver.isOwnedBy(id, userName))
-                Email.dbDriver.deleteAttachment(id, attachmentId);
+            if (Email.isOwnedBy(id, userName))
+                Email.deleteAttachment(id, attachmentId);
         }
 
 }
@@ -298,7 +298,7 @@ override:
             if (purge)
             {
                 foreach(const link; conv.receivedLinks)
-                    Email.dbDriver.removeById(link.emailDbId, No.UpdateConversation);
+                    Email.removeById(link.emailDbId, No.UpdateConversation);
                 conv.remove();
                 return;
             }
@@ -308,7 +308,7 @@ override:
 
                 foreach(link; conv.receivedLinks)
                 {
-                    Email.dbDriver.setDeleted(link.emailDbId, true, No.UpdateConversation);
+                    Email.setDeleted(link.emailDbId, true, No.UpdateConversation);
                     link.deleted = true;
                 }
                 conv.addTag("deleted");
@@ -329,7 +329,7 @@ override:
             // undelete the email links and the emails
             foreach(link; conv.receivedLinks)
             {
-                Email.dbDriver.setDeleted(link.emailDbId,
+                Email.setDeleted(link.emailDbId,
                                         false,
                                         No.UpdateConversation);
                 link.deleted = false;
