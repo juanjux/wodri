@@ -1094,7 +1094,7 @@ version(db_usetestdb)
         assert(email.bodyPeek == "Some text inside the email plain part");
         assert(email.forwardedTo.length == 0);
         assert(email.destinationAddress == "testuser@testdatabase.com");
-        assert(email.messageId == 
+        assert(email.messageId ==
                 "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
         assert(email.receivers == HeaderValue(" Test User1 <testuser@testdatabase.com>",
                                               ["testuser@testdatabase.com"]));

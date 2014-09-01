@@ -1,27 +1,30 @@
 module db.domain;
 
 import std.typecons;
+import db.dbinterface.driverdomaininterface;
 version(MongoDriver)
 {
     import vibe.db.mongo.mongo;
     import db.mongo.mongo;
+    import db.mongo.driverdomainmongo;
 }
 
 final class Domain
 {
-    // ===================================================================
-    // DB methods, puts these under a version() if other DBs are supported
-    // ===================================================================
+    private static DriverDomainInterface dbDriver = null;
+
+    static this()
+    {
+        version(MongoDriver)
+            dbDriver = new DriverDomainMongo();
+    }
+
+    // ==========================================================
+    // Proxies for the dbDriver functions used outside this class
+    // ==========================================================
     static Flag!"HasDefaultUser" hasDefaultUser(in string domainName)
     {
-        immutable domain = collection("domain").findOne(
-                ["name": domainName], ["defaultUser": 1], QueryFlags.None
-        );
-        if (!domain.isNull &&
-            !domain.defaultUser.isNull &&
-            bsonStr(domain.defaultUser).length)
-            return Yes.HasDefaultUser;
-        return No.HasDefaultUser;
+        return dbDriver.hasDefaultUser(domainName);
     }
 }
 
@@ -42,7 +45,7 @@ version(db_usetestdb)
 
     unittest // hasDefaultUser
     {
-        writeln("Testing Domain.hasDefaultUser");
+        writeln("Testing DriverDomainMongo.hasDefaultUser");
         recreateTestDb();
         assert(Domain.hasDefaultUser("testdatabase.com"), "Domain.hasDefaultUser1");
         assert(!Domain.hasDefaultUser("anotherdomain.com"), "Domain.hasDefaultUser2");

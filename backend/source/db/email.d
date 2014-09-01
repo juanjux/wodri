@@ -95,10 +95,6 @@ final class Email
     {
         version(MongoDriver)
             dbDriver = new DriverEmailMongo();
-        version(SqliteDriver)
-            dbDriver = new DriverEmailSqlite();
-        version(PostgreSQLDriver)
-            dbDriver = new DriverEmailPostgres();
         enforce(dbDriver !is null, "You must select some DB driver!");
     }
 
@@ -476,7 +472,9 @@ final class Email
     }
 
 
+    // ===================================================================
     // Proxies for the dbDriver functions used outside this class
+    // ===================================================================
     string store(in Flag!"ForceInsertNew" forceNew = No.ForceInsertNew,
                  in Flag!"StoreAttachMents" storeAttachs = Yes.StoreAttachMents)
     {

@@ -2,7 +2,7 @@ module db.test_support;
 
 import db.config;
 import db.conversation;
-import db.email;
+//import db.email;
 import db.user;
 import retriever.incomingemail;
 import std.file;
@@ -44,6 +44,7 @@ version(anytestdb)
 
     void recreateTestDb()
     {
+        import db.email;
         emptyTestDb();
 
         // Fill the test DB
