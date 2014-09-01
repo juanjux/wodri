@@ -2,7 +2,6 @@ module db.test_support;
 
 import db.config;
 import db.conversation;
-//import db.email;
 import db.user;
 import retriever.incomingemail;
 import std.file;
@@ -33,61 +32,64 @@ version(anytestdb)
                                         "spam_tagged",
                                         "with_2megs_attachment",
                                         "spam_notagged_nomsgid"];
-    void emptyTestDb()
+    version(MongoDriver)
     {
-        foreach(string coll; ["conversation", "emailIndexContents", 
-                              "email", "domain", "user", "userrule"])
-            collection(coll).remove();
-        system(format("rm -f %s/*", getConfig.absAttachmentStore));
-        system(format("rm -f %s/*", getConfig.absRawEmailStore));
-    }
-
-    void recreateTestDb()
-    {
-        import db.email;
-        emptyTestDb();
-
-        // Fill the test DB
-        string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", 
-                                               "test", "testdb");
-        string[string] jsonfile2collection = ["user1.json"     : "user",
-                                              "user2.json"     : "user",
-                                              "domain1.json"   : "domain",
-                                              "domain2.json"   : "domain",
-                                              "userrule1.json" : "userrule",
-                                              "userrule2.json" : "userrule",];
-
-        foreach(file_, coll; jsonfile2collection)
+        void emptyTestDb()
         {
-            auto fixture = readText(buildPath(backendTestDataDir_, file_));
-            collection(coll).insert(parseJsonString(fixture));
+            foreach(string coll; ["conversation", "emailIndexContents", 
+                                  "email", "domain", "user", "userrule"])
+                collection(coll).remove();
+            system(format("rm -f %s/*", getConfig.absAttachmentStore));
+            system(format("rm -f %s/*", getConfig.absRawEmailStore));
         }
 
-        string backendTestEmailsDir = buildPath(
-                getConfig().mainDir, "backend", "test", "testemails"
-        );
-
-        foreach(mailname; TEST_EMAILS)
+        void recreateTestDb()
         {
-            auto inEmail = new IncomingEmail();
-            inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
-                                 getConfig.absAttachmentStore,
-                                 getConfig.absRawEmailStore);
+            import db.email;
+            emptyTestDb();
 
-            auto destination = inEmail.getHeader("to").addresses[0];
-            auto user = User.getFromAddress(destination);
-            assert(user !is null);
-            auto dbEmail = new Email(inEmail, destination);
-            assert(dbEmail.isValid, "Email is not valid");
-            auto emailId = dbEmail.store();
-            Conversation.upsert(dbEmail, ["inbox"], []);
-        }
+            // Fill the test DB
+            string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", 
+                                                   "test", "testdb");
+            string[string] jsonfile2collection = ["user1.json"     : "user",
+                                                  "user2.json"     : "user",
+                                                  "domain1.json"   : "domain",
+                                                  "domain2.json"   : "domain",
+                                                  "userrule1.json" : "userrule",
+                                                  "userrule2.json" : "userrule",];
 
-        // load the tests userIds
-        auto usersCursor = collection("user").find();
-        foreach(user; usersCursor)
-        {
-            USER_TO_ID[bsonStr(user.loginName)] = bsonStr(user._id);
+            foreach(file_, coll; jsonfile2collection)
+            {
+                auto fixture = readText(buildPath(backendTestDataDir_, file_));
+                collection(coll).insert(parseJsonString(fixture));
+            }
+
+            string backendTestEmailsDir = buildPath(
+                    getConfig().mainDir, "backend", "test", "testemails"
+            );
+
+            foreach(mailname; TEST_EMAILS)
+            {
+                auto inEmail = new IncomingEmail();
+                inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
+                                     getConfig.absAttachmentStore,
+                                     getConfig.absRawEmailStore);
+
+                auto destination = inEmail.getHeader("to").addresses[0];
+                auto user = User.getFromAddress(destination);
+                assert(user !is null);
+                auto dbEmail = new Email(inEmail, destination);
+                assert(dbEmail.isValid, "Email is not valid");
+                auto emailId = dbEmail.store();
+                Conversation.upsert(dbEmail, ["inbox"], []);
+            }
+
+            // load the tests userIds
+            auto usersCursor = collection("user").find();
+            foreach(user; usersCursor)
+            {
+                USER_TO_ID[bsonStr(user.loginName)] = bsonStr(user._id);
+            }
         }
     }
 }

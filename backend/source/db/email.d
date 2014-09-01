@@ -663,31 +663,31 @@ version(db_usetestdb)
         // with several messages grouped (thus, less results sometimes)
         writeln("Testing Email.search");
         recreateTestDb();
-        auto user1 = User.getFromAddress("testuser@testdatabase.com");
-        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
-        auto searchResults = Email.search(["inicio de sesión"], user1.id);
+        auto user1id = USER_TO_ID["testuser"];
+        auto user2id = USER_TO_ID["anotherUser"];
+        auto searchResults = Email.search(["inicio de sesión"], user1id);
         assert(searchResults.length == 1);
         assert(searchResults[0].matchingEmailsIdx == [1]);
 
-        auto searchResults2 = Email.search(["some"], user2.id);
+        auto searchResults2 = Email.search(["some"], user2id);
         assert(searchResults2.length == 2);
 
-        auto searchResults3 = Email.search(["some"], user2.id, "2014-06-01T14:32:20Z");
+        auto searchResults3 = Email.search(["some"], user2id, "2014-06-01T14:32:20Z");
         assert(searchResults3.length == 1);
-        auto searchResults4 = Email.search(["some"], user2.id, "2014-08-01T14:32:20Z");
+        auto searchResults4 = Email.search(["some"], user2id, "2014-08-01T14:32:20Z");
         assert(searchResults4.length == 0);
-        auto searchResults4b = Email.search(["some"], user2.id, "2018-05-28T14:32:20Z");
+        auto searchResults4b = Email.search(["some"], user2id, "2018-05-28T14:32:20Z");
         assert(searchResults4b.length == 0);
 
         string startFixedDate = "2005-01-01T00:00:00Z";
-        auto searchResults5 = Email.search(["some"], user2.id, startFixedDate,
+        auto searchResults5 = Email.search(["some"], user2id, startFixedDate,
                                            "2018-12-12T00:00:00Z");
         assert(searchResults5.length == 2);
-        auto searchResults5b = Email.search(["some"], user2.id, startFixedDate,
+        auto searchResults5b = Email.search(["some"], user2id, startFixedDate,
                                             "2014-02-01T00:00:00Z");
         assert(searchResults5b.length == 1);
         assert(searchResults5b[0].matchingEmailsIdx.length == 1);
-        auto searchResults5c = Email.search(["some"], user2.id, startFixedDate,
+        auto searchResults5c = Email.search(["some"], user2id, startFixedDate,
                                             "2015-02-21T00:00:00Z");
         assert(searchResults5c.length == 2);
     }
@@ -700,12 +700,10 @@ version(search_test)
     unittest  // search
     {
         writeln("Testing Email.search times");
-        auto user1 = User.getFromAddress("testuser@testdatabase.com");
-        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
         // last test on my laptop: about 40 msecs for 84 results with 33000 emails loaded
         StopWatch sw;
         sw.start();
-        auto searchRes = Email.search(["testing"], user1.id);
+        auto searchRes = Email.search(["testing"], USER_TO_ID["testuser"]);
         sw.stop();
         writeln(format("Time to search with a result set of %s convs: %s msecs",
                 searchRes.length, sw.peek.msecs));

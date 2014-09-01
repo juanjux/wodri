@@ -6,7 +6,8 @@ Backend-API:
     status.
 
 Backend-Retriever:
-    - more separate db drivers: config, user, userfilter, conversation, domain
+    - use USER_TO_ID on all tests where I'm still getting the user just for it
+    - more separate db drivers: conversation, test_support
     - unittest for every curl call for wrong auth user
     - general hunting of XXX and FIXMEs
 
@@ -18,7 +19,7 @@ Backend-Retriever:
 
     - Exception classes for the different parts that throw.
 
-    - Retriever's full test, use a Python script with the mail & smtp modules to
+    - Retriever's integration test, use a Python script with the mail & smtp modules to
       parse the test mails collection changing the receiver from [myRealAddr] to
       [mongoTestAddr] before delivering to Postfix, create a MongoDB database
       "webmailtest", populate it, check that we receive every email, check that

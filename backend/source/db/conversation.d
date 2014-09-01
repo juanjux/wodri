@@ -873,14 +873,10 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.getByReferences");
         recreateTestDb();
-        auto user1 = User.getFromAddress("testuser@testdatabase.com");
-        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
-        assert(user1 !is null);
-        assert(user2 !is null);
-        assert(user1.id.length);
-        assert(user2.id.length);
+        auto user1id = USER_TO_ID["testuser"];
+        auto user2id = USER_TO_ID["anotherUser"];
 
-        auto conv = Conversation.getByReferences(user1.id,
+        auto conv = Conversation.getByReferences(user1id,
                 ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
         assert(conv !is null);
         assert(conv.dbId.length);
@@ -895,7 +891,7 @@ version(db_usetestdb)
         assert(conv.links[1].deleted == false);
 
 
-        conv = Conversation.getByReferences(user2.id, ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
+        conv = Conversation.getByReferences(user2id, ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
         assert(conv !is null);
         assert(conv.dbId.length);
         assert(conv.lastDate == "2014-01-21T14:32:20Z");
@@ -907,11 +903,11 @@ version(db_usetestdb)
 
         Conversation.addTagDb(conv.dbId, "deleted");
         // check that it doesnt returns the deleted convs
-        conv = Conversation.getByReferences(user2.id,
+        conv = Conversation.getByReferences(user2id,
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
         assert(conv is null);
         // except when using Yes.WithDeleted
-        conv = Conversation.getByReferences(user2.id,
+        conv = Conversation.getByReferences(user2id,
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"],
                 Yes.WithDeleted);
         assert(conv !is null);
@@ -923,8 +919,7 @@ version(db_usetestdb)
         writeln("Testing Conversation.getByEmailId");
         recreateTestDb();
 
-        auto user1 = User.getFromAddress("testuser@testdatabase.com");
-        auto conv = Conversation.getByReferences(user1.id,
+        auto conv = Conversation.getByReferences(USER_TO_ID["testuser"],
                 ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
 
         auto conv2 = Conversation.getByEmailId(conv.links[0].emailDbId);
@@ -949,10 +944,6 @@ version(db_usetestdb)
         recreateTestDb();
         auto user1 = User.getFromAddress("testuser@testdatabase.com");
         auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
-        assert(user1 !is null);
-        assert(user2 !is null);
-        assert(user1.id.length);
-        assert(user2.id.length);
 
         auto conv = Conversation.getByReferences(user1.id,
                 ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
