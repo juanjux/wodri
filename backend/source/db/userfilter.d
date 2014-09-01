@@ -5,13 +5,15 @@ import std.algorithm;
 import std.typecons;
 import vibe.core.log;
 import vibe.data.bson;
-import vibe.db.mongo.mongo;
-import db.mongo;
 import db.config;
 import db.email;
 import db.tagcontainer;
+version(MongoDriver)
+{
+    import vibe.db.mongo.mongo;
+    import db.mongo.mongo;
+}
 version(unittest)import std.stdio;
-
 
 enum SizeRuleType
 {

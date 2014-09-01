@@ -1,10 +1,13 @@
 module db.user;
 
 import std.array;
-import db.mongo;
 import db.domain;
 import vibe.data.bson;
-import vibe.db.mongo.mongo;
+version(MongoDriver)
+{
+    import vibe.db.mongo.mongo;
+    import db.mongo.mongo;
+}
 
 final class User
 {

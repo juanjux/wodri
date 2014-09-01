@@ -3,7 +3,6 @@ module webbackend.apiconversationsummary;
 import common.utils;
 import db.conversation;
 import db.email;
-import db.mongo;
 import retriever.incomingemail: EMAIL_REGEX;
 import std.algorithm;
 import std.array;

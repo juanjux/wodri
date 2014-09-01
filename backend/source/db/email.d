@@ -6,9 +6,7 @@ import common.utils;
 import db.attachcontainer;
 import db.config;
 import db.conversation;
-import db.emaildbinterface;
-import db.emaildbmongo;
-import db.mongo;
+import db.driveremailinterface;
 import db.user;
 import retriever.incomingemail;
 import std.algorithm: among, sort, uniq;
@@ -22,10 +20,14 @@ import std.typecons;
 import std.utf: count, toUTFindex;
 import vibe.core.log;
 import vibe.data.bson;
-import vibe.db.mongo.mongo;
-import vibe.inet.path: joinPath;
 import vibe.utils.dictionarylist;
 import webbackend.apiemail;
+version(MongoDriver)
+{
+    import db.mongo.driveremailmongo;
+    import db.mongo.mongo;
+    import vibe.db.mongo.mongo;
+}
 
 
 struct TextPart
@@ -74,7 +76,7 @@ private HeaderValue field2HeaderValue(string field)
 
 final class Email
 {
-    private static EmailDbInterface dbDriver = null;
+    private static DriverEmailInterface dbDriver = null;
 
     string         dbId;
     string         userId;
@@ -96,11 +98,11 @@ final class Email
     static this()
     {
         version(MongoDriver)
-            dbDriver = new EmailDbMongo();
+            dbDriver = new DriverEmailMongo();
         version(SqliteDriver)
-            dbDriver = new SqLiteDriver();
+            dbDriver = new DriverEmailSqlite();
         version(PostgreSQLDriver)
-            dbDriver = new PostgreSQLDriver();
+            dbDriver = new DriverEmailPostgres();
         enforce(dbDriver !is null, "You must select some DB driver!");
     }
 
@@ -493,8 +495,8 @@ final class Email
 
     static string messageIdToDbId(in string id) { return dbDriver.messageIdToDbId(id); }
 
-    static bool isOwnedBy(in string emailId, in string userName) 
-    { 
+    static bool isOwnedBy(in string emailId, in string userName)
+    {
         return dbDriver.isOwnedBy(emailId, userName);
     }
 
@@ -508,14 +510,14 @@ final class Email
         dbDriver.deleteAttachment(id, attachId);
     }
 
-    static void setDeleted(in string id, 
-                           in bool setDel, 
+    static void setDeleted(in string id,
+                           in bool setDel,
                            in Flag!"UpdateConversation" update = Yes.UpdateConversation)
     {
         dbDriver.setDeleted(id, setDel, update);
     }
 
-    static void removeById(in string id, 
+    static void removeById(in string id,
                            in Flag!"UpdateConversation" update = Yes.UpdateConversation)
     {
         dbDriver.removeById(id, update);
@@ -538,8 +540,6 @@ version(db_usetestdb)
     import std.digest.md;
     import std.range;
     import db.test_support;
-    import db.emaildbmongo;
-
 
     unittest  // this(ApiEmail)
     {
@@ -576,11 +576,10 @@ version(db_usetestdb)
         assert(dbEmail.textParts.length == 1);
 
         // Test3: New draft, reply
-        auto convs     = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
-        auto conv      = Conversation.get(convs[0].dbId);
-        auto emailDoc  = collection("email").findOne(["_id": conv.links[1].emailDbId]);
-        auto emailDbId = bsonStr(emailDoc._id);
-        auto emailReferences = bsonStrArray(emailDoc.headers.references[0].addresses);
+        auto convs           = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
+        auto conv            = Conversation.get(convs[0].dbId);
+        auto emailDbId       = conv.links[1].emailDbId;
+        auto emailReferences = Email.get(emailDbId).getHeader("references").addresses;
 
         apiEmail.dbId      = "";
         apiEmail.messageId = "";

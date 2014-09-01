@@ -4,7 +4,6 @@ import core.time: TimeException;
 import common.utils;
 import db.config: getConfig;
 import db.email;
-import db.mongo;
 import db.tagcontainer;
 import db.user;
 import std.algorithm;
@@ -15,7 +14,11 @@ import std.string;
 import std.typecons;
 import vibe.core.log;
 import vibe.data.bson;
-import vibe.db.mongo.mongo;
+version(MongoDriver)
+{
+    import vibe.db.mongo.mongo;
+    import db.mongo.mongo;
+}
 
 
 private string clearSubject(in string subject)

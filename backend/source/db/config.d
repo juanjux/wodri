@@ -4,7 +4,7 @@ import std.path;
 import std.conv;
 import std.algorithm;
 import vibe.core.log;
-import db.mongo;
+version(MongoDriver) import db.mongo.mongo;
 
 version(db_usetestdb)     version = anytestdb;
 version(db_usebigdb)      version = anytestdb;

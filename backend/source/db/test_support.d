@@ -3,7 +3,6 @@ module db.test_support;
 import db.config;
 import db.conversation;
 import db.email;
-import db.mongo;
 import db.user;
 import retriever.incomingemail;
 import std.file;
@@ -11,8 +10,12 @@ import std.path;
 import std.process;
 import std.string;
 import std.typecons;
-import vibe.db.mongo.mongo;
 
+version(MongoDriver)
+{
+    import db.mongo.mongo;
+    import vibe.db.mongo.mongo;
+}
 
 version(db_usetestdb)     version = anytestdb;
 version(db_usebigdb)      version = anytestdb;

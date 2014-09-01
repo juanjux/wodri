@@ -2,7 +2,6 @@ module webbackend.api;
 
 import db.conversation;
 import db.email;
-import db.mongo;
 import db.user;
 import std.algorithm;
 import std.array;
@@ -20,6 +19,7 @@ import webbackend.apiconversationsummary;
 import webbackend.apiemail;
 import webbackend.constants;
 import webbackend.utils;
+version(MongoDriver) import db.mongo.mongo;
 
 struct ApiSearchResult
 {

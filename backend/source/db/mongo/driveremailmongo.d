@@ -1,4 +1,4 @@
-module db.emaildbmongo;
+module db.mongo.driveremailmongo;
 
 version(MongoDriver)
 {
@@ -8,8 +8,8 @@ import db.attachcontainer: DbAttachment;
 import db.config;
 import db.conversation;
 import db.email: Email, EmailSummary, TextPart;
-import db.emaildbinterface;
-import db.mongo;
+import db.driveremailinterface;
+import db.mongo.mongo;
 import db.user;
 import retriever.incomingemail: HeaderValue;
 import std.file;
@@ -24,7 +24,7 @@ import vibe.db.mongo.mongo;
 import vibe.inet.path: joinPath;
 import webbackend.apiemail;
 
-final class EmailDbMongo : EmailDbInterface
+final class DriverEmailMongo : DriverEmailInterface
 {
     // non-interface helpers
 
@@ -618,22 +618,22 @@ version(db_usetestdb)
     }
 
 
-    unittest // EmailDbMongo.headerRaw
+    unittest // DriverEmailMongo.headerRaw
     {
-        writeln("Testing EmailDbMongo.headerRaw");
+        writeln("Testing DriverEmailMongo.headerRaw");
         auto bson = parseJsonString("{}");
         auto emailDoc = collection("email").findOne(bson);
 
-        assert(EmailDbMongo.headerRaw(emailDoc, "delivered-to") == " testuser@testdatabase.com");
-        assert(EmailDbMongo.headerRaw(emailDoc, "date") == " Mon, 27 May 2013 07:42:30 +0200");
-        assert(!EmailDbMongo.headerRaw(emailDoc, "inventedHere").length);
+        assert(DriverEmailMongo.headerRaw(emailDoc, "delivered-to") == " testuser@testdatabase.com");
+        assert(DriverEmailMongo.headerRaw(emailDoc, "date") == " Mon, 27 May 2013 07:42:30 +0200");
+        assert(!DriverEmailMongo.headerRaw(emailDoc, "inventedHere").length);
     }
 
     unittest // messageIdToDbId
     {
-        writeln("Testing EmailDbMongo.messageIdToDbId");
+        writeln("Testing DriverEmailMongo.messageIdToDbId");
         recreateTestDb();
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
         auto id1 = emailMongo.messageIdToDbId("CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
         auto id2 = emailMongo.messageIdToDbId("AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
         auto id3 = emailMongo.messageIdToDbId("CAGA-+RScZe0tqmG4rbPTSrSCKT8BmkNAGBUOgvCOT5ywycZzZA@mail.gmail.com");
@@ -650,10 +650,10 @@ version(db_usetestdb)
 
     unittest // getSummary
     {
-        writeln("Testing EmailDbMongo.getSummary");
+        writeln("Testing DriverEmailMongo.getSummary");
         recreateTestDb();
 
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
         auto convs    = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         auto conv     = Conversation.get(convs[2].dbId);
         assert(conv !is null);
@@ -682,11 +682,11 @@ version(db_usetestdb)
 
     unittest // searchEmails
     {
-        writeln("Testing EmailDbMongo.searchEmails");
+        writeln("Testing DriverEmailMongo.searchEmails");
         recreateTestDb();
         auto user1 = User.getFromAddress("testuser@testdatabase.com");
         auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
         auto results = emailMongo.searchEmails(["inicio de sesión"], user1.id);
         assert(results.length == 1);
         auto conv  = Conversation.get(results[0].convId);
@@ -727,12 +727,12 @@ version(db_usetestdb)
     }
 
 
-    unittest // EmailDbMongo.getOriginal
+    unittest // DriverEmailMongo.getOriginal
     {
-        writeln("Testing EmailDbMongo.getOriginal");
+        writeln("Testing DriverEmailMongo.getOriginal");
         recreateTestDb();
 
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
         auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         auto conv = Conversation.get(convs[2].dbId);
         assert(conv !is null);
@@ -743,13 +743,13 @@ version(db_usetestdb)
     }
 
 
-    unittest // EmailDbMongo.addAttachment
+    unittest // DriverEmailMongo.addAttachment
     {
-        writeln("Testing EmailDbMongo.addAttachment");
+        writeln("Testing DriverEmailMongo.addAttachment");
         recreateTestDb();
 
         // add
-        auto emailDoc = EmailDbMongo.getEmailCursorAtPosition(0).front;
+        auto emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
         auto emailDbId = bsonStr(emailDoc._id);
 
         ApiAttachment apiAttach;
@@ -758,10 +758,10 @@ version(db_usetestdb)
         apiAttach.contentId = "someContentId";
         apiAttach.size = 12;
         string base64content = "aGVsbG8gd29ybGQ="; // "hello world"
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
         auto attachId = emailMongo.addAttachment(emailDbId, apiAttach, base64content);
 
-        emailDoc = EmailDbMongo.getEmailCursorAtPosition(0).front;
+        emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
         assert(emailDoc.attachments.length == 3);
         auto attachDoc = emailDoc.attachments[2];
         assert(attachId == bsonStr(attachDoc.dbId));
@@ -775,19 +775,19 @@ version(db_usetestdb)
     }
 
 
-    unittest // EmailDbMongo.deleteAttachment
+    unittest // DriverEmailMongo.deleteAttachment
     {
-        writeln("Testing EmailDbMongo.deleteAttachment");
+        writeln("Testing DriverEmailMongo.deleteAttachment");
         recreateTestDb();
-        auto emailDoc = EmailDbMongo.getEmailCursorAtPosition(0).front;
+        auto emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
         auto emailDbId = bsonStr(emailDoc._id);
         assert(emailDoc.attachments.length == 2);
         auto attachId = bsonStr(emailDoc.attachments[0].dbId);
         auto attachPath = bsonStr(emailDoc.attachments[0].realPath);
-        auto dbMongo = scoped!EmailDbMongo();
+        auto dbMongo = scoped!DriverEmailMongo();
         dbMongo.deleteAttachment(emailDbId, attachId);
 
-        emailDoc = EmailDbMongo.getEmailCursorAtPosition(0).front;
+        emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
         assert(emailDoc.attachments.length == 1);
         assert(bsonStr(emailDoc.attachments[0].dbId) != attachId);
         assert(!attachPath.exists);
@@ -795,10 +795,10 @@ version(db_usetestdb)
 
     unittest // setDeleted
     {
-        writeln("Testing EmailDbMongo.setDeleted");
+        writeln("Testing DriverEmailMongo.setDeleted");
         recreateTestDb();
 
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
         string messageId = "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com";
         auto dbId = emailMongo.messageIdToDbId(messageId);
 
@@ -820,7 +820,7 @@ version(db_usetestdb)
 
     unittest // storeTextIndex
     {
-        writeln("Testing EmailDbMongo.storeTextIndex");
+        writeln("Testing DriverEmailMongo.storeTextIndex");
         recreateTestDb();
 
         auto findJson = `{"$text": {"$search": "DOESNTEXISTS"}}`;
@@ -868,8 +868,8 @@ version(db_usetestdb)
 
     unittest
     {
-        writeln("Testing EmailDbMongo.getReferencesFromPrevious");
-        auto emailMongo = scoped!EmailDbMongo();
+        writeln("Testing DriverEmailMongo.getReferencesFromPrevious");
+        auto emailMongo = scoped!DriverEmailMongo();
         assert(emailMongo.getReferencesFromPrevious("doesntexists").length == 0);
 
         auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
@@ -889,15 +889,15 @@ version(db_usetestdb)
 
     unittest // isOwnedBy
     {
-        writeln("Testing EmailDbMongo.isOwnedBy");
+        writeln("Testing DriverEmailMongo.isOwnedBy");
         recreateTestDb();
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
         auto user1 = User.getFromAddress("testuser@testdatabase.com");
         auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
         assert(user1 !is null);
         assert(user2 !is null);
 
-        auto cursor = EmailDbMongo.getEmailCursorAtPosition(0);
+        auto cursor = DriverEmailMongo.getEmailCursorAtPosition(0);
         auto email1 = cursor.front;
         assert(emailMongo.isOwnedBy(bsonStr(email1._id), user1.loginName));
 
@@ -949,13 +949,13 @@ version(db_usetestdb)
                 assert(!att.exists);
         }
 
-        writeln("Testing EmailDbMongo.removeById");
+        writeln("Testing DriverEmailMongo.removeById");
         recreateTestDb();
         auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         auto singleMailConv = convs[0];
         auto singleConvId   = singleMailConv.dbId;
         auto singleMailId   = singleMailConv.links[0].emailDbId;
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
 
         // since this is a single mail conversation, it should be deleted when the single
         // email is deleted
@@ -1000,10 +1000,10 @@ version(db_usetestdb)
 
     unittest // store()
     {
-        writeln("Testing EmailDbMongo.store");
+        writeln("Testing DriverEmailMongo.store");
         recreateTestDb();
         // recreateTestDb already calls email.store, check that the inserted email is fine
-        auto emailDoc = EmailDbMongo.getEmailCursorAtPosition(0).front;
+        auto emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
         assert(emailDoc.headers.references[0].addresses.length == 1);
         assert(bsonStr(emailDoc.headers.references[0].addresses[0]) ==
                 "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com");
@@ -1019,7 +1019,7 @@ version(db_usetestdb)
         assert(bsonStr(emailDoc.bodyPeek) == "Some text inside the email plain part");
 
         // check generated msgid
-        auto cursor = EmailDbMongo.getEmailCursorAtPosition(
+        auto cursor = DriverEmailMongo.getEmailCursorAtPosition(
                 countUntil(db.test_support.TEST_EMAILS, "spam_notagged_nomsgid")
         );
         assert(bsonStr(cursor.front["message-id"]).length);
@@ -1028,9 +1028,9 @@ version(db_usetestdb)
 
     unittest
     {
-        writeln("Testing EmailDbMongo.store(forceInsertNew)");
+        writeln("Testing DriverEmailMongo.store(forceInsertNew)");
         recreateTestDb();
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
 
         auto apiEmail = getTestApiEmail();
         auto dbEmail = new Email(apiEmail);
@@ -1050,9 +1050,9 @@ version(db_usetestdb)
 
     unittest
     {
-        writeln("Testing EmailDbMongo.store(storeAttachMents");
+        writeln("Testing DriverEmailMongo.store(storeAttachMents");
         recreateTestDb();
-        auto emailMongo = scoped!EmailDbMongo();
+        auto emailMongo = scoped!DriverEmailMongo();
         auto apiEmail = getTestApiEmail();
         apiEmail.attachments = [
             ApiAttachment(joinPath("/" ~ getConfig.URLAttachmentPath, "somefilecode.jpg"),
@@ -1075,11 +1075,11 @@ version(db_usetestdb)
 
     unittest // get
     {
-        writeln("Testing EmailDbMongo.get");
+        writeln("Testing DriverEmailMongo.get");
         recreateTestDb();
 
-        auto emailMongo = scoped!EmailDbMongo();
-        auto emailDoc = EmailDbMongo.getEmailCursorAtPosition(0).front;
+        auto emailMongo = scoped!DriverEmailMongo();
+        auto emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
         auto emailId  = bsonStr(emailDoc._id);
         auto noEmail = emailMongo.get("noid");
         assert(noEmail is null);
@@ -1115,4 +1115,4 @@ version(db_usetestdb)
         assert(email.textParts[0].ctype == "text/plain");
         assert(email.textParts[1].ctype == "text/html");
     }
-}
+} // end version(MongoDriver)

@@ -1,8 +1,11 @@
 module db.domain;
 
 import std.typecons;
-import vibe.db.mongo.mongo;
-import db.mongo;
+version(MongoDriver)
+{
+    import vibe.db.mongo.mongo;
+    import db.mongo.mongo;
+}
 
 final class Domain
 {

@@ -1,5 +1,7 @@
-module db.mongo;
+module db.mongo.mongo;
 
+version(MongoDriver)
+{
 import arsd.htmltotext;
 import std.algorithm;
 import std.array;
@@ -117,3 +119,4 @@ Bson findOneById(in string coll, in string id, in string[] fields ...)
 
     return collection(coll).findOne(["_id": id], map, QueryFlags.None);
 }
+} // end version(MongoDriver)
