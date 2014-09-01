@@ -15,7 +15,6 @@ final class DriverUserfilterMongo : DriverUserfilterInterface
 // this override doesnt detect getByAddress as override if uncommented, probably compiler
 // bug: FIXME: try with laters versions or open bug report:
 //override:
-
     UserFilter[] getByAddress(in string address)
     {
         UserFilter[] res;

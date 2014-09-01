@@ -5,7 +5,6 @@ import common.utils;
 import db.config: getConfig;
 import db.email;
 import db.tagcontainer;
-import db.user;
 import std.algorithm;
 import std.path;
 import std.regex;
@@ -426,6 +425,7 @@ final class Conversation
 
     static bool isOwnedBy(string convId, string userName)
     {
+        import db.user;
         immutable userId = User.getIdFromLoginName(userName);
         if (!userId.length)
             return false;

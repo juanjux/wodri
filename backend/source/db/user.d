@@ -1,7 +1,6 @@
 module db.user;
 
 import std.array;
-import db.domain;
 import vibe.data.bson;
 version(MongoDriver)
 {
@@ -19,18 +18,28 @@ final class User
     string name;
     string surname;
 
+    static bool addressIsLocal(in string address)
+    {
+        import db.domain: Domain;
+
+        if (!address.length)
+            return false;
+        if (Domain.hasDefaultUser(address.split("@")[1]))
+            return true;
+        return (getFromAddress(address) !is null);
+    }
     // ===================================================================
     // DB methods, puts these under a version() if other DBs are supported
     // ===================================================================
     static User get(in string id)
     {
-        return getFromDirectField("_id", id);
+        return getObjectFromField("_id", id);
     }
 
 
     static User getFromLoginName(in string login)
     {
-        return getFromDirectField("loginName", login);
+        return getObjectFromField("loginName", login);
     }
 
     static string getIdFromLoginName(in string login)
@@ -45,25 +54,14 @@ final class User
         immutable userResult = collection("user").findOne(
                 parseJsonString(`{"addresses": {"$in": [` ~ Json(address).toString ~ `]}}`)
         );
-        return userResult.isNull ? null 
-                                 : userDocToObject(userResult);
+        return userResult.isNull ? null : userDocToObject(userResult);
     }
 
 
-    static bool addressIsLocal(in string address)
-    {
-        if (!address.length)
-            return false;
-        if (Domain.hasDefaultUser(address.split("@")[1]))
-            return true;
-        return (getFromAddress(address) !is null);
-    }
-
-
-    private static User getFromDirectField(in string fieldName, in string fieldValue)
+    private static User getObjectFromField(in string fieldName, in string fieldValue)
     {
         immutable userResult = collection("user").findOne([fieldName: fieldValue]);
-        return userResult.isNull ? null : userDocToObject(userResult); 
+        return userResult.isNull ? null : userDocToObject(userResult);
     }
 
 
@@ -111,7 +109,7 @@ version(db_usetestdb)
     }
 
 
-    unittest 
+    unittest
     {
         writeln("Testing User.getFromLoginName");
         recreateTestDb();
