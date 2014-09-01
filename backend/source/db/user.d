@@ -18,6 +18,14 @@ final class User
     string name;
     string surname;
 
+    private static DriverUserInterface dbDriver = null;
+
+    static this()
+    {
+        version(MongoDriver)
+            dbDriver = new DriverUserMongo();
+    }
+
     static bool addressIsLocal(in string address)
     {
         import db.domain: Domain;
