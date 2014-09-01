@@ -8,7 +8,7 @@ import db.attachcontainer: DbAttachment;
 import db.config;
 import db.conversation;
 import db.email: Email, EmailSummary, TextPart;
-import db.driveremailinterface;
+import db.dbinterface.driveremailinterface;
 import db.mongo.mongo;
 import db.user;
 import retriever.incomingemail: HeaderValue;

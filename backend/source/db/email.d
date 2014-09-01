@@ -1,25 +1,21 @@
 module db.email;
 
-import arsd.characterencodings: decodeBase64Stubborn;
 import arsd.htmltotext;
 import common.utils;
 import db.attachcontainer;
 import db.config;
 import db.conversation;
-import db.driveremailinterface;
+import db.dbinterface.driveremailinterface;
 import db.user;
 import retriever.incomingemail;
-import std.algorithm: among, sort, uniq;
-import std.datetime;
-import std.file;
-import std.path: baseName, buildPath, extension;
+import std.algorithm: among;
+import std.path: buildPath;
 import std.regex;
-import std.stdio: File, writeln;
+import std.stdio: writeln;
 import std.string;
 import std.typecons;
 import std.utf: count, toUTFindex;
 import vibe.core.log;
-import vibe.data.bson;
 import vibe.utils.dictionarylist;
 import webbackend.apiemail;
 version(MongoDriver)
@@ -68,7 +64,7 @@ private HeaderValue field2HeaderValue(string field)
 {
     HeaderValue hv;
     hv.rawValue = field;
-    foreach(ref c; match(field, EMAIL_REGEX))
+    foreach(ref c; std.regex.match(field, EMAIL_REGEX))
         if (c.hit.length) hv.addresses ~= c.hit;
     return hv;
 }
