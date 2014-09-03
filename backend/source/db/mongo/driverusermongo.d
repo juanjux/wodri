@@ -34,8 +34,7 @@ final class DriverUserMongo : DriverUserInterface
         return ret;
     }
 
-override:
-
+//override: // buggy compiled doesnt detect the override
     User get(in string id)
     {
         return getObjectFromField("_id", id);

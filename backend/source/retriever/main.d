@@ -7,16 +7,19 @@ import std.path;
 import std.file;
 import std.string;
 import std.conv;
-import std.algorithm: uniq;
+import std.algorithm: uniq, sort;
 import std.array: array;
 import vibe.core.log;
 import retriever.incomingemail;
-import db.mongo;
 import db.config;
 import db.conversation;
 import db.userfilter;
 import db.email;
 import db.user;
+version(MongoDriver)
+{
+    import db.mongo.mongo;
+}
 
 version(maintest){}
 else version = not_maintest;
@@ -59,7 +62,7 @@ void saveAndLogRejectedEmail(in Email email,
 
 
 // XXX test when I've the integration tests
-/** Store a new email in DB and upsert a conversation every local receiver
+/** Store a new email in DB and addEmail a conversation every local receiver
  */
 void processEmailForAddress(in string destination, Email email)
 {
@@ -76,7 +79,7 @@ void processEmailForAddress(in string destination, Email email)
     foreach(filter; userFilters)
         filter.apply(email, tagsToAdd, tagsToRemove);
 
-    Conversation.upsert(email, tagsToAdd, tagsToRemove);
+    Conversation.addEmail(email, tagsToAdd, tagsToRemove);
 }
 
 // XXX test when I've the full cycle tests

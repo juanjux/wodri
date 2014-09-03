@@ -6,6 +6,5 @@ interface DriverConfigInterface
 {
     RetrieverConfig getConfig();
 
-    version(unittest)
     void insertTestSettings();
 }

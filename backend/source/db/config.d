@@ -2,6 +2,7 @@ module db.config;
 
 import db.dbinterface.driverconfiginterface;
 import std.path;
+import std.exception: enforce;
 
 version(MongoDriver)
 {
@@ -53,12 +54,17 @@ private DriverConfigInterface g_driverInterface;
 shared static this()
 {
     version(MongoDriver)
+    {
         g_driverInterface = new DriverConfigMongo();
+    }
+    enforce(g_driverInterface !is null, "Configure a DB backend");
 
     g_retrieverConfig = g_driverInterface.getConfig();
 
     version(anytestdb)
+    {
         g_driverInterface.insertTestSettings();
+    }
 }
 
 ref immutable(RetrieverConfig) getConfig() { return g_retrieverConfig; }

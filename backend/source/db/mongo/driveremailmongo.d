@@ -6,11 +6,9 @@ import arsd.characterencodings: decodeBase64Stubborn;
 import common.utils;
 import db.attachcontainer: DbAttachment;
 import db.config;
-import db.conversation;
 import db.email: Email, EmailSummary, TextPart;
 import db.dbinterface.driveremailinterface;
 import db.mongo.mongo;
-import db.user;
 import retriever.incomingemail: HeaderValue;
 import std.file;
 import std.path: baseName, buildPath, extension;
@@ -176,6 +174,7 @@ override: // interface methods
 
     bool isOwnedBy(in string emailId, in string userName)
     {
+        import db.user;
         immutable userId = User.getIdFromLoginName(userName);
         if (!userId.length)
             return false;
@@ -357,6 +356,8 @@ override: // interface methods
                     in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
     )
     {
+        import db.conversation;
+
         // Get the email from the DB, check the needed deleted and userId fields
         immutable emailDoc = findOneById("email", dbId, "deleted");
         if (emailDoc.isNull || emailDoc.deleted.isNull)
@@ -393,6 +394,8 @@ override: // interface methods
             in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
     )
     {
+        import db.conversation;
+
         immutable emailDoc = findOneById("email", dbId, "_id", "attachments", "rawEmailPath");
         if (emailDoc.isNull)
         {
@@ -602,7 +605,6 @@ version(db_test)
 version(db_usetestdb)
 {
     import db.test_support;
-    import db.conversation;
     import std.digest.md;
 
     ApiEmail getTestApiEmail()
@@ -650,6 +652,7 @@ version(db_usetestdb)
 
     unittest // getSummary
     {
+        import db.conversation;
         writeln("Testing DriverEmailMongo.getSummary");
         recreateTestDb();
 
@@ -682,6 +685,8 @@ version(db_usetestdb)
 
     unittest // searchEmails
     {
+        import db.conversation;
+        import db.user;
         writeln("Testing DriverEmailMongo.searchEmails");
         recreateTestDb();
         auto user1 = User.getFromAddress("testuser@testdatabase.com");
@@ -729,6 +734,7 @@ version(db_usetestdb)
 
     unittest // DriverEmailMongo.getOriginal
     {
+        import db.conversation;
         writeln("Testing DriverEmailMongo.getOriginal");
         recreateTestDb();
 
@@ -795,6 +801,7 @@ version(db_usetestdb)
 
     unittest // setDeleted
     {
+        import db.conversation;
         writeln("Testing DriverEmailMongo.setDeleted");
         recreateTestDb();
 
@@ -820,6 +827,7 @@ version(db_usetestdb)
 
     unittest // storeTextIndex
     {
+        import db.user;
         writeln("Testing DriverEmailMongo.storeTextIndex");
         recreateTestDb();
 
@@ -868,6 +876,7 @@ version(db_usetestdb)
 
     unittest
     {
+        import db.conversation;
         writeln("Testing DriverEmailMongo.getReferencesFromPrevious");
         auto emailMongo = scoped!DriverEmailMongo();
         assert(emailMongo.getReferencesFromPrevious("doesntexists").length == 0);
@@ -889,6 +898,7 @@ version(db_usetestdb)
 
     unittest // isOwnedBy
     {
+        import db.user;
         writeln("Testing DriverEmailMongo.isOwnedBy");
         recreateTestDb();
         auto emailMongo = scoped!DriverEmailMongo();
@@ -920,6 +930,7 @@ version(db_usetestdb)
 
     unittest // removeById
     {
+        import db.conversation;
         struct EmailFiles
         {
             string rawEmail;

@@ -1,8 +1,6 @@
 module db.test_support;
 
 import db.config;
-import db.conversation;
-import db.user;
 import retriever.incomingemail;
 import std.file;
 import std.path;
@@ -46,6 +44,8 @@ version(anytestdb)
         void recreateTestDb()
         {
             import db.email;
+            import db.conversation;
+            import db.user;
             emptyTestDb();
 
             // Fill the test DB
@@ -81,7 +81,7 @@ version(anytestdb)
                 auto dbEmail = new Email(inEmail, destination);
                 assert(dbEmail.isValid, "Email is not valid");
                 auto emailId = dbEmail.store();
-                Conversation.upsert(dbEmail, ["inbox"], []);
+                Conversation.addEmail(dbEmail, ["inbox"], []);
             }
 
             // load the tests userIds
@@ -102,6 +102,7 @@ version(db_insertalltest)
         writeln("Testing Inserting Everything");
         recreateTestDb();
 
+        import db.conversation;
         import std.datetime;
         import std.process;
         import retriever.incomingemail;
@@ -160,7 +161,7 @@ version(db_insertalltest)
                 sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
 
                 sw.start();
-                auto convId = Conversation.upsert(dbEmail, ["inbox"], []).dbId;
+                auto convId = Conversation.addEmail(dbEmail, ["inbox"], []).dbId;
 
                 sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
 

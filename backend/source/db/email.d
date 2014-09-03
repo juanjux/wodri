@@ -4,9 +4,6 @@ import arsd.htmltotext;
 import common.utils;
 import db.attachcontainer;
 import db.config;
-import db.conversation;
-import db.dbinterface.driveremailinterface;
-import db.user;
 import retriever.incomingemail;
 import std.algorithm: among;
 import std.path: buildPath;
@@ -20,7 +17,6 @@ import vibe.utils.dictionarylist;
 import webbackend.apiemail;
 version(MongoDriver)
 {
-    import db.mongo.driveremailmongo;
     import db.mongo.mongo;
     import vibe.db.mongo.mongo;
 }
@@ -41,6 +37,7 @@ struct TextPart
 
 struct SearchResult
 {
+    import db.conversation;
     const Conversation conversation;
     ulong[] matchingEmailsIdx;
 }
@@ -72,6 +69,7 @@ private HeaderValue field2HeaderValue(string field)
 
 final class Email
 {
+    import db.dbinterface.driveremailinterface;
     private static DriverEmailInterface dbDriver = null;
 
     string         dbId;
@@ -94,7 +92,10 @@ final class Email
     static this()
     {
         version(MongoDriver)
+        {
+            import db.mongo.driveremailmongo;
             dbDriver = new DriverEmailMongo();
+        }
         enforce(dbDriver !is null, "You must select some DB driver!");
     }
 
@@ -213,6 +214,7 @@ final class Email
 
     void setOwner(in string destinationAddress)
     {
+        import db.user;
         const user = User.getFromAddress(destinationAddress);
         if (user is null)
             throw new Exception("Trying to set a not local destination address: "
@@ -366,6 +368,7 @@ final class Email
                                         in string dateStart="",
                                         in string dateEnd="")
     {
+        import db.conversation;
         // Get an list of matching email IDs
         const matchingEmailAndConvIds = Email.dbDriver.searchEmails(needles, userId,
                                                                     dateStart, dateEnd);
@@ -458,6 +461,8 @@ final class Email
 
     string[] localReceivers() const
     {
+        import db.user;
+
         string[] allAddresses;
         string[] localAddresses;
 
@@ -472,9 +477,9 @@ final class Email
     }
 
 
-    // ===================================================================
+    // ==========================================================
     // Proxies for the dbDriver functions used outside this class
-    // ===================================================================
+    // ==========================================================
     string store(in Flag!"ForceInsertNew" forceNew = No.ForceInsertNew,
                  in Flag!"StoreAttachMents" storeAttachs = Yes.StoreAttachMents)
     {
@@ -537,6 +542,9 @@ version(db_usetestdb)
 
     unittest  // this(ApiEmail)
     {
+        import db.conversation;
+        import db.user;
+
         writeln("Testing Email.this(ApiEmail)");
         auto user = User.getFromAddress("anotherUser@testdatabase.com");
         auto apiEmail    = new ApiEmail;
@@ -604,6 +612,8 @@ version(db_usetestdb)
 
     unittest // jsonizeHeader
     {
+        import db.user;
+
         writeln("Testing Email.jsonizeHeader");
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
 
@@ -621,6 +631,8 @@ version(db_usetestdb)
 
     unittest // test email.deleted
     {
+        import db.conversation;
+        import db.user;
         writeln("Testing Email.deleted");
         recreateTestDb();
         // insert a new email with deleted = true
@@ -642,7 +654,7 @@ version(db_usetestdb)
         assert(dbEmail2.deleted);
 
         // check that the conversation has the link.deleted for this email set to true
-        Conversation.upsert(dbEmail, ["inbox"], []);
+        Conversation.addEmail(dbEmail, ["inbox"], []);
         auto conv = Conversation.getByReferences(user.id, [dbEmail.messageId],
                                                  Yes.WithDeleted);
         assert(conv !is null);
@@ -659,6 +671,7 @@ version(db_usetestdb)
 
     unittest // search
     {
+        import db.user;
         // Not the same as the searchEmails test because "search" returns conversations
         // with several messages grouped (thus, less results sometimes)
         writeln("Testing Email.search");

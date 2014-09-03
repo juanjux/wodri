@@ -6,8 +6,8 @@ Backend-API:
     status.
 
 Backend-Retriever:
-    - use USER_TO_ID on all tests where I'm still getting the user just for it
-    - more separate db drivers: conversation, test_support
+    - unittests: remove Conversation.something, create an instance instead
+    - more separate db drivers: conversation
     - unittest for every curl call for wrong auth user
     - general hunting of XXX and FIXMEs
 

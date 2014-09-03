@@ -176,7 +176,7 @@ override:
             dbEmail.store(insertNew, No.StoreAttachMents);
 
             if (insertNew) // add to the conversation
-                Conversation.upsert(dbEmail, [], []);
+                Conversation.addEmail(dbEmail, [], []);
             return dbEmail.dbId;
         }
 

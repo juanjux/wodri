@@ -75,7 +75,6 @@ override:
         return config;
     }
 
-    version(unittest)
     void insertTestSettings()
     {
         import vibe.data.json;
