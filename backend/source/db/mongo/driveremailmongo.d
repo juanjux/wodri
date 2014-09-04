@@ -344,13 +344,13 @@ override: // interface methods
      * with this emailId as is its only link it will be removed too. The attachments
      * and the rawEmail files will be removed too.
      */
-    void removeById(in string dbId)
+    void purgeById(in string dbId)
     {
 
         immutable emailDoc = findOneById("email", dbId, "_id", "attachments", "rawEmailPath");
         if (emailDoc.isNull)
         {
-            logWarn(format("Email.removeById: Trying to remove email with id (%s) " ~
+            logWarn(format("DriverEmailMongo.purgeById: Trying to remove email with id (%s) "~
                            " not in DB", dbId));
             return;
         }

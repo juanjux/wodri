@@ -19,13 +19,6 @@ import vibe.core.log;
 import vibe.data.bson;
 import vibe.db.mongo.mongo;
 
-
-private string clearSubject(in string subject)
-{
-    return replaceAll!(x => "")(subject, SUBJECT_CLEAN_REGEX);
-}
-
-
 final class DriverConversationMongo : DriverConversationInterface
 {
     private static Conversation docToObject(const ref Bson convDoc)
@@ -53,25 +46,27 @@ final class DriverConversationMongo : DriverConversationInterface
         return ret;
     }
 
-
-    private static void addTagDb(in string dbId, in string tag)
+    version(unittest)
     {
-        assert(dbId.length);
-        assert(tag.length);
+        static void addTagDb(in string dbId, in string tag)
+        {
+            assert(dbId.length);
+            assert(tag.length);
 
-        auto json = format(`{"$push":{"tags":"%s"}}`, tag);
-        auto bson = parseJsonString(json);
-        collection("conversation").update(["_id": dbId], bson);
-    }
+            auto json = format(`{"$push":{"tags":"%s"}}`, tag);
+            auto bson = parseJsonString(json);
+            collection("conversation").update(["_id": dbId], bson);
+        }
 
-    private static void removeTagDb(in string dbId, in string tag)
-    {
-        assert(dbId.length);
-        assert(tag.length);
+        static void removeTagDb(in string dbId, in string tag)
+        {
+            assert(dbId.length);
+            assert(tag.length);
 
-        auto json = format(`{"$pull":{"tags":"%s"}}`, tag);
-        auto bson = parseJsonString(json);
-        collection("conversation").update(["_id": dbId], bson);
+            auto json = format(`{"$pull":{"tags":"%s"}}`, tag);
+            auto bson = parseJsonString(json);
+            collection("conversation").update(["_id": dbId], bson);
+        }
     }
 
 override: 
@@ -141,13 +136,11 @@ override:
         string[] reversed = references.dup;
         reverse(reversed);
         Appender!string jsonApp;
-        jsonApp.put(format(`{"userId":"%s","links.message-id":{"$in":%s,`,
+        jsonApp.put(format(`{"userId":"%s","links.message-id":{"$in":%s},`,
                            userId, reversed));
         if (!withDeleted)
-        {
-            jsonApp.put(`"$nin": ["deleted"],`);
-        }
-        jsonApp.put("}}");
+            jsonApp.put(`"tags":{"$nin": ["deleted"]}`);
+        jsonApp.put("}");
 
         immutable convDoc = collection("conversation").findOne(parseJsonString(jsonApp.data));
         return docToObject(convDoc);
@@ -200,8 +193,6 @@ override:
 
     void store(Conversation conv)
     {
-        //writeln("XXX conv.tags antes de guardar: ", conv.tagsArray);
-        //writeln("XXX conv.toJson antes de guardar: \n", conv.toJson);
         collection("conversation").update(
                 ["_id": conv.dbId],
                 parseJsonString(conv.toJson),
@@ -210,15 +201,19 @@ override:
     }
 
 
-    // Note: this will NOT remove the contained emails from the DB
-    void remove(in string id)
+    /** Note: this will remove the conversation AND purge its emails */
+    void remove(Conversation conv)
     {
-        if (!id.length)
+        if (!conv.dbId.length)
         {
             logWarn("DriverConversationMongo.remove: empty DB id, is this conversation stored?");
             return;
         }
-        collection("conversation").remove(["_id": id]);
+        // purge the emails
+        foreach(const ref link; conv.receivedLinks)
+            Email.purgeById(link.emailDbId);
+        // remove the conversation from DB
+        collection("conversation").remove(["_id": conv.dbId]);
     }
 
 
@@ -303,37 +298,6 @@ override:
     }
 
 
-    // Find any conversation with this email and update the links.[email].deleted field
-    // XXX join with Email.setDeleted! (call it)
-    string setEmailDeleted(in string emailDbId, in bool setDel)
-    {
-        auto conv = getByEmailId(emailDbId);
-        if (conv is null)
-        {
-            logWarn(format("setEmailDeleted: No conversation found for email with id (%s)",
-                           emailDbId));
-            return "";
-        }
-
-        foreach(ref entry; conv.links)
-        {
-            if (entry.emailDbId == emailDbId)
-            {
-                if (entry.deleted == setDel)
-                    logWarn(format("setEmailDeleted: delete state for email (%s) in "
-                                   "conversation was already %s", emailDbId, setDel));
-                else
-                {
-                    entry.deleted = setDel;
-                    store(conv);
-                }
-                break;
-            }
-        }
-        return conv.dbId;
-    }
-
-
     bool isOwnedBy(in string convId, in string userName)
     {
         import db.user;
@@ -341,9 +305,11 @@ override:
         if (!userId.length)
             return false;
 
-        immutable convDoc = collection("conversation").findOne(["_id": convId, "userId": userId],
-                                                   ["_id": 1],
-                                                   QueryFlags.None);
+        immutable convDoc = collection("conversation").findOne(
+                ["_id": convId, "userId": userId],
+                ["_id": 1],
+                QueryFlags.None
+        );
         return !convDoc.isNull;
     }
 }

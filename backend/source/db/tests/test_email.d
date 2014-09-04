@@ -1,6 +1,5 @@
 module db.tests.test_email;
 
-
 version(db_test)
 version(db_usetestdb)
 {
@@ -302,7 +301,6 @@ version(db_usetestdb)
             assert(!bsonBool(emailDoc.deleted));
         }
 
-
         unittest // storeTextIndex
         {
             import db.user;
@@ -406,7 +404,7 @@ version(db_usetestdb)
             assert(emailMongo.isOwnedBy(bsonStr(email5._id), user2.loginName));
         }
 
-        unittest // removeById
+        unittest // purgeById
         {
             import db.conversation;
             struct EmailFiles
@@ -438,16 +436,15 @@ version(db_usetestdb)
                     assert(!att.exists);
             }
 
-            writeln("Testing DriverEmailMongo.removeById");
+            writeln("Testing DriverEmailMongo.purgeById");
             recreateTestDb();
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
             auto singleMailConv = convs[0];
             auto singleConvId   = singleMailConv.dbId;
             auto singleMailId   = singleMailConv.links[0].emailDbId;
-            auto emailMongo = scoped!DriverEmailMongo();
 
             auto emailFiles = getEmailFiles(singleMailId);
-            emailMongo.removeById(singleMailId);
+            Email.purgeById(singleMailId);
             auto emailDoc = collection("email").findOne(["_id": singleMailId]);
             assert(emailDoc.isNull);
             assertNoFiles(emailFiles);
@@ -456,7 +453,7 @@ version(db_usetestdb)
             auto fakeMultiConvId = fakeMultiConv.dbId;
             auto fakeMultiConvEmailId = fakeMultiConv.links[2].emailDbId;
             emailFiles = getEmailFiles(fakeMultiConvEmailId);
-            emailMongo.removeById(fakeMultiConvEmailId);
+            Email.purgeById(fakeMultiConvEmailId);
             emailDoc = collection("email").findOne(["_id": fakeMultiConvEmailId]);
             assert(emailDoc.isNull);
             assertNoFiles(emailFiles);
@@ -465,7 +462,7 @@ version(db_usetestdb)
             auto multiConvId = multiConv.dbId;
             auto multiConvEmailId = multiConv.links[0].emailDbId;
             emailFiles = getEmailFiles(multiConvEmailId);
-            emailMongo.removeById(multiConvEmailId);
+            Email.purgeById(multiConvEmailId);
             emailDoc = collection("email").findOne(["_id": multiConvEmailId]);
             assert(emailDoc.isNull);
             assertNoFiles(emailFiles);

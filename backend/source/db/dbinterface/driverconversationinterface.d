@@ -37,15 +37,10 @@ interface DriverConversationInterface
 
     void store(Conversation conv);
 
-    void remove(in string id);
+    void remove(Conversation conv);
 
     /** Could create a new conversation **/
     Conversation addEmail(in Email email, in string[] tagsToAdd, in string[] tagsToRemove);
-
-    /**
-    Find any conversation with this email and update the links.[email].deleted field
-    **/
-    string setEmailDeleted(in string id, in bool setDel);
 
     bool isOwnedBy(in string convId, in string userName);
 }

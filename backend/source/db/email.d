@@ -460,13 +460,15 @@ final class Email
         dbDriver.deleteAttachment(id, attachId);
     }
 
+    // remember to update the conversation that owns this email when calling this,
+    // or just call Conversation.setEmailDeleted
     static void setDeleted(in string id, in bool setDel)
     {
         dbDriver.setDeleted(id, setDel);
     }
 
-    static void removeById(in string id)
+    static void purgeById(in string id)
     {
-        dbDriver.removeById(id);
+        dbDriver.purgeById(id);
     }
 }

@@ -38,7 +38,7 @@ interface DriverEmailInterface
 
     void setDeleted(in string dbId, in bool setDel);
 
-    void removeById(in string dbId);
+    void purgeById(in string dbId);
 
     void storeTextIndex(in Email email);
 

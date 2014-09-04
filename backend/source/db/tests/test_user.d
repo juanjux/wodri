@@ -24,7 +24,7 @@ version(db_usetestdb)
 
         unittest // get
         {
-            writeln("Testing User.get");
+            writeln("Testing DriverUserMongo.get");
             recreateTestDb();
             auto userObject = User.get("doesntexits");
             assert(userObject is null);
@@ -37,7 +37,7 @@ version(db_usetestdb)
 
         unittest // getFromLoginName
         {
-            writeln("Testing User.getFromLoginName");
+            writeln("Testing DriverUserMongo.getFromLoginName");
             recreateTestDb();
             auto userObject = User.getFromLoginName("doesntexists");
             assert(userObject is null);
@@ -50,7 +50,7 @@ version(db_usetestdb)
 
         unittest // getFromAddress + userDocToObject
         {
-            writeln("Testing User.getFromAddress");
+            writeln("Testing DriverUserMongo.getFromAddress");
             recreateTestDb();
 
             auto user = User.getFromAddress("noexistnoexist@bla.com");

@@ -34,13 +34,12 @@ final class Conversation
     import db.dbinterface.driverconversationinterface;
     private static DriverConversationInterface dbDriver = null;
 
-    string dbId;
-    string userDbId;
-    string lastDate;
-
+    string        dbId;
+    string        userDbId;
+    string        lastDate;
     MessageLink[] links;
-    string cleanSubject;
-    private TagContainer m_tags;
+    string        cleanSubject;
+    private       TagContainer m_tags;
 
     bool     hasTag(in string tag) const     { return m_tags.has(tag);  }
     bool     hasTags(in string[] tags) const { return m_tags.has(tags); }
@@ -209,6 +208,52 @@ final class Conversation
             this.m_tags.array, linksApp.data);
     }
 
+
+    // Find any conversation with this email and update the links.[email].deleted field
+    static string setLinkDeleted(in string emailDbId, in bool setDel)
+    {
+        Email.setDeleted(emailDbId, setDel);
+        auto conv = getByEmailId(emailDbId);
+        if (conv is null)
+        {
+            logWarn(format("setLinkDeleted: No conversation found for email with id (%s)",
+                           emailDbId));
+            return "";
+        }
+
+        foreach(ref entry; conv.links)
+        {
+            if (entry.emailDbId == emailDbId)
+            {
+                if (entry.deleted == setDel)
+                {
+                    logWarn(format("setLinkDeleted: delete state for email (%s) in "
+                                   "conversation was already %s", emailDbId, setDel));
+                }
+                else
+                {
+                    entry.deleted = setDel;
+                    conv.store();
+                }
+                break;
+            }
+        }
+        return conv.dbId;
+    }
+
+
+    // remove the email and maybe the conversation if it was the only received email on it
+    static void purgeLink(in string emailDbId)
+    {
+        Email.purgeById(emailDbId);
+        auto conv = Conversation.getByEmailId(emailDbId);
+        if (conv !is null)
+        {
+            conv.removeLink(emailDbId);
+            if (conv.dbId.length) // will be 0 if it was removed from the DB
+                conv.store();
+        }
+    }
     // ==========================================================
     // Proxies for the dbDriver functions used outside this class
     // ==========================================================
@@ -221,7 +266,7 @@ final class Conversation
     // Note: this will NOT remove the contained emails from the DB
     void remove()
     {
-        dbDriver.remove(this.dbId);
+        dbDriver.remove(this);
     }
 
 
@@ -270,13 +315,6 @@ final class Conversation
                                  in string[] tagsToRemove)
     {
         return dbDriver.addEmail(email, tagsToAdd, tagsToRemove);
-    }
-
-
-    // Find any conversation with this email and update the links.[email].deleted field
-    static string setEmailDeleted(in string dbId, in bool setDel)
-    {
-        return dbDriver.setEmailDeleted(dbId, setDel);
     }
 
 

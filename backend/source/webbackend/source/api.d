@@ -150,14 +150,13 @@ override:
         string getRaw(string userName, string id)
         {
             return Email.isOwnedBy(id, userName) ? Email.getOriginal(id)
-                                               : null;
+                                                 : null;
         }
 
 
         string post(string userName, ApiEmail draftContent, string replyDbId = "")
         {
             auto dbEmail  = new Email(draftContent, replyDbId);
-            // XXX add a new call to compare two with a single roundtrip
             auto addrUser = User.getFromAddress(dbEmail.from.addresses[0]);
             auto authUser = User.getFromLoginName(userName);
 
@@ -175,7 +174,7 @@ override:
             dbEmail.draft = true;
             dbEmail.store(insertNew, No.StoreAttachMents);
 
-            if (insertNew) // add to the conversation
+            if (insertNew)
                 Conversation.addEmail(dbEmail, [], []);
             return dbEmail.dbId;
         }
@@ -187,33 +186,16 @@ override:
                 return;
 
             if (purge)
-            {
-                Email.removeById(id);
-                // remove the link from the Conversation (which could trigger a removal of
-                // the full conversation if it was the last locally stored link)
-                auto conv = Conversation.getByEmailId(id);
-                if (conv !is null)
-                {
-                    conv.removeLink(id);
-                    if (conv.dbId.length > 0) // will be 0 if it was removed from the DB
-                        conv.store();
-                }
-            }
+                Conversation.purgeLink(id);
             else
-            {
-                Email.setDeleted(id, true);
-                Conversation.setEmailDeleted(id, true);
-            }
+                Conversation.setLinkDeleted(id, true);
         }
 
 
         void unDeleteEmail(string userName, string id)
         {
             if (Email.isOwnedBy(id, userName))
-            {
-                Email.setDeleted(id, false);
-                Conversation.setEmailDeleted(id, false);
-            }
+                Conversation.setLinkDeleted(id, false);
         }
 
 
@@ -314,8 +296,6 @@ override:
 
             if (purge)
             {
-                foreach(const link; conv.receivedLinks)
-                    Email.removeById(link.emailDbId);
                 conv.remove();
                 return;
             }

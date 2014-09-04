@@ -16,6 +16,12 @@ import vibe.core.log;
  */
 auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 
+string clearSubject(in string subject)
+{
+    return replaceAll!(x => "")(subject, SUBJECT_CLEAN_REGEX);
+}
+
+
 T[] removeDups(T)(in T[] input)
 pure nothrow
 {
@@ -265,4 +271,12 @@ unittest
     assert(removeStartEndSlashes("//abcDEF//") == "/abcDEF/");
     assert(removeStartEndSlashes("abcDEF//") == "abcDEF/");
 
+}
+
+unittest // clearSubject
+{
+    writeln("Testing Utils.clearSubject");
+    assert(clearSubject("RE: polompos") == "polompos");
+    assert(clearSubject("Re: cosa RE: otracosa re: mascosas") == "cosa otracosa mascosas");
+    assert(clearSubject("Pok and something Re: things") == "Pok and something things");
 }

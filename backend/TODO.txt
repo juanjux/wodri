@@ -6,8 +6,7 @@ Backend-API:
     status.
 
 Backend-Retriever:
-    - add a method Conversation.setEmailDeleted(dbId, setDel) and Conversation.purgeEmail(dbId)
-    (YA HAY conversation.setEmailDeleted!)
+    - test that the new Conversation.remove() purges all links
     - move all unittest to separate files inside db/tests
     - unittest for every curl call for wrong auth user
 

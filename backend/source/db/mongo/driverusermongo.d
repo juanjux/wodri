@@ -1,6 +1,5 @@
 module db.mongo.driverusermongo;
 
-
 version(MongoDriver)
 {
 import db.dbinterface.driveruserinterface;
