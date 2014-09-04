@@ -10,6 +10,7 @@
     "buildRequirements": ["requireBoundsCheck"],
     "dependencies": {
         "vibe-d": "~master",
+		"dauth": ">=0.6.1"
     },
     "versions": ["VibeDefaultMain", "db_usetestdb", "MongoDriver"],
     "configurations": [

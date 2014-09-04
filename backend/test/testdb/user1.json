@@ -5,7 +5,7 @@
         ],
         "admin" : true,
         "loginName" : "testuser",
-        "loginHash" : "8AQl5bqZMY3vbczoBWJiTFVclKU=",
+        "loginHash" : "[SHA512]d93TpULlMP0Ee4l3xle6bOcvFJLjYLKyISzSZOdewDg=$Gmb1QStQ3m0ArHT3t86BE7286+/w5WJ+gCwD/7+atFoyBhBpqtcj2rh7XUDsX6Dw4rr1iPX6QTomfds5IZF3Dg==",
         "name" : "testUserName",
         "surname" : "testUserSurName"
 }

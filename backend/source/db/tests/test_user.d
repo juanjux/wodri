@@ -60,7 +60,9 @@ version(db_usetestdb)
             assert(user.loginName == "testuser");
             assert(user.addresses == ["testuser@testdatabase.com"]);
             assert(user.admin);
-            assert(user.loginHash == "8AQl5bqZMY3vbczoBWJiTFVclKU=");
+            assert(user.loginHash == "[SHA512]d93TpULlMP0Ee4l3xle6bOcvFJLjYLKyISzSZOdewDg="~
+                                     "$Gmb1QStQ3m0ArHT3t86BE7286+/w5WJ+gCwD/7+atFoyBhBpqtc"~
+                                     "j2rh7XUDsX6Dw4rr1iPX6QTomfds5IZF3Dg==");
             assert(user.name == "testUserName");
             assert(user.surname == "testUserSurName");
         }

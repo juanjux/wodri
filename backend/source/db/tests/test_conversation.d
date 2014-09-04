@@ -306,17 +306,24 @@ version(db_usetestdb)
 
         unittest // remove
         {
-            // XXX comprobar que purga links
-            writeln("Testing DriverConversationMongo.remove");
+            writeln("Testing DriverConversationMongo.remove (message about null emails is Ok)");
             recreateTestDb();
             auto convs = Conversation.getByTag( "inbox", USER_TO_ID["anotherUser"]);
             assert(convs.length == 3);
             const id = convs[0].dbId;
+            string[] linkIds;
+            foreach(ref link; convs[0].links)
+                linkIds ~= link.emailDbId.idup;
             convs[0].remove();
             convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
             assert(convs.length == 2);
             foreach(conv; convs)
                 assert(conv.dbId != id);
+            foreach(ref linkId; linkIds)
+            {
+                auto email = Email.get(linkId);
+                assert(email is null);
+            }
         }
 
         unittest // getByTag

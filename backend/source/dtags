@@ -1,0 +1,845 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Action	/home/juanjux/wodri/backend/source/db/userfilter.d	/^struct Action$/;"	s	file:
+ApiAttachment	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^struct ApiAttachment$/;"	s	file:
+ApiConversation	/home/juanjux/wodri/backend/source/webbackend/source/apiconversation.d	/^final class ApiConversation$/;"	c	file:
+ApiConversationSummary	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^final class ApiConversationSummary$/;"	c	file:
+ApiEmail	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^final class ApiEmail$/;"	c	file:
+ApiSearchResult	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^struct ApiSearchResult$/;"	s	file:
+AspCode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class AspCode : ServerSideCode {$/;"	c	class:Element	file:
+AttachContainer	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^struct AttachContainer$/;"	s	struct:DbAttachment	file:
+Attachment	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^struct Attachment$/;"	s	file:
+AttributeSet	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^struct AttributeSet {$/;"	s	file:
+BangInstruction	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class BangInstruction : SpecialElement {$/;"	c	class:Element	file:
+ContentData	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^struct ContentData$/;"	s	file:
+Conv	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^interface Conv$/;"	typedefs	file:
+ConvImpl	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^final class ConvImpl : Conv$/;"	c	file:
+Conversation	/home/juanjux/wodri/backend/source/db/conversation.d	/^final class Conversation$/;"	c	file:
+CssStyle	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class CssStyle {$/;"	c	class:Element	file:
+Current	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	struct Current {$/;"	s	class:Element::ElementStream	file:
+DataSet	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^struct DataSet {$/;"	s	file:
+DbAttachment	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^struct DbAttachment$/;"	s	file:
+Document	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class Document : FileResource {$/;"	c	class:Element	file:
+DocumentFragment	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class DocumentFragment : Element {$/;"	c	class:Element	file:
+DomConvenienceFunctions	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	mixin DomConvenienceFunctions!();$/;"	X
+DomConvenienceFunctions	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^mixin template DomConvenienceFunctions() {$/;"	T	file:
+DomMutationEvent	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^struct DomMutationEvent {$/;"	s	class:Element	file:
+DomMutationOperations	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^enum DomMutationOperations {$/;"	g	class:Element	file:
+Domain	/home/juanjux/wodri/backend/source/db/domain.d	/^final class Domain$/;"	c	file:
+DriverConfigInterface	/home/juanjux/wodri/backend/source/db/dbinterface/driverconfiginterface.d	/^interface DriverConfigInterface$/;"	typedefs	file:
+DriverConfigMongo	/home/juanjux/wodri/backend/source/db/mongo/driverconfigmongo.d	/^final class DriverConfigMongo : DriverConfigInterface$/;"	c	file:
+DriverConversationInterface	/home/juanjux/wodri/backend/source/db/dbinterface/driverconversationinterface.d	/^interface DriverConversationInterface$/;"	typedefs	file:
+DriverConversationMongo	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^final class DriverConversationMongo : DriverConversationInterface$/;"	c	file:
+DriverDomainInterface	/home/juanjux/wodri/backend/source/db/dbinterface/driverdomaininterface.d	/^interface DriverDomainInterface$/;"	typedefs	file:
+DriverDomainMongo	/home/juanjux/wodri/backend/source/db/mongo/driverdomainmongo.d	/^final class DriverDomainMongo : DriverDomainInterface$/;"	c	file:
+DriverEmailInterface	/home/juanjux/wodri/backend/source/db/dbinterface/driveremailinterface.d	/^interface DriverEmailInterface$/;"	typedefs	file:
+DriverEmailMongo	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^final class DriverEmailMongo : DriverEmailInterface$/;"	c	file:
+DriverUserInterface	/home/juanjux/wodri/backend/source/db/dbinterface/driveruserinterface.d	/^interface DriverUserInterface$/;"	typedefs	file:
+DriverUserMongo	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^final class DriverUserMongo : DriverUserInterface$/;"	c	file:
+DriverUserfilterInterface	/home/juanjux/wodri/backend/source/db/dbinterface/driveruserfilterinterface.d	/^interface DriverUserfilterInterface$/;"	typedefs	file:
+DriverUserfilterMongo	/home/juanjux/wodri/backend/source/db/mongo/driveruserfiltermongo.d	/^final class DriverUserfilterMongo : DriverUserfilterInterface$/;"	c	file:
+Element	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class Element {$/;"	c	file:
+ElementCollection	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^struct ElementCollection {$/;"	s	file:
+ElementNotFoundException	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		throw new ElementNotFoundException(T.stringof, "passed value", file, line);$/;"	e	enum:__anon3	file:
+ElementNotFoundException	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class ElementNotFoundException : Exception {$/;"	c	class:Element	file:
+ElementStream	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^final class ElementStream {$/;"	c	class:Element	file:
+ElementStyle	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^struct ElementStyle {$/;"	s	file:
+Email	/home/juanjux/wodri/backend/source/db/email.d	/^final class Email$/;"	c	file:
+EmailAndConvIds	/home/juanjux/wodri/backend/source/db/dbinterface/driverconversationinterface.d	/^struct EmailAndConvIds$/;"	s	file:
+EmailSummary	/home/juanjux/wodri/backend/source/db/email.d	/^final class EmailSummary$/;"	c	file:
+Event	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class Event {$/;"	c	class:Element	file:
+EventHandler	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^alias void delegate(Element handlerAttachedTo, Event event) EventHandler;$/;"	t	class:Element	file:
+FileResource	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^interface FileResource {$/;"	typedefs	file:
+Form	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class Form : Element {$/;"	c	class:Element	file:
+FormFieldOptions	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^struct FormFieldOptions {$/;"	s	class:Element	file:
+GreaterThan	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    GreaterThan,$/;"	e	enum:SizeRuleType	file:
+HEADER_SEARCH_FIELDS	/home/juanjux/wodri/backend/source/db/dbinterface/driveremailinterface.d	/^static shared immutable HEADER_SEARCH_FIELDS = ["to", "subject", "cc", "bcc"];$/;"	v	file:
+HeaderValue	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^struct HeaderValue$/;"	s	file:
+Html	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^struct Html {$/;"	s	class:Element	file:
+HtmlComment	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class HtmlComment : SpecialElement {$/;"	c	class:Element	file:
+ISO_8859_1	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_1 = [$/;"	v
+ISO_8859_10	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_10 = [$/;"	v
+ISO_8859_11	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_11 = [$/;"	v
+ISO_8859_13	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_13 = [$/;"	v
+ISO_8859_14	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_14 = [$/;"	v
+ISO_8859_15	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_15 = [$/;"	v
+ISO_8859_16	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_16 = [$/;"	v
+ISO_8859_2	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_2 = [$/;"	v
+ISO_8859_3	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_3 = [$/;"	v
+ISO_8859_4	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_4 = [$/;"	v
+ISO_8859_5	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_5 = [$/;"	v
+ISO_8859_6	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_6 = [$/;"	v
+ISO_8859_7	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_7 = [$/;"	v
+ISO_8859_8	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_8 = [$/;"	v
+ISO_8859_9	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] ISO_8859_9 = [$/;"	v
+IncomingEmail	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^final class IncomingEmail$/;"	c	file:
+JavascriptStyleDispatch	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	mixin JavascriptStyleDispatch!();$/;"	X
+JavascriptStyleDispatch	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^mixin template JavascriptStyleDispatch() {$/;"	T	file:
+KOI8_R	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] KOI8_R = [$/;"	v
+KOI8_R_Lower	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] KOI8_R_Lower = [$/;"	v
+Link	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class Link : Element {$/;"	c	class:Element	file:
+MIMEPart	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^private struct MIMEPart$/;"	s	file:
+MONTH_CODES	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^string[] MONTH_CODES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",$/;"	v
+MarkupException	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class MarkupException : Exception {$/;"	c	class:Element	file:
+Match	/home/juanjux/wodri/backend/source/db/userfilter.d	/^struct Match$/;"	s	file:
+Message	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^interface Message$/;"	typedefs	file:
+MessageImpl	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^final class MessageImpl : Message$/;"	c	file:
+MessageLink	/home/juanjux/wodri/backend/source/db/conversation.d	/^struct MessageLink$/;"	s	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/config.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/conversation.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/domain.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/email.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/mongo/driverconfigmongo.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/mongo/driverdomainmongo.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/mongo/driveruserfiltermongo.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/test_support.d	/^    version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/test_support.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/tests/test_conversation.d	/^    version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/tests/test_domain.d	/^    version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/tests/test_email.d	/^    version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/tests/test_user.d	/^    version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/user.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/db/userfilter.d	/^version(MongoDriver)$/;"	V	file:
+MongoDriver	/home/juanjux/wodri/backend/source/retriever/main.d	/^version(MongoDriver)$/;"	V	file:
+NodeType	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^enum NodeType { Text = 3 }$/;"	g	file:
+None	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    None$/;"	e	enum:SizeRuleType	file:
+PhpCode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class PhpCode : ServerSideCode {$/;"	c	class:Element	file:
+Property	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	struct Property {$/;"	s	class:Element::CssStyle	file:
+QuestionInstruction	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class QuestionInstruction : SpecialElement {$/;"	c	class:Element	file:
+RawSource	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class RawSource : SpecialElement {$/;"	c	class:Element	file:
+RetrieverConfig	/home/juanjux/wodri/backend/source/db/config.d	/^struct RetrieverConfig$/;"	s	file:
+Search	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^interface Search$/;"	typedefs	file:
+SearchImpl	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^final class SearchImpl : Search$/;"	c	file:
+SearchResult	/home/juanjux/wodri/backend/source/db/searchresult.d	/^struct SearchResult$/;"	s	file:
+Selector	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	struct Selector {$/;"	s	class:Element	file:
+SelectorPart	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	struct SelectorPart {$/;"	s	class:Element	file:
+ServerSideCode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^abstract class ServerSideCode : SpecialElement {$/;"	c	class:Element	file:
+SizeRuleType	/home/juanjux/wodri/backend/source/db/userfilter.d	/^enum SizeRuleType$/;"	g	file:
+SmallerThan	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    SmallerThan,$/;"	e	enum:SizeRuleType	file:
+SpecialElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^abstract class SpecialElement : Element {$/;"	c	class:Element	file:
+Specificity	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	union Specificity {$/;"	u	class:Element::CssStyle	file:
+Stack	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^final class Stack(T) {$/;"	c	class:Element	file:
+StyleSheet	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class StyleSheet {$/;"	c	class:Element	file:
+T	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^T bsonSafe(T)(const Bson bson) $/;"	f
+T	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element td(T)(T t) {$/;"	f	class:Element::Table
+T	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element th(T)(T t) {$/;"	f	class:Element::Table
+T	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^package bool isInArray(T)(T item, T[] arr) {$/;"	f	class:Element
+T	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^private T[] insertAfter(T)(T[] arr, int position, T[] what) {$/;"	f	class:Element	file:
+T	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^void fillForm(T)(Form form, T obj, string name) { $/;"	f	class:Element
+Table	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class Table : Element {$/;"	c	class:Element	file:
+TableCell	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class TableCell : Element {$/;"	c	class:Element	file:
+TableRow	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class TableRow : Element {$/;"	c	class:Element	file:
+TagContainer	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^struct TagContainer$/;"	s	file:
+Test	/home/juanjux/wodri/backend/source/retriever/test.d	/^interface Test$/;"	typedefs	file:
+Test	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^interface Test$/;"	typedefs	file:
+TestImpl	/home/juanjux/wodri/backend/source/retriever/test.d	/^class TestImpl$/;"	c	file:
+TestImpl	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^final class TestImpl: Test$/;"	c	file:
+Text	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^enum NodeType { Text = 3 }$/;"	e	enum:NodeType	file:
+TextNode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class TextNode : Element {$/;"	c	class:Element	file:
+TextPart	/home/juanjux/wodri/backend/source/db/email.d	/^struct TextPart$/;"	s	file:
+URLAttachmentPath	/home/juanjux/wodri/backend/source/db/config.d	/^    string URLAttachmentPath;$/;"	m	struct:RetrieverConfig	file:
+URLStaticPath	/home/juanjux/wodri/backend/source/db/config.d	/^    string URLStaticPath;$/;"	m	struct:RetrieverConfig	file:
+USER_TO_ID	/home/juanjux/wodri/backend/source/db/test_support.d	/^    string[string] USER_TO_ID;$/;"	v
+Url	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string Url;$/;"	m	struct:ApiAttachment	file:
+User	/home/juanjux/wodri/backend/source/db/user.d	/^final class User$/;"	c	file:
+UserFilter	/home/juanjux/wodri/backend/source/db/userfilter.d	/^final class UserFilter$/;"	c	file:
+Utf8Stream	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^alias string Utf8Stream;$/;"	t	class:Element	file:
+Utf8Stream	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class Utf8Stream {$/;"	c	class:Element	file:
+Windows_1251	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] Windows_1251 = [$/;"	v
+Windows_1251_Lower	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] Windows_1251_Lower = [$/;"	v
+Windows_1252	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable dchar[] Windows_1252 = [$/;"	v
+XmlDocument	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^class XmlDocument : Document {$/;"	c	class:Element	file:
+_computedStyle	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private CssStyle _computedStyle;$/;"	m	class:Element	file:
+_contentType	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string _contentType = "text\/html; charset=utf-8";$/;"	m	class:Element::Document	file:
+_element	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element _element;$/;"	m	struct:ElementStyle	file:
+_element	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private Element _element;$/;"	m	struct:AttributeSet	file:
+_element	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private Element _element;$/;"	m	struct:DataSet	file:
+_prolog	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private string _prolog = "<!DOCTYPE html>\\n";$/;"	m	class:Element::Document	file:
+aadup	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^private string[string] aadup(in string[string] arr) {$/;"	f	class:Element	file:
+absoluteLeft	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int absoluteLeft() {$/;"	f
+absoluteTop	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int absoluteTop() {$/;"	f
+add	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^    const(DbAttachment) add(T)(const ref T attach, in string dbId="") $/;"	f	struct:DbAttachment::AttachContainer
+add	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^    const(DbAttachment) add(const ref DbAttachment attach)$/;"	f	struct:DbAttachment::AttachContainer
+add	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    void add(in string tag) $/;"	f	struct:TagContainer
+add	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    void add(in string[] tags) $/;"	f	struct:TagContainer
+addAttachment	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    string addAttachment(in string emailDbId,$/;"	f	class:DriverEmailMongo
+addChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element addChild(Element e) {$/;"	f
+addChildren	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void addChildren(T...)(T t) {$/;"	f
+addClass	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element addClass(string c) {$/;"	f
+addColumnClasses	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void addColumnClasses(string[] classes...) {$/;"	f	class:Element::Table
+addEmail	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static Conversation addEmail(in Email email,$/;"	f	class:Conversation
+addEventListener	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void addEventListener(string event, EventHandler handler, bool useCapture = false) {$/;"	f	class:Element
+addField	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override Element addField(string label, string name, FormFieldOptions fieldOptions) {$/;"	f	class:Element::Form
+addField	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override Element addField(string label, string name, string type = "text", FormFieldOptions fieldOptions = FormFieldOptions.none) {$/;"	f	class:Element::Form
+addField	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override Element addField(string label, string name, string[string] options, FormFieldOptions fieldOptions = FormFieldOptions.none) {$/;"	f	class:Element::Form
+addHeader	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    void addHeader(in string raw)$/;"	f	class:IncomingEmail
+addInput	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element addInput(string name, string value, string type = "hidden") {$/;"	f	class:Element::Form
+addLink	/home/juanjux/wodri/backend/source/db/conversation.d	/^    void addLink(in string messageId, in string[] attachNames, in string emailDbId="",$/;"	f	class:Conversation
+addSibling	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element addSibling(Element e) {$/;"	f
+addTag	/home/juanjux/wodri/backend/source/db/conversation.d	/^    void     addTag(in string tag)           { m_tags.add(tag);         }$/;"	f	class:Conversation
+addTagDb	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^        static void addTagDb(in string dbId, in string tag)$/;"	f	file:
+addTags	/home/juanjux/wodri/backend/source/db/conversation.d	/^    void     addTags(in string[] tags)       { m_tags.add(tags);        }$/;"	f	class:Conversation
+addTags	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    string[] addTags;$/;"	m	struct:Action	file:
+addValueArray	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void addValueArray(string key, string[] arrayOfValues) {$/;"	f	class:Element::Form
+addressIsLocal	/home/juanjux/wodri/backend/source/db/user.d	/^    static bool addressIsLocal(in string address)$/;"	f	class:User
+addresses	/home/juanjux/wodri/backend/source/db/user.d	/^    string[] addresses;$/;"	m	class:User	file:
+addresses	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string[] addresses;$/;"	m	struct:HeaderValue	file:
+admin	/home/juanjux/wodri/backend/source/db/user.d	/^    bool admin;$/;"	m	class:User	file:
+anyincomingmailtest	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^version(anyincomingmailtest)$/;"	V	file:
+anytestdb	/home/juanjux/wodri/backend/source/db/test_support.d	/^version(anytestdb)$/;"	V	file:
+apiDomain	/home/juanjux/wodri/backend/source/db/config.d	/^    string apiDomain;$/;"	m	struct:RetrieverConfig	file:
+app	/home/juanjux/wodri/backend/source/webbackend/source/app.d	/^module app;$/;"	M
+appendChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	appendChild, \/\/ tagname, attributes[], innerHTML$/;"	e	enum:Element::DomMutationOperations	file:
+appendChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override Element appendChild(Element e) {$/;"	f	class:Element::SpecialElement
+appendChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override Element appendChild(Element e) {$/;"	f	class:Element::TextNode
+appendChildren	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void appendChildren(Element[] children) {$/;"	f
+appendFooterRow	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element appendFooterRow(T...)(T t) {$/;"	f	class:Element::Table
+appendHeaderRow	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element appendHeaderRow(T...)(T t) {$/;"	f	class:Element::Table
+appendHtml	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] appendHtml(string html) {$/;"	f	class:Element
+appendHtml	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	appendHtml,$/;"	e	enum:Element::DomMutationOperations	file:
+appendRow	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element appendRow(T...)(T t) {$/;"	f	class:Element::Table
+appendRowInternal	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private Element appendRowInternal(T...)(string innerType, string findType, T t) {$/;"	f	class:Element::Table	file:
+appendText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element appendText(string text) {$/;"	f	class:Element
+appendText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	appendText,$/;"	e	enum:Element::DomMutationOperations	file:
+apply	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    void apply(Email email, ref string[] tagsToAdd, ref string[] tagsToRemove) const$/;"	f	class:UserFilter
+apply	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void apply(Document document) {$/;"	f	class:Element::StyleSheet
+applyAction	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    private void applyAction(Email email, ref string[] tagsToAdd, ref string[] tagsToRemove)$/;"	f	class:UserFilter	file:
+applyToElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element applyToElement(Element e) {$/;"	f	struct:Element::FormFieldOptions
+arr	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private T[] arr;$/;"	m	class:Element::Stack	file:
+array	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    string[] array() const$/;"	f	struct:TagContainer
+arsd.characterencodings	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^module arsd.characterencodings;$/;"	M
+arsd.dom	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^module arsd.dom;$/;"	M
+arsd.htmltotext	/home/juanjux/wodri/backend/source/libs/arsd/htmltotext.d	/^module arsd.htmltotext;$/;"	M
+attachFileNames	/home/juanjux/wodri/backend/source/db/email.d	/^    string[] attachFileNames;$/;"	m	class:EmailSummary	file:
+attachFileNames	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^    string[]       attachFileNames;$/;"	m	class:ApiConversationSummary	file:
+attachNames	/home/juanjux/wodri/backend/source/db/conversation.d	/^    string[] attachNames;$/;"	m	struct:MessageLink	file:
+attachment	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^    Attachment attachment;$/;"	m	struct:DbAttachment	file:
+attachment	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    Attachment attachment;$/;"	m	struct:MIMEPart	file:
+attachmentStore	/home/juanjux/wodri/backend/source/db/config.d	/^    string attachmentStore;$/;"	m	struct:RetrieverConfig	file:
+attachments	/home/juanjux/wodri/backend/source/db/email.d	/^    AttachContainer attachments;$/;"	m	class:Email	file:
+attachments	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    @property const(Attachment[]) attachments()  const { return m_attachments; }$/;"	f	class:IncomingEmail
+attachments	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    ApiAttachment[] attachments;$/;"	m	class:ApiEmail	file:
+attributes	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string[string] attributes;$/;"	m	class:Element	file:
+attributesEndsWith	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string[2][] attributesEndsWith; \/\/\/ [attr$=value]$/;"	m	struct:Element::SelectorPart	file:
+attributesEqual	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string[2][] attributesEqual; \/\/\/ [attr=value]$/;"	m	struct:Element::SelectorPart	file:
+attributesInclude	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string[2][] attributesInclude; \/\/\/ [attr*=value]$/;"	m	struct:Element::SelectorPart	file:
+attributesIncludesSeparatedByDashes	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string[2][] attributesIncludesSeparatedByDashes; \/\/\/ [attr|=value]$/;"	m	struct:Element::SelectorPart	file:
+attributesIncludesSeparatedBySpaces	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string[2][] attributesIncludesSeparatedBySpaces; \/\/\/ [attr~=value]$/;"	m	struct:Element::SelectorPart	file:
+attributesNotEqual	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string[2][] attributesNotEqual; \/\/\/ [attr!=value] -- extension by me$/;"	m	struct:Element::SelectorPart	file:
+attributesPresent	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string[] attributesPresent; \/\/\/ [attr]$/;"	m	struct:Element::SelectorPart	file:
+attributesStartsWith	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string[2][] attributesStartsWith; \/\/\/ [attr^=value]$/;"	m	struct:Element::SelectorPart	file:
+attrs	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property AttributeSet attrs() {$/;"	f	class:Element
+avatarUrl	/home/juanjux/wodri/backend/source/db/email.d	/^    string avatarUrl;$/;"	m	class:EmailSummary	file:
+bcc	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string bcc;$/;"	m	class:ApiEmail	file:
+bodyHtml	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string bodyHtml;$/;"	m	class:ApiEmail	file:
+bodyMatches	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    string[]         bodyMatches;$/;"	m	struct:Match	file:
+bodyPeek	/home/juanjux/wodri/backend/source/db/email.d	/^    string         bodyPeek;$/;"	m	class:Email	file:
+bodyPeek	/home/juanjux/wodri/backend/source/db/email.d	/^    string bodyPeek;$/;"	m	class:EmailSummary	file:
+bodyPeekLength	/home/juanjux/wodri/backend/source/db/config.d	/^    uint   bodyPeekLength;$/;"	m	struct:RetrieverConfig	file:
+bodyPlain	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string bodyPlain;$/;"	m	class:ApiEmail	file:
+browser	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	version(browser) {$/;"	V	file:
+bsonBool	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^alias bsonBool         = deserializeBson!bool;$/;"	t	file:
+bsonBoolSafe	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^alias bsonBoolSafe     = bsonSafe!bool;$/;"	t	file:
+bsonId	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^alias bsonId           = deserializeBson!BsonObjectID;$/;"	t	file:
+bsonNumber	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^double bsonNumber(const Bson input)$/;"	f
+bsonStr	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^alias bsonStr          = deserializeBson!string;$/;"	t	file:
+bsonStrArray	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^alias bsonStrArray     = deserializeBson!(string[]);$/;"	t	file:
+bsonStrArraySafe	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^alias bsonStrArraySafe = bsonSafe!(string[]);$/;"	t	file:
+bsonStrHash	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^alias bsonStrHash      = deserializeBson!(string[string]);$/;"	t	file:
+bsonStrSafe	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^alias bsonStrSafe      = bsonSafe!string;$/;"	t	file:
+bubblingEventHandlers	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	EventHandler[][string] bubblingEventHandlers;$/;"	m	class:Element	file:
+button	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	int button;$/;"	m	class:Element::Event	file:
+cTransferEncoding	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string cTransferEncoding;$/;"	m	struct:MIMEPart	file:
+camelCase	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^string camelCase(string a) {$/;"	s	file:
+capitalizeHeader	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^private pure string capitalizeHeader(in string name)$/;"	f
+caption	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string caption() {$/;"	f	class:Element::Table
+caption	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property void caption(string text) {$/;"	f	class:Element::Table
+captionElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element captionElement() {$/;"	f	class:Element::Table
+capturingEventHandlers	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	EventHandler[][string] capturingEventHandlers;$/;"	m	class:Element	file:
+cc	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string cc;$/;"	m	class:ApiEmail	file:
+checkAuth	/home/juanjux/wodri/backend/source/webbackend/source/utils.d	/^bool checkAuth(string user, string password)$/;"	f
+checkMatch	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    private bool checkMatch(Email email) const$/;"	f	class:UserFilter	file:
+childElements	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element[] childElements() {$/;"	f	class:Element
+childNodes	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element[] childNodes() { \/\/ FIXME: the above should be inout$/;"	f	class:Element
+childNodes	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property const(Element[]) childNodes() const {$/;"	f	class:Element
+childPosition	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int childPosition;$/;"	m	struct:Element::ElementStream::Current	file:
+children	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] children;$/;"	m	class:Element	file:
+className	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element className(string c) {$/;"	f	class:Element
+className	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string className() const {$/;"	f	class:Element
+classNames	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string[] classNames() const {$/;"	f
+classes	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^			ubyte classes; \/\/\/.$/;"	m	struct:Element::CssStyle::Specificity::__anon4	file:
+classes	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string[] classes() {$/;"	f
+cleanSubject	/home/juanjux/wodri/backend/source/db/conversation.d	/^    string        cleanSubject;$/;"	m	class:Conversation	file:
+clear	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void clear() {$/;"	f	class:Element::Document
+clearSubject	/home/juanjux/wodri/backend/source/common/utils.d	/^string clearSubject(in string subject)$/;"	f
+clientX	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	int clientX;$/;"	m	class:Element::Event	file:
+clientY	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	int clientY;$/;"	m	class:Element::Event	file:
+cloned	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override @property Element cloned() {$/;"	f	class:Element::TextNode
+collection	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^MongoCollection collection(string name) { return g_mongoDB[name]; }$/;"	f
+colspan	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property int colspan() const {$/;"	f	class:Element::TableCell
+colspan	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property int colspan(int i) {$/;"	f	class:Element::TableCell
+common.utils	/home/juanjux/wodri/backend/source/common/utils.d	/^module common.utils;$/;"	M
+computedStyle	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property CssStyle computedStyle() {$/;"	f	class:Element
+content	/home/juanjux/wodri/backend/source/db/email.d	/^    string content;$/;"	m	struct:TextPart	file:
+contentId	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	struct:Attachment	file:
+contentId	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string contentId;$/;"	m	struct:MIMEPart	file:
+contentId	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string contentId;$/;"	m	struct:ApiAttachment	file:
+contentType	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string contentType(string mimeType) {$/;"	f	class:Element::Document
+contentType	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override @property string contentType() const {$/;"	f	class:Element::Document
+contents	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string contents;$/;"	m	class:Element::TextNode	file:
+convId	/home/juanjux/wodri/backend/source/db/dbinterface/driverconversationinterface.d	/^    string convId;$/;"	m	struct:EmailAndConvIds	file:
+conversation	/home/juanjux/wodri/backend/source/db/searchresult.d	/^    const Conversation conversation;$/;"	m	struct:SearchResult	file:
+conversationAddTag	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        void conversationAddTag(string userName, string id, string tag)$/;"	f	class:ConvImpl
+conversationRemoveTag	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        void conversationRemoveTag(string userName, string id, string tag)$/;"	f	class:ConvImpl
+conversations	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^    ApiConversationSummary[] conversations;$/;"	m	struct:ApiSearchResult	file:
+createElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element createElement(string name) {$/;"	f	class:Element::Document
+createFragment	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element createFragment() {$/;"	f	class:Element::Document
+createPartInfoText	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    void createPartInfoText(MIMEPart part, ref Appender!string ap, int level)$/;"	f
+createTextNode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element createTextNode(string content) {$/;"	f	class:Element::Document
+cssUrl	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^string cssUrl(string url) {$/;"	c	class:Element	file:
+ctype	/home/juanjux/wodri/backend/source/db/email.d	/^    string ctype;$/;"	m	struct:TextPart	file:
+ctype	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    ContentData ctype;$/;"	m	struct:MIMEPart	file:
+ctype	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string ctype;$/;"	m	struct:Attachment	file:
+ctype	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string ctype;$/;"	m	struct:ApiAttachment	file:
+current	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Current current;$/;"	m	class:Element::ElementStream	typeref:struct:Element::ElementStream::Current	file:
+currentKilled	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void currentKilled() {$/;"	f	class:Element::ElementStream
+data	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string data;$/;"	m	class:Element::Utf8Stream	file:
+dataset	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property DataSet dataset() {$/;"	f	class:Element
+date	/home/juanjux/wodri/backend/source/db/email.d	/^    string date;$/;"	m	class:EmailSummary	file:
+date	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    @property ref const(DateTime) date()         const { return m_date; }$/;"	f	class:IncomingEmail
+date	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string date;$/;"	m	class:ApiEmail	file:
+db.attachcontainer	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^module db.attachcontainer;$/;"	M
+db.config	/home/juanjux/wodri/backend/source/db/config.d	/^module db.config;$/;"	M
+db.conversation	/home/juanjux/wodri/backend/source/db/conversation.d	/^module db.conversation;$/;"	M
+db.db_util	/home/juanjux/wodri/backend/source/db/db_util.d	/^module db.db_util;$/;"	M
+db.dbinterface.driverconfiginterface	/home/juanjux/wodri/backend/source/db/dbinterface/driverconfiginterface.d	/^module db.dbinterface.driverconfiginterface;$/;"	M
+db.dbinterface.driverconversationinterface	/home/juanjux/wodri/backend/source/db/dbinterface/driverconversationinterface.d	/^module db.dbinterface.driverconversationinterface;$/;"	M
+db.dbinterface.driverdomaininterface	/home/juanjux/wodri/backend/source/db/dbinterface/driverdomaininterface.d	/^module db.dbinterface.driverdomaininterface;$/;"	M
+db.dbinterface.driveremailinterface	/home/juanjux/wodri/backend/source/db/dbinterface/driveremailinterface.d	/^module db.dbinterface.driveremailinterface;$/;"	M
+db.dbinterface.driveruserfilterinterface	/home/juanjux/wodri/backend/source/db/dbinterface/driveruserfilterinterface.d	/^module db.dbinterface.driveruserfilterinterface;$/;"	M
+db.dbinterface.driveruserinterface	/home/juanjux/wodri/backend/source/db/dbinterface/driveruserinterface.d	/^module db.dbinterface.driveruserinterface;$/;"	M
+db.domain	/home/juanjux/wodri/backend/source/db/domain.d	/^module db.domain;$/;"	M
+db.email	/home/juanjux/wodri/backend/source/db/email.d	/^module db.email;$/;"	M
+db.mongo.driverconfigmongo	/home/juanjux/wodri/backend/source/db/mongo/driverconfigmongo.d	/^module db.mongo.driverconfigmongo;$/;"	M
+db.mongo.driverconversationmongo	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^module db.mongo.driverconversationmongo;$/;"	M
+db.mongo.driverdomainmongo	/home/juanjux/wodri/backend/source/db/mongo/driverdomainmongo.d	/^module db.mongo.driverdomainmongo;$/;"	M
+db.mongo.driveremailmongo	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^module db.mongo.driveremailmongo;$/;"	M
+db.mongo.driveruserfiltermongo	/home/juanjux/wodri/backend/source/db/mongo/driveruserfiltermongo.d	/^module db.mongo.driveruserfiltermongo;$/;"	M
+db.mongo.driverusermongo	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^module db.mongo.driverusermongo;$/;"	M
+db.mongo.mongo	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^module db.mongo.mongo;$/;"	M
+db.searchresult	/home/juanjux/wodri/backend/source/db/searchresult.d	/^module db.searchresult;$/;"	M
+db.tagcontainer	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^module db.tagcontainer;$/;"	M
+db.test_support	/home/juanjux/wodri/backend/source/db/test_support.d	/^module db.test_support;$/;"	M
+db.tests.test_conversation	/home/juanjux/wodri/backend/source/db/tests/test_conversation.d	/^module db.tests.test_conversation;$/;"	M
+db.tests.test_domain	/home/juanjux/wodri/backend/source/db/tests/test_domain.d	/^module db.tests.test_domain;$/;"	M
+db.tests.test_email	/home/juanjux/wodri/backend/source/db/tests/test_email.d	/^module db.tests.test_email;$/;"	M
+db.tests.test_user	/home/juanjux/wodri/backend/source/db/tests/test_user.d	/^module db.tests.test_user;$/;"	M
+db.user	/home/juanjux/wodri/backend/source/db/user.d	/^module db.user;$/;"	M
+db.userfilter	/home/juanjux/wodri/backend/source/db/userfilter.d	/^module db.userfilter;$/;"	M
+dbDriver	/home/juanjux/wodri/backend/source/db/conversation.d	/^    private static DriverConversationInterface dbDriver = null;$/;"	m	class:Conversation	file:
+dbDriver	/home/juanjux/wodri/backend/source/db/domain.d	/^    private static DriverDomainInterface dbDriver = null;$/;"	m	class:Domain	file:
+dbDriver	/home/juanjux/wodri/backend/source/db/email.d	/^    private static DriverEmailInterface dbDriver = null;$/;"	m	class:Email	file:
+dbDriver	/home/juanjux/wodri/backend/source/db/user.d	/^    private static DriverUserInterface dbDriver = null;$/;"	m	class:User	file:
+dbId	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^    string dbId;$/;"	m	struct:DbAttachment	file:
+dbId	/home/juanjux/wodri/backend/source/db/conversation.d	/^    string        dbId;$/;"	m	class:Conversation	file:
+dbId	/home/juanjux/wodri/backend/source/db/email.d	/^    string         dbId;$/;"	m	class:Email	file:
+dbId	/home/juanjux/wodri/backend/source/db/email.d	/^    string dbId;$/;"	m	class:EmailSummary	file:
+dbId	/home/juanjux/wodri/backend/source/webbackend/source/apiconversation.d	/^    string dbId;$/;"	m	class:ApiConversation	file:
+dbId	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^    string         dbId;$/;"	m	class:ApiConversationSummary	file:
+dbId	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string dbId;$/;"	m	class:ApiEmail	file:
+dbId	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string dbId;$/;"	m	struct:ApiAttachment	file:
+db_insertalltest	/home/juanjux/wodri/backend/source/db/test_support.d	/^version(db_insertalltest) $/;"	V	file:
+db_usetestdb	/home/juanjux/wodri/backend/source/db/mongo/driveruserfiltermongo.d	/^version(db_usetestdb)$/;"	V	file:
+db_usetestdb	/home/juanjux/wodri/backend/source/db/tests/test_conversation.d	/^version(db_usetestdb)$/;"	V	file:
+db_usetestdb	/home/juanjux/wodri/backend/source/db/tests/test_domain.d	/^version(db_usetestdb)$/;"	V	file:
+db_usetestdb	/home/juanjux/wodri/backend/source/db/tests/test_email.d	/^version(db_usetestdb)$/;"	V	file:
+db_usetestdb	/home/juanjux/wodri/backend/source/db/tests/test_user.d	/^version(db_usetestdb)$/;"	V	file:
+db_usetestdb	/home/juanjux/wodri/backend/source/db/userfilter.d	/^version(db_usetestdb)$/;"	V	file:
+db_usetestdb	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^    version(db_usetestdb)$/;"	V	file:
+decodeBase64Stubborn	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable(ubyte)[] decodeBase64Stubborn(string input)$/;"	f
+decodeEncodedWord	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^string decodeEncodedWord(string data) {$/;"	f
+decodeQuotedPrintable	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^immutable(ubyte)[] decodeQuotedPrintable(string text) {$/;"	f
+defaultEventHandlers	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	EventHandler[string] defaultEventHandlers;$/;"	m	class:Element	file:
+defaultPrevented	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool defaultPrevented;$/;"	m	class:Element::Event	file:
+deleteAttachment	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    void deleteAttachment(in string emailDbId, in string attachmentId)$/;"	f	class:DriverEmailMongo
+deleteAttachment	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        void deleteAttachment(string userName, string id, string attachmentId)$/;"	f	class:MessageImpl
+deleteConversation	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        void deleteConversation(string userName, string id, int purge=0)$/;"	f	class:ConvImpl
+deleteEmail	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        void deleteEmail(string userName, string id, int purge=0)$/;"	f	class:MessageImpl
+deleteIt	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    bool deleteIt     = false;$/;"	m	struct:Action	file:
+deleted	/home/juanjux/wodri/backend/source/db/conversation.d	/^    bool deleted;$/;"	m	struct:MessageLink	file:
+deleted	/home/juanjux/wodri/backend/source/db/email.d	/^    bool           deleted = false;$/;"	m	class:Email	file:
+deleted	/home/juanjux/wodri/backend/source/db/email.d	/^    bool deleted = false;$/;"	m	class:EmailSummary	file:
+deleted	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    bool   deleted = false;$/;"	m	class:ApiEmail	file:
+destinationAddress	/home/juanjux/wodri/backend/source/db/email.d	/^    string         destinationAddress;$/;"	m	class:Email	file:
+directText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string directText() {$/;"	f
+directText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property void directText(string text) {$/;"	f
+dispatch	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void dispatch() {$/;"	f	class:Element::Event
+dispatchMutationEvent	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void dispatchMutationEvent(DomMutationEvent e) {$/;"	f	class:Element::Document
+disposition	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    ContentData disposition;$/;"	m	struct:MIMEPart	file:
+docToObject	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^    private static Conversation docToObject(const ref Bson convDoc)$/;"	f	class:DriverConversationMongo
+domainName	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string domainName() {$/;"	f	class:Element::Link
+draft	/home/juanjux/wodri/backend/source/db/email.d	/^    bool           draft = false;$/;"	m	class:Email	file:
+draft	/home/juanjux/wodri/backend/source/db/email.d	/^    bool draft = false;$/;"	m	class:EmailSummary	file:
+draft	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    bool   draft   = false;$/;"	m	class:ApiEmail	file:
+dropFront	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		void dropFront(int bytes) {$/;"	f	class:Element::Utf8Stream
+element	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		Element element;$/;"	m	struct:Element::ElementStream::Current	file:
+elements	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element[] elements() {$/;"	f	class:Element::Form
+elements	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] elements;$/;"	m	struct:ElementCollection	file:
+emailDbId	/home/juanjux/wodri/backend/source/db/conversation.d	/^    string emailDbId;$/;"	m	struct:MessageLink	file:
+emailId	/home/juanjux/wodri/backend/source/db/dbinterface/driverconversationinterface.d	/^    string emailId;$/;"	m	struct:EmailAndConvIds	file:
+emailIdsCursor	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^            auto emailIdsCursor = collection("emailIndexContents").find($/;"	m	class:DriverConversationMongo	file:
+empty	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property bool empty() {$/;"	f	class:Element::ElementStream
+empty	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property bool empty() {$/;"	f	class:Element::Stack
+emptyElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool emptyElement; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
+emptyTestDb	/home/juanjux/wodri/backend/source/db/test_support.d	/^        void emptyTestDb()$/;"	f
+enableAddingSpecialTagsToDom	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void enableAddingSpecialTagsToDom() {$/;"	f	class:Element::Document
+ensureIndexes	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^private void ensureIndexes()$/;"	f
+evenChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool evenChild; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
+eventName	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string eventName;$/;"	m	class:Element::Event	file:
+eventObservers	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void delegate(DomMutationEvent)[] eventObservers;$/;"	m	class:Element::Document	file:
+expandQuadShort	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private void expandQuadShort(string name, string value, Specificity specificity) {$/;"	f	class:Element::CssStyle	file:
+expandShortForm	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void expandShortForm(Property p, Specificity specificity) {$/;"	f	class:Element::CssStyle
+expansionHook	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		void* expansionHook; \/\/\/ditto$/;"	v
+extractAttachNamesFromDoc	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    private static string[] extractAttachNamesFromDoc(const ref Bson emailDoc)$/;"	f	class:DriverEmailMongo
+extractBodyPeek	/home/juanjux/wodri/backend/source/db/email.d	/^    private void extractBodyPeek()$/;"	f	class:Email	file:
+field2HeaderValue	/home/juanjux/wodri/backend/source/db/email.d	/^private HeaderValue field2HeaderValue(string field)$/;"	c	file:
+fields	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string[string] fields;$/;"	m	struct:ContentData	file:
+filename	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string filename;$/;"	m	struct:Attachment	file:
+filename	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string filename;$/;"	m	struct:ApiAttachment	file:
+findComments	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^Element[] findComments(Document document, string txt) {$/;"	T	file:
+findComments	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^Element[] findComments(Element element, string txt) {$/;"	T	file:
+findFirst	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element findFirst(bool delegate(Element) doesItMatch) {$/;"	f	class:Element::Document
+findOneById	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^Bson findOneById(in string coll, in string id, in string[] fields ...)$/;"	f
+finishInitialization	/home/juanjux/wodri/backend/source/db/email.d	/^    void finishInitialization()$/;"	f	class:Email
+firstChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool firstChild; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
+firstChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element firstChild() {$/;"	f	class:Element
+firstInnerText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string firstInnerText() const {$/;"	f
+forms	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Form[] forms() {$/;"	f	class:Element::Document
+forwardTo	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    string[] forwardTo;$/;"	m	struct:Action	file:
+forwardedTo	/home/juanjux/wodri/backend/source/db/email.d	/^    string[]       forwardedTo;$/;"	m	class:Email	file:
+from	/home/juanjux/wodri/backend/source/db/email.d	/^    HeaderValue    from;$/;"	m	class:Email	file:
+from	/home/juanjux/wodri/backend/source/db/email.d	/^    string from;$/;"	m	class:EmailSummary	file:
+from	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string from;$/;"	m	class:ApiEmail	file:
+fromElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	static FormFieldOptions fromElement(Element e) {$/;"	f	struct:Element::FormFieldOptions
+fromString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		static Selector fromString(string selector) {$/;"	f	struct:Element::Selector
+fromUndecodedString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	static TextNode fromUndecodedString(Document _parentDocument, string html) {$/;"	f	class:Element::TextNode
+front	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element front() {$/;"	f	class:Element::ElementStream
+g_driverInterface	/home/juanjux/wodri/backend/source/db/config.d	/^private DriverConfigInterface g_driverInterface;$/;"	v
+g_mongoDB	/home/juanjux/wodri/backend/source/db/mongo/mongo.d	/^private MongoDatabase g_mongoDB;$/;"	v
+g_retrieverConfig	/home/juanjux/wodri/backend/source/db/config.d	/^private shared immutable RetrieverConfig g_retrieverConfig;$/;"	v	typeref:struct:RetrieverConfig
+generateMessageId	/home/juanjux/wodri/backend/source/common/utils.d	/^string generateMessageId(in string domain="")$/;"	f
+generateNewId	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    string generateNewId()$/;"	f	class:DriverEmailMongo
+generatedMessageId	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^        package bool generatedMessageId = false;$/;"	M
+get	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static Conversation get(in string id)$/;"	f	class:Conversation
+get	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^    Conversation get(in string id)$/;"	f
+get	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    Email get(in string dbId)$/;"	f	class:DriverEmailMongo
+get	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^    User get(in string id)$/;"	f	class:DriverUserMongo
+get	/home/juanjux/wodri/backend/source/db/user.d	/^    static User get(in string id) { return dbDriver.get(id); }$/;"	f	class:User
+get	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string get(string name) const {$/;"	f	struct:AttributeSet
+get	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string get(string name) const {$/;"	f	struct:DataSet
+get	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string get(string name) const {$/;"	f	struct:ElementStyle
+get	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        ApiConversation get(string userName, string id)$/;"	f	class:ConvImpl
+get	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        ApiEmail get(string userName, string id)$/;"	f	class:MessageImpl
+getAttribute	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string getAttribute(string name) const {$/;"	f	class:Element
+getByAddress	/home/juanjux/wodri/backend/source/db/mongo/driveruserfiltermongo.d	/^    UserFilter[] getByAddress(in string address)$/;"	f	class:DriverUserfilterMongo
+getByAddress	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    static UserFilter[] getByAddress(in string address)$/;"	f	class:UserFilter
+getByEmailId	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static Conversation getByEmailId(in string emailId,$/;"	f	class:Conversation
+getByReferences	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static Conversation getByReferences(in string userId,$/;"	f	class:Conversation
+getByReferences	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^    Conversation getByReferences(in string userId,$/;"	f
+getByTag	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static Conversation[] getByTag(in string tagName,$/;"	f	class:Conversation
+getConfig	/home/juanjux/wodri/backend/source/db/config.d	/^ref immutable(RetrieverConfig) getConfig() { return g_retrieverConfig; }$/;"	f
+getConfig	/home/juanjux/wodri/backend/source/db/mongo/driverconfigmongo.d	/^    RetrieverConfig getConfig()$/;"	f	class:DriverConfigMongo
+getData	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override immutable(ubyte)[] getData() const {$/;"	f	class:Element::Document
+getElementById	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element getElementById(string id) {$/;"	f	class:Element
+getElementById	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element getElementById(string id) {$/;"	f	class:Element::Document
+getElements	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		Element[] getElements(Element start) {$/;"	f	struct:Element::Selector
+getElementsByClassName	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] getElementsByClassName(string cn) {$/;"	f	class:Element
+getElementsBySelector	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] getElementsBySelector(string selector) {$/;"	f	class:Element
+getElementsBySelector	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] getElementsBySelector(string selector) {$/;"	f	class:Element::Document
+getElementsBySelectorParts	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] getElementsBySelectorParts(Element start, SelectorPart[] parts) {$/;"	f	class:Element
+getElementsByTagName	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] getElementsByTagName(string tag) {$/;"	f	class:Element
+getElementsByTagName	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] getElementsByTagName(string tag) {$/;"	f	class:Element::Document
+getEmailCursorAtPosition	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    static auto getEmailCursorAtPosition(ulong pos)$/;"	f	class:DriverEmailMongo
+getField	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] getField(string name) {$/;"	f	class:Element::Form
+getFirstElementByTagName	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element getFirstElementByTagName(string tag) {$/;"	f	class:Element::Document
+getFromAddress	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^    User getFromAddress(in string address)$/;"	f	class:DriverUserMongo
+getFromAddress	/home/juanjux/wodri/backend/source/db/user.d	/^    static User getFromAddress(in string address)$/;"	f	class:User
+getFromLoginName	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^    User getFromLoginName(in string login)$/;"	f	class:DriverUserMongo
+getFromLoginName	/home/juanjux/wodri/backend/source/db/user.d	/^    static User getFromLoginName(in string login)$/;"	f	class:User
+getHeader	/home/juanjux/wodri/backend/source/db/email.d	/^    HeaderValue getHeader(in string name) const$/;"	f	class:Email
+getHeader	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    const(HeaderValue) getHeader(in string name) const$/;"	f	class:IncomingEmail
+getIdFromLoginName	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^    string getIdFromLoginName(in string login)$/;"	f	class:DriverUserMongo
+getIdFromLoginName	/home/juanjux/wodri/backend/source/db/user.d	/^    static string getIdFromLoginName(in string login)$/;"	f	class:User
+getLabel	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element getLabel(string forId) {$/;"	f	class:Element::Form
+getMeta	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string getMeta(string name) {$/;"	f	class:Element::Document
+getMore	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string getMore() {$/;"	f	class:Element::Utf8Stream
+getMoreHelper	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string delegate() getMoreHelper;$/;"	m	class:Element::Utf8Stream	file:
+getObjectFromField	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^    private User getObjectFromField(in string fieldName, in string fieldValue)$/;"	f	class:DriverUserMongo	file:
+getOriginal	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    string getOriginal(in string dbId)$/;"	f	class:DriverEmailMongo
+getParent	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	T getParent(T = Element)(string tagName = null) if(is(T : Element)) {$/;"	f	class:Element
+getPostableData	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string getPostableData() {$/;"	f	class:Element::Form
+getRaw	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        string getRaw(string userName, string id)$/;"	f	class:MessageImpl
+getReferencesFromPrevious	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    string[] getReferencesFromPrevious(in string dbId)$/;"	f	class:DriverEmailMongo
+getRequestUser	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^string getRequestUser(HTTPServerRequest req, HTTPServerResponse res)$/;"	f
+getRootContentInfo	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    private void getRootContentInfo()$/;"	f	class:IncomingEmail	file:
+getSortedEmailFilesList	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    DirEntry[] getSortedEmailFilesList(string emailsDir)$/;"	f
+getSpecificityOfRule	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Specificity getSpecificityOfRule(string rule) {$/;"	f	class:Element::CssStyle
+getTagConversations	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        ApiConversationSummary[] getTagConversations(string id,$/;"	f	class:ConvImpl
+getTestApiEmail	/home/juanjux/wodri/backend/source/db/tests/test_email.d	/^    ApiEmail getTestApiEmail()$/;"	f
+getValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string getValue(string field) {$/;"	f	class:Element::Form
+getValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string getValue(string name) {$/;"	f	class:Element::CssStyle
+getValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string getValue(string name) {$/;"	f	class:Element::Link
+givenExplicitly	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool givenExplicitly; \/\/\/ this is false if for example the user said "padding" and this is "padding-left"$/;"	m	struct:Element::CssStyle::Property	file:
+handleDataEncoding	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Utf8Stream handleDataEncoding(in string rawdata, string dataEncoding, bool strict) {$/;"	f	class:Element::Document
+has	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    bool has(in string tag) const $/;"	f	struct:TagContainer
+has	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    bool has(in string[] tags) const$/;"	f	struct:TagContainer
+hasAttribute	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool hasAttribute(string name) {$/;"	f	class:Element
+hasClass	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool hasClass(string c) {$/;"	f
+hasDefaultUser	/home/juanjux/wodri/backend/source/db/domain.d	/^    static Flag!"HasDefaultUser" hasDefaultUser(in string domainName)$/;"	f	class:Domain
+hasDefaultUser	/home/juanjux/wodri/backend/source/db/mongo/driverdomainmongo.d	/^    Flag!"HasDefaultUser" hasDefaultUser(in string domainName)$/;"	f	class:DriverDomainMongo
+hasHeader	/home/juanjux/wodri/backend/source/db/email.d	/^    bool hasHeader(in string name) const$/;"	f	class:Email
+hasHeader	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    bool hasHeader(in string name) const$/;"	f	class:IncomingEmail
+hasLink	/home/juanjux/wodri/backend/source/db/conversation.d	/^    bool hasLink(in string messageId, in string emailDbId)$/;"	f	class:Conversation
+hasMore	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool hasMore() {$/;"	f	class:Element::Utf8Stream
+hasMoreHelper	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool delegate() hasMoreHelper;$/;"	m	class:Element::Utf8Stream	file:
+hasTag	/home/juanjux/wodri/backend/source/db/conversation.d	/^    bool     hasTag(in string tag) const     { return m_tags.has(tag);  }$/;"	f	class:Conversation
+hasTags	/home/juanjux/wodri/backend/source/db/conversation.d	/^    bool     hasTags(in string[] tags) const { return m_tags.has(tags); }$/;"	f	class:Conversation
+haystack	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^sizediff_t indexOfBytes(immutable(ubyte)[] haystack, immutable(ubyte)[] needle) {$/;"	m	class:Element	typeref:class:Element::ElementStream	file:
+headerMatches	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    string[string]   headerMatches;$/;"	m	struct:Match	file:
+headerRaw	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    private static string headerRaw(const ref Bson emailDoc, in string headerName)$/;"	f	class:DriverEmailMongo
+headers	/home/juanjux/wodri/backend/source/db/email.d	/^    DictionaryList!(HeaderValue, false) headers;$/;"	m	class:Email	file:
+headers	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    @property ref const(DictionaryList!(HeaderValue, false)) headers() const$/;"	f	class:IncomingEmail
+headersToJson	/home/juanjux/wodri/backend/source/db/email.d	/^    package string headersToJson() const$/;"	f	class:Email
+headersToString	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string headersToString()$/;"	f	class:IncomingEmail
+htmlEntitiesEncode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^string htmlEntitiesEncode(string data, Appender!string output = appender!string()) {$/;"	c	class:Element	file:
+htmlToText	/home/juanjux/wodri/backend/source/libs/arsd/htmltotext.d	/^string htmlToText(string html, bool wantWordWrap = true, int wrapAmount = 74) {$/;"	f	file:
+hv	/home/juanjux/wodri/backend/source/db/email.d	/^    HeaderValue hv;$/;"	m	class:field2HeaderValue	file:
+id	/home/juanjux/wodri/backend/source/db/user.d	/^    string id;$/;"	m	class:User	file:
+idToken	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		sizediff_t idToken(string str, sizediff_t position) {$/;"	f	class:Element
+ids	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^			ubyte ids; \/\/\/.$/;"	m	struct:Element::CssStyle::Specificity::__anon4	file:
+important	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^			ubyte important; \/\/\/ 0 = none, 1 = stylesheet author, 2 = inline style, 3 = user important$/;"	m	struct:Element::CssStyle::Specificity::__anon4	file:
+incomingMessageLimit	/home/juanjux/wodri/backend/source/db/config.d	/^    ulong  incomingMessageLimit;$/;"	m	struct:RetrieverConfig	file:
+initialBuffer	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private T[64] initialBuffer;$/;"	m	class:Element::Stack	file:
+innerHTML	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element innerHTML(Html html) {$/;"	f	class:Element
+innerHTML	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element innerHTML(string html, bool strict = false) {$/;"	f	class:Element
+innerRawSource	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property void innerRawSource(string rawSource) {$/;"	f	class:Element
+innerText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string innerText() const {$/;"	f	class:Element
+innerText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property void innerText(string text) {$/;"	f	class:Element
+insertBefore	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	insertBefore,$/;"	e	enum:Element::DomMutationOperations	file:
+insertTestSettings	/home/juanjux/wodri/backend/source/db/mongo/driverconfigmongo.d	/^    void insertTestSettings()$/;"	f	class:DriverConfigMongo
+intFromHex	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^int intFromHex(string hex) {$/;"	f	class:Element
+internalLength	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private size_t internalLength;$/;"	m	class:Element::Stack	file:
+isBubbling	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool isBubbling;$/;"	m	class:Element::Event	file:
+isEmpty	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool isEmpty;$/;"	m	class:Element::ElementStream	file:
+isOwnedBy	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static bool isOwnedBy(string convId, string userName)$/;"	f	class:Conversation
+isOwnedBy	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    bool isOwnedBy(in string emailId, in string userName)$/;"	f	class:DriverEmailMongo
+isOwnedBy	/home/juanjux/wodri/backend/source/retriever/test.d	/^    bool isOwnedBy(in string convId, in string userName)$/;"	f	class:TestImpl
+isRequired	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool isRequired;$/;"	m	struct:Element::FormFieldOptions	file:
+isValid	/home/juanjux/wodri/backend/source/db/email.d	/^    @property Flag!"IsValidEmail" isValid() const$/;"	f	class:Email
+isValid	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    @property Flag!"IsValidEmail" isValid() const$/;"	f	class:IncomingEmail
+isoDate	/home/juanjux/wodri/backend/source/db/email.d	/^    string         isoDate;$/;"	m	class:Email	file:
+isoDate	/home/juanjux/wodri/backend/source/db/email.d	/^    string isoDate;$/;"	m	class:EmailSummary	file:
+isoDate	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string isoDate;$/;"	m	class:ApiEmail	file:
+jsonizeHeader	/home/juanjux/wodri/backend/source/db/email.d	/^    package string jsonizeHeader(in string headerName,$/;"	f	class:Email
+justSawDash	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool justSawDash = false;$/;"	m	struct:camelCase	file:
+lastChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool lastChild; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
+lastChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element lastChild() {$/;"	f	class:Element
+lastDate	/home/juanjux/wodri/backend/source/db/conversation.d	/^    string        lastDate;$/;"	m	class:Conversation	file:
+lastDate	/home/juanjux/wodri/backend/source/webbackend/source/apiconversation.d	/^    string lastDate;$/;"	m	class:ApiConversation	file:
+lastDate	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^    string         lastDate;$/;"	m	class:ApiConversationSummary	file:
+lastIdx	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		size_t lastIdx;$/;"	m	class:Element::Utf8Stream	file:
+length	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    uint length() const$/;"	f	struct:TagContainer
+length	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		@property final size_t length() {$/;"	f	class:Element::Utf8Stream
+lexSelector	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string[] lexSelector(string selector) {$/;"	f	class:Element
+links	/home/juanjux/wodri/backend/source/db/conversation.d	/^    MessageLink[] links;$/;"	m	class:Conversation	file:
+loadFromFile	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    void loadFromFile(File emailFile,$/;"	f	class:IncomingEmail
+loadFromFile	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    void loadFromFile(in string emailPath,$/;"	f	class:IncomingEmail
+loadReceivers	/home/juanjux/wodri/backend/source/db/email.d	/^    private void loadReceivers()$/;"	f	class:Email	file:
+loginHash	/home/juanjux/wodri/backend/source/db/user.d	/^    string loginHash;$/;"	m	class:User	file:
+loginName	/home/juanjux/wodri/backend/source/db/user.d	/^    string loginName;$/;"	m	class:User	file:
+loose	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool loose;$/;"	m	class:Element::Document	file:
+m_attachs	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^    private DbAttachment[] m_attachs;$/;"	m	struct:DbAttachment::AttachContainer	file:
+m_tags	/home/juanjux/wodri/backend/source/db/conversation.d	/^    private       TagContainer m_tags;$/;"	m	class:Conversation	file:
+m_tags	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    private bool[string] m_tags;$/;"	m	struct:TagContainer	file:
+main	/home/juanjux/wodri/backend/source/retriever/test.d	/^void main()$/;"	f
+main	/home/juanjux/wodri/backend/source/webbackend/test.d	/^void main()$/;"	f
+mainBody	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element mainBody() {$/;"	f	class:Element::Document
+mainDir	/home/juanjux/wodri/backend/source/db/config.d	/^    string mainDir;$/;"	m	struct:RetrieverConfig	file:
+make	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	static Element make(string tagName, Element child, string childInfo2 = null) {$/;"	f	class:Element
+make	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	static Element make(string tagName, in Html innerHtml, string childInfo2 = null) {$/;"	f	class:Element
+make	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	static Element make(string tagName, string childInfo = null, string childInfo2 = null) {$/;"	f	class:Element
+markAsRead	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    bool markAsRead   = false;$/;"	m	struct:Action	file:
+matchElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool matchElement(Element e) {$/;"	f	struct:Element::SelectorPart
+matchElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool matchElement(Element e, Element relativeTo = null) {$/;"	f	struct:Element::Selector
+matchingEmailsIdx	/home/juanjux/wodri/backend/source/db/searchresult.d	/^    ulong[] matchingEmailsIdx;$/;"	m	struct:SearchResult	file:
+maybeBodyNoFormat	/home/juanjux/wodri/backend/source/db/email.d	/^    package string maybeBodyNoFormat() const$/;"	f	class:Email
+messageId	/home/juanjux/wodri/backend/source/db/conversation.d	/^    string messageId;$/;"	m	struct:MessageLink	file:
+messageId	/home/juanjux/wodri/backend/source/db/email.d	/^    string         messageId;$/;"	m	class:Email	file:
+messageId	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string messageId;$/;"	m	class:ApiEmail	file:
+messageIdToDbId	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    string messageIdToDbId(in string messageId)$/;"	f	class:DriverEmailMongo
+name	/home/juanjux/wodri/backend/source/db/user.d	/^    string name;$/;"	m	class:User	file:
+name	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string name; \/\/\/.$/;"	m	struct:Element::CssStyle::Property	file:
+name	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string opDispatch(string name)(string v = null) if(name != "popFront") {$/;"	f	class:Element
+name	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string opDispatch(string name)(string v = null) if(0) { return null; } \/\/ text nodes don't have attributes$/;"	f	class:Element::TextNode
+name	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string opDispatch(string name)(string v = null) if(name != "popFront") { \/\/ popFront will make this look like a range. Do not want.$/;"	f	template:JavascriptStyleDispatch
+name	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string opDispatch(string name)(string v = null)$/;"	f	class:Element::Form
+name	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string name;$/;"	m	struct:ContentData	file:
+nameGiven	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string opDispatch(string nameGiven)(string value = null) if(nameGiven != "popFront") {$/;"	f	class:Element::CssStyle
+neverSpam	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    bool neverSpam    = false;$/;"	m	struct:Action	file:
+nextSibling	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element nextSibling(string tagName = null) {$/;"	f	class:Element
+noInbox	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    bool noInbox      = false;$/;"	m	struct:Action	file:
+nodeType	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property override int nodeType() const {$/;"	f	class:Element::SpecialElement
+nodeType	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property override int nodeType() const {$/;"	f	class:Element::TextNode
+nodeValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override string nodeValue() const {$/;"	f	class:Element::BangInstruction
+nodeValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override string nodeValue() const {$/;"	f	class:Element::HtmlComment
+nodeValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override string nodeValue() const {$/;"	f	class:Element::QuestionInstruction
+nodeValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override string nodeValue() const {$/;"	f	class:Element::RawSource
+nodeValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override string nodeValue() const {$/;"	f	class:Element::ServerSideCode
+nodeValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override string nodeValue() const {$/;"	f	class:Element::TextNode
+none	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property static FormFieldOptions none() {$/;"	f	struct:Element::FormFieldOptions
+numMessages	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^    ulong          numMessages;$/;"	m	class:ApiConversationSummary	file:
+numTags	/home/juanjux/wodri/backend/source/db/conversation.d	/^    uint     numTags()              const    { return m_tags.length;    }$/;"	f	class:Conversation
+oddChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool oddChild; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
+offsetHeight	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int offsetHeight; \/\/\/ditto$/;"	v
+offsetLeft	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int offsetLeft; \/\/\/ditto$/;"	v
+offsetParent	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		Element offsetParent; \/\/\/ditto$/;"	v
+offsetTop	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int offsetTop; \/\/\/ditto$/;"	v
+offsetWidth	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int offsetWidth; \/\/\/ditto$/;"	v
+op	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string* opBinary(string op)(string key)  if(op == "in") {$/;"	f	template:JavascriptStyleDispatch
+opAssign	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		final Utf8Stream opAssign(string rhs) {$/;"	f	class:Element::Utf8Stream
+opDispatch	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	ElementCollection opDispatch(string name, T...)(T t) {$/;"	f	struct:ElementCollection
+opDollar	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		final size_t opDollar() {$/;"	f	class:Element::Utf8Stream
+opIndex	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    bool opIndex(in string name) const $/;"	f	struct:TagContainer
+opIndex	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		final char opIndex(size_t idx) {$/;"	f	class:Element::Utf8Stream
+opIndex	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	ElementCollection opIndex(string selector) {$/;"	f	class:Element::Document
+opIndex	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	ElementCollection opIndex(string selector) {$/;"	f	struct:ElementCollection
+opIndex	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string opIndex(string key) const {$/;"	f	template:JavascriptStyleDispatch
+opIndexAssign	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string opIndexAssign(string value, string field) {$/;"	f	template:JavascriptStyleDispatch
+opSlice	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		final string opSlice(size_t start, size_t end) {$/;"	f	class:Element::Utf8Stream
+operation	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	DomMutationOperations operation;$/;"	m	struct:Element::DomMutationEvent	file:
+origEncodedContent	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^        string origEncodedContent;$/;"	v
+originatingRule	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string originatingRule; \/\/\/.$/;"	m	class:Element::CssStyle	file:
+originatingSpecificity	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Specificity originatingSpecificity; \/\/\/.$/;"	m	class:Element::CssStyle	file:
+outerHTML	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element[] outerHTML(string html) {$/;"	f	class:Element
+outerHTML	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string outerHTML() {$/;"	f	class:Element
+outerText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property void outerText(string text) {$/;"	f	class:Element
+outerText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string outerText() const {$/;"	f	class:Element
+parent	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    MIMEPart *parent = null;$/;"	m	struct:MIMEPart	file:
+parentDocument	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Document parentDocument;$/;"	m	class:Element	file:
+parentNode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element parentNode;$/;"	m	class:Element	file:
+parse	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void parse(in string rawdata, bool caseSensitive = false, bool strict = false, string dataEncoding = "UTF-8") {$/;"	f	class:Element::Document
+parseAttributes	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private void parseAttributes(string[] whichOnes = null) {$/;"	f	class:Element	file:
+parseContentHeader	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    private void parseContentHeader(ref ContentData contentData, in string headerText)$/;"	f	class:IncomingEmail	file:
+parseDate	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    private void parseDate(in string strDate)$/;"	f	class:IncomingEmail	file:
+parseEntity	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^dchar parseEntity(in dchar[] entity) {$/;"	c	class:Element	file:
+parseGarbage	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void parseGarbage(string data) {$/;"	f	class:Element::Document
+parsePartHeaders	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    private int parsePartHeaders(ref MIMEPart part, in string[] lines)$/;"	f	class:IncomingEmail	file:
+parseParts	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    private void parseParts(in string[] lines, ref MIMEPart parent, in string attachStore)$/;"	f	class:IncomingEmail	file:
+parseSawAspCode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool delegate(string) parseSawAspCode;$/;"	m	class:Element::Document	file:
+parseSawBangInstruction	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool delegate(string) parseSawBangInstruction;$/;"	m	class:Element::Document	file:
+parseSawComment	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool delegate(string) parseSawComment;$/;"	m	class:Element::Document	file:
+parseSawPhpCode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool delegate(string) parseSawPhpCode;$/;"	m	class:Element::Document	file:
+parseSawQuestionInstruction	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool delegate(string) parseSawQuestionInstruction;$/;"	m	class:Element::Document	file:
+parseSelector	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Selector parseSelector(string[] tokens, bool caseSensitiveTags = true) {$/;"	f	class:Element
+parseSelectorString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Selector[] parseSelectorString(string selector, bool caseSensitiveTags = true) {$/;"	f	class:Element
+parseStream	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void parseStream(Utf8Stream data, bool caseSensitive = false, bool strict = false) {$/;"	f	class:Element::Document
+parseStrict	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void parseStrict(string data) {$/;"	f	class:Element::Document
+parts	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		SelectorPart[] parts;$/;"	m	struct:Element::Selector	file:
+pattern	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string pattern;$/;"	m	struct:Element::FormFieldOptions	file:
+peek	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	T peek() {$/;"	f	class:Element::Stack
+piecesAfterRoot	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] piecesAfterRoot;$/;"	m	class:Element::Document	file:
+piecesBeforeRoot	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] piecesBeforeRoot;$/;"	m	class:Element::Document	file:
+placeholder	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string placeholder;$/;"	m	struct:Element::FormFieldOptions	file:
+pop	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	T pop() {$/;"	f	class:Element::Stack
+popFront	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void popFront() {$/;"	f	class:Element::ElementStream
+posAdjustment	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int posAdjustment;$/;"	m	class:Element::Utf8Stream	file:
+post	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        string post(string userName, ApiEmail draftContent, string replyDbId = "")$/;"	f	class:MessageImpl
+preventDefault	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void preventDefault() {$/;"	f	class:Element::Event
+previousSibling	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property Element previousSibling(string tagName = null) {$/;"	f	class:Element
+prolog	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string prolog() const {$/;"	f	class:Element::Document
+prologWasSet	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private bool prologWasSet = false; \/\/ set to true if the user changed it$/;"	m	class:Element::Document	file:
+propagationStopped	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool propagationStopped;$/;"	m	class:Element::Event	file:
+properties	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Property[] properties;$/;"	m	class:Element::CssStyle	typeref:struct:Element::CssStyle::Property	file:
+purgeById	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    void purgeById(in string dbId)$/;"	f	class:DriverEmailMongo
+purgeLink	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static void purgeLink(in string emailDbId)$/;"	f	class:Conversation
+push	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void push(T t) {$/;"	f	class:Element::Stack
+putAttachment	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        string putAttachment(string userName,$/;"	f	class:MessageImpl
+querySelector	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element querySelector(string selector) {$/;"	f	class:Element
+querySelector	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element querySelector(string selector) {$/;"	f	class:Element::Document
+querySelectorAll	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] querySelectorAll(string selector) {$/;"	f	class:Element
+querySelectorAll	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] querySelectorAll(string selector) {$/;"	f	class:Element::Document
+randomFileName	/home/juanjux/wodri/backend/source/common/utils.d	/^string randomFileName(in string directory, in string extension="")$/;"	f
+randomString	/home/juanjux/wodri/backend/source/common/utils.d	/^string randomString(in uint length)$/;"	f
+rawEmailPath	/home/juanjux/wodri/backend/source/db/email.d	/^    string         rawEmailPath;$/;"	m	class:Email	file:
+rawEmailPath	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    @property string              rawEmailPath() const { return m_rawEmailPath; }$/;"	f	class:IncomingEmail
+rawEmailStore	/home/juanjux/wodri/backend/source/db/config.d	/^    string rawEmailStore;$/;"	m	struct:RetrieverConfig	file:
+rawValue	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string rawValue;$/;"	m	struct:HeaderValue	file:
+realPath	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string realPath;$/;"	m	struct:Attachment	file:
+receivedLinks	/home/juanjux/wodri/backend/source/db/conversation.d	/^    MessageLink*[] receivedLinks()$/;"	f	class:Conversation
+receivers	/home/juanjux/wodri/backend/source/db/email.d	/^    HeaderValue    receivers;$/;"	m	class:Email	file:
+recreateTestDb	/home/juanjux/wodri/backend/source/db/test_support.d	/^        void recreateTestDb()$/;"	f
+regex	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	static FormFieldOptions regex(string pattern, bool required = false) {$/;"	f	struct:Element::FormFieldOptions
+related	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element related; \/\/ what this means differs with the operation$/;"	m	struct:Element::DomMutationEvent	file:
+related2	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element related2;$/;"	m	struct:Element::DomMutationEvent	file:
+relatedString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string relatedString;$/;"	m	struct:Element::DomMutationEvent	file:
+relatedString2	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string relatedString2;$/;"	m	struct:Element::DomMutationEvent	file:
+relatedTarget	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element relatedTarget;$/;"	m	class:Element::Event	file:
+remove	/home/juanjux/wodri/backend/source/db/conversation.d	/^    void remove()$/;"	f	class:Conversation
+remove	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    void remove(in string tag) $/;"	f	struct:TagContainer
+remove	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^    void remove(in string[] tags) $/;"	f	struct:TagContainer
+removeAttribute	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	removeAttribute,$/;"	e	enum:Element::DomMutationOperations	file:
+removeChild	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	removeChild,$/;"	e	enum:Element::DomMutationOperations	file:
+removeClass	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element removeClass(string c) {$/;"	f
+removeDuplicates	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^Element[] removeDuplicates(Element[] input) {$/;"	f	class:Element
+removeField	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void removeField(string name) {$/;"	f	class:Element::Form
+removeHeader	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    void removeHeader(in string name)$/;"	f	class:IncomingEmail
+removeLink	/home/juanjux/wodri/backend/source/db/conversation.d	/^    void removeLink(in string emailDbId)$/;"	f	class:Conversation
+removeTag	/home/juanjux/wodri/backend/source/db/conversation.d	/^    void     removeTag(in string tag)        { m_tags.remove(tag);      }$/;"	f	class:Conversation
+removeTagDb	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^        static void removeTagDb(in string dbId, in string tag)$/;"	f	file:
+removeTags	/home/juanjux/wodri/backend/source/db/conversation.d	/^    void     removeTags(in string[] tags)    { m_tags.remove(tags);     }$/;"	f	class:Conversation
+removeValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void removeValue(string name) {$/;"	f	class:Element::Link
+reparentTreeDocuments	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private void reparentTreeDocuments() {$/;"	f	class:Element	file:
+repeat	/home/juanjux/wodri/backend/source/libs/arsd/htmltotext.d	/^string repeat(string s, ulong num) {$/;"	f
+replaceHtml	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	replaceHtml,$/;"	e	enum:Element::DomMutationOperations	file:
+replaceText	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	replaceText,$/;"	e	enum:Element::DomMutationOperations	file:
+replaceTextOnly	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	replaceTextOnly$/;"	e	enum:Element::DomMutationOperations	file:
+required	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	static FormFieldOptions required() {$/;"	f	struct:Element::FormFieldOptions
+ret	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element[] ret;$/;"	m	template:findComments	file:
+ret	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	auto ret = cast(T) e;$/;"	e	enum:__anon3	file:
+ret	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string ret;$/;"	m	struct:camelCase	file:
+ret	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string ret;$/;"	m	struct:unCamelCase	file:
+retriever.incomingemail	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^module retriever.incomingemail;$/;"	M
+retriever.main	/home/juanjux/wodri/backend/source/retriever/main.d	/^module retriever.main;$/;"	M
+root	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element root;$/;"	m	class:Element::Document	file:
+rootElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		bool rootElement; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
+rowspan	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property int rowspan() const {$/;"	f	class:Element::TableCell
+rowspan	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property int rowspan(int i) {$/;"	f	class:Element::TableCell
+rules	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	CssStyle[] rules;$/;"	m	class:Element::StyleSheet	file:
+rules	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string[string] rules() const {$/;"	f	struct:ElementStyle
+salt	/home/juanjux/wodri/backend/source/db/config.d	/^    string salt;$/;"	m	struct:RetrieverConfig	file:
+score	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		uint score; \/\/\/.$/;"	m	union:Element::CssStyle::Specificity	file:
+search	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static const(SearchResult)[] search(in string[] needles,$/;"	f	class:Conversation
+search	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        ApiSearchResult search($/;"	f	class:SearchImpl
+search_test	/home/juanjux/wodri/backend/source/db/tests/test_conversation.d	/^version(search_test)$/;"	V	file:
+selectorTokens	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		static immutable string[] selectorTokens = [$/;"	m	class:Element	file:
+selfClosed	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private bool selfClosed;$/;"	m	class:Element	file:
+selfClosedElements	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^private enum static string[] selfClosedElements = [$/;"	m	class:Element	file:
+send	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void send() {$/;"	f	class:Element::Event
+sendObserverEvent	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private void sendObserverEvent(DomMutationOperations operation, string s1 = null, string s2 = null, Element r = null, Element r2 = null) {$/;"	f	class:Element	file:
+separation	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int separation = -1; \/\/\/ -1 == only itself; the null selector, 0 == tree, 1 == childNodes, 2 == childAfter, 3 == youngerSibling, 4 == parentOf$/;"	m	struct:Element::SelectorPart	file:
+set	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string set(string name, string value) {$/;"	f	struct:AttributeSet
+set	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string set(string name, string value) {$/;"	f	struct:DataSet
+set	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string set(string name, string value) {$/;"	f	struct:ElementStyle
+setAttachmentPart	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    private void setAttachmentPart($/;"	f	class:IncomingEmail	file:
+setAttribute	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element setAttribute(string name, string value) {$/;"	f	class:Element
+setAttribute	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	setAttribute,$/;"	e	enum:Element::DomMutationOperations	file:
+setDeleted	/home/juanjux/wodri/backend/source/db/mongo/driveremailmongo.d	/^    void setDeleted(in string dbId, in bool setDel)$/;"	f	class:DriverEmailMongo
+setLinkDeleted	/home/juanjux/wodri/backend/source/db/conversation.d	/^    static string setLinkDeleted(in string emailDbId, in bool setDel)$/;"	f	class:Conversation
+setMeta	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void setMeta(string name, string value) {$/;"	f	class:Element::Document
+setOwner	/home/juanjux/wodri/backend/source/db/email.d	/^    void setOwner(in string destinationAddress)$/;"	f	class:Email
+setProlog	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void setProlog(string d) {$/;"	f	class:Element::Document
+setSpam	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    bool setSpam      = false;$/;"	m	struct:Action	file:
+setTextPart	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    private void setTextPart(ref MIMEPart part, in string text)$/;"	f	class:IncomingEmail	file:
+setValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override void setValue(string field, string value) {$/;"	f	class:Element::Form
+setValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override void setValue(string name, string variable) {$/;"	f	class:Element::Link
+setValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string setValue(string name, string value, Specificity newSpecificity, bool explicit = true) {$/;"	f	class:Element::CssStyle
+setValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void setValue(string field, string value) { }$/;"	f	class:Element
+setValue	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void setValue(string field, string value, bool makeNew) {$/;"	f	class:Element::Form
+shortAuthors	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^    string[]       shortAuthors;$/;"	m	class:ApiConversationSummary	file:
+shortcut	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	bool shortcut = true;$/;"	m	class:Element::htmlEntitiesEncode	file:
+size	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    ulong size;$/;"	m	struct:Attachment	file:
+size	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    ulong  size;$/;"	m	struct:ApiAttachment	file:
+smtpEncription	/home/juanjux/wodri/backend/source/db/config.d	/^    uint   smtpEncription;$/;"	m	struct:RetrieverConfig	file:
+smtpPass	/home/juanjux/wodri/backend/source/db/config.d	/^    string smtpPass;$/;"	m	struct:RetrieverConfig	file:
+smtpPort	/home/juanjux/wodri/backend/source/db/config.d	/^    ulong  smtpPort;$/;"	m	struct:RetrieverConfig	file:
+smtpServer	/home/juanjux/wodri/backend/source/db/config.d	/^    string smtpServer;$/;"	m	struct:RetrieverConfig	file:
+smtpUser	/home/juanjux/wodri/backend/source/db/config.d	/^    string smtpUser;$/;"	m	struct:RetrieverConfig	file:
+source	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string source;$/;"	m	class:Element::BangInstruction	file:
+source	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string source;$/;"	m	class:Element::HtmlComment	file:
+source	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string source;$/;"	m	class:Element::QuestionInstruction	file:
+source	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string source;$/;"	m	class:Element::RawSource	file:
+source	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string source;$/;"	m	class:Element::ServerSideCode	file:
+source	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string source;$/;"	m	struct:Element::Html	file:
+specificity	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		Specificity specificity; \/\/\/.$/;"	m	struct:Element::CssStyle::Property	file:
+srcElement	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element srcElement;$/;"	m	class:Element::Event	file:
+stack	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Stack!(Current) stack;$/;"	m	class:Element::ElementStream	file:
+start	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	auto start = output.data.length;$/;"	m	class:Element::htmlEntitiesEncode	file:
+startIndex	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^    ulong startIndex;$/;"	m	struct:ApiSearchResult	file:
+stopPropagation	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void stopPropagation() {$/;"	f	class:Element::Event
+store	/home/juanjux/wodri/backend/source/db/conversation.d	/^    void store()$/;"	f	class:Conversation
+storeTextIndex	/home/juanjux/wodri/backend/source/db/config.d	/^    bool   storeTextIndex;$/;"	m	struct:RetrieverConfig	file:
+style	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property ElementStyle style() {$/;"	f	class:Element
+style	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property ElementStyle style(string s) {$/;"	f	class:Element
+subject	/home/juanjux/wodri/backend/source/webbackend/source/apiconversation.d	/^    string subject;$/;"	m	class:ApiConversation	file:
+subject	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^    string         subject;$/;"	m	class:ApiConversationSummary	file:
+subject	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string subject;$/;"	m	class:ApiEmail	file:
+submit	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	void submit() {$/;"	f	class:Element::Form
+subparts	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    MIMEPart[] subparts;$/;"	m	struct:MIMEPart	file:
+summaries	/home/juanjux/wodri/backend/source/webbackend/source/apiconversation.d	/^    EmailSummary[] summaries;$/;"	m	class:ApiConversation	file:
+surname	/home/juanjux/wodri/backend/source/db/user.d	/^    string surname;$/;"	m	class:User	file:
+tagName	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	string tagName;$/;"	m	class:Element	file:
+tagNameFilter	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string tagNameFilter; \/\/\/.$/;"	m	struct:Element::SelectorPart	file:
+tags	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^			ubyte tags; \/\/\/.$/;"	m	struct:Element::CssStyle::Specificity::__anon4	file:
+tags	/home/juanjux/wodri/backend/source/webbackend/source/apiconversation.d	/^    string[] tags;$/;"	m	class:ApiConversation	file:
+tags	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^    const string[] tags;$/;"	m	class:ApiConversationSummary	file:
+tagsArray	/home/juanjux/wodri/backend/source/db/conversation.d	/^    string[] tagsArray()            const    { return m_tags.array;     }$/;"	f	class:Conversation
+target	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	Element target;$/;"	m	struct:Element::DomMutationEvent	file:
+target	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	alias srcElement target;$/;"	t	class:Element::Event	file:
+targetSansQuery	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string targetSansQuery() {$/;"	f	class:Element::Link
+testRebuildDb	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        void testRebuildDb()$/;"	f	class:TestImpl
+textContent	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    string textContent;$/;"	m	struct:MIMEPart	file:
+textParts	/home/juanjux/wodri/backend/source/db/email.d	/^    TextPart[]     textParts;$/;"	m	class:Email	file:
+textualParts	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    @property const(MIMEPart[])   textualParts() const { return m_textualParts; }$/;"	f	class:IncomingEmail
+title	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property string title() {$/;"	f	class:Element::Document
+title	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	@property void title(string t) {$/;"	f	class:Element::Document
+to	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^    string to;$/;"	m	class:ApiEmail	file:
+toJson	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^    string toJson() const$/;"	f	struct:DbAttachment
+toJson	/home/juanjux/wodri/backend/source/db/attachcontainer.d	/^    string toJson() const$/;"	f	struct:DbAttachment::AttachContainer
+toJson	/home/juanjux/wodri/backend/source/db/conversation.d	/^    package string toJson()$/;"	f	class:Conversation
+toString	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^                                    Json(dateEnd).toString));$/;"	m	class:DriverConversationMongo	file:
+toString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string toString() {$/;"	f	struct:Element::Selector
+toString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string toString() {$/;"	f	struct:Element::SelectorPart
+toString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override string toString() const {$/;"	f	class:Element::Document
+toString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	override string toString() {$/;"	f	class:Element::CssStyle
+totalResultCount	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^    ulong totalResultCount;$/;"	m	struct:ApiSearchResult	file:
+totalSizeType	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    SizeRuleType     totalSizeType = SizeRuleType.None;$/;"	m	struct:Match	file:
+totalSizeValue	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    ulong            totalSizeValue;$/;"	m	struct:Match	file:
+truncateChildren	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	truncateChildren,$/;"	e	enum:Element::DomMutationOperations	file:
+tryToDetermineEncoding	/home/juanjux/wodri/backend/source/libs/arsd/characterencodings.d	/^string tryToDetermineEncoding(in ubyte[] rawdata) {$/;"	f
+txt	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	txt = txt.strip().toLower();$/;"	m	template:findComments	file:
+unCamelCase	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^string unCamelCase(string a) {$/;"	s	file:
+unDeleteConversation	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        void unDeleteConversation(string userName, string id)$/;"	f	class:ConvImpl
+unDeleteEmail	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^        void unDeleteEmail(string userName, string id)$/;"	f	class:MessageImpl
+unittest	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^    version(unittest)$/;"	V	file:
+unittest	/home/juanjux/wodri/backend/source/db/tagcontainer.d	/^version(unittest)$/;"	V	file:
+unittest	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    version(unittest)$/;"	V	file:
+unittest	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^version(unittest)$/;"	V	file:
+updateQueryString	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	\/*private*\/ void updateQueryString(string[string] vars) {$/;"	f	class:Element::Link
+userDbId	/home/juanjux/wodri/backend/source/db/conversation.d	/^    string        userDbId;$/;"	m	class:Conversation	file:
+userDocToObject	/home/juanjux/wodri/backend/source/db/mongo/driverusermongo.d	/^    private User userDocToObject(const ref Bson userDoc)$/;"	f	class:DriverUserMongo	file:
+userId	/home/juanjux/wodri/backend/source/db/email.d	/^    string         userId;$/;"	m	class:Email	file:
+value	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		string value; \/\/\/.$/;"	m	struct:Element::CssStyle::Property	file:
+variablesHash	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^	private string[string] variablesHash() {$/;"	f	class:Element::Link	file:
+visitParts	/home/juanjux/wodri/backend/source/retriever/incomingemail.d	/^    void visitParts(const ref MIMEPart part)$/;"	f
+webbackend.api	/home/juanjux/wodri/backend/source/webbackend/source/api.d	/^module webbackend.api;$/;"	M
+webbackend.apiconversation	/home/juanjux/wodri/backend/source/webbackend/source/apiconversation.d	/^module webbackend.apiconversation;$/;"	M
+webbackend.apiconversationsummary	/home/juanjux/wodri/backend/source/webbackend/source/apiconversationsummary.d	/^module webbackend.apiconversationsummary;$/;"	M
+webbackend.apiemail	/home/juanjux/wodri/backend/source/webbackend/source/apiemail.d	/^module webbackend.apiemail;$/;"	M
+webbackend.apisearchresult	/home/juanjux/wodri/backend/source/webbackend/source/apisearchresult.d	/^module webbackend.apisearchresult;$/;"	M
+webbackend.constants	/home/juanjux/wodri/backend/source/webbackend/source/constants.d	/^module webbackend.constants;$/;"	M
+webbackend.utils	/home/juanjux/wodri/backend/source/webbackend/source/utils.d	/^module webbackend.utils;$/;"	M
+withAttachment	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    bool withAttachment = false;$/;"	m	struct:Match	file:
+withHtml	/home/juanjux/wodri/backend/source/db/userfilter.d	/^    bool withHtml       = false;$/;"	m	struct:Match	file:
+xmlEntitiesEncode	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^string xmlEntitiesEncode(string data) {$/;"	c	class:Element	file:
+zIndex	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^		int zIndex; \/\/\/ditto$/;"	v
+~	/home/juanjux/wodri/backend/source/db/mongo/driverconversationmongo.d	/^                res ~= EmailAndConvIds(bsonStr(item.emailDbId), bsonStr(item.convId));$/;"	m	class:DriverConversationMongo	file:
+~	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^			ret ~= "-" ~ toLower("" ~ c)[0];$/;"	m	struct:unCamelCase	file:
+~	/home/juanjux/wodri/backend/source/libs/arsd/dom.d	/^			ret ~= c;$/;"	m	struct:unCamelCase	file:

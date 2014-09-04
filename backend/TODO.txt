@@ -6,7 +6,6 @@ Backend-API:
     status.
 
 Backend-Retriever:
-    - test that the new Conversation.remove() purges all links
     - move all unittest to separate files inside db/tests
     - unittest for every curl call for wrong auth user
 
@@ -41,11 +40,18 @@ Contacts:
 
 All:
     - Write more dirty tests, most of them are clean
-    - Authentication with scrypt hashing instead of MD5
+
     - Run dub with code converage option
+
     - Import cleanup (only imports and symbols really used)
+
     - See how to get around Mongo's 16MB document limit for bigger emails
       (GridFS?) Check is some email of my collection is bigger than 16MB without
       attachments (=> no)
 
 Installation/Configuration system:
+    - make it almost-dumb-proof with a script-wizard (or web page) to:
+      - check versions
+      - install and configure he Linux packages (postfix, mongo, dub, D compiler, etc)
+      - configure the mail system domain (ask for passwords, initial users, etc)
+      - test the mail system

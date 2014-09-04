@@ -69,7 +69,7 @@ final class DriverConversationMongo : DriverConversationInterface
         }
     }
 
-override: 
+override:
     const(EmailAndConvIds[]) searchEmails(in string[] needles,
                                           in string userId,
                                           in string dateStart = "",
