@@ -1,11 +1,25 @@
 module db.dbinterface.driverconversationinterface;
 
+import db.email;
 import db.conversation: Conversation;
 import std.typecons;
 
+struct EmailAndConvIds
+{
+    string emailId;
+    string convId;
+}
+
+ 
 interface DriverConversationInterface
 {
-    import db.email: Email;
+    const(EmailAndConvIds[]) searchEmails(
+            in string[] needles,
+            in string userId,
+            in string dateStart = "",
+            in string dateEnd = ""
+    );
+
     Conversation get(in string id);
 
     Conversation getByReferences(in string userId,

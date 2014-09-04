@@ -58,28 +58,3 @@ final class User
         return dbDriver.getFromAddress(address);
     }
 }
-
-//  _    _       _ _   _            _
-// | |  | |     (_) | | |          | |
-// | |  | |_ __  _| |_| |_ ___  ___| |_
-// | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_
-//  \____/|_| |_|_|\__|\__\___||___/\__|
-
-version(db_test)
-version(db_usetestdb)
-{
-    import std.stdio;
-    import db.test_support;
-
-    unittest // User.addressIsLocal
-    {
-        writeln("Testing User.addressIsLocal");
-        recreateTestDb();
-        assert(User.addressIsLocal("testuser@testdatabase.com"));
-        assert(User.addressIsLocal("random@testdatabase.com")); // has default user
-        assert(User.addressIsLocal("anotherUser@testdatabase.com"));
-        assert(User.addressIsLocal("anotherUser@anotherdomain.com"));
-        assert(!User.addressIsLocal("random@anotherdomain.com"));
-    }
-}

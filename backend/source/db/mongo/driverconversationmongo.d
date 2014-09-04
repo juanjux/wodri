@@ -7,6 +7,7 @@ import common.utils;
 import db.config: getConfig;
 import db.conversation: Conversation;
 import db.dbinterface.driverconversationinterface;
+import db.email;
 import db.mongo.mongo;
 import db.user: User;
 import std.algorithm;
@@ -74,6 +75,53 @@ final class DriverConversationMongo : DriverConversationInterface
     }
 
 override: // XXX reactivar
+    const(EmailAndConvIds[]) searchEmails(in string[] needles,
+                                          in string userId,
+                                          in string dateStart = "",
+                                          in string dateEnd = "")
+    in
+    {
+        assert(userId.length);
+    }
+    body
+    {
+        EmailAndConvIds[] res;
+        foreach(needle; needles)
+        {
+            Appender!string findJson;
+            findJson.put(format(`{"$text": {"$search": "\"%s\""}`, needle));
+
+            findJson.put(format(`,"userId":%s`, Json(userId).toString));
+
+            if (dateStart.length && dateEnd.length)
+                findJson.put(format(`,"isoDate": {"$gt": %s, "$lt": %s}}`,
+                                    Json(dateStart).toString,
+                                    Json(dateEnd).toString));
+
+            else if (dateStart.length && !dateEnd.length)
+                findJson.put(format(`,"isoDate": {"$gt": %s}}`,
+                                    Json(dateStart).toString));
+
+            else if (dateEnd.length && !dateStart.length)
+                findJson.put(format(`,"isoDate": {"$lt": %s}}`,
+                                    Json(dateEnd).toString));
+
+            else
+                findJson.put("}");
+
+            auto emailIdsCursor = collection("emailIndexContents").find(
+                    parseJsonString(findJson.data),
+                    ["emailDbId": 1, "convId": 1],
+                    QueryFlags.None
+            ).sort(["lastDate": -1]);
+
+            foreach(item; emailIdsCursor)
+                res ~= EmailAndConvIds(bsonStr(item.emailDbId), bsonStr(item.convId));
+        }
+        return removeDups(res);
+    }
+
+
     /** Returns null if no Conversation with those references was found. */
     Conversation get(in string id)
     {
@@ -131,6 +179,7 @@ override: // XXX reactivar
         if (!withDeleted)
             jsonApp.put(`"tags":{"$nin":["deleted"]},`);
         jsonApp.put(format(`"userId": %s}`, Json(userId).toString));
+        writeln("XXX jsonApp de buscar por tag: \n", jsonApp.data);
 
         auto cursor = collection("conversation").find(
                 parseJsonString(jsonApp.data),
@@ -152,6 +201,8 @@ override: // XXX reactivar
 
     void store(Conversation conv)
     {
+        //writeln("XXX conv.tags antes de guardar: ", conv.tagsArray);
+        //writeln("XXX conv.toJson antes de guardar: \n", conv.toJson);
         collection("conversation").update(
                 ["_id": conv.dbId],
                 parseJsonString(conv.toJson),
@@ -176,12 +227,14 @@ override: // XXX reactivar
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    import db.email;
     Conversation addEmail(in Email email, in string[] tagsToAdd, in string[] tagsToRemove)
+    in
     {
-        assert(email.userId.length);
         assert(email.dbId.length);
-
+        assert(email.userId.length);
+    }
+    body
+    {
         const references     = email.getHeader("references").addresses;
         immutable messageId  = email.messageId;
 
@@ -257,7 +310,7 @@ override: // XXX reactivar
         auto conv = getByEmailId(emailDbId);
         if (conv is null)
         {
-            logWarn(format("setEmailDeleted: No conversation found for email with id (%s)", 
+            logWarn(format("setEmailDeleted: No conversation found for email with id (%s)",
                            emailDbId));
             return "";
         }
@@ -295,376 +348,3 @@ override: // XXX reactivar
     }
 }
 } // end version(MongoDriver)
-
-
-//  _    _       _ _   _            _
-// | |  | |     (_) | | |          | |
-// | |  | |_ __  _| |_| |_ ___  ___| |_
-// | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_
-//  \____/|_| |_|_|\__|\__\___||___/\__|
-
-
-version(db_test)
-version(db_usetestdb)
-{
-
-    import db.test_support;
-    import std.stdio;
-
-    unittest // get/docToObject
-    {
-        writeln("Testing DriverConversationMongo.get/docToObject");
-        recreateTestDb();
-
-        auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
-        assert(convs.length == 1);
-        auto conv  = Conversation.get(convs[0].dbId);
-        assert(conv !is null);
-        assert(conv.lastDate.length); // this email date is set to NOW
-        assert(conv.hasTag("inbox"));
-        assert(conv.numTags == 1);
-        assert(conv.links.length == 2);
-        assert(conv.links[1].attachNames == ["google.png", "profilephoto.jpeg"]);
-        assert(conv.cleanSubject == ` some subject "and quotes" and noquotes`);
-        assert(conv.links[0].deleted == false);
-
-        convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-        conv = Conversation.get(convs[1].dbId);
-        assert(conv !is null);
-        assert(conv.lastDate == "2014-06-10T12:51:10Z");
-        assert(conv.hasTag("inbox"));
-        assert(conv.numTags == 1);
-        assert(conv.links.length == 3);
-        assert(!conv.links[0].attachNames.length);
-        assert(!conv.links[1].attachNames.length);
-        assert(!conv.links[2].attachNames.length);
-        assert(conv.cleanSubject == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
-        assert(conv.links[0].deleted == false);
-
-        conv = Conversation.get(convs[2].dbId);
-        assert(conv !is null);
-        assert(conv.lastDate == "2014-01-21T14:32:20Z");
-        assert(conv.hasTag("inbox"));
-        assert(conv.numTags == 1);
-        assert(conv.links.length == 1);
-        assert(conv.links[0].attachNames.length == 1);
-        assert(conv.links[0].attachNames[0] == "C++ Pocket Reference.pdf");
-        assert(conv.cleanSubject == " Attachment test");
-        assert(conv.links[0].deleted == false);
-    }
-
-
-    unittest // getByTag
-    {
-        writeln("Testing DriverConversationMongo.getByTag");
-        recreateTestDb();
-        auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-        assert(convs.length == 3);
-        assert(convs[0].lastDate > convs[2].lastDate);
-        assert(convs[0].links[0].deleted == false);
-
-        auto convs2 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 2, 0);
-        assert(convs2.length == 2);
-        assert(convs2[0].dbId == convs[0].dbId);
-        assert(convs2[1].dbId == convs[1].dbId);
-        assert(convs2[0].links[0].deleted == false);
-        assert(convs2[1].links[0].deleted == false);
-
-        auto convs3 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 2, 1);
-        assert(convs3.length == 1);
-        assert(convs3[0].dbId == convs[2].dbId);
-
-        auto convs4 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 1000, 0);
-        assert(convs4[0].dbId == convs[0].dbId);
-        assert(convs4[1].dbId == convs[1].dbId);
-        assert(convs4[2].dbId == convs[2].dbId);
-        assert(convs4[0].links[0].deleted == false);
-        assert(convs4[1].links[0].deleted == false);
-        assert(convs4[2].links[0].deleted == false);
-
-        // check that it doesnt returns the deleted convs
-        auto len1 = convs4.length;
-        DriverConversationMongo.addTagDb(convs4[0].dbId, "deleted");
-        convs4 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 1000, 0);
-        assert(convs4.length == len1-1);
-        // except when using Yes.WithDeleted
-        convs4 = Conversation.getByTag(
-                "inbox", USER_TO_ID["anotherUser"], 1000, 0, Yes.WithDeleted
-        );
-        assert(convs4.length == len1);
-    }
-
-
-    unittest // getByReferences
-    {
-        writeln("Testing DriverConversationMongo.getByReferences");
-        recreateTestDb();
-        auto user1id = USER_TO_ID["testuser"];
-        auto user2id = USER_TO_ID["anotherUser"];
-
-        auto conv = Conversation.getByReferences(user1id,
-                ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
-        assert(conv !is null);
-        assert(conv.dbId.length);
-        assert(conv.lastDate == "2013-05-27T05:42:30Z");
-        assert(conv.tagsArray == ["inbox"]);
-        assert(conv.links.length == 2);
-        assert(conv.links[1].messageId ==
-                "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
-        assert(conv.links[0].emailDbId.length);
-        assert(conv.links[1].emailDbId.length);
-        assert(conv.links[0].deleted == false);
-        assert(conv.links[1].deleted == false);
-
-
-        conv = Conversation.getByReferences(user2id, ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
-        assert(conv !is null);
-        assert(conv.dbId.length);
-        assert(conv.lastDate == "2014-01-21T14:32:20Z");
-        assert(conv.tagsArray == ["inbox"]);
-        assert(conv.links.length == 1);
-        assert(conv.links[0].messageId == "CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com");
-        assert(conv.links[0].emailDbId.length);
-        assert(conv.links[0].deleted == false);
-
-        DriverConversationMongo.addTagDb(conv.dbId, "deleted");
-        // check that it doesnt returns the deleted convs
-        conv = Conversation.getByReferences(user2id,
-                ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
-        assert(conv is null);
-        // except when using Yes.WithDeleted
-        conv = Conversation.getByReferences(user2id,
-                ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"],
-                Yes.WithDeleted);
-        assert(conv !is null);
-    }
-
-
-    unittest // getByEmailId
-    {
-        writeln("Testing DriverConversationMongo.getByEmailId");
-        recreateTestDb();
-
-        auto conv = Conversation.getByReferences(USER_TO_ID["testuser"],
-                ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
-
-        auto conv2 = Conversation.getByEmailId(conv.links[0].emailDbId);
-        assert(conv2 !is null);
-        assert(conv.dbId == conv2.dbId);
-
-        auto conv3 = Conversation.getByEmailId("doesntexist");
-        assert(conv3 is null);
-    }
-
-
-    unittest // addTagDb / removeTagDb
-    {
-        writeln("Testing DriversConversationMongo.addTagDb");
-        recreateTestDb();
-        auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
-        assert(convs.length);
-        auto dbId = convs[0].dbId;
-        DriverConversationMongo.addTagDb(dbId, "testTag");
-        auto conv = Conversation.get(dbId);
-        assert(conv !is null);
-        assert(conv.hasTag("testtag"));
-
-        writeln("Testing DriverConversationMongo.removeTagDb");
-        DriverConversationMongo.removeTagDb(dbId, "testTag");
-        conv = Conversation.get(dbId);
-        assert(!conv.hasTag("testtag"));
-    }
-
-    unittest // remove
-    {
-        writeln("Testing DriverConversationMongo.remove");
-        recreateTestDb();
-        auto convs = Conversation.getByTag( "inbox", USER_TO_ID["anotherUser"]);
-        assert(convs.length == 3);
-        const id = convs[0].dbId;
-        convs[0].remove();
-        convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-        assert(convs.length == 2);
-        foreach(conv; convs)
-            assert(conv.dbId != id);
-    }
-
-    unittest // addEmail
-    {
-        import retriever.incomingemail;
-
-        void assertConversationInEmailIndex(string emailId, string convId)
-        {
-            auto emailIdxDoc =
-                collection("emailIndexContents").findOne(["emailDbId": emailId]);
-            assert(!emailIdxDoc.isNull);
-            assert(bsonStr(emailIdxDoc.convId) == convId);
-        }
-
-        writeln("Testing DriverConversationMongo.addEmail");
-        recreateTestDb();
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test",
-                                               "testemails");
-        auto inEmail = new IncomingEmail();
-        inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
-                                     getConfig().attachmentStore);
-
-        auto user = User.getFromAddress(inEmail.getHeader("to").addresses[0]);
-        assert(user !is null);
-        string[] tagsToAdd = ["inbox", "anothertag"];
-
-        // test1: insert as is, should create a new conversation with this email as single
-        // member
-        auto dbEmail = new Email(inEmail);
-        dbEmail.setOwner(dbEmail.localReceivers()[0]);
-        assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        auto emailId = dbEmail.store();
-        auto convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
-        auto convDoc = findOneById("conversation", convId);
-
-        assert(!convDoc.isNull);
-        assert(bsonStr(convDoc.userId)                 == user.id);
-        assert(convDoc.links.type                      == Bson.Type.array);
-        assert(convDoc.links.length                    == 1);
-        assert(bsonStr(convDoc.links[0]["message-id"]) == dbEmail.messageId);
-        assert(bsonStr(convDoc.links[0].emailId)       == emailId);
-        assert(convDoc.tags.type                       == Bson.Type.Array);
-        assert(convDoc.tags.length                     == 2);
-        assert(bsonStrArray(convDoc.tags)[0]           == "anothertag");
-        assert(bsonStrArray(convDoc.tags)[1]           == "inbox");
-        assert(bsonStr(convDoc.lastDate)               == dbEmail.isoDate);
-        assertConversationInEmailIndex(emailId, convId);
-
-        auto convObject = Conversation.get(convId);
-        assert(convObject !is null);
-        assert(convObject.dbId     == convId);
-        assert(convObject.userDbId == user.id);
-        assert(convObject.lastDate == bsonStr(convDoc.lastDate));
-        assert(convObject.hasTags(tagsToAdd));
-        assert(convObject.links[0].messageId == inEmail.getHeader("message-id").addresses[0]);
-        assert(convObject.links[0].emailDbId == emailId);
-        assert(!convObject.links[0].attachNames.length);
-        assert(convObject.links[0].deleted == false);
-
-
-        // test2: insert as a msgid of a reference already on a conversation, check that the right
-        // conversationId is returned and the emailId added to its entry in the conversation.links
-        recreateTestDb();
-        inEmail = new IncomingEmail();
-        inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
-                           getConfig().attachmentStore);
-        dbEmail = new Email(inEmail);
-        auto testMsgId = "testreference@blabla.testdomain.com";
-        inEmail.removeHeader("message-id");
-        inEmail.addHeader("Message-ID: " ~ testMsgId);
-        dbEmail.messageId = testMsgId;
-        dbEmail.setOwner(dbEmail.localReceivers()[0]);
-        assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        emailId = dbEmail.store();
-        convId = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
-        convDoc = findOneById("conversation", convId);
-        assert(!convDoc.isNull);
-        assert(bsonStr(convDoc.userId) == user.id);
-        assert(convDoc.links.type == Bson.Type.array);
-        assert(convDoc.links.length == 3);
-        assert(bsonStr(convDoc.links[1]["message-id"]) == inEmail.getHeader("message-id").addresses[0]);
-        assert(bsonStr(convDoc.links[1]["message-id"]) == dbEmail.messageId);
-        assert(bsonStr(convDoc.links[1].emailId) == emailId);
-        assert(bsonStr(convDoc.lastDate) != dbEmail.isoDate);
-        assertConversationInEmailIndex(emailId, convId);
-
-        convObject = Conversation.get(convId);
-        assert(convObject !is null);
-        assert(convObject.dbId == convId);
-        assert(convObject.userDbId == user.id);
-        assert(convObject.lastDate == bsonStr(convDoc.lastDate));
-        assert(convObject.hasTags(tagsToAdd));
-        assert(convObject.links[1].messageId == inEmail.getHeader("message-id").addresses[0]);
-        assert(convObject.links[1].messageId == dbEmail.messageId);
-        assert(convObject.links[1].emailDbId == emailId);
-        assert(!convObject.links[1].attachNames.length);
-        assert(convObject.links[0].deleted == false);
-
-        // test3: insert with a reference to an existing conversation doc, check that the email msgid and emailId
-        // is added to that conversation
-        recreateTestDb();
-        inEmail = new IncomingEmail();
-        inEmail.loadFromFile(buildPath(backendTestEmailsDir, "html_quoted_printable"),
-                           getConfig().attachmentStore);
-        string refHeader = "References: <CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com>\r\n";
-        inEmail.addHeader(refHeader);
-        dbEmail = new Email(inEmail);
-        dbEmail.setOwner(dbEmail.localReceivers()[0]);
-        assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
-        emailId = dbEmail.store();
-        convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
-        convDoc = findOneById("conversation", convId);
-
-        assert(!convDoc.isNull);
-        assert(bsonStr(convDoc.userId) == user.id);
-        assert(convDoc.links.type == Bson.Type.array);
-        assert(convDoc.links.length == 2);
-        assert(bsonStr(convDoc.links[1]["message-id"]) == inEmail.getHeader("message-id").addresses[0]);
-        assert(bsonStr(convDoc.links[1]["message-id"]) == dbEmail.messageId);
-        assert(bsonStr(convDoc.links[1].emailId) == emailId);
-        assert(bsonStr(convDoc.lastDate) != dbEmail.isoDate);
-        assertConversationInEmailIndex(emailId, convId);
-
-        convObject = Conversation.get(convId);
-        assert(convObject !is null);
-        assert(convObject.dbId == convId);
-        assert(convObject.userDbId == user.id);
-        assert(convObject.lastDate == bsonStr(convDoc.lastDate));
-        assert(convObject.hasTags(tagsToAdd));
-        assert(convObject.links[1].messageId == inEmail.getHeader("message-id").addresses[0]);
-        assert(convObject.links[1].messageId == dbEmail.messageId);
-        assert(convObject.links[1].emailDbId == emailId);
-        assert(!convObject.links[1].attachNames.length);
-        assert(convObject.links[1].deleted == false);
-        assert(convObject.links[0].attachNames.length);
-        assert(convObject.links[0].attachNames[0] == "C++ Pocket Reference.pdf");
-    }
-
-    unittest // clearSubject
-    {
-        writeln("Testing Conversation.clearSubject");
-        assert(clearSubject("RE: polompos") == "polompos");
-        assert(clearSubject("Re: cosa RE: otracosa re: mascosas") == "cosa otracosa mascosas");
-        assert(clearSubject("Pok and something Re: things") == "Pok and something things");
-    }
-
-    unittest // Conversation.setEmailDeleted
-    {
-        writeln("Testing Conversation.setEmailDeleted");
-        recreateTestDb();
-
-        auto conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
-        conv.setEmailDeleted(conv.links[0].emailDbId, true);
-        conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
-        assert(conv.links[0].deleted);
-        conv.setEmailDeleted(conv.links[0].emailDbId, false);
-        conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
-        assert(!conv.links[0].deleted);
-    }
-
-    unittest // isOwnedBy
-    {
-        writeln("Testing Conversation.isOwnedBy");
-        recreateTestDb();
-        auto user1 = User.getFromAddress("testuser@testdatabase.com");
-        auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
-
-        auto conv = Conversation.getByReferences(user1.id,
-                ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
-        assert(conv !is null);
-        assert(conv.dbId.length);
-        assert(Conversation.isOwnedBy(conv.dbId, user1.loginName));
-
-        conv = Conversation.getByReferences(user2.id,
-            ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
-        assert(conv !is null);
-        assert(conv.dbId.length);
-        assert(Conversation.isOwnedBy(conv.dbId, user2.loginName));
-    }
-}

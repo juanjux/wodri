@@ -6,12 +6,14 @@ Backend-API:
     status.
 
 Backend-Retriever:
+    - al buscar el 
+    - move all unittest to separate files inside db/tests
     - unittests: remove Conversation.something, create an instance instead
-    - more separate db drivers: conversation
     - unittest for every curl call for wrong auth user
-    - general hunting of XXX and FIXMEs
 
     Later:
+    - general hunting of XXX and FIXMEs
+
     - Use log to log more warnings, specially on db.*
 
     - When the message failed to enter (validation error, or error on save)

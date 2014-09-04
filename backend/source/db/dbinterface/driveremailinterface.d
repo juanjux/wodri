@@ -5,11 +5,6 @@ import webbackend.apiemail;
 
 static shared immutable HEADER_SEARCH_FIELDS = ["to", "subject", "cc", "bcc"];
 
-struct EmailAndConvIds
-{
-    string emailId;
-    string convId;
-}
 
 interface DriverEmailInterface
 {
@@ -21,12 +16,6 @@ interface DriverEmailInterface
 
     bool isOwnedBy(in string id, in string name);
 
-    const(EmailAndConvIds[]) searchEmails(
-            in string[] needles,
-            in string userId,
-            in string dateStart = "",
-            in string dateEnd = ""
-    );
 
     string store(
             Email email,
@@ -47,16 +36,9 @@ interface DriverEmailInterface
 
     string getOriginal(in string dbId);
 
-    void setDeleted(
-            in string dbId,
-            in bool setDel,
-            in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
-    );
+    void setDeleted(in string dbId, in bool setDel);
 
-    void removeById(
-            in string dbId,
-            in Flag!"UpdateConversation" updateConv = Yes.UpdateConversation
-    );
+    void removeById(in string dbId);
 
     void storeTextIndex(in Email email);
 

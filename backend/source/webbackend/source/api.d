@@ -187,16 +187,33 @@ override:
                 return;
 
             if (purge)
+            {
                 Email.removeById(id);
+                // remove the link from the Conversation (which could trigger a removal of
+                // the full conversation if it was the last locally stored link)
+                auto conv = Conversation.getByEmailId(id);
+                if (conv !is null)
+                {
+                    conv.removeLink(id);
+                    if (conv.dbId.length > 0) // will be 0 if it was removed from the DB
+                        conv.store();
+                }
+            }
             else
+            {
                 Email.setDeleted(id, true);
+                Conversation.setEmailDeleted(id, true);
+            }
         }
 
 
         void unDeleteEmail(string userName, string id)
         {
             if (Email.isOwnedBy(id, userName))
-                Email.setDeleted(id, false, Yes.UpdateConversation);
+            {
+                Email.setDeleted(id, false);
+                Conversation.setEmailDeleted(id, false);
+            }
         }
 
 
@@ -249,7 +266,7 @@ override:
                 return ret;
             }
 
-            auto results = Email.search(terms, userId, dateStart, dateEnd);
+            auto results = Conversation.search(terms, userId, dateStart, dateEnd);
             foreach(ref result; results)
             {
                 assert(result.conversation !is null);
@@ -298,7 +315,7 @@ override:
             if (purge)
             {
                 foreach(const link; conv.receivedLinks)
-                    Email.removeById(link.emailDbId, No.UpdateConversation);
+                    Email.removeById(link.emailDbId);
                 conv.remove();
                 return;
             }
@@ -308,7 +325,7 @@ override:
 
                 foreach(link; conv.receivedLinks)
                 {
-                    Email.setDeleted(link.emailDbId, true, No.UpdateConversation);
+                    Email.setDeleted(link.emailDbId, true);
                     link.deleted = true;
                 }
                 conv.addTag("deleted");
@@ -329,9 +346,7 @@ override:
             // undelete the email links and the emails
             foreach(link; conv.receivedLinks)
             {
-                Email.setDeleted(link.emailDbId,
-                                        false,
-                                        No.UpdateConversation);
+                Email.setDeleted(link.emailDbId, false);
                 link.deleted = false;
             }
             conv.removeTag("deleted");

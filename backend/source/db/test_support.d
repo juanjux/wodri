@@ -43,9 +43,9 @@ version(anytestdb)
 
         void recreateTestDb()
         {
-            import db.email;
             import db.conversation;
             import db.user;
+            import db.email;
             emptyTestDb();
 
             // Fill the test DB
@@ -79,7 +79,7 @@ version(anytestdb)
                 auto user = User.getFromAddress(destination);
                 assert(user !is null);
                 auto dbEmail = new Email(inEmail, destination);
-                assert(dbEmail.isValid, "Email is not valid");
+                assert(dbEmail.isValid);
                 auto emailId = dbEmail.store();
                 Conversation.addEmail(dbEmail, ["inbox"], []);
             }

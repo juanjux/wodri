@@ -4,6 +4,8 @@ import common.utils;
 import core.time: TimeException;
 import db.config: getConfig;
 import db.tagcontainer;
+import db.searchresult;
+import db.email;
 import std.algorithm;
 import std.path;
 import std.regex;
@@ -130,6 +132,47 @@ final class Conversation
     }
 
 
+    /** NOTE: * - dateStart and dateEnd should be GMT */
+    static const(SearchResult)[] search(in string[] needles,
+                                        in string userId,
+                                        in string dateStart="",
+                                        in string dateEnd="")
+    {
+        import db.conversation;
+        // Get an list of matching email IDs
+        const matchingEmailAndConvIds = dbDriver.searchEmails(needles, userId,
+                                                              dateStart, dateEnd);
+
+        // keep the found conversations+matches indexes, the key is the conversation dbId
+        SearchResult[string] map;
+
+        // For every id, get the conversation (with MessageSummaries loaded)
+        foreach(emailAndConvId; matchingEmailAndConvIds)
+        {
+            const conv = Conversation.get(emailAndConvId.convId);
+            assert(conv !is null);
+
+            uint indexMatching = -1;
+            // find the index of the email inside the conversation
+            foreach(int idx, const ref MessageLink link; conv.links)
+            {
+                if (link.emailDbId == emailAndConvId.emailId)
+                {
+                    indexMatching = idx;
+                    break; // inner foreach
+                }
+            }
+            assert(indexMatching != -1);
+
+            if (conv.dbId in map)
+                map[conv.dbId].matchingEmailsIdx ~= indexMatching;
+            else
+                map[conv.dbId] = SearchResult(conv, [indexMatching]);
+        }
+        return map.values;
+    }
+
+
     /** Update the lastDate field if the argument is newer*/
     package void updateLastDate(in string newIsoDate)
     nothrow
@@ -173,7 +216,7 @@ final class Conversation
     }
 
 
-    // Note: this will NOT remove the contained emails from the DB 
+    // Note: this will NOT remove the contained emails from the DB
     void remove()
     {
         dbDriver.remove(this.dbId);
@@ -220,7 +263,6 @@ final class Conversation
      * Insert or update a conversation with this email messageId, references, tags
      * and date
      */
-    import db.email;
     static Conversation addEmail(in Email email,
                                  in string[] tagsToAdd,
                                  in string[] tagsToRemove)
@@ -240,159 +282,4 @@ final class Conversation
     {
         return dbDriver.isOwnedBy(convId, userName);
     }
-}
-
-
-
-
-//  _    _       _ _   _            _
-// | |  | |     (_) | | |          | |
-// | |  | |_ __  _| |_| |_ ___  ___| |_
-// | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_
-//  \____/|_| |_|_|\__|\__\___||___/\__|
-
-
-version(db_test)
-version(db_usetestdb)
-{
-    import db.test_support;
-    import db.user;
-
-
-    unittest // Conversation.hasLink
-    {
-        writeln("Testing Conversation.hasLink");
-        recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
-        const emailDbId = conv.links[0].emailDbId;
-        const emailMsgId = conv.links[0].messageId;
-        assert(conv.hasLink(emailMsgId, emailDbId));
-        assert(!conv.hasLink("blabla", emailDbId));
-        assert(!conv.hasLink(emailMsgId, "blabla"));
-        assert(!conv.hasLink(emailDbId, emailMsgId));
-    }
-
-    unittest // Conversation.addLink
-    {
-        writeln("Testing Conversation.addLink");
-        recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[0];
-        assert(conv.links.length == 1);
-        // check it doesnt add the same link twice
-        const emailDbId = conv.links[0].emailDbId;
-        const emailMsgId = conv.links[0].messageId;
-        const deleted = conv.links[0].deleted;
-        string[] attachs = ["someAttachName", "anotherAttachName"];
-        conv.addLink(emailMsgId, attachs, emailDbId, deleted);
-        assert(conv.links.length == 1);
-        assert(!conv.links[0].attachNames.length);
-
-        // check that it adds a new link
-        conv.addLink("someMessageId", attachs, "someEmailDbId", false);
-        assert(conv.links.length == 2);
-        assert(conv.links[1].messageId == "someMessageId");
-        assert(conv.links[1].emailDbId == "someEmailDbId");
-        assert(!conv.links[1].deleted);
-        assert(conv.links[1].attachNames == attachs);
-    }
-
-    unittest // Conversation.removeLink
-    {
-        writeln("Testing Conversation.removeLink");
-        recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[1];
-        assert(conv.links.length == 3);
-        const link0 = conv.links[0];
-        const link1 = conv.links[1];
-        const emailId = conv.links[2].emailDbId;
-        conv.removeLink(emailId);
-        assert(conv.links.length == 2);
-        assert(conv.links[0].messageId == link0.messageId);
-        assert(conv.links[0].emailDbId == link0.emailDbId);
-        assert(conv.links[1].messageId == link1.messageId);
-        assert(conv.links[1].emailDbId == link1.emailDbId);
-    }
-
-
-    unittest // Conversation.receivedLinks
-    {
-        writeln("Testing Conversation.receivedLinks");
-        recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[0];
-        assert(conv.links.length == 1);
-        assert(conv.receivedLinks.length == 1);
-
-        conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[1];
-        assert(conv.links.length == 3);
-        assert(conv.receivedLinks.length == 1);
-
-        conv = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"])[2];
-        assert(conv.links.length == 1);
-        assert(conv.receivedLinks.length == 1);
-
-        conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
-        assert(conv.links.length == 2);
-        assert(conv.receivedLinks.length == 2);
-        auto convId = conv.dbId;
-        foreach(ref link; conv.receivedLinks)
-            link.deleted = true;
-        conv.store();
-        conv = Conversation.get(convId);
-        assert(conv.links[0].deleted);
-        assert(conv.links[1].deleted);
-    }
-
-    unittest // Conversation.store
-    {
-        writeln("Testing Conversation.store");
-        recreateTestDb();
-
-        auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-        assert(convs.length == 3);
-        // update existing (id doesnt change)
-        convs[0].addTag("newtag");
-        string[] attachNames = ["one", "two"];
-        convs[0].addLink("someMessageId", attachNames);
-        auto oldDbId = convs[0].dbId;
-        convs[0].store();
-
-        auto convs2 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-        assert(convs2.length == 3);
-        assert(convs2[0].dbId == oldDbId);
-        assert(convs2[0].hasTag("inbox"));
-        assert(convs2[0].hasTag("newtag"));
-        assert(convs2[0].numTags == 2);
-        assert(convs2[0].links[1].messageId == "someMessageId");
-        assert(convs2[0].links[1].attachNames == attachNames);
-
-        // create new (new dbId)
-        convs2[0].dbId = BsonObjectID.generate().toString;
-        convs2[0].store();
-        auto convs3 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-        assert(convs3.length == 4);
-
-        bool found = false;
-        foreach(conv; convs3)
-        {
-            if (conv.dbId == convs2[0].dbId)
-            {
-                found = true;
-                assert(conv.userDbId == convs2[0].userDbId);
-                assert(conv.lastDate == convs2[0].lastDate);
-                assert(conv.numTags == convs2[0].numTags);
-                assert(convs2[0].hasTags(conv.tagsArray));
-                assert(conv.links[0].attachNames == convs2[0].links[0].attachNames);
-                assert(conv.cleanSubject == convs2[0].cleanSubject);
-                foreach(idx, link; conv.links)
-                {
-                    assert(link.messageId == convs2[0].links[idx].messageId);
-                    assert(link.emailDbId == convs2[0].links[idx].emailDbId);
-                    assert(link.deleted == convs2[0].links[idx].deleted);
-                }
-            }
-        }
-        assert(found);
-    }
-
 }

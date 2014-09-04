@@ -35,14 +35,6 @@ struct TextPart
 }
 
 
-struct SearchResult
-{
-    import db.conversation;
-    const Conversation conversation;
-    ulong[] matchingEmailsIdx;
-}
-
-
 final class EmailSummary
 {
     string dbId;
@@ -315,7 +307,7 @@ final class Email
     }
 
 
-    private string jsonizeHeader(in string headerName,
+    package string jsonizeHeader(in string headerName,
                                  in Flag!"RemoveQuotes" removeQuotes = No.RemoveQuotes,
                                  in Flag!"OnlyValue" onlyValue       = No.OnlyValue)
     {
@@ -359,47 +351,6 @@ final class Email
              getHeader("delivered-to").addresses.length))
             return Yes.IsValidEmail;
         return No.IsValidEmail;
-    }
-
-
-    /** NOTE: * - dateStart and dateEnd should be GMT */
-    static const(SearchResult)[] search(in string[] needles,
-                                        in string userId,
-                                        in string dateStart="",
-                                        in string dateEnd="")
-    {
-        import db.conversation;
-        // Get an list of matching email IDs
-        const matchingEmailAndConvIds = Email.dbDriver.searchEmails(needles, userId,
-                                                                    dateStart, dateEnd);
-
-        // keep the found conversations+matches indexes, the key is the conversation dbId
-        SearchResult[string] map;
-
-        // For every id, get the conversation (with MessageSummaries loaded)
-        foreach(emailAndConvId; matchingEmailAndConvIds)
-        {
-            const conv = Conversation.get(emailAndConvId.convId);
-            assert(conv !is null);
-
-            uint indexMatching = -1;
-            // find the index of the email inside the conversation
-            foreach(int idx, const ref MessageLink link; conv.links)
-            {
-                if (link.emailDbId == emailAndConvId.emailId)
-                {
-                    indexMatching = idx;
-                    break; // inner foreach
-                }
-            }
-            assert(indexMatching != -1);
-
-            if (conv.dbId in map)
-                map[conv.dbId].matchingEmailsIdx ~= indexMatching;
-            else
-                map[conv.dbId] = SearchResult(conv, [indexMatching]);
-        }
-        return map.values;
     }
 
 
@@ -509,218 +460,13 @@ final class Email
         dbDriver.deleteAttachment(id, attachId);
     }
 
-    static void setDeleted(in string id,
-                           in bool setDel,
-                           in Flag!"UpdateConversation" update = Yes.UpdateConversation)
+    static void setDeleted(in string id, in bool setDel)
     {
-        dbDriver.setDeleted(id, setDel, update);
+        dbDriver.setDeleted(id, setDel);
     }
 
-    static void removeById(in string id,
-                           in Flag!"UpdateConversation" update = Yes.UpdateConversation)
+    static void removeById(in string id)
     {
-        dbDriver.removeById(id, update);
+        dbDriver.removeById(id);
     }
 }
-
-
-
-//  _    _       _ _   _            _
-// | |  | |     (_) | | |          | |
-// | |  | |_ __  _| |_| |_ ___  ___| |_
-// | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_
-//  \____/|_| |_|_|\__|\__\___||___/\__|
-
-
-version(db_test)
-version(db_usetestdb)
-{
-    import std.digest.md;
-    import std.range;
-    import db.test_support;
-
-    unittest  // this(ApiEmail)
-    {
-        import db.conversation;
-        import db.user;
-
-        writeln("Testing Email.this(ApiEmail)");
-        auto user = User.getFromAddress("anotherUser@testdatabase.com");
-        auto apiEmail    = new ApiEmail;
-        apiEmail.from    = "anotherUser@testdatabase.com";
-        apiEmail.to      = "juanjux@gmail.com";
-        apiEmail.subject = "draft subject 1";
-        apiEmail.isoDate = "2014-08-20T15:47:06Z";
-        apiEmail.date    = "Wed, 20 Aug 2014 15:47:06 +02:00";
-        apiEmail.deleted = false;
-        apiEmail.draft   = true;
-        apiEmail.bodyHtml="<strong>I can do html like the cool boys!</strong>";
-
-        // Test1: New draft, no reply
-        auto dbEmail = new Email(apiEmail, "");
-        dbEmail.userId = user.id;
-        Email.dbDriver.store(dbEmail);
-        assert(dbEmail.dbId.length);
-        assert(dbEmail.messageId.endsWith("@testdatabase.com"));
-        assert(!dbEmail.hasHeader("references"));
-        assert(dbEmail.textParts.length == 1);
-
-        // Test2: Update draft, no reply
-        apiEmail.dbId = dbEmail.dbId;
-        apiEmail.messageId = dbEmail.messageId;
-        dbEmail = new Email(apiEmail, "");
-        dbEmail.userId = user.id;
-        Email.dbDriver.store(dbEmail);
-        assert(dbEmail.dbId == apiEmail.dbId);
-        assert(dbEmail.messageId == apiEmail.messageId);
-        assert(!dbEmail.hasHeader("references"));
-        assert(dbEmail.textParts.length == 1);
-
-        // Test3: New draft, reply
-        auto convs           = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
-        auto conv            = Conversation.get(convs[0].dbId);
-        auto emailDbId       = conv.links[1].emailDbId;
-        auto emailReferences = Email.get(emailDbId).getHeader("references").addresses;
-
-        apiEmail.dbId      = "";
-        apiEmail.messageId = "";
-        apiEmail.bodyPlain = "I cant do html";
-
-        dbEmail = new Email(apiEmail, emailDbId);
-        dbEmail.userId = user.id;
-        Email.dbDriver.store(dbEmail);
-        assert(dbEmail.dbId.length);
-        assert(dbEmail.messageId.endsWith("@testdatabase.com"));
-        assert(dbEmail.getHeader("references").addresses.length ==
-                emailReferences.length + 1);
-        assert(dbEmail.textParts.length == 2);
-
-        // Test4: Update draft, reply
-        apiEmail.dbId = dbEmail.dbId;
-        apiEmail.messageId = dbEmail.messageId;
-        apiEmail.bodyHtml = "";
-        dbEmail = new Email(apiEmail, emailDbId);
-        dbEmail.userId = user.id;
-        Email.dbDriver.store(dbEmail);
-        assert(dbEmail.dbId == apiEmail.dbId);
-        assert(dbEmail.messageId == apiEmail.messageId);
-        assert(dbEmail.getHeader("references").addresses.length ==
-                emailReferences.length + 1);
-        assert(dbEmail.textParts.length == 1);
-    }
-
-    unittest // jsonizeHeader
-    {
-        import db.user;
-
-        writeln("Testing Email.jsonizeHeader");
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
-
-        auto inEmail = new IncomingEmail();
-        auto testMailPath = buildPath(backendTestEmailsDir, "simple_alternative_noattach");
-        inEmail.loadFromFile(testMailPath, getConfig.attachmentStore);
-        auto emailDb = new Email(inEmail);
-
-        assert(emailDb.jsonizeHeader("to") ==
-                `"to": " Test User2 <testuser@testdatabase.com>",`);
-        assert(emailDb.jsonizeHeader("Date", Yes.RemoveQuotes, Yes.OnlyValue) ==
-                `" Sat, 25 Dec 2010 13:31:57 +0100",`);
-    }
-
-
-    unittest // test email.deleted
-    {
-        import db.conversation;
-        import db.user;
-        writeln("Testing Email.deleted");
-        recreateTestDb();
-        // insert a new email with deleted = true
-        string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend",
-                                                "test", "testemails");
-        auto inEmail = scoped!IncomingEmail();
-        auto mailname = "simple_alternative_noattach";
-        inEmail.loadFromFile(buildPath(backendTestEmailsDir, mailname),
-                             getConfig.absAttachmentStore);
-        auto dbEmail = new Email(inEmail);
-        auto user = User.getFromAddress("anotherUser@testdatabase.com");
-        dbEmail.userId = user.id;
-        dbEmail.deleted = true;
-        auto id = Email.dbDriver.store(dbEmail);
-
-        // check that the doc has the deleted
-        auto dbEmail2 = Email.get(id);
-        assert(dbEmail2 !is null);
-        assert(dbEmail2.deleted);
-
-        // check that the conversation has the link.deleted for this email set to true
-        Conversation.addEmail(dbEmail, ["inbox"], []);
-        auto conv = Conversation.getByReferences(user.id, [dbEmail.messageId],
-                                                 Yes.WithDeleted);
-        assert(conv !is null);
-        foreach(ref msglink; conv.links)
-        {
-            if (msglink.messageId == dbEmail.messageId)
-            {
-                assert(msglink.deleted);
-                assert(msglink.emailDbId == id);
-                break;
-            }
-        }
-    }
-
-    unittest // search
-    {
-        import db.user;
-        // Not the same as the searchEmails test because "search" returns conversations
-        // with several messages grouped (thus, less results sometimes)
-        writeln("Testing Email.search");
-        recreateTestDb();
-        auto user1id = USER_TO_ID["testuser"];
-        auto user2id = USER_TO_ID["anotherUser"];
-        auto searchResults = Email.search(["inicio de sesión"], user1id);
-        assert(searchResults.length == 1);
-        assert(searchResults[0].matchingEmailsIdx == [1]);
-
-        auto searchResults2 = Email.search(["some"], user2id);
-        assert(searchResults2.length == 2);
-
-        auto searchResults3 = Email.search(["some"], user2id, "2014-06-01T14:32:20Z");
-        assert(searchResults3.length == 1);
-        auto searchResults4 = Email.search(["some"], user2id, "2014-08-01T14:32:20Z");
-        assert(searchResults4.length == 0);
-        auto searchResults4b = Email.search(["some"], user2id, "2018-05-28T14:32:20Z");
-        assert(searchResults4b.length == 0);
-
-        string startFixedDate = "2005-01-01T00:00:00Z";
-        auto searchResults5 = Email.search(["some"], user2id, startFixedDate,
-                                           "2018-12-12T00:00:00Z");
-        assert(searchResults5.length == 2);
-        auto searchResults5b = Email.search(["some"], user2id, startFixedDate,
-                                            "2014-02-01T00:00:00Z");
-        assert(searchResults5b.length == 1);
-        assert(searchResults5b[0].matchingEmailsIdx.length == 1);
-        auto searchResults5c = Email.search(["some"], user2id, startFixedDate,
-                                            "2015-02-21T00:00:00Z");
-        assert(searchResults5c.length == 2);
-    }
-
-
-}
-
-version(search_test)
-{
-    unittest  // search
-    {
-        writeln("Testing Email.search times");
-        // last test on my laptop: about 40 msecs for 84 results with 33000 emails loaded
-        StopWatch sw;
-        sw.start();
-        auto searchRes = Email.search(["testing"], USER_TO_ID["testuser"]);
-        sw.stop();
-        writeln(format("Time to search with a result set of %s convs: %s msecs",
-                searchRes.length, sw.peek.msecs));
-        sw.reset();
-    }
-}
-
