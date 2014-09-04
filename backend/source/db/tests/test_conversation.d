@@ -109,8 +109,6 @@ version(db_usetestdb)
         auto convs2 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
         assert(convs2.length == 3);
         assert(convs2[0].dbId == oldDbId);
-        writeln("XXX tagsArray: ", convs2[0].tagsArray);
-        writeln("XXXX links: ", convs2[0].links);
         assert(convs2[0].hasTag("inbox"));
         assert(convs2[0].hasTag("newtag"));
         assert(convs2[0].numTags == 2);
@@ -923,44 +921,45 @@ version(search_test)
 
         unittest // clearSubject
         {
-            writeln("Testing Conversation.clearSubject");
+            writeln("Testing DriverConversationMongo.clearSubject");
             assert(clearSubject("RE: polompos") == "polompos");
             assert(clearSubject("Re: cosa RE: otracosa re: mascosas") == "cosa otracosa mascosas");
             assert(clearSubject("Pok and something Re: things") == "Pok and something things");
         }
 
-        unittest // Conversation.setEmailDeleted
+        unittest // setEmailDeleted
         {
-            writeln("Testing Conversation.setEmailDeleted");
+            writeln("Testing DriverConversationMongo.setEmailDeleted");
             recreateTestDb();
-
-            auto conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
+            auto convMongo = scoped!DriverMongo();
+            auto conv = convMongo.getByTag("inbox", USER_TO_ID["testuser"])[0];
             conv.setEmailDeleted(conv.links[0].emailDbId, true);
-            conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
+            conv = convMongo.getByTag("inbox", USER_TO_ID["testuser"])[0];
             assert(conv.links[0].deleted);
             conv.setEmailDeleted(conv.links[0].emailDbId, false);
-            conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
+            conv = convMongo.getByTag("inbox", USER_TO_ID["testuser"])[0];
             assert(!conv.links[0].deleted);
         }
 
         unittest // isOwnedBy
         {
-            writeln("Testing Conversation.isOwnedBy");
+            writeln("Testing DriverEmailMongo.isOwnedBy");
             recreateTestDb();
+            auto convMongo = scoped!DriverConversationMongo();
             auto user1 = User.getFromAddress("testuser@testdatabase.com");
             auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
 
-            auto conv = Conversation.getByReferences(user1.id,
+            auto conv = convMongo.getByReferences(user1.id,
                     ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
             assert(conv !is null);
             assert(conv.dbId.length);
-            assert(Conversation.isOwnedBy(conv.dbId, user1.loginName));
+            assert(convMongo.isOwnedBy(conv.dbId, user1.loginName));
 
-            conv = Conversation.getByReferences(user2.id,
+            conv = convMongo.getByReferences(user2.id,
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
             assert(conv !is null);
             assert(conv.dbId.length);
-            assert(Conversation.isOwnedBy(conv.dbId, user2.loginName));
+            assert(convMongo.isOwnedBy(conv.dbId, user2.loginName));
         }
 
         unittest // searchEmails
@@ -973,14 +972,14 @@ version(search_test)
             auto convMongo = scoped!DriverConversationMongo();
             auto results = convMongo.searchEmails(["inicio de sesión"], user1.id);
             assert(results.length == 1);
-            auto conv  = Conversation.get(results[0].convId);
+            auto conv  = convMongo.get(results[0].convId);
             assert(conv.links[1].emailDbId == results[0].emailId);
 
             auto results2 = convMongo.searchEmails(["some"], user1.id);
             assert(results2.length == 2);
             foreach(ref result; results2)
             {
-                conv = Conversation.get(result.convId);
+                conv = convMongo.get(result.convId);
                 bool found = false;
                 foreach(ref link; conv.links)
                 {

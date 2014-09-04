@@ -296,17 +296,10 @@ version(db_usetestdb)
             emailMongo.setDeleted(dbId, true);
             auto emailDoc = collection("email").findOne(["_id": dbId]);
             assert(bsonBool(emailDoc.deleted));
-            auto conv = Conversation.getByReferences(bsonStr(emailDoc.userId),
-                                                     [messageId], Yes.WithDeleted);
-            writeln("XXX conv.links: ", conv.links);
-            assert(conv.links[1].deleted);
 
             emailMongo.setDeleted(dbId, false);
             emailDoc = collection("email").findOne(["_id": dbId]);
             assert(!bsonBool(emailDoc.deleted));
-            conv = Conversation.getByReferences(bsonStr(emailDoc.userId),
-                                                [messageId], Yes.WithDeleted);
-            assert(!conv.links[1].deleted);
         }
 
 
@@ -453,18 +446,12 @@ version(db_usetestdb)
             auto singleMailId   = singleMailConv.links[0].emailDbId;
             auto emailMongo = scoped!DriverEmailMongo();
 
-            // since this is a single mail conversation, it should be deleted when the single
-            // email is deleted
             auto emailFiles = getEmailFiles(singleMailId);
             emailMongo.removeById(singleMailId);
             auto emailDoc = collection("email").findOne(["_id": singleMailId]);
             assert(emailDoc.isNull);
             assertNoFiles(emailFiles);
-            auto convDoc = collection("conversation").findOne(["_id": singleConvId]);
-            assert(convDoc.isNull);
 
-            // conversation with more links, but only one is actually in DB,
-            // it should be removed too
             auto fakeMultiConv = convs[1];
             auto fakeMultiConvId = fakeMultiConv.dbId;
             auto fakeMultiConvEmailId = fakeMultiConv.links[2].emailDbId;
@@ -473,11 +460,7 @@ version(db_usetestdb)
             emailDoc = collection("email").findOne(["_id": fakeMultiConvEmailId]);
             assert(emailDoc.isNull);
             assertNoFiles(emailFiles);
-            convDoc = collection("conversation").findOne(["_id": fakeMultiConvId]);
-            assert(convDoc.isNull);
 
-            // conversation with more emails in the DB, the link of the email to
-            // remove should be deleted but the conversation should be keept in DB
             auto multiConv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
             auto multiConvId = multiConv.dbId;
             auto multiConvEmailId = multiConv.links[0].emailDbId;
@@ -486,12 +469,6 @@ version(db_usetestdb)
             emailDoc = collection("email").findOne(["_id": multiConvEmailId]);
             assert(emailDoc.isNull);
             assertNoFiles(emailFiles);
-            convDoc = collection("conversation").findOne(["_id": multiConvId]);
-            assert(!convDoc.isNull);
-            assert(!convDoc.links.isNull);
-            assert(convDoc.links.length == 1);
-            assert(!convDoc.links[0].emailId.isNull);
-            assert(bsonStr(convDoc.links[0].emailId) != multiConvEmailId);
         }
 
         unittest // store()
@@ -571,7 +548,7 @@ version(db_usetestdb)
 
         unittest // get
         {
-            writeln("Testing DriverEmailMongo.get");
+            writeln("Testing DriverEmailMongo.get (message about null email is Ok)");
             recreateTestDb();
 
             auto emailMongo = scoped!DriverEmailMongo();

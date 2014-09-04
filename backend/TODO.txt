@@ -1,14 +1,14 @@
 Backend-API:
     - POST /message/:id/send
     Use vibe.d smtp module and the configured smtphost, smtplogin and smtppass, connect
-    to the configured SMTP, send the generated raw email: class OutgoingEmail with a 
-    constructor from Email, update the document with sendDate: (date) and remove draft 
+    to the configured SMTP, send the generated raw email: class OutgoingEmail with a
+    constructor from Email, update the document with sendDate: (date) and remove draft
     status.
 
 Backend-Retriever:
-    - al buscar el 
+    - add a method Conversation.setEmailDeleted(dbId, setDel) and Conversation.purgeEmail(dbId)
+    (YA HAY conversation.setEmailDeleted!)
     - move all unittest to separate files inside db/tests
-    - unittests: remove Conversation.something, create an instance instead
     - unittest for every curl call for wrong auth user
 
     Later:

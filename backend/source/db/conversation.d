@@ -42,12 +42,14 @@ final class Conversation
     string cleanSubject;
     private TagContainer m_tags;
 
-    bool     hasTag(in string tag) const { return m_tags.has(tag);  }
+    bool     hasTag(in string tag) const     { return m_tags.has(tag);  }
     bool     hasTags(in string[] tags) const { return m_tags.has(tags); }
     void     addTag(in string tag)           { m_tags.add(tag);         }
+    void     addTags(in string[] tags)       { m_tags.add(tags);        }
     void     removeTag(in string tag)        { m_tags.remove(tag);      }
-    string[] tagsArray()            const { return m_tags.array;     }
-    uint     numTags()              const { return m_tags.length;    }
+    void     removeTags(in string[] tags)    { m_tags.remove(tags);     }
+    string[] tagsArray()            const    { return m_tags.array;     }
+    uint     numTags()              const    { return m_tags.length;    }
 
     static this()
     {

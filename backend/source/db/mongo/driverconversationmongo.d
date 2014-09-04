@@ -74,7 +74,7 @@ final class DriverConversationMongo : DriverConversationInterface
         collection("conversation").update(["_id": dbId], bson);
     }
 
-override: // XXX reactivar
+override: 
     const(EmailAndConvIds[]) searchEmails(in string[] needles,
                                           in string userId,
                                           in string dateStart = "",
@@ -141,13 +141,13 @@ override: // XXX reactivar
         string[] reversed = references.dup;
         reverse(reversed);
         Appender!string jsonApp;
-        jsonApp.put(format(`{"userId":"%s","links.message-id":{"$in":%s},`,
+        jsonApp.put(format(`{"userId":"%s","links.message-id":{"$in":%s,`,
                            userId, reversed));
         if (!withDeleted)
         {
-            jsonApp.put(`"tags": {"$nin": ["deleted"]},`);
+            jsonApp.put(`"$nin": ["deleted"],`);
         }
-        jsonApp.put("}");
+        jsonApp.put("}}");
 
         immutable convDoc = collection("conversation").findOne(parseJsonString(jsonApp.data));
         return docToObject(convDoc);
@@ -179,7 +179,6 @@ override: // XXX reactivar
         if (!withDeleted)
             jsonApp.put(`"tags":{"$nin":["deleted"]},`);
         jsonApp.put(format(`"userId": %s}`, Json(userId).toString));
-        writeln("XXX jsonApp de buscar por tag: \n", jsonApp.data);
 
         auto cursor = collection("conversation").find(
                 parseJsonString(jsonApp.data),
@@ -247,8 +246,8 @@ override: // XXX reactivar
         conv.updateLastDate(email.isoDate);
 
         // tags
-        map!(x => conv.addTag(x))(tagsToAdd);
-        map!(x => conv.removeTag(x))(tagsToRemove);
+        conv.addTags(tagsToAdd);
+        conv.removeTags(tagsToRemove);
 
         // add the email's references: addLink() only adds the new ones
         string[] empty;
@@ -305,6 +304,7 @@ override: // XXX reactivar
 
 
     // Find any conversation with this email and update the links.[email].deleted field
+    // XXX join with Email.setDeleted! (call it)
     string setEmailDeleted(in string emailDbId, in bool setDel)
     {
         auto conv = getByEmailId(emailDbId);
