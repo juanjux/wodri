@@ -328,7 +328,7 @@ override: // interface methods
         immutable dbDeleted = bsonBool(emailDoc.deleted);
         if (dbDeleted == setDel)
         {
-            logWarn(format("setDeleted: Trying to set deleted to (%s) but email "
+            logWarn(format("setDeleted: Trying to set deleted to (%s) but email "~
                            "with id (%s) already was in that state", setDel, dbId));
             return;
         }

@@ -34,6 +34,7 @@ version(db_usetestdb)
         assert(conv.links.length == 1);
         // check it doesnt add the same link twice
         const emailDbId = conv.links[0].emailDbId;
+        const polompos = conv.links[0].emailDbIdo;
         const emailMsgId = conv.links[0].messageId;
         const deleted = conv.links[0].deleted;
         string[] attachs = ["someAttachName", "anotherAttachName"];

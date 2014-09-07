@@ -312,7 +312,6 @@ version(db_usetestdb)
             assert(cursor.empty);
 
             auto user1 = User.getFromAddress("testuser@testdatabase.com");
-            auto user2 = User.getFromAddress("anotherUser@testdatabase.com");
             findJson = `{"$text": {"$search": "text inside"}}`;
             cursor = collection("emailIndexContents").find(parseJsonString(findJson));
             assert(!cursor.empty);
@@ -440,7 +439,6 @@ version(db_usetestdb)
             recreateTestDb();
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
             auto singleMailConv = convs[0];
-            auto singleConvId   = singleMailConv.dbId;
             auto singleMailId   = singleMailConv.links[0].emailDbId;
 
             auto emailFiles = getEmailFiles(singleMailId);
@@ -450,7 +448,6 @@ version(db_usetestdb)
             assertNoFiles(emailFiles);
 
             auto fakeMultiConv = convs[1];
-            auto fakeMultiConvId = fakeMultiConv.dbId;
             auto fakeMultiConvEmailId = fakeMultiConv.links[2].emailDbId;
             emailFiles = getEmailFiles(fakeMultiConvEmailId);
             Email.purgeById(fakeMultiConvEmailId);
@@ -459,7 +456,6 @@ version(db_usetestdb)
             assertNoFiles(emailFiles);
 
             auto multiConv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
-            auto multiConvId = multiConv.dbId;
             auto multiConvEmailId = multiConv.links[0].emailDbId;
             emailFiles = getEmailFiles(multiConvEmailId);
             Email.purgeById(multiConvEmailId);

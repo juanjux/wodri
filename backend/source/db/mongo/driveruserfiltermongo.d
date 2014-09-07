@@ -64,49 +64,5 @@ final class DriverUserfilterMongo : DriverUserfilterInterface
         }
         return res;
     }
-override:
 }
 } // end version(MongoDriver)
-
-
-//  _    _       _ _   _            _
-// | |  | |     (_) | | |          | |
-// | |  | |_ __  _| |_| |_ ___  ___| |_
-// | |  | | '_ \| | __| __/ _ \/ __| __|
-// | |__| | | | | | |_| ||  __/\__ \ |_
-//  \____/|_| |_|_|\__|\__\___||___/\__|
-
-
-version(db_test)
-version(db_usetestdb)
-{
-
-    import db.test_support;
-    import std.stdio;
-    unittest // getByAddress
-    {
-        writeln("Testing DriverUserFilterMongo.getByAddress");
-        auto filters = UserFilter.getByAddress("testuser@testdatabase.com");
-        assert(filters.length == 1);
-        assert(!filters[0].match.withAttachment);
-        assert(!filters[0].match.withHtml);
-        assert(filters[0].match.totalSizeType        == SizeRuleType.GreaterThan);
-        assert(filters[0].match.totalSizeValue       == 100485760);
-        assert(filters[0].match.bodyMatches.length   == 1);
-        assert(filters[0].match.bodyMatches[0]       == "XXXBODYMATCHXXX");
-        assert(filters[0].match.headerMatches.length == 1);
-        assert("From" in filters[0].match.headerMatches);
-        assert(filters[0].match.headerMatches["From"] == "juanjo@juanjoalvarez.net");
-        assert(!filters[0].action.forwardTo.length);
-        assert(!filters[0].action.noInbox);
-        assert(filters[0].action.markAsRead);
-        assert(!filters[0].action.deleteIt);
-        assert(filters[0].action.neverSpam);
-        assert(!filters[0].action.setSpam);
-        assert(filters[0].action.addTags == ["testtag1", "testtag2"]);
-        auto filters2 = UserFilter.getByAddress("anotherUser@anotherdomain.com");
-        assert(filters2[0].action.addTags == ["testtag3", "testtag4"]);
-        auto newfilters = UserFilter.getByAddress("anotherUser@testdatabase.com");
-        assert(filters2[0].action.addTags == newfilters[0].action.addTags);
-    }
-}

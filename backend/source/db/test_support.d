@@ -80,7 +80,7 @@ version(anytestdb)
                 assert(user !is null);
                 auto dbEmail = new Email(inEmail, destination);
                 assert(dbEmail.isValid);
-                auto emailId = dbEmail.store();
+                dbEmail.store();
                 Conversation.addEmail(dbEmail, ["inbox"], []);
             }
 

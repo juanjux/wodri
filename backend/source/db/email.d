@@ -104,7 +104,6 @@ final class Email
                 "Email from ApiEmail constructor should receive a .to");
         enforce(apiEmail.date.length,
                 "Email from ApiEmail constructor should receive a .date");
-
         this.dbId      = isNew ? Email.dbDriver.generateNewId()
                                : apiEmail.dbId;
         this.messageId = isNew ? generateMessageId(domainFromAddress(apiEmail.from))
@@ -203,7 +202,6 @@ final class Email
             loadReceivers();
     }
 
-
     void setOwner(in string destinationAddress)
     {
         import db.user;
@@ -240,7 +238,6 @@ final class Email
     private void extractBodyPeek()
     {
         // this is needed because string index != letters index for any non-ascii string
-
         immutable relevantPlain = maybeBodyNoFormat();
         // numer of unicode characters in the string
         immutable numChars = std.utf.count(relevantPlain);
@@ -256,7 +253,7 @@ final class Email
     private void loadReceivers()
     {
         // Some emails doesnt have a "To:" header but a "Delivered-To:". Really!
-        string realReceiverField, realReceiverRawValue, realReceiverAddresses;
+        string realReceiverField;
         if (hasHeader("to"))
             realReceiverField = "to";
         else if (hasHeader("bcc"))

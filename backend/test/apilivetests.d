@@ -263,6 +263,7 @@ void testGetTagConversations()
 {
     writeln("\nTesting GET /conv/tag/:name/?limit=%s&page=%s");
     recreateTestDb();
+    USER = "anotherUser";
     JSONValue conversations;
     conversations = getConversations("inbox", 20, 0);
 
@@ -289,11 +290,7 @@ void testGetTagConversations()
     conversations = getConversations("inbox", 2, 1);
     enforce(conversations[0]["lastDate"].str == olderDate);
 
-
-    // XXX: when /conversationaddtag is implemented add test:
-    // 1. Set tag "deleted" to a conversation
-    // 2. getConversations(loadDeleted = false), check size and tags (none with deleted)
-    // 3. getConversations(loadDeleted = true), check size and tags (one with deleted)
+    
 }
 
 

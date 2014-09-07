@@ -47,8 +47,8 @@ final class Conversation
     void     addTags(in string[] tags)       { m_tags.add(tags);        }
     void     removeTag(in string tag)        { m_tags.remove(tag);      }
     void     removeTags(in string[] tags)    { m_tags.remove(tags);     }
-    string[] tagsArray()            const    { return m_tags.array;     }
-    uint     numTags()              const    { return m_tags.length;    }
+    string[] tagsArray() const               { return m_tags.array;     }
+    uint     numTags() const                 { return m_tags.length;    }
 
     static this()
     {
@@ -112,7 +112,7 @@ final class Conversation
 
         MessageLink[] newLinks;
         bool someReceivedRemaining = false;
-        string lastDate = "";
+        //string lastDate = "";
 
         foreach(link; this.links)
         {
@@ -189,7 +189,7 @@ final class Conversation
         foreach(const ref link; this.links)
             linksApp.put(format(`{"message-id": "%s",` ~
                                 `"emailId": "%s",` ~
-                                `"attachNames": %s,`
+                                `"attachNames": %s,` ~
                                 `"deleted": %s},`,
                                 link.messageId,
                                 link.emailDbId,
@@ -227,7 +227,7 @@ final class Conversation
             {
                 if (entry.deleted == setDel)
                 {
-                    logWarn(format("setLinkDeleted: delete state for email (%s) in "
+                    logWarn(format("setLinkDeleted: delete state for email (%s) in " ~
                                    "conversation was already %s", emailDbId, setDel));
                 }
                 else

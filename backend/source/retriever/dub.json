@@ -17,6 +17,7 @@
     "buildRequirements": ["requireBoundsCheck"],
     "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing", "MongoDriver"],
     "subConfigurations": {"smtp": "ssl"},
+    "dflags": ["-inline"],
 
     "configurations": [
         {

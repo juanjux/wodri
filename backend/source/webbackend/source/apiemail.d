@@ -71,11 +71,10 @@ final class ApiEmail
         {
             if (part.ctype == "text/html")
                 bodyHtml.put(part.content);
-            else 
+            else
                 bodyPlain.put(part.content);
         }
         this.bodyHtml  = bodyHtml.data;
         this.bodyPlain = bodyPlain.data;
-
     }
 }
