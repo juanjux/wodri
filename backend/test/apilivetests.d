@@ -270,6 +270,10 @@ void testGetTagConversations()
     enforce(strip(conversations[0]["subject"].str) == "Tired of Your Hosting Company?");
     enforce(strip(conversations[1]["subject"].str) == "Fwd: Hello My Dearest, please I need your help! POK TEST");
     enforce(strip(conversations[2]["subject"].str) == "Attachment test");
+    auto convId0 = conversations[0]["dbId"].str;
+    auto convId1 = conversations[1]["dbId"].str;
+    auto convId2 = conversations[2]["dbId"].str;
+    
 
     enforce(conversations[0]["numMessages"].integer == 1 &&
            conversations[1]["numMessages"].integer == 3 &&
@@ -289,6 +293,9 @@ void testGetTagConversations()
 
     conversations = getConversations("inbox", 2, 1);
     enforce(conversations[0]["lastDate"].str == olderDate);
+
+    USER = "testuser";
+
 
     
 }
@@ -734,20 +741,20 @@ void testUpsertDraft()
 void main()
 {
     testGetTagConversations();
-    testGetConversation();
-    testConversationAddTag();
-    testConversationRemoveTag();
-    testGetEmail();
-    testGetRawEmail();
-    testDeleteEmail();
-    testPurgeEmail();
-    testDeleteConversation();
-    testPurgeConversation();
-    testUndeleteConversation();
-    testUnDeleteEmail();
-    testSearch();
-    testUpsertDraft();
-    testAddAttach();
-    testRemoveAttach();
+    // testGetConversation();
+    // testConversationAddTag();
+    // testConversationRemoveTag();
+    // testGetEmail();
+    // testGetRawEmail();
+    // testDeleteEmail();
+    // testPurgeEmail();
+    // testDeleteConversation();
+    // testPurgeConversation();
+    // testUndeleteConversation();
+    // testUnDeleteEmail();
+    // testSearch();
+    // testUpsertDraft();
+    // testAddAttach();
+    // testRemoveAttach();
     writeln("All CURL tests finished");
 }
