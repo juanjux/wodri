@@ -164,6 +164,27 @@ version(db_usetestdb)
         import db.mongo.driveremailmongo;
         import vibe.data.bson;
 
+        unittest // headerRaw
+        {
+            recreateTestDb();
+            writeln("Testing DriverEmailMongo.headerRaw");
+            auto bson = parseJsonString("{}");
+            auto emailDoc = collection("email").findOne(bson);
+            assert(DriverEmailMongo.headerRaw(emailDoc, "delivered-to") == " testuser@testdatabase.com");
+            assert(DriverEmailMongo.headerRaw(emailDoc, "date") == " Mon, 27 May 2013 07:42:30 +0200");
+            assert(!DriverEmailMongo.headerRaw(emailDoc, "inventedHere").length);
+        }
+
+        unittest // extractAttachNamesFromDoc
+        {
+            recreateTestDb();
+            writeln("Testing DriverEmailMongo.extractAttachNamesFromDoc");
+            auto bson = parseJsonString("{}");
+            auto emailDoc = collection("email").findOne(bson);
+            auto attachNames = DriverEmailMongo.extractAttachNamesFromDoc(emailDoc);
+            assert(attachNames == ["google.png", "profilephoto.jpeg"]);
+        }
+
         unittest // messageIdToDbId
         {
             writeln("Testing DriverEmailMongo.messageIdToDbId");

@@ -3,9 +3,9 @@ module db.conversation;
 import common.utils;
 import core.time: TimeException;
 import db.config: getConfig;
-import db.tagcontainer;
-import db.searchresult;
 import db.email;
+import db.searchresult;
+import db.tagcontainer;
 import std.algorithm;
 import std.path;
 import std.regex;
@@ -308,7 +308,7 @@ final class Conversation
 
     /**
      * Insert or update a conversation with this email messageId, references, tags
-     * and date
+     * and date directly on the DB (without and instance).
      */
     static Conversation addEmail(in Email email,
                                  in string[] tagsToAdd,

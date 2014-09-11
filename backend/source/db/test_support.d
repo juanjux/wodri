@@ -99,14 +99,16 @@ version(db_insertalltest)
 {
     unittest
     {
-        writeln("Testing Inserting Everything");
-        recreateTestDb();
-
+        import std.stdio;
         import db.conversation;
+        import db.email;
         import std.datetime;
         import std.process;
         import retriever.incomingemail;
 
+        writeln("Testing Inserting Everything");
+        recreateTestDb();
+        
         string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
         string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
         string rawEmailStore   = buildPath(backendTestDir, "rawemails");

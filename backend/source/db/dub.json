@@ -1,0 +1,46 @@
+{
+    "targetType": "executable",
+    "mainSourceFile": "main.d",
+    "license": "LGPL",
+    "importPaths": [".", ".."],
+    "sourcePaths": [".", ".."],
+    "excludedSourceFiles": ["test.d",
+                            "../retriever/main.d",
+                            "../retriever/test.d",
+                            "../webbackend/source/app.d",
+                            "../webbackend/source/api.d",
+                            "../webbackend/test.d",
+                            "../webbackend/source/test.d"],
+    "dependencies": { "vibe-d": "~master",
+                      "dauth": ">=0.6.1",
+                      "smtp"  : ">=0.2.0"},
+    "version": "0.0.1",
+    "name": "testdb",
+    "buildRequirements": ["requireBoundsCheck"],
+    "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing", "MongoDriver"],
+    "subConfigurations": {"smtp": "ssl"},
+
+    "configurations": [
+        {
+            "name": "db_test",
+            "versions": ["db_test", "db_usetestdb"],
+            "excludedSourceFiles": ["test.d", "main.d"],
+            "dflags": ["-main", "-unittest", "-g"],
+            "targetName": "test",
+        },
+        {
+            "name": "search_test",
+            "versions": ["search_test", "db_usebigdb"],
+            "excludedSourceFiles": ["test.d", "main.d"],
+            "dflags": ["-main", "-unittest"],
+            "targetName": "test",
+        },
+        {
+            "name": "db_insertalltest",
+            "versions": ["db_usebigdb", "db_insertalltest"],
+            "excludedSourceFiles": ["test.d", "main.d"],
+            "dflags": ["-main", "-unittest", "-O", "-boundscheck=off"],
+            "targetName": "test",
+        },
+    ]
+}

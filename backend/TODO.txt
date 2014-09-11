@@ -1,15 +1,17 @@
 Backend-API:
     - POST /message/:id/send
+
     DECIDE: the body (possibly multipart/alternative with attachments et al, but
     attachments should already have their data structure uploaded), is generated
     by the javascript client or the server?
     
-    Generate the header["Content-Type"] field and the string body. 
-    Use smtp module and the configured smtphost, smtplogin and smtppass, connect
-    to the configured SMTP, send the generated raw email, update the document with
+    Generate the header["Content-Type"] field and the string body.  Use smtp
+    module and the configured smtphost, smtplogin and smtppass, connect to the
+    configured SMTP, send the generated raw email, update the document with
     sendDate: (date) and remove draft status.
 
 Backend-Retriever:
+    - Change all ocurrences of dbId for id
 
     Later:
     - general hunting of XXX and FIXMEs
@@ -21,22 +23,25 @@ Backend-Retriever:
 
     - Exception classes for the different parts that throw.
 
-    - Retriever's integration test, use a Python script with the mail & smtp modules to
-      parse the test mails collection changing the receiver from [myRealAddr] to
-      [mongoTestAddr] before delivering to Postfix, create a MongoDB database
-      "webmailtest", populate it, check that we receive every email, check that
-      that the isValidAddress check is fine, check that the filters of the test DB
-      apply correctly, check searches with the indexer, et cetera.
+    - Retriever's integration test, use a Python script with the mail & smtp
+      modules to parse the test mails collection changing the receiver from
+      [myRealAddr] to [mongoTestAddr] before delivering to Postfix, create a
+      MongoDB database "webmailtest", populate it, check that we receive every
+      email, check that that the isValidAddress check is fine, check that the
+      filters of the test DB apply correctly, check searches with the indexer, et
+      cetera.
 
     - Sent the new changes in characterencodings.d to Ruppe
 
-    - When adding or removing links from a conversation, update conversation.lastDate
+    - When adding or removing links from a conversation, update
+      conversation.lastDate
 
 Frontend:
 
 Contacts:
-    - When a message is received and the email is not found on the Contacts collection,
-      store as a new contact with Name, Surname, Email, Tags and put the tag "autoinserted".
+    - When a message is received and the email is not found on the Contacts
+      collection, store as a new contact with Name, Surname, Email, Tags and put
+      the tag "autoinserted".
 
     - Use it for getting the shortnames in the ConversationSummary object.
 
@@ -54,6 +59,7 @@ All:
 Installation/Configuration system:
     - make it almost-dumb-proof with a script-wizard (or web page) to:
       - check versions
-      - install and configure he Linux packages (postfix, mongo, dub, D compiler, etc)
+      - install and configure he Linux packages (postfix, mongo, dub, D compiler,
+        etc)
       - configure the mail system domain (ask for passwords, initial users, etc)
       - test the mail system

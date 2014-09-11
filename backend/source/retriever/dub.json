@@ -60,27 +60,6 @@
             "targetName": "test",
         },
         {
-            "name": "db_test",
-            "versions": ["db_test", "db_usetestdb"],
-            "excludedSourceFiles": ["test.d", "main.d"],
-            "dflags": ["-main", "-unittest"],
-            "targetName": "test",
-        },
-        {
-            "name": "search_test",
-            "versions": ["search_test", "db_usebigdb"],
-            "excludedSourceFiles": ["test.d", "main.d"],
-            "dflags": ["-main", "-unittest"],
-            "targetName": "test",
-        },
-        {
-            "name": "db_insertalltest",
-            "versions": ["db_usebigdb", "db_insertalltest"],
-            "excludedSourceFiles": ["test.d", "main.d"],
-            "dflags": ["-main", "-unittest", "-O", "-boundscheck=off"],
-            "targetName": "test",
-        },
-        {
             "name": "main_test",
             "versions": ["maintest", "db_usetestdb"],
             "mainSourceFile": "main.d",

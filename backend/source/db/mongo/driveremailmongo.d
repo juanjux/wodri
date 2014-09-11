@@ -6,8 +6,8 @@ import arsd.characterencodings: decodeBase64Stubborn;
 import common.utils;
 import db.attachcontainer: DbAttachment;
 import db.config;
-import db.email: Email, EmailSummary, TextPart;
 import db.dbinterface.driveremailinterface;
+import db.email: Email, EmailSummary, TextPart;
 import db.mongo.mongo;
 import retriever.incomingemail: HeaderValue;
 import std.file;
@@ -27,7 +27,8 @@ final class DriverEmailMongo : DriverEmailInterface
     // non-interface helpers
 
     /** Paranoic retrieval of emailDoc headers */
-    private static string headerRaw(const ref Bson emailDoc, in string headerName)
+    // FIXME: should be private but the test_email.d need to have access for the unittests
+    static string headerRaw(const ref Bson emailDoc, in string headerName)
     {
         if (!emailDoc.headers.isNull &&
             !emailDoc.headers[headerName].isNull &&
@@ -35,20 +36,10 @@ final class DriverEmailMongo : DriverEmailInterface
             return bsonStr(emailDoc.headers[headerName][0].rawValue);
         return "";
     }
-        unittest // DriverEmailMongo.headerRaw
-        {
-            writeln("Testing DriverEmailMongo.headerRaw");
-            auto bson = parseJsonString("{}");
-            auto emailDoc = collection("email").findOne(bson);
-
-            assert(DriverEmailMongo.headerRaw(emailDoc, "delivered-to") == " testuser@testdatabase.com");
-            assert(DriverEmailMongo.headerRaw(emailDoc, "date") == " Mon, 27 May 2013 07:42:30 +0200");
-            assert(!DriverEmailMongo.headerRaw(emailDoc, "inventedHere").length);
-        }
 
     // Get an email document, return the attachment filenames in an array
-    // XXX unittest
-    private static string[] extractAttachNamesFromDoc(const ref Bson emailDoc)
+    // FIXME: should be private but the test_email.d need to have access for the unittests
+    static string[] extractAttachNamesFromDoc(const ref Bson emailDoc)
     {
         string[] res;
         if (!emailDoc.isNull && !emailDoc.attachments.isNull)
@@ -63,7 +54,7 @@ final class DriverEmailMongo : DriverEmailInterface
         return res;
     }
 
-
+    version(unittest)
     static auto getEmailCursorAtPosition(ulong pos)
     {
         auto cursor = collection("email").find();

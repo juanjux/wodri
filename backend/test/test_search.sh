@@ -1,3 +1,3 @@
 #!/bin/sh
-cd ../source/retriever
-dub build -v --build=release --config=search_test && ./test && rm -f test.o
+cd ../source/db
+dub build -v --build=debug --config=search_test && ./test && rm -f test.o

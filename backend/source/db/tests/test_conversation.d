@@ -17,8 +17,8 @@ version(db_usetestdb)
     {
         writeln("Testing Conversation.hasLink");
         recreateTestDb();
-        auto conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
-        const emailDbId = conv.links[0].emailDbId;
+        auto conv        = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
+        const emailDbId  = conv.links[0].emailDbId;
         const emailMsgId = conv.links[0].messageId;
         assert(conv.hasLink(emailMsgId, emailDbId));
         assert(!conv.hasLink("blabla", emailDbId));
@@ -34,7 +34,7 @@ version(db_usetestdb)
         assert(conv.links.length == 1);
         // check it doesnt add the same link twice
         const emailDbId = conv.links[0].emailDbId;
-        const polompos = conv.links[0].emailDbIdo;
+        const polompos = conv.links[0].emailDbId;
         const emailMsgId = conv.links[0].messageId;
         const deleted = conv.links[0].deleted;
         string[] attachs = ["someAttachName", "anotherAttachName"];
@@ -1052,13 +1052,21 @@ version(db_usetestdb)
 
 version(search_test)
 {
+    import db.conversation;
+    import db.test_support;
+    import db.user;
+    import std.datetime;
+    import std.stdio;
+    import std.string;
+    
     unittest  // search
     {
         writeln("Testing Conversation.search times");
+        auto someUser = User.getFromLoginName("testuser");
         // last test on my laptop: about 40 msecs for 84 results with 33000 emails loaded
         StopWatch sw;
         sw.start();
-        auto searchRes = Email.search(["testing"], USER_TO_ID["testuser"]);
+        auto searchRes = Conversation.search(["testing"], someUser.id);
         sw.stop();
         writeln(format("Time to search with a result set of %s convs: %s msecs",
                 searchRes.length, sw.peek.msecs));
