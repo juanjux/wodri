@@ -49,8 +49,7 @@ interface Message
     @before!getRequestUser("_userName")
     string post(string _userName, ApiEmail draftContent, string replyDbId = "");
 
-    @method(HTTPMethod.DELETE)
-    @path("/:id/")
+    @method(HTTPMethod.DELETE) @path("/:id/")
     @before!getRequestUser("_userName")
     void deleteEmail(string _userName, string _id, int purge=0);
 
@@ -68,6 +67,10 @@ interface Message
     @method(HTTPMethod.DELETE) @path(":id/attachment/")
     @before!getRequestUser("_userName")
     void deleteAttachment(string _userName, string _id, string attachmentId);
+
+    @method(HTTPMethod.POST) @path(":id/send/")
+    @before!getRequestUser("_userName")
+    void send(string _userName, string _id);
 }
 
 
@@ -105,7 +108,7 @@ interface Conv
     void unDeleteConversation(string _userName, string _id);
 
     // Get conversations with the tag ":id"  (its not really an id but a tagname)
-    @method(HTTPMethod.GET) @path("tag/:id/")
+    @path("tag/:id/")
     @before!getRequestUser("_userName")
     ApiConversationSummary[] getTagConversations(string _id,
                                                  string _userName,
@@ -216,6 +219,22 @@ override:
                 Email.deleteAttachment(id, attachmentId);
         }
 
+
+    void send(string userName, string id)
+    {
+        // 1. Get the Email (not the ApiEmail)
+        // 2. Generate the header string from Email.headers (minus Content-Type, plus
+        // Message-Id), check From:, To: etc.
+        // 3. Collapse the text parts into one or two single plain/html parts
+        // 4. Get the Content-Type:
+        //     attachments? => multipart/mixed
+        //     two text parts? => multipart/alternative
+        //     only one text part and is HTML? => text/html
+        //     else: text/plain
+        // 5. Create the multipart body including attachments if needed
+        // 6. Connect to the configured SMTP server and sent the email (using the SMTP
+        // module dependency from DUB.)
+    }
 }
 
 

@@ -10,8 +10,11 @@ Backend-API:
     configured SMTP, send the generated raw email, update the document with
     sendDate: (date) and remove draft status.
 
+    Next: contacts API
+
 Backend-Retriever:
     - Change all ocurrences of dbId for id
+    - Contact DB and Api objects, contact DB driver.
 
     Later:
     - general hunting of XXX and FIXMEs
