@@ -1,19 +1,16 @@
 Backend-API:
     - POST /message/:id/send
 
-    DECIDE: the body (possibly multipart/alternative with attachments et al, but
-    attachments should already have their data structure uploaded), is generated
-    by the javascript client or the server?
+    Next: contacts API (document)
+
     
-    Generate the header["Content-Type"] field and the string body.  Use smtp
-    module and the configured smtphost, smtplogin and smtppass, connect to the
-    configured SMTP, send the generated raw email, update the document with
-    sendDate: (date) and remove draft status.
-
-    Next: contacts API
-
 Backend-Retriever:
     - Change all ocurrences of dbId for id
+    - Email.send():
+        Generate the header["Content-Type"] field and the string body. Use smtp
+        module and the configured smtphost, smtplogin and smtppass, connect to the
+        configured SMTP, send the generated raw email, update the document with
+        sendDate: (date) and remove draft status.
     - Contact DB and Api objects, contact DB driver.
 
     Later:

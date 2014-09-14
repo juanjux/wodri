@@ -121,8 +121,10 @@ final class Email
             }
             else
             {
-                auto referencesRaw = join(references, "\n        ");
+                auto referencesRaw = join(references, "\r\n        ");
                 this.headers.addField("references", HeaderValue(referencesRaw, references));
+                this.headers.addField("in-reply-to", HeaderValue(references[$-1],
+                                                                 references[$-1..$]));
             }
         }
 
@@ -425,6 +427,41 @@ final class Email
     }
 
 
+    void send()
+    {
+        // ensure message-id
+        if (!this.messageId.length)
+        {
+            logWarn(format("Email.send: message with id %s didn't have any "~
+                           "message-id set, generating", this.dbId));
+            this.messageId = generateMessageId(domainFromAddress(this.from.rawValue));
+        }
+
+        Appender!string headerApp;
+        foreach(headerName, value; this.headers)
+        {
+            // XXX codificar subject y lo que haga falta 
+            if (!value.rawValue.length)
+                continue;
+            headerApp.put(format("%s: %s\r\n", capitalizeHeader(headerName), value.rawValue));
+            writeln(headerName);
+            writeln(value);
+            writeln;
+        }
+
+        writeln("XXX header:"); writeln(headerApp.data);
+        Appender!string bodyApp;
+        /* Convertir:
+           this.messageId (crear el raw)
+           this.from (ya tiene raw)
+
+           Otros (generar):
+           in-reply-to
+           references?
+           Return-Path?
+           MIME-Version: 1.0
+        */   
+    }
     // ==========================================================
     // Proxies for the dbDriver functions used outside this class
     // ==========================================================

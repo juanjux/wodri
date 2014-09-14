@@ -53,10 +53,11 @@ version(db_usetestdb)
         assert(dbEmail.textParts.length == 1);
 
         // Test3: New draft, reply
-        auto convs           = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
-        auto conv            = Conversation.get(convs[0].dbId);
-        auto emailDbId       = conv.links[1].emailDbId;
-        auto emailReferences = Email.get(emailDbId).getHeader("references").addresses;
+        auto convs              = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
+        auto conv               = Conversation.get(convs[0].dbId);
+        auto emailDbId          = conv.links[1].emailDbId;
+        auto emailRepliedObject = Email.get(emailDbId);
+        auto emailReferences    = emailRepliedObject.getHeader("references").addresses;
 
         apiEmail.dbId      = "";
         apiEmail.messageId = "";
@@ -69,6 +70,9 @@ version(db_usetestdb)
         assert(dbEmail.messageId.endsWith("@testdatabase.com"));
         assert(dbEmail.getHeader("references").addresses.length ==
                 emailReferences.length + 1);
+        auto replyToHeader = dbEmail.getHeader("in-reply-to");
+        assert(replyToHeader.addresses[0] == emailRepliedObject.messageId);
+        assert(replyToHeader.rawValue == emailRepliedObject.messageId);
         assert(dbEmail.textParts.length == 2);
 
         // Test4: Update draft, reply
@@ -87,8 +91,6 @@ version(db_usetestdb)
 
     unittest // jsonizeHeader
     {
-        import db.user;
-
         writeln("Testing Email.jsonizeHeader");
         string backendTestEmailsDir = buildPath(getConfig().mainDir, "backend", "test", "testemails");
 
@@ -106,8 +108,6 @@ version(db_usetestdb)
 
     unittest // test email.deleted
     {
-        import db.conversation;
-        import db.user;
         writeln("Testing Email.deleted");
         recreateTestDb();
         // insert a new email with deleted = true
@@ -147,7 +147,7 @@ version(db_usetestdb)
     import webbackend.apiemail: ApiEmail;
     ApiEmail getTestApiEmail()
     {
-        auto apiEmail = new ApiEmail();
+        auto apiEmail      = new ApiEmail();
         apiEmail.from      = "anotherUser@testdatabase.com";
         apiEmail.to        = "juanjo@juanjoalvarez.net";
         apiEmail.subject   = "test of forceInsertNew";
@@ -155,6 +155,39 @@ version(db_usetestdb)
         apiEmail.date      = "Fri, 22 Aug 2014 09:22:46 +02:00";
         apiEmail.bodyPlain = "test body";
         return apiEmail;
+    }
+
+    unittest // send
+    {
+        recreateTestDb();
+
+        // XXX mockear el servidor de SMTP
+        writeln("Testing Email.send");
+        
+        // create draft
+        auto user = User.getFromAddress("anotherUser@testdatabase.com");
+        auto apiEmail    = new ApiEmail;
+        // no apiEmail.dbId, so new email
+        apiEmail.from    = "anotherUser@testdatabase.com";
+        apiEmail.to      = "juanjux@gmail.com";
+        apiEmail.subject = "draft subject 1 álvarez";
+        apiEmail.isoDate = "2014-08-20T15:47:06Z";
+        apiEmail.date    = "Wed, 20 Aug 2014 15:47:06 +02:00";
+        apiEmail.deleted = false;
+        apiEmail.draft   = true;
+        apiEmail.bodyHtml="<strong>I can do html like the cool boys!</strong>";
+        // get some email to reply to
+        auto convs     = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
+        auto conv      = Conversation.get(convs[0].dbId);
+        auto repliedId = conv.links[1].emailDbId;
+        auto dbEmail   = new Email(apiEmail, repliedId); // XXX scoped?
+        dbEmail.userId = user.id;
+        dbEmail.store();
+        assert(dbEmail.dbId.length);
+
+        // recover again 
+        auto dbEmail2 = Email.get(dbEmail.dbId);
+        dbEmail2.send();
     }
 
 
@@ -206,7 +239,6 @@ version(db_usetestdb)
 
         unittest // getSummary
         {
-            import db.conversation;
             writeln("Testing DriverEmailMongo.getSummary");
             recreateTestDb();
 
@@ -238,7 +270,6 @@ version(db_usetestdb)
 
         unittest // DriverEmailMongo.getOriginal
         {
-            import db.conversation;
             writeln("Testing DriverEmailMongo.getOriginal");
             recreateTestDb();
 
@@ -305,7 +336,6 @@ version(db_usetestdb)
 
         unittest // setDeleted
         {
-            import db.conversation;
             writeln("Testing DriverEmailMongo.setDeleted");
             recreateTestDb();
 
@@ -324,7 +354,6 @@ version(db_usetestdb)
 
         unittest // storeTextIndex
         {
-            import db.user;
             writeln("Testing DriverEmailMongo.storeTextIndex");
             recreateTestDb();
 
@@ -372,7 +401,6 @@ version(db_usetestdb)
 
         unittest
         {
-            import db.conversation;
             writeln("Testing DriverEmailMongo.getReferencesFromPrevious");
             auto emailMongo = scoped!DriverEmailMongo();
             assert(emailMongo.getReferencesFromPrevious("doesntexists").length == 0);
@@ -394,7 +422,6 @@ version(db_usetestdb)
 
         unittest // isOwnedBy
         {
-            import db.user;
             writeln("Testing DriverEmailMongo.isOwnedBy");
             recreateTestDb();
             auto emailMongo = scoped!DriverEmailMongo();
@@ -426,7 +453,6 @@ version(db_usetestdb)
 
         unittest // purgeById
         {
-            import db.conversation;
             struct EmailFiles
             {
                 string rawEmail;

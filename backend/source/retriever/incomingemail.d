@@ -78,37 +78,6 @@ struct HeaderValue
 }
 
 
-/**
- * Try to normalize headers to the most common capitalizations
- * RFC 2822 specifies that headers are case insensitive, but better
- * to be safe than sorry
- */
-private pure string capitalizeHeader(in string name)
-{
-    string res = toLower(name);
-    switch(name)
-    {
-        case "domainkey-signature": return "DomainKey-Signature";
-        case "x-spam-setspamtag": return "X-Spam-SetSpamTag";
-        default:
-    }
-
-    immutable tokens = split(res, "-");
-    string newres;
-    foreach(idx, ref tok; tokens)
-    {
-        if (among(tok, "mime", "dkim", "id", "spf"))
-            newres ~= toUpper(tok);
-        else
-            newres ~= capitalize(tok);
-        if (idx < tokens.length-1)
-            newres ~= "-";
-    }
-
-    return newres;
-}
-
-
 final class IncomingEmail
 {
     private
@@ -177,7 +146,6 @@ final class IncomingEmail
                                in string rawEmailStore = "")
     {
         Appender!string stdinLines;
-        Appender!string partialBuffer;
         string currentLine;
 
         immutable bool inputIsStdInput = (rawEmailStore.length &&
@@ -199,28 +167,25 @@ final class IncomingEmail
         else
             return; // empty input (premature EOF?) => empty email
 
+        string headerStr;
         while (currentLine.length && !emailFile.eof())
         {
             if (inputIsStdInput)
                 stdinLines.put(currentLine);
 
-            if (partialBuffer.data.length && !among(currentLine[0], ' ', '\t'))
+            if (headerStr.length && !among(currentLine[0], ' ', '\t'))
             {
-                // Not indented, so this line starts a new header (or body): add the
-                // buffer (with the text of the previous lines without the current line)
-                // as new header
-                addHeader(partialBuffer.data);
-                partialBuffer = appender!string;
+                // Not indented, this line starts a new header (or body)
+                addHeader(headerStr); // previous header is loaded, save it
+                headerStr = "";
             }
-            partialBuffer.put(currentLine);
+            headerStr ~= currentLine;
 
             if (currentLine == this.lineSep)
             {
                 // Body mark found (line with only a newline character)
-
-                // load the email content info data from the headers into rootPart
+                // load the email content info data from the headers into the rootPart
                 getRootContentInfo();
-                partialBuffer = appender!string;
                 break;
             }
             currentLine = emailFile.readln();
@@ -237,6 +202,7 @@ final class IncomingEmail
         }
 
         // === Body=== (read all into the buffer, the parsing is done outside the loop)
+        Appender!string bodyBuffer;
         while (currentLine.length && !emailFile.eof())
         {
             currentLine = emailFile.readln();
@@ -244,13 +210,13 @@ final class IncomingEmail
             if (inputIsStdInput)
                 stdinLines.put(currentLine);
 
-            partialBuffer.put(currentLine);
+            bodyBuffer.put(currentLine);
         }
 
         if (this.rootPart.ctype.name.startsWith("multipart"))
-            parseParts(split(partialBuffer.data, this.lineSep), this.rootPart, attachStore);
+            parseParts(split(bodyBuffer.data, this.lineSep), this.rootPart, attachStore);
         else
-            setTextPart(this.rootPart, partialBuffer.data);
+            setTextPart(this.rootPart, bodyBuffer.data);
 
         // Finally, copy the email to rawEmailPath
         // (the user of the class is responsible for deleting the original)

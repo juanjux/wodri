@@ -222,6 +222,11 @@ override:
 
     void send(string userName, string id)
     {
+        if (!Email.isOwnedBy(id, userName))
+            return;
+
+        auto email = Email.get(id);
+        email.send();
         // 1. Get the Email (not the ApiEmail)
         // 2. Generate the header string from Email.headers (minus Content-Type, plus
         // Message-Id), check From:, To: etc.
