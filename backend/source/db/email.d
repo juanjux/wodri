@@ -440,13 +440,27 @@ final class Email
         Appender!string headerApp;
         foreach(headerName, value; this.headers)
         {
-            // XXX codificar subject y lo que haga falta 
+            // XXX codificar:
+            // - From, To, Cc, Bcc, Delivered-To, X-Forwarded-To, X-Forwarded-For: se toma el
+            //   rawValue, se parten los nombres y direcciones (varios usuarios iran separados
+            //   por comas), se codifican los nombres pero no las direcciones.
+            // - Resto: llamar a quoteHeader sobre todo el rawValue
             if (!value.rawValue.length)
                 continue;
-            headerApp.put(format("%s: %s\r\n", capitalizeHeader(headerName), value.rawValue));
-            writeln(headerName);
-            writeln(value);
-            writeln;
+            string encodedValue;
+            auto lowName = toLower(headerName);
+            if (among(lowName, "from", "to", "cc", "bcc", "resent-from",
+                      "resent-to", "resent-cc", "resent-bcc"))
+                encodedValue = quoteHeaderAddressList(value.rawValue);
+            else
+                encodedValue = quoteHeader(value.rawValue);
+                
+            headerApp.put(format("%s: %s\r\n",
+                                 capitalizeHeader(headerName),
+                                 encodedValue));
+            writeln("XXX header: ", headerName);
+            writeln("XXX rawvalue: ", value.rawValue);
+            writeln("XXX encoded : ", encodedValue);
         }
 
         writeln("XXX header:"); writeln(headerApp.data);
@@ -461,6 +475,8 @@ final class Email
            Return-Path?
            MIME-Version: 1.0
         */   
+
+        // Para el body: llamar a encodeQuotedPrintable sobre todo el contenido
     }
     // ==========================================================
     // Proxies for the dbDriver functions used outside this class

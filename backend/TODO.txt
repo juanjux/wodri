@@ -3,14 +3,20 @@ Backend-API:
 
     Next: contacts API (document)
 
-    
 Backend-Retriever:
+    - Arreglar: esta quoteando los caracteres "=" en los msgids, dentro de una
+    palabra quoteada si habria que quotearlo, pero ese carácter por si mismo no
+    determina que haya que quotear, tiene que ser otro, ver como arreglar (otro
+    flag...).
+    
+    - quoteHeader: unittest
     - Change all ocurrences of dbId for id
     - Email.send():
         Generate the header["Content-Type"] field and the string body. Use smtp
         module and the configured smtphost, smtplogin and smtppass, connect to the
         configured SMTP, send the generated raw email, update the document with
         sendDate: (date) and remove draft status.
+
     - Contact DB and Api objects, contact DB driver.
 
     Later:
@@ -21,8 +27,6 @@ Backend-Retriever:
     - When the message failed to enter (validation error, or error on save)
       generate a rebound using our message sending system (when implemented)
 
-    - Exception classes for the different parts that throw.
-
     - Retriever's integration test, use a Python script with the mail & smtp
       modules to parse the test mails collection changing the receiver from
       [myRealAddr] to [mongoTestAddr] before delivering to Postfix, create a
@@ -32,9 +36,10 @@ Backend-Retriever:
       cetera.
 
     - Sent the new changes in characterencodings.d to Ruppe
+    (add encodeQuotedPrintable).
 
     - When adding or removing links from a conversation, update
-      conversation.lastDate
+      conversation.lastDate.
 
 Frontend:
 

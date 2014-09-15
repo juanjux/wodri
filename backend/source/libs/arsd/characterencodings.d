@@ -245,7 +245,7 @@ body {
     return utf8;
 }
 
-string decodeEncodedWord(string data) {
+string decodeEncodedWord(string data, bool headerVariant = false) {
 
     string originalData = data;
 
@@ -299,7 +299,7 @@ string decodeEncodedWord(string data) {
 
         immutable(ubyte)[] decodedText;
         if(encoding == "Q")
-            decodedText = decodeQuotedPrintable(encodedText);
+            decodedText = decodeQuotedPrintable(encodedText, headerVariant);
         else if(encoding == "B")
             decodedText = cast(typeof(decodedText)) Base64.decode(encodedText);
         else
@@ -313,7 +313,8 @@ string decodeEncodedWord(string data) {
     return ret;
 }
 
-immutable(ubyte)[] decodeQuotedPrintable(string text) {
+
+immutable(ubyte)[] decodeQuotedPrintable(string text, bool headerVariant = false) {
     immutable(ubyte)[] ret;
 
     int state = 0;
@@ -324,7 +325,8 @@ immutable(ubyte)[] decodeQuotedPrintable(string text) {
                 if(b == '=') {
                     state++;
                     hexByte = 0;
-                } else if (b == '_') { // RFC2047 4.2.2: a _ may be used to represent a space
+                  // RFC2047 4.2.2: a _ may be used to represent a space on headers
+                } else if (headerVariant && b == '_') { 
                     ret ~= ' ';
                 }
                   else {

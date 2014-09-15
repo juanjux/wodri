@@ -163,9 +163,7 @@ pure nothrow
 }
 
 
-// the following functions are mostly translated from the Python lib ones
-
-enum ESCAPE = '=';
+// Quoting utils
 enum MAXLINESIZE = 76;
 enum HEX = "0123456789ABCDEF";
 
@@ -177,8 +175,8 @@ Decide whether a particular character needs to be quoted.
     RFC 1521. The header flag indicates if spaces should be encoded as "_"
     chars, as per the almost-Q encoding used to encode MIME headers.
 **/
-
 private bool needsQuoting(dchar c, Flag!"QuoteTabs" quotetabs, Flag!"Header" header)
+pure nothrow
 {
     if (c == '\n')
         return false;
@@ -190,43 +188,91 @@ private bool needsQuoting(dchar c, Flag!"QuoteTabs" quotetabs, Flag!"Header" hea
         // if header, we have to escape _ because _ is used to escape space
         return to!bool(header);
 
-    return c == ESCAPE || !((' ' <= c) && (c <= '~'));
+    return c == '=' || !((' ' <= c) && (c <= '~'));
 }
 
+
+bool needsQuoting(string s, Flag!"QuoteTabs" quotetabs, Flag!"Header" header)
+pure
+{
+    foreach(codepoint; std.range.stride(s, 1))
+    {
+        if (needsQuoting(codepoint, quotetabs, header))
+            return true;
+    }
+    return false;
+}
+
+
 private string quote(dchar input)
+pure
 {
     string ret = "";
     string utfstr = to!string(input);
     foreach(i; utfstr)
     {
         auto cval = cast(ubyte)i;
-        ret ~=[ESCAPE, HEX[((cval >> 4) & 0x0F)], HEX[(cval & 0x0F)]];
+        ret ~=['=', HEX[((cval >> 4) & 0x0F)], HEX[(cval & 0x0F)]];
     }
     return ret;
 }
 
 
-string[] encodeQuotedPrintable(string[] input,
+// XXX test
+string quoteHeader(string word,
+                   string encoding="UTF-8")
+pure
+{
+    // FIXME: this calls needsQuoting twice for every dchar (one time
+    // here and one in the needsQuoting below inside the foreach)
+    if (!needsQuoting(word, No.QuoteTabs, Yes.Header))
+        return word;
+
+    Appender!string res;
+    res.put("=?"~encoding~"?Q?");
+    foreach(c; std.range.stride(word, 1))
+    {
+        if (needsQuoting(c, No.QuoteTabs, Yes.Header))
+            res.put(quote(c));
+        else
+            res.put(c);
+    }
+    res.put("?=");
+    return res.data;
+}
+
+
+// XXX test
+string quoteHeaderAddressList(string addresses)
+{
+    // XXX IMPLEMENTAR
+    return addresses;
+}
+
+string encodeQuotedPrintable(string input,
                              Flag!"QuoteTabs" quotetabs,
                              Flag!"Header" header,
                              string lineEnd = "\n")
+pure
 {
-    string[] ret;
+    Appender!string retApp;
     string prevLine;
 
-    void saveLine(string line)
+    void saveLine(string line, string lineEnd = "\n")
     {
         // RFC 1521 requires that the line ending in a space or tab must have that trailing
         // character encoded.
-        if (line.length > 1 && among(line[$-2], ' ', '\t'))
-            ret ~= line[0..$-2] ~ quote(line[$-2]) ~ line[$-1..$];
-        else if (line == ".")
-            ret ~= quote(line[0]);
+        if (line.length > 1 && among(line[$-1], ' ', '\t'))
+            retApp.put(line[0..$-1] ~ quote(line[$-1]) ~ lineEnd);
         else
-            ret ~= line;
+            retApp.put(line ~ lineEnd);
     }
 
-    foreach(line; input)
+    // we split by lines thus need to know if we've to add a final newline to
+    // the last line
+    bool addFinalNewline = (input.length && input[$-1] == '\n');
+
+    foreach(line; split(input, lineEnd))
     {
         if (!line.length)
             break;
@@ -261,15 +307,19 @@ string[] encodeQuotedPrintable(string[] input,
             if (!limit) // all "=" chars????
                 break;
 
-            saveLine(thisLine[0..limit] ~ "=" ~ lineEnd);
+            saveLine(thisLine[0..limit], "=" ~ lineEnd);
             thisLine = thisLine[limit..$];
         }
         prevLine = thisLine;
     }
 
     if (prevLine.length)
-        saveLine(prevLine);
-    return ret;
+    {
+        string finalLineEnd = addFinalNewline? lineEnd : ""; 
+        saveLine(prevLine, finalLineEnd);
+    }
+
+    return retApp.data;
 }
 
 //  _    _       _ _   _            _
@@ -331,47 +381,40 @@ unittest
     assert(quote(c) == "=C3=B1");
 }
 
-// XXX test de todo acentos seguidos
 unittest
 {
     // XXX mas tests llamando a decodeQuotedPrintable
+    // XXX test sin lineas al final, comprobar que respeta que no las haya
     writeln("Testing Utils.encodeQuotedPrintable");
 
-    string[] a = ["abc\n", "deññálolo\n"];
+    string a = "abc\ndeññálolo\n";
     auto res1 = encodeQuotedPrintable(a, Yes.QuoteTabs, No.Header);
-    assert(res1 == ["abc\n", "de=C3=B1=C3=B1=C3=A1lolo\n"]);
-    assert(a[1] == decodeQuotedPrintable(res1[1]));
+    assert(res1 == "abc\nde=C3=B1=C3=B1=C3=A1lolo\n");
+    assert(a == decodeQuotedPrintable(res1));
 
-    string[] b = ["abc\n", "sometab\tandsomemore\t\n"];
+    string b = "abc\nsometab\tandsomemore\t\n";
     auto res2 = encodeQuotedPrintable(b, Yes.QuoteTabs, No.Header);
-    assert(res2 == ["abc\n", "sometab=09andsomemore=09\n"]);
-    assert(b[1] == decodeQuotedPrintable(res2[1]));
-
-    // even without quotetabs, tabs before newline must be quoted
+    assert(res2 == "abc\nsometab=09andsomemore=09\n");
+    assert(b == decodeQuotedPrintable(res2));
+    // even No.QuoteTabs, tabs before newline must be quoted
     assert(encodeQuotedPrintable(b, No.QuoteTabs, No.Header) ==
-           ["abc\n", "sometab\tandsomemore=09\n"]);
+           "abc\nsometab\tandsomemore=09\n");
 
-    string[] c = ["abc\n", "with spaces end\n"];
-    assert(encodeQuotedPrintable(c, No.QuoteTabs, Yes.Header) == 
-           ["abc\n", "with_spaces_end\n"]);
-    assert(encodeQuotedPrintable(c, No.QuoteTabs, No.Header) == 
-           ["abc\n", "with spaces end\n"]);
+    string c = "abc\nwith spaces end\n";
+    assert(encodeQuotedPrintable(c, No.QuoteTabs, Yes.Header) == "abc\nwith_spaces_end\n");
+    assert(encodeQuotedPrintable(c, No.QuoteTabs, No.Header) == "abc\nwith spaces end\n");
 
-    string[] d = ["ñaña\n", "po ñaña\tla"];
+    string d = "ñaña\npo ñaña\tla";
     auto res3 = encodeQuotedPrintable(d, Yes.QuoteTabs, Yes.Header);
-    assert(res3 == ["=C3=B1a=C3=B1a\n", "po=20=C3=B1a=C3=B1a=09la"]);
-    assert(d[1] == decodeQuotedPrintable(res3[1]));
+    assert(res3 == "=C3=B1a=C3=B1a\npo=20=C3=B1a=C3=B1a=09la");
+    assert(d == decodeQuotedPrintable(res3, true));
 
-    string[] f = ["one ñaña two ñoño three ááá four ééé five" ~
-                  " ñaña six ñaña seven ñaña eight ñaña\n"];
-
-    // XXX descomentar al acabar las pruebas
-    // assert(encodeQuotedPrintable(f, No.QuoteTabs, Yes.Header) ==
-    //        ["one_=C3=B1a=C3=B1a_two_=C3=B1o=C3=B1o_three_=C3=A1=C3=A1=C3=A1_four_=C3=A=\n",
-    //         "9=C3=A9=C3=A9_five_=C3=B1a=C3=B1a_six_=C3=B1a=C3=B1a_seven_=C3=B1a=C3=B1a_=\n",
-    //         "eight_=C3=B1a=C3=B1a\n"]);
-
-    string[] quijotipsum = ["En un lugar de la Mancha, de cuyo nombre no quiero "~
+    string f = "one ñaña two ñoño three ááá four ééé five" ~
+                  " ñaña six ñaña seven ñaña eight ñaña\n";
+    auto res4 = encodeQuotedPrintable(f, No.QuoteTabs, Yes.Header);
+    assert(f == decodeQuotedPrintable(res4, true));
+    
+    string quijotipsum = "En un lugar de la Mancha, de cuyo nombre no quiero "~
         "acordarme, no ha mucho tiempo que vivía un hidalgo de los de lanza en "~
         "astillero, adarga antigua, rocín flaco y galgo corredor. Una olla de "~
         "algo más vaca que carnero, salpicón las más noches, duelos y quebrantos"~
@@ -388,11 +431,28 @@ unittest
         " Quijada, o Quesada, que en esto hay alguna diferencia en los autores"~
         " que deste caso escriben; aunque, por conjeturas verosímiles, se deja"~
         " entender que se llamaba Quejana. Pero esto importa poco a nuestro"~
-        " cuento; basta que en la narración dél no se salga un punto de la verdad.\n"]; 
+        " cuento; basta que en la narración dél no se salga un punto de la verdad.\n"; 
+    auto res5 = encodeQuotedPrintable(quijotipsum, No.QuoteTabs, No.Header);
+    assert(quijotipsum == decodeQuotedPrintable(res5));
 
-    auto res4 = encodeQuotedPrintable(quijotipsum, No.QuoteTabs, No.Header);
-    auto decoded = cast(string)decodeQuotedPrintable(join(res4));
-    assert(quijotipsum[0] == decoded);
+    string g = "áááááááááááááááááááááááááááááááááááááááááááááááááááááááááááááááááá";
+    auto res6 = encodeQuotedPrintable(g, No.QuoteTabs, No.Header);
+    auto shouldBeRes6 =
+        "=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=\n"~
+        "=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=\n"~
+        "=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=\n"~
+        "=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=\n"~
+        "=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=\n"~
+        "=A1=C3=A1=C3=A1=C3=A1";
+    assert(res6 == shouldBeRes6);
+    assert(g == decodeQuotedPrintable(res6));
+
+    // test that it doesn't strips the last \n
+    string h = g ~ "\n";
+    auto res7 = encodeQuotedPrintable(h, No.QuoteTabs, No.Header);
+    auto shouldBeRes7 = shouldBeRes6 ~ "\n";
+    assert(shouldBeRes7 == res7);
+    assert(h == decodeQuotedPrintable(res7));
 }
 
 unittest

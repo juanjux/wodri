@@ -253,7 +253,7 @@ final class IncomingEmail
 
         HeaderValue value;
         immutable string name     = raw[0..idxSeparator];
-        immutable string valueStr = decodeEncodedWord(raw[idxSeparator+1..$]);
+        immutable string valueStr = decodeEncodedWord(raw[idxSeparator+1..$], true);
 
         if (valueStr.endsWith("\r\n"))
             value.rawValue = valueStr[0..$-2];
