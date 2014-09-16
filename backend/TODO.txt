@@ -7,7 +7,8 @@ Backend-Retriever:
     - Arreglar: esta quoteando los caracteres "=" en los msgids, dentro de una
     palabra quoteada si habria que quotearlo, pero ese carácter por si mismo no
     determina que haya que quotear, tiene que ser otro, ver como arreglar (otro
-    flag...).
+    flag...) o poner una lista de "no quotear nunca". Ver como lo hacen otros
+    (Mutt y demás).
     
     - quoteHeader: unittest
     - Change all ocurrences of dbId for id

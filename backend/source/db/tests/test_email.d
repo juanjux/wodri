@@ -188,6 +188,8 @@ version(db_usetestdb)
         // recover again 
         auto dbEmail2 = Email.get(dbEmail.dbId);
         dbEmail2.send();
+
+        // XXX terminar
     }
 
 

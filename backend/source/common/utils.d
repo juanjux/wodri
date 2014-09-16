@@ -14,10 +14,12 @@ import std.string;
 import std.typecons;
 import std.utf;
 import vibe.core.log;
-
 /**
  * From removes variants of "Re:"/"RE:"/"re:" in the subject
  */
+auto MSGID_REGEX = ctRegex!(r"[\w@.=%+\-!#\$&'\*/\?\^`\{\}\|~]*\b", "g");
+auto EMAIL_REGEX = ctRegex!(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\b", "g");
+auto EMAIL_REGEX2 = ctRegex!(r"<?[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[>a-zA-Z]{2,4}\b>?", "g");
 auto SUBJECT_CLEAN_REGEX = ctRegex!(r"([\[\(] *)?(RE?) *([-:;)\]][ :;\])-]*|$)|\]+ *$", "gi");
 
 string clearSubject(in string subject)
@@ -168,72 +170,88 @@ enum MAXLINESIZE = 76;
 enum HEX = "0123456789ABCDEF";
 
 /**
+   Detect = detecting when a char or word should be encoded. All characters
+   withing the 0..127 range are safe.
+   Header = encode espaces (as underlines), and equal signs
+   Body = encode equals, tabs and newlines (but not spaces)
+ */
+enum QuoteMode
+{
+    Detect,
+    Header,
+    Body
+}
+
+/**
 Decide whether a particular character needs to be quoted.
 
-    The 'quotetabs' flag indicates whether embedded tabs and spaces should be
-    quoted.  Note that line-ending tabs and spaces are always encoded, as per
-    RFC 1521. The header flag indicates if spaces should be encoded as "_"
-    chars, as per the almost-Q encoding used to encode MIME headers.
+    The 'quotetabs' flag indicates whether embedded tabs and spaces should be quoted. Note
+    that line-ending tabs and spaces are always encoded, as per RFC 1521. The header flag
+    indicates if '_' chars must be encoded , as per the almost-Q encoding used to encode MIME
+    headers. When 'detecting' '=' chars wont make this return true, since they're valid 7bit
+    ASCII (but must be quoted inside a quoted-printable string)
 **/
-private bool needsQuoting(dchar c, Flag!"QuoteTabs" quotetabs, Flag!"Header" header)
+private bool needsQuoting(dchar c, QuoteMode mode)
 pure nothrow
 {
-    if (c == '\n')
-        return false;
-    
-    if (among(c, ' ', '\t'))
-        return to!bool(quotetabs);
+    if (among(c, '\n', '\r', '\t'))
+        return mode == QuoteMode.Body;
 
-    if (c == '_')
-        // if header, we have to escape _ because _ is used to escape space
-        return to!bool(header);
+    if (among(c, ' ', '_'))
+        return mode == QuoteMode.Header;
 
-    return c == '=' || !((' ' <= c) && (c <= '~'));
+    if (c == '=')
+        return mode != QuoteMode.Detect;
+
+    return !((' ' <= c) && (c <= '~'));
 }
 
 
-bool needsQuoting(string s, Flag!"QuoteTabs" quotetabs, Flag!"Header" header)
+bool needsQuoting(string s, QuoteMode mode)
 pure
 {
     foreach(codepoint; std.range.stride(s, 1))
     {
-        if (needsQuoting(codepoint, quotetabs, header))
+        if (needsQuoting(codepoint, mode))
             return true;
     }
     return false;
 }
 
 
-private string quote(dchar input)
+private string quote(dchar input, Flag!"Header" headerVariant = No.Header)
 pure
 {
     string ret = "";
     string utfstr = to!string(input);
     foreach(i; utfstr)
     {
-        auto cval = cast(ubyte)i;
-        ret ~=['=', HEX[((cval >> 4) & 0x0F)], HEX[(cval & 0x0F)]];
+        if (i == ' ' && headerVariant)
+            ret ~= '_';
+        else
+        {
+            auto cval = cast(ubyte)i;
+            ret ~=['=', HEX[((cval >> 4) & 0x0F)], HEX[(cval & 0x0F)]];
+        }
     }
     return ret;
 }
 
 
-// XXX test
-string quoteHeader(string word,
-                   string encoding="UTF-8")
+string quoteHeader(string word)
 pure
 {
     // FIXME: this calls needsQuoting twice for every dchar (one time
-    // here and one in the needsQuoting below inside the foreach)
-    if (!needsQuoting(word, No.QuoteTabs, Yes.Header))
+    // here and one inside the foreach)
+    if (!needsQuoting(word, QuoteMode.Detect))
         return word;
 
     Appender!string res;
-    res.put("=?"~encoding~"?Q?");
+    res.put("=?UTF-8?Q?");
     foreach(c; std.range.stride(word, 1))
     {
-        if (needsQuoting(c, No.QuoteTabs, Yes.Header))
-            res.put(quote(c));
+        if (needsQuoting(c, QuoteMode.Header))
+            res.put(quote(c, Yes.Header));
         else
             res.put(c);
     }
@@ -242,28 +260,39 @@ pure
 }
 
 
-// XXX test
 string quoteHeaderAddressList(string addresses)
 {
-    // XXX IMPLEMENTAR
-    return addresses;
+    Appender!string resApp;
+    auto c = match(addresses, EMAIL_REGEX2);
+    bool addSpace = false;
+    if (c.pre.length)
+    {
+        resApp.put(quoteHeader(strip(c.pre)) ~ " ");
+    }
+    if (c.hit.length)
+    {
+        resApp.put(c.hit);
+    }
+    if (c.post.length)
+    {
+        resApp.put(quoteHeaderAddressList(c.post));
+    }
+    return resApp.data;
 }
 
-string encodeQuotedPrintable(string input,
-                             Flag!"QuoteTabs" quotetabs,
-                             Flag!"Header" header,
-                             string lineEnd = "\n")
+string encodeQuotedPrintable(string input, QuoteMode mode, string lineEnd = "\n")
 pure
 {
     Appender!string retApp;
     string prevLine;
+    auto headerVariant = (mode == QuoteMode.Header ? Yes.Header : No.Header);
 
     void saveLine(string line, string lineEnd = "\n")
     {
         // RFC 1521 requires that the line ending in a space or tab must have that trailing
         // character encoded.
         if (line.length > 1 && among(line[$-1], ' ', '\t'))
-            retApp.put(line[0..$-1] ~ quote(line[$-1]) ~ lineEnd);
+            retApp.put(line[0..$-1] ~ quote(line[$-1], headerVariant) ~ lineEnd);
         else
             retApp.put(line ~ lineEnd);
     }
@@ -281,12 +310,18 @@ pure
         
         foreach(codepoint; std.range.stride(line, 1))
         {
-            if (needsQuoting(codepoint, quotetabs, header))
-                lineBuffer.put(quote(codepoint));
-            else if (header && codepoint == ' ')
+            if (codepoint == ' ' && mode == QuoteMode.Header)
+            {
                 lineBuffer.put("_");
+            }
+            else if (needsQuoting(codepoint, mode))
+            {
+                lineBuffer.put(quote(codepoint, headerVariant));
+            }
             else
+            {
                 lineBuffer.put(codepoint);
+            }
         }
 
         if (prevLine.length)
@@ -333,40 +368,58 @@ version(unittest)import std.stdio;
 
 unittest
 {
-    writeln("Testing Utils.needsQuoting");
+    writeln("Testing Utils.needsQuoting(dchar)");
 
     dchar c = '\n';
-    assert(!needsQuoting(c, Yes.QuoteTabs, Yes.Header));
+    assert(!needsQuoting(c, QuoteMode.Detect));
+    assert(!needsQuoting(c, QuoteMode.Header));
+    assert(needsQuoting(c, QuoteMode.Body));
     
+    c = '\t';
+    assert(!needsQuoting(c, QuoteMode.Detect));
+    assert(!needsQuoting(c, QuoteMode.Header));
+    assert( needsQuoting(c, QuoteMode.Body));
+
+    c = '\r';
+    assert(!needsQuoting(c, QuoteMode.Detect));
+    assert(!needsQuoting(c, QuoteMode.Header));
+    assert( needsQuoting(c, QuoteMode.Body));
+
     c = 'a';
-    assert(!needsQuoting(c, Yes.QuoteTabs, Yes.Header));
-    assert(!needsQuoting(c, No.QuoteTabs, No.Header));
-    assert(!needsQuoting(c, Yes.QuoteTabs, No.Header));
-    assert(!needsQuoting(c, No.QuoteTabs, Yes.Header));
+    assert(!needsQuoting(c, QuoteMode.Detect));
+    assert(!needsQuoting(c, QuoteMode.Header));
+    assert(!needsQuoting(c, QuoteMode.Body));
 
     c = 'ñ';
-    assert(needsQuoting(c, Yes.QuoteTabs, Yes.Header));
-    assert(needsQuoting(c, No.QuoteTabs, No.Header));
-    assert(needsQuoting(c, Yes.QuoteTabs, No.Header));
-    assert(needsQuoting(c, No.QuoteTabs, Yes.Header));
+    assert(needsQuoting(c, QuoteMode.Detect));
+    assert(needsQuoting(c, QuoteMode.Header));
+    assert(needsQuoting(c, QuoteMode.Body));
 
     c = ' ';
-    assert(needsQuoting(c, Yes.QuoteTabs, Yes.Header));
-    assert(!needsQuoting(c, No.QuoteTabs, No.Header));
-    assert(needsQuoting(c, Yes.QuoteTabs, No.Header));
-    assert(!needsQuoting(c, No.QuoteTabs, Yes.Header));
-
-    c = '\t';
-    assert(needsQuoting(c, Yes.QuoteTabs, Yes.Header));
-    assert(!needsQuoting(c, No.QuoteTabs, No.Header));
-    assert(needsQuoting(c, Yes.QuoteTabs, No.Header));
-    assert(!needsQuoting(c, No.QuoteTabs, Yes.Header));
+    assert(!needsQuoting(c, QuoteMode.Detect));
+    assert( needsQuoting(c, QuoteMode.Header));
+    assert(!needsQuoting(c, QuoteMode.Body));
 
     c = '_';
-    assert(needsQuoting(c, Yes.QuoteTabs, Yes.Header));
-    assert(!needsQuoting(c, No.QuoteTabs, No.Header));
-    assert(!needsQuoting(c, Yes.QuoteTabs, No.Header));
-    assert(needsQuoting(c, No.QuoteTabs, Yes.Header));
+    assert(!needsQuoting(c, QuoteMode.Detect));
+    assert( needsQuoting(c, QuoteMode.Header));
+    assert(!needsQuoting(c, QuoteMode.Body));
+
+    c = '=';
+    assert(!needsQuoting(c, QuoteMode.Detect));
+    assert( needsQuoting(c, QuoteMode.Header));
+    assert( needsQuoting(c, QuoteMode.Body));
+}
+
+unittest
+{
+    writeln("Testing Utils.needsQuoting(string)");
+    string s = "AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com";
+    assert(quoteHeader(s) == s);
+
+    s = "Juanjo Álvarez <juanjux@gmail.com>";
+    auto q = quoteHeader(s);
+    assert(q == "=?UTF-8?Q?Juanjo_=C3=81lvarez_<juanjux@gmail.com>?=");
 }
 
 unittest
@@ -383,36 +436,51 @@ unittest
 
 unittest
 {
-    // XXX mas tests llamando a decodeQuotedPrintable
-    // XXX test sin lineas al final, comprobar que respeta que no las haya
+    writeln("Testing Utils.quoteHeaderAddressList");
+
+    string addrList = "Juanjo Álvarez <juanjux@gmail.com>, "~
+                      "Pepito Perez <pepe@perez.com>, "~
+                      "Manolo Ñoño manolo@gmail.com";
+    auto res = quoteHeaderAddressList(addrList);
+    assert(res == "=?UTF-8?Q?Juanjo_=C3=81lvarez?= <juanjux@gmail.com>, Pepito Perez <pepe@perez.com>=?UTF-8?Q?,_Manolo_=C3=91o=C3=B1o?= manolo@gmail.com");
+}
+
+unittest
+{
     writeln("Testing Utils.encodeQuotedPrintable");
 
     string a = "abc\ndeññálolo\n";
-    auto res1 = encodeQuotedPrintable(a, Yes.QuoteTabs, No.Header);
+    auto res1 = encodeQuotedPrintable(a, QuoteMode.Header);
     assert(res1 == "abc\nde=C3=B1=C3=B1=C3=A1lolo\n");
-    assert(a == decodeQuotedPrintable(res1));
+    assert(a == decodeQuotedPrintable(res1, true));
 
     string b = "abc\nsometab\tandsomemore\t\n";
-    auto res2 = encodeQuotedPrintable(b, Yes.QuoteTabs, No.Header);
-    assert(res2 == "abc\nsometab=09andsomemore=09\n");
-    assert(b == decodeQuotedPrintable(res2));
-    // even No.QuoteTabs, tabs before newline must be quoted
-    assert(encodeQuotedPrintable(b, No.QuoteTabs, No.Header) ==
+    auto res2 = encodeQuotedPrintable(b, QuoteMode.Header);
+    // Tabs before newline should be encoded always
+    assert(res2 == "abc\nsometab\tandsomemore=09\n");
+    assert(b == decodeQuotedPrintable(res2, true));
+    assert(encodeQuotedPrintable(b, QuoteMode.Detect) ==
            "abc\nsometab\tandsomemore=09\n");
+    auto res2_1 = encodeQuotedPrintable(b, QuoteMode.Body);
+    assert(res2_1 == "abc\nsometab=09andsomemore=09\n");
 
     string c = "abc\nwith spaces end\n";
-    assert(encodeQuotedPrintable(c, No.QuoteTabs, Yes.Header) == "abc\nwith_spaces_end\n");
-    assert(encodeQuotedPrintable(c, No.QuoteTabs, No.Header) == "abc\nwith spaces end\n");
+    assert(encodeQuotedPrintable(c, QuoteMode.Header) == "abc\nwith_spaces_end\n");
+    assert(encodeQuotedPrintable(c, QuoteMode.Detect) == "abc\nwith spaces end\n");
 
     string d = "ñaña\npo ñaña\tla";
-    auto res3 = encodeQuotedPrintable(d, Yes.QuoteTabs, Yes.Header);
-    assert(res3 == "=C3=B1a=C3=B1a\npo=20=C3=B1a=C3=B1a=09la");
-    assert(d == decodeQuotedPrintable(res3, true));
+    auto res3 = encodeQuotedPrintable(d, QuoteMode.Body);
+    assert(res3 == "=C3=B1a=C3=B1a\npo =C3=B1a=C3=B1a=09la");
+    assert(d == decodeQuotedPrintable(res3, false));
 
     string f = "one ñaña two ñoño three ááá four ééé five" ~
                   " ñaña six ñaña seven ñaña eight ñaña\n";
-    auto res4 = encodeQuotedPrintable(f, No.QuoteTabs, Yes.Header);
+    auto res4 = encodeQuotedPrintable(f, QuoteMode.Detect);
+    assert(f == decodeQuotedPrintable(res4, false));
+    res4 = encodeQuotedPrintable(f, QuoteMode.Header);
     assert(f == decodeQuotedPrintable(res4, true));
+    res4 = encodeQuotedPrintable(f, QuoteMode.Body);
+    assert(f == decodeQuotedPrintable(res4, false));
     
     string quijotipsum = "En un lugar de la Mancha, de cuyo nombre no quiero "~
         "acordarme, no ha mucho tiempo que vivía un hidalgo de los de lanza en "~
@@ -432,11 +500,15 @@ unittest
         " que deste caso escriben; aunque, por conjeturas verosímiles, se deja"~
         " entender que se llamaba Quejana. Pero esto importa poco a nuestro"~
         " cuento; basta que en la narración dél no se salga un punto de la verdad.\n"; 
-    auto res5 = encodeQuotedPrintable(quijotipsum, No.QuoteTabs, No.Header);
-    assert(quijotipsum == decodeQuotedPrintable(res5));
+    auto res5 = encodeQuotedPrintable(quijotipsum, QuoteMode.Detect);
+    assert(quijotipsum == decodeQuotedPrintable(res5, false));
+    res5 = encodeQuotedPrintable(quijotipsum, QuoteMode.Header);
+    assert(quijotipsum == decodeQuotedPrintable(res5, true));
+    res5 = encodeQuotedPrintable(quijotipsum, QuoteMode.Body);
+    assert(quijotipsum == decodeQuotedPrintable(res5, false));
 
     string g = "áááááááááááááááááááááááááááááááááááááááááááááááááááááááááááááááááá";
-    auto res6 = encodeQuotedPrintable(g, No.QuoteTabs, No.Header);
+    auto res6 = encodeQuotedPrintable(g, QuoteMode.Body);
     auto shouldBeRes6 =
         "=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=\n"~
         "=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=C3=A1=\n"~
@@ -446,10 +518,14 @@ unittest
         "=A1=C3=A1=C3=A1=C3=A1";
     assert(res6 == shouldBeRes6);
     assert(g == decodeQuotedPrintable(res6));
+    res6 = encodeQuotedPrintable(g, QuoteMode.Detect);
+    assert(g == decodeQuotedPrintable(res6));
+    res6 = encodeQuotedPrintable(g, QuoteMode.Header);
+    assert(g == decodeQuotedPrintable(res6, true));
 
     // test that it doesn't strips the last \n
     string h = g ~ "\n";
-    auto res7 = encodeQuotedPrintable(h, No.QuoteTabs, No.Header);
+    auto res7 = encodeQuotedPrintable(h, QuoteMode.Header);
     auto shouldBeRes7 = shouldBeRes6 ~ "\n";
     assert(shouldBeRes7 == res7);
     assert(h == decodeQuotedPrintable(res7));
