@@ -1,5 +1,5 @@
 module common.utils;
-
+  
 import arsd.characterencodings;
 import std.algorithm;
 import std.ascii;
@@ -437,7 +437,6 @@ unittest
 unittest
 {
     writeln("Testing Utils.quoteHeaderAddressList");
-
     string addrList = "Juanjo Álvarez <juanjux@gmail.com>, "~
                       "Pepito Perez <pepe@perez.com>, "~
                       "Manolo Ñoño manolo@gmail.com";

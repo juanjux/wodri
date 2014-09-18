@@ -153,7 +153,6 @@ final class Email
         finishInitialization();
     }
 
-
     /** Load from an IncomingEmail object (making mutable copies of the data members).
      * dbId will be an empty string until .store() is called */
     this(in IncomingEmail inEmail)
@@ -281,15 +280,11 @@ final class Email
 
         auto partAppender = appender!string;
 
-        if (this.textParts.length == 2 &&
-                this.textParts[0].ctype != this.textParts[1].ctype        &&
-                among(this.textParts[0].ctype, "text/plain", "text/html") &&
-                among(this.textParts[1].ctype, "text/plain", "text/html"))
+        TextPart[] ret = getRelatedPartsIfRelated();
+        if (ret !is null)
         {
             // one html and one plain part, almost certainly related, store the plain one
-            partAppender.put(this.textParts[0].ctype == "text/plain"?
-                    this.textParts[0].content:
-                    this.textParts[1].content);
+            partAppender.put(this.textParts[0].content);
         }
         else
         {
@@ -427,9 +422,13 @@ final class Email
     }
 
 
-    void send()
+    void send(in string lineEnd = "\r\n")
+    in
     {
-        // ensure message-id
+        assert(this.from.addresses.length);
+    }
+    body
+    {
         if (!this.messageId.length)
         {
             logWarn(format("Email.send: message with id %s didn't have any "~
@@ -437,47 +436,114 @@ final class Email
             this.messageId = generateMessageId(domainFromAddress(this.from.rawValue));
         }
 
+        TextPart[] relatedParts = void; // initialized in getContentType
         Appender!string headerApp;
+        headerApp.put("Content-Type: " ~ getContentType(relatedParts) ~ lineEnd);
+        headerApp.put("Message-ID: " ~ this.messageId ~ lineEnd);
+        headerApp.put("From: " ~ quoteHeaderAddressList(this.from.rawValue) ~ lineEnd);
+        headerApp.put("MIME-Version: 1.0" ~ lineEnd);
+        headerApp.put("Return-Path: " ~ this.from.addresses[0] ~ lineEnd);
+
+        // Rest of headers, iterate and quote the content if needed
         foreach(headerName, value; this.headers)
         {
-            // XXX codificar:
-            // - From, To, Cc, Bcc, Delivered-To, X-Forwarded-To, X-Forwarded-For: se toma el
-            //   rawValue, se parten los nombres y direcciones (varios usuarios iran separados
-            //   por comas), se codifican los nombres pero no las direcciones.
-            // - Resto: llamar a quoteHeader sobre todo el rawValue
             if (!value.rawValue.length)
                 continue;
+
             string encodedValue;
             auto lowName = toLower(headerName);
+
             if (among(lowName, "from", "to", "cc", "bcc", "resent-from",
                       "resent-to", "resent-cc", "resent-bcc"))
+            {
                 encodedValue = quoteHeaderAddressList(value.rawValue);
+            }
+            else if (among(lowName, "content-type", "content-transfer-encoding", "received",
+                           "received-spf", "message-id", "reply-to", "mime-version",
+                           "resent-reply-to", "resent-message-id", "dkim-signature",
+                           "authentication-results", "original-message-id", "encoding"))
+            {
+                // never encode these, even if they've non ascii chars
+                encodedValue = value.rawValue;
+            }
             else
+            {
                 encodedValue = quoteHeader(value.rawValue);
-                
-            headerApp.put(format("%s: %s\r\n",
+            }
+
+            headerApp.put(format("%s: %s" ~ lineEnd,
                                  capitalizeHeader(headerName),
-                                 encodedValue));
-            writeln("XXX header: ", headerName);
-            writeln("XXX rawvalue: ", value.rawValue);
-            writeln("XXX encoded : ", encodedValue);
+                                 strip(encodedValue)));
         }
+        writeln("\nFull header:"); writeln(headerApp.data);
 
-        writeln("XXX header:"); writeln(headerApp.data);
+        // Body: llamar encodeQuotedPrintable sobre el contenido de cada
+        // parte textual. Usar relatedParts si !is null. Generar los boundaries.
         Appender!string bodyApp;
-        /* Convertir:
-           this.messageId (crear el raw)
-           this.from (ya tiene raw)
 
-           Otros (generar):
-           in-reply-to
-           references?
-           Return-Path?
-           MIME-Version: 1.0
-        */   
-
-        // Para el body: llamar a encodeQuotedPrintable sobre todo el contenido
+        // Attachments: read from disk, encode in base64, put into their
+        // parts with their part id and generate an attachment id
     }
+
+
+    /**
+       If parts are related (one text/html and one text/plain) return
+       an array with [plain, html], else return null
+    */
+    private TextPart[] getRelatedPartsIfRelated() const
+    {
+        // if two parts, one text/html and the other text/plain...
+        if (this.textParts.length == 2 &&
+            this.textParts[0].ctype != this.textParts[1].ctype &&
+            among(this.textParts[0].ctype, "text/plain", "text/html") &&
+            among(this.textParts[1].ctype, "text/plain", "text/html"))
+        {
+            // yep, probably related
+            // FIXME: use std.algorithm.levenshteinDistance to determine if
+            // the parts are really related
+            TextPart[] ret;
+            // text plain first, html second
+            if (this.textParts[0].ctype == "text/plain")
+            {
+                ret ~= this.textParts[0];
+                ret ~= this.textParts[1];
+            }
+            else
+            {
+                ret ~= this.textParts[1];
+                ret ~= this.textParts[0];
+            }
+            return ret;
+        }
+        return null;
+    }
+
+
+    /** Note: relatedParts could be null if the parts are not related */
+    private string getContentType(out TextPart[] relatedParts)
+    {
+        string ctype = void;
+        relatedParts = getRelatedPartsIfRelated();
+        if (this.attachments.length)
+        {
+            ctype = "multipart/mixed";
+            // but the text parts still could be multipart/alternative if
+            // relatedParts !is null
+        }
+        else if (textParts.length == 1)
+        {
+            ctype = textParts[0].ctype;
+        }
+        else if (relatedParts !is null)
+        {
+            ctype = "multipart/alternative";
+        }
+        else
+            ctype = "text/plain"; // fallback
+
+        return ctype;
+    }
+
     // ==========================================================
     // Proxies for the dbDriver functions used outside this class
     // ==========================================================

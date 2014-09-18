@@ -163,19 +163,22 @@ version(db_usetestdb)
 
         // XXX mockear el servidor de SMTP
         writeln("Testing Email.send");
-        
+
         // create draft
         auto user = User.getFromAddress("anotherUser@testdatabase.com");
         auto apiEmail    = new ApiEmail;
         // no apiEmail.dbId, so new email
-        apiEmail.from    = "anotherUser@testdatabase.com";
-        apiEmail.to      = "juanjux@gmail.com";
+        apiEmail.from    = "Ñeño Álvarez <anotherUser@testdatabase.com>";
+        apiEmail.to      = "Juanjo Álvarez <juanjux@gmail.com>";
         apiEmail.subject = "draft subject 1 álvarez";
         apiEmail.isoDate = "2014-08-20T15:47:06Z";
         apiEmail.date    = "Wed, 20 Aug 2014 15:47:06 +02:00";
         apiEmail.deleted = false;
         apiEmail.draft   = true;
+        // XXX check the content-type with attachments, with one text part, with two,
+        // with zero, with 3+
         apiEmail.bodyHtml="<strong>I can do html like the cool boys!</strong>";
+        apiEmail.bodyPlain = "I cant do html, only body plain, snif";
         // get some email to reply to
         auto convs     = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
         auto conv      = Conversation.get(convs[0].dbId);
@@ -185,7 +188,7 @@ version(db_usetestdb)
         dbEmail.store();
         assert(dbEmail.dbId.length);
 
-        // recover again 
+        // recover again
         auto dbEmail2 = Email.get(dbEmail.dbId);
         dbEmail2.send();
 
