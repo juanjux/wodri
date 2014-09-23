@@ -19,7 +19,6 @@ version(db_usetestdb)
 
     unittest  // this(ApiEmail)
     {
-
         writeln("Testing Email.this(ApiEmail)");
         auto user = User.getFromAddress("anotherUser@testdatabase.com");
         auto apiEmail    = new ApiEmail;
@@ -53,17 +52,14 @@ version(db_usetestdb)
         assert(dbEmail.textParts.length == 1);
 
         // Test3: New draft, reply
-        auto convs              = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
-        auto conv               = Conversation.get(convs[0].dbId);
-        auto emailDbId          = conv.links[1].emailDbId;
-        auto emailRepliedObject = Email.get(emailDbId);
+        auto emailRepliedObject = getTestDbEmail("testuser", 0, 1);
         auto emailReferences    = emailRepliedObject.getHeader("references").addresses;
 
         apiEmail.dbId      = "";
         apiEmail.messageId = "";
         apiEmail.bodyPlain = "I cant do html";
 
-        dbEmail = new Email(apiEmail, emailDbId);
+        dbEmail = new Email(apiEmail, emailRepliedObject.dbId);
         dbEmail.userId = user.id;
         dbEmail.store();
         assert(dbEmail.dbId.length);
@@ -79,7 +75,7 @@ version(db_usetestdb)
         apiEmail.dbId = dbEmail.dbId;
         apiEmail.messageId = dbEmail.messageId;
         apiEmail.bodyHtml = "";
-        dbEmail = new Email(apiEmail, emailDbId);
+        dbEmail = new Email(apiEmail, emailRepliedObject.dbId);
         dbEmail.userId = user.id;
         dbEmail.store();
         assert(dbEmail.dbId == apiEmail.dbId);
@@ -145,6 +141,7 @@ version(db_usetestdb)
     }
 
     import webbackend.apiemail: ApiEmail;
+
     ApiEmail getTestApiEmail()
     {
         auto apiEmail      = new ApiEmail();
@@ -157,50 +154,98 @@ version(db_usetestdb)
         return apiEmail;
     }
 
-    unittest // send
+
+    unittest // toRFCEmail
     {
+        void assertEmailsEqual(Email dbEmail1, Email dbEmail2)
+        {
+            assert(dbEmail1.messageId           == dbEmail2.messageId);
+            assert(dbEmail1.from.rawValue       == dbEmail2.from.rawValue);
+            assert(dbEmail1.from.addresses      == dbEmail2.from.addresses);
+            assert(dbEmail1.receivers.rawValue  == dbEmail2.receivers.rawValue);
+            assert(dbEmail1.receivers.addresses == dbEmail2.receivers.addresses);
+            assert(dbEmail1.bodyPeek            == dbEmail2.bodyPeek);
+            assert(dbEmail1.isoDate             == dbEmail2.isoDate);
+
+            foreach(name, value; dbEmail1.headers)
+            {
+                if (name == "Content-Type")
+                    continue; // boundary is going to be different
+                assert(value == dbEmail2.getHeader(name));
+            }
+
+            foreach(idx, ref attach1; dbEmail1.attachments.list)
+            {
+                auto attach2 = dbEmail2.attachments.list()[idx];
+                assert(attach1.ctype == attach2.ctype);
+                assert(attach1.filename == attach2.filename);
+                assert(attach1.contentId == attach2.contentId);
+                assert(attach1.size == attach2.size);
+                assert(md5Of(readText(attach1.realPath)) ==
+                       md5Of(readText(attach2.realPath)));
+            }
+
+            foreach(idx, ref textp; dbEmail1.textParts)
+            {
+                writeln(textp);
+                writeln(dbEmail2.textParts[idx]);
+                assert(textp == dbEmail2.textParts[idx]);
+            }
+
+            assert(dbEmail1.size == dbEmail2.size);
+        }
+
         recreateTestDb();
+        writeln("Testing Email.toRFCEmail");
+        Email dbEmail = null;
+        Email dbEmail2 = null;
+        IncomingEmail inEmail = null;
+        string tmpFilePath = buildPath(getConfig().absRawEmailStore, "testfile.email");
 
-        // XXX mockear el servidor de SMTP
-        writeln("Testing Email.send");
+        dbEmail = getTestDbEmail("testuser", 0, 0);
+        auto f = File(tmpFilePath, "w");
+        writeln("XXX print del email: "); writeln(dbEmail.toRFCEmail);
+        f.write(dbEmail.toRFCEmail);
+        f.flush(); f.close();
+        inEmail = new IncomingEmail();
+        inEmail.loadFromFile(tmpFilePath, getConfig.absAttachmentStore);
+        dbEmail2 = new Email(inEmail);
+        assertEmailsEqual(dbEmail, dbEmail2);
 
-        // create draft
-        auto user = User.getFromAddress("anotherUser@testdatabase.com");
-        auto apiEmail    = new ApiEmail;
-        // no apiEmail.dbId, so new email
-        apiEmail.from    = "Ñeño Álvarez <anotherUser@testdatabase.com>";
-        apiEmail.to      = "Juanjo Álvarez <juanjux@gmail.com>";
-        apiEmail.subject = "draft subject 1 álvarez";
-        apiEmail.isoDate = "2014-08-20T15:47:06Z";
-        apiEmail.date    = "Wed, 20 Aug 2014 15:47:06 +02:00";
-        apiEmail.deleted = false;
-        apiEmail.draft   = true;
-        // XXX check the content-type with attachments, with one text part, with two,
-        // with zero, with 3+
-        apiEmail.bodyHtml="<strong>I can do html like the cool boys!</strong>";
-        apiEmail.bodyPlain = "I cant do html, only body plain, snif";
-        // get some email to reply to
-        auto convs     = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
-        auto conv      = Conversation.get(convs[0].dbId);
-        auto repliedId = conv.links[1].emailDbId;
-        auto dbEmail   = new Email(apiEmail, repliedId); // XXX scoped?
-        dbEmail.userId = user.id;
-        dbEmail.store();
-        assert(dbEmail.dbId.length);
+        // dbEmail = getTestDbEmail("testuser", 0, 1);
+        // writeln(dbEmail.toRFCEmail);
 
-        // recover again
-        auto dbEmail2 = Email.get(dbEmail.dbId);
-        dbEmail2.send();
+        // dbEmail = getTestDbEmail("anotherUser", 0, 0);
+        // writeln(dbEmail.toRFCEmail);
 
-        // XXX terminar
+        // dbEmail = getTestDbEmail("anotherUser", 1, 2);
+        // writeln(dbEmail.toRFCEmail);
+
+        // dbEmail = getTestDbEmail("anotherUser", 2, 0);
+        // writeln(dbEmail.toRFCEmail);
     }
-
 
     version(MongoDriver)
     {
         import db.mongo.mongo;
         import db.mongo.driveremailmongo;
         import vibe.data.bson;
+
+
+        /**
+           Get the email at pos emailPos inside the conversation returned
+           as convPos on the inbox. Used for test
+        */
+        Email getTestDbEmail(string user, uint convPos, uint emailPos)
+        {
+            auto convs       = Conversation.getByTag("inbox", USER_TO_ID[user]);
+            auto conv        = Conversation.get(convs[convPos].dbId);
+            auto emailDbId   = conv.links[emailPos].emailDbId;
+            auto emailObject = Email.get(emailDbId);
+            if (emailObject is null)
+                throw new Exception("NO EMAIL IN THAT POSITION!");
+            return emailObject;
+        }
 
         unittest // headerRaw
         {

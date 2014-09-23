@@ -1,5 +1,5 @@
 module common.utils;
-  
+
 import arsd.characterencodings;
 import std.algorithm;
 import std.ascii;
@@ -191,7 +191,7 @@ Decide whether a particular character needs to be quoted.
     headers. When 'detecting' '=' chars wont make this return true, since they're valid 7bit
     ASCII (but must be quoted inside a quoted-printable string)
 **/
-private bool needsQuoting(dchar c, QuoteMode mode)
+private bool dcharNeedsQuoting(dchar c, QuoteMode mode)
 pure nothrow
 {
     if (among(c, '\n', '\r', '\t'))
@@ -212,7 +212,7 @@ pure
 {
     foreach(codepoint; std.range.stride(s, 1))
     {
-        if (needsQuoting(codepoint, mode))
+        if (dcharNeedsQuoting(codepoint, mode))
             return true;
     }
     return false;
@@ -250,7 +250,7 @@ pure
     res.put("=?UTF-8?Q?");
     foreach(c; std.range.stride(word, 1))
     {
-        if (needsQuoting(c, QuoteMode.Header))
+        if (dcharNeedsQuoting(c, QuoteMode.Header))
             res.put(quote(c, Yes.Header));
         else
             res.put(c);
@@ -273,68 +273,73 @@ string quoteHeaderAddressList(string addresses)
     {
         resApp.put(c.hit);
     }
-    if (c.post.length)
+    if (strip(c.post).length)
     {
         resApp.put(quoteHeaderAddressList(c.post));
     }
     return resApp.data;
 }
 
+
 string encodeQuotedPrintable(string input, QuoteMode mode, string lineEnd = "\n")
-pure
+// pure XXX descomentar
 {
     Appender!string retApp;
     string prevLine;
     auto headerVariant = (mode == QuoteMode.Header ? Yes.Header : No.Header);
 
-    void saveLine(string line, string lineEnd = "\n")
+    void saveLine(string line, string lineEndInner = lineEnd)
     {
+        writeln("XXX saveLine: ", line);
         // RFC 1521 requires that the line ending in a space or tab must have that trailing
         // character encoded.
         if (line.length > 1 && among(line[$-1], ' ', '\t'))
-            retApp.put(line[0..$-1] ~ quote(line[$-1], headerVariant) ~ lineEnd);
+            retApp.put(line[0..$-1] ~ quote(line[$-1], headerVariant) ~ lineEndInner);
         else
-            retApp.put(line ~ lineEnd);
+            retApp.put(line ~ lineEndInner);
     }
 
-    // we split by lines thus need to know if we've to add a final newline to
-    // the last line
-    bool addFinalNewline = (input.length && input[$-1] == '\n');
-
-    foreach(line; split(input, lineEnd))
+    auto tokens = split(input, lineEnd);
+    writeln("XXX tokens: "); writeln(tokens);
+    string finalLineEnd = "";
+    if (tokens.length && tokens[$-1] == "")
     {
+        // the final lineEnd will be added automatically, remove this one
+        tokens = tokens[0..$-1];
+        finalLineEnd = lineEnd;
+    }
+    writeln("XXX finalLineEnd: ", finalLineEnd.replace("\r", "R").replace("\n", "N"));
+
+    foreach(line; tokens)
+    {
+        if (prevLine.length)
+            saveLine(prevLine);
+
         if (!line.length)
-            break;
+        {
+            prevLine = "";
+            retApp.put(lineEnd);
+            continue;
+        }
 
         Appender!string lineBuffer;
-        
         foreach(codepoint; std.range.stride(line, 1))
         {
             if (codepoint == ' ' && mode == QuoteMode.Header)
-            {
                 lineBuffer.put("_");
-            }
-            else if (needsQuoting(codepoint, mode))
-            {
+            else if (dcharNeedsQuoting(codepoint, mode))
                 lineBuffer.put(quote(codepoint, headerVariant));
-            }
             else
-            {
                 lineBuffer.put(codepoint);
-            }
         }
-
-        if (prevLine.length)
-            saveLine(prevLine);
 
         auto thisLine = lineBuffer.data;
         while(thisLine.length > MAXLINESIZE)
         {
             auto limit = MAXLINESIZE-1;
             // dont split by an encoded token
-            while ((0 < limit) &&
-                  ((1 < limit) && (thisLine[limit-1] == '=')) ||
-                  ((2 < limit) && (thisLine[limit-2] == '=')))
+            while (limit > 1 && thisLine[limit-1] == '=' ||
+                   limit > 2 && thisLine[limit-2] == '=')
             {
                 --limit;
             }
@@ -350,7 +355,6 @@ pure
 
     if (prevLine.length)
     {
-        string finalLineEnd = addFinalNewline? lineEnd : ""; 
         saveLine(prevLine, finalLineEnd);
     }
 
@@ -368,47 +372,47 @@ version(unittest)import std.stdio;
 
 unittest
 {
-    writeln("Testing Utils.needsQuoting(dchar)");
+    writeln("Testing Utils.dcharNeedsQuoting(dchar)");
 
     dchar c = '\n';
-    assert(!needsQuoting(c, QuoteMode.Detect));
-    assert(!needsQuoting(c, QuoteMode.Header));
-    assert(needsQuoting(c, QuoteMode.Body));
-    
+    assert(!dcharNeedsQuoting(c, QuoteMode.Detect));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Header));
+    assert(dcharNeedsQuoting(c, QuoteMode.Body));
+
     c = '\t';
-    assert(!needsQuoting(c, QuoteMode.Detect));
-    assert(!needsQuoting(c, QuoteMode.Header));
-    assert( needsQuoting(c, QuoteMode.Body));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Detect));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Header));
+    assert( dcharNeedsQuoting(c, QuoteMode.Body));
 
     c = '\r';
-    assert(!needsQuoting(c, QuoteMode.Detect));
-    assert(!needsQuoting(c, QuoteMode.Header));
-    assert( needsQuoting(c, QuoteMode.Body));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Detect));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Header));
+    assert( dcharNeedsQuoting(c, QuoteMode.Body));
 
     c = 'a';
-    assert(!needsQuoting(c, QuoteMode.Detect));
-    assert(!needsQuoting(c, QuoteMode.Header));
-    assert(!needsQuoting(c, QuoteMode.Body));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Detect));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Header));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Body));
 
     c = 'ñ';
-    assert(needsQuoting(c, QuoteMode.Detect));
-    assert(needsQuoting(c, QuoteMode.Header));
-    assert(needsQuoting(c, QuoteMode.Body));
+    assert(dcharNeedsQuoting(c, QuoteMode.Detect));
+    assert(dcharNeedsQuoting(c, QuoteMode.Header));
+    assert(dcharNeedsQuoting(c, QuoteMode.Body));
 
     c = ' ';
-    assert(!needsQuoting(c, QuoteMode.Detect));
-    assert( needsQuoting(c, QuoteMode.Header));
-    assert(!needsQuoting(c, QuoteMode.Body));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Detect));
+    assert( dcharNeedsQuoting(c, QuoteMode.Header));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Body));
 
     c = '_';
-    assert(!needsQuoting(c, QuoteMode.Detect));
-    assert( needsQuoting(c, QuoteMode.Header));
-    assert(!needsQuoting(c, QuoteMode.Body));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Detect));
+    assert( dcharNeedsQuoting(c, QuoteMode.Header));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Body));
 
     c = '=';
-    assert(!needsQuoting(c, QuoteMode.Detect));
-    assert( needsQuoting(c, QuoteMode.Header));
-    assert( needsQuoting(c, QuoteMode.Body));
+    assert(!dcharNeedsQuoting(c, QuoteMode.Detect));
+    assert( dcharNeedsQuoting(c, QuoteMode.Header));
+    assert( dcharNeedsQuoting(c, QuoteMode.Body));
 }
 
 unittest
@@ -448,9 +452,20 @@ unittest
 {
     writeln("Testing Utils.encodeQuotedPrintable");
 
-    string a = "abc\ndeññálolo\n";
+    string a = "\n";
     auto res1 = encodeQuotedPrintable(a, QuoteMode.Header);
-    assert(res1 == "abc\nde=C3=B1=C3=B1=C3=A1lolo\n");
+    assert(res1 == "\n");
+    assert(a == decodeQuotedPrintable(res1, true));
+
+    a = "\n\n";
+    res1 = encodeQuotedPrintable(a, QuoteMode.Header);
+    assert(res1 == "\n\n");
+    assert(a == decodeQuotedPrintable(res1, true));
+
+    a = "\n\n\nabc\ndeññálolo\n";
+    res1 = encodeQuotedPrintable(a, QuoteMode.Header);
+    writeln("XXX res1: "); writeln(res1.replace("\n","N"));
+    assert(res1 == "\n\n\nabc\nde=C3=B1=C3=B1=C3=A1lolo\n");
     assert(a == decodeQuotedPrintable(res1, true));
 
     string b = "abc\nsometab\tandsomemore\t\n";
@@ -480,7 +495,7 @@ unittest
     assert(f == decodeQuotedPrintable(res4, true));
     res4 = encodeQuotedPrintable(f, QuoteMode.Body);
     assert(f == decodeQuotedPrintable(res4, false));
-    
+
     string quijotipsum = "En un lugar de la Mancha, de cuyo nombre no quiero "~
         "acordarme, no ha mucho tiempo que vivía un hidalgo de los de lanza en "~
         "astillero, adarga antigua, rocín flaco y galgo corredor. Una olla de "~
@@ -498,7 +513,7 @@ unittest
         " Quijada, o Quesada, que en esto hay alguna diferencia en los autores"~
         " que deste caso escriben; aunque, por conjeturas verosímiles, se deja"~
         " entender que se llamaba Quejana. Pero esto importa poco a nuestro"~
-        " cuento; basta que en la narración dél no se salga un punto de la verdad.\n"; 
+        " cuento; basta que en la narración dél no se salga un punto de la verdad.\n";
     auto res5 = encodeQuotedPrintable(quijotipsum, QuoteMode.Detect);
     assert(quijotipsum == decodeQuotedPrintable(res5, false));
     res5 = encodeQuotedPrintable(quijotipsum, QuoteMode.Header);

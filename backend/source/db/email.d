@@ -1,26 +1,34 @@
 module db.email;
 
-import arsd.htmltotext;
 import common.utils;
 import db.attachcontainer;
 import db.config;
 import retriever.incomingemail;
 import std.algorithm: among;
+import std.base64;
+import std.file;
 import std.path: buildPath;
 import std.regex;
-import std.stdio: writeln;
+import std.stdio: writeln, File;
 import std.string;
 import std.typecons;
 import std.utf: count, toUTFindex;
 import vibe.core.log;
 import vibe.utils.dictionarylist;
 import webbackend.apiemail;
+import arsd.htmltotext;
+
 version(MongoDriver)
 {
     import db.mongo.mongo;
     import vibe.db.mongo.mongo;
 }
 
+enum TransferEncoding
+{
+    QuotedPrintable,
+    Base64
+}
 
 struct TextPart
 {
@@ -29,8 +37,8 @@ struct TextPart
 
     this(string ctype, string content)
     {
-        this.ctype=ctype;
-        this.content=content;
+        this.ctype  = ctype;
+        this.content = content;
     }
 }
 
@@ -280,16 +288,16 @@ final class Email
 
         auto partAppender = appender!string;
 
-        TextPart[] ret = getRelatedPartsIfRelated();
+        TextPart[] ret = getAlternativePartsIfAlternative();
         if (ret !is null)
         {
-            // one html and one plain part, almost certainly related, store the plain one
+            // one html and one plain part, almost certainly alternative, store the plain one
             partAppender.put(this.textParts[0].content);
         }
         else
         {
             // append and store all parts
-            foreach(part; this.textParts)
+            foreach(ref part; this.textParts)
             {
                 if (part.ctype == "text/html")
                     partAppender.put(htmlToText(part.content));
@@ -422,27 +430,144 @@ final class Email
     }
 
 
-    void send(in string lineEnd = "\r\n")
+    // XXX tests:
+    // 1. Alternative no attach
+    // 2. Alternative + non related attach
+    // 3. Attach no parts
+    // 4. 2 attachs, no parts
+    // 5. Single text plain part
+    // 6. Single text html part
+    // 7. No attachs, no text parts (empty)
+    // 8. Related, alternative inside with related attachs
+    // Parse the result with IncomingEmail to check
+    string toRFCEmail(in string lineEnd = "\r\n")
     in
     {
         assert(this.from.addresses.length);
+        assert(lineEnd.length);
     }
     body
     {
-        if (!this.messageId.length)
+        Appender!string emailAppender;
+        bool isMixedOrRelated = void;
+        string mainBoundary;
+        TextPart[] alternativeParts = null;
+
+        // Header
+        emailAppender.put(generateRFCHeader(lineEnd, isMixedOrRelated, mainBoundary,
+                                            alternativeParts));
+
+        // Body
+        if (isMixedOrRelated)
+            emailAppender.put(lineEnd ~ "--" ~ mainBoundary ~ lineEnd);
+
+        string lineEnd2 = lineEnd ~ lineEnd;
+        if (alternativeParts != null)
         {
-            logWarn(format("Email.send: message with id %s didn't have any "~
-                           "message-id set, generating", this.dbId));
-            this.messageId = generateMessageId(domainFromAddress(this.from.rawValue));
+            string alternativeBoundary = void;
+
+            if (isMixedOrRelated)
+            {
+                // multipart/alternative header
+                alternativeBoundary = randomString(25);
+                emailAppender.put(
+                    format("Content-Type: multipart/alternative; boundary=%s%s",
+                           alternativeBoundary, lineEnd)
+                );
+            }
+            else // main content/type == multipart/alternative
+                alternativeBoundary = mainBoundary;
+
+            // text part: boundary + header + content
+            auto beforeSpace = isMixedOrRelated ? lineEnd2 : lineEnd;
+            emailAppender.put(beforeSpace ~ textPartHeader(alternativeParts[0].ctype,
+                                                           alternativeBoundary, lineEnd));
+            emailAppender.put(encodeQuotedPrintable(alternativeParts[0].content,
+                                                              QuoteMode.Body, lineEnd));
+
+            // html part: boundary + header + content
+            emailAppender.put(lineEnd2 ~ textPartHeader(alternativeParts[1].ctype,
+                                                        alternativeBoundary, lineEnd));
+            emailAppender.put(encodeQuotedPrintable(alternativeParts[1].content,
+                                                              QuoteMode.Body, lineEnd));
+
+            // multipart/alternative ending
+            emailAppender.put(lineEnd2 ~ "--" ~ alternativeBoundary ~ "--" ~ lineEnd);
+        }
+        else
+        {
+            foreach(ref part; this.textParts)
+            {
+                if (isMixedOrRelated) // multipart/mixed boundary and text part header
+                    emailAppender.put(textPartHeader(part.ctype, mainBoundary,
+                                                     lineEnd, lineEnd2));
+                else
+                    emailAppender.put(lineEnd);
+
+                emailAppender.put(lineEnd ~ encodeQuotedPrintable(part.content, QuoteMode.Body,
+                                                        lineEnd));
+            }
         }
 
-        TextPart[] relatedParts = void; // initialized in getContentType
+        // Attachments
+        foreach(ref attach; attachments.list)
+        {
+            assert(isMixedOrRelated);
+            if (!attach.realPath.exists)
+            {
+                logWarn("Attachment to encode into outgoing email doesnt exists!: " ~
+                        attach.realPath);
+                continue;
+            }
+
+            emailAppender.put(lineEnd ~ attachmentPartHeader(attach, mainBoundary, lineEnd));
+            auto f = File(attach.realPath, "r");
+            foreach(encoded; Base64.encoder(f.byChunk(57)))
+            {
+                emailAppender.put(encoded ~ lineEnd);
+            }
+        }
+
+        if (isMixedOrRelated) // multipart/mixed ending
+            emailAppender.put(lineEnd2 ~ "--" ~ mainBoundary ~ "--" ~ lineEnd);
+        emailAppender.put(lineEnd);
+
+        return emailAppender.data;
+    }
+
+
+    private string generateRFCHeader(in string lineEnd,
+                                     out bool isMixedOrRelated,
+                                     out string mainBoundary,
+                                     out TextPart[] alternativeParts)
+    {
+        isMixedOrRelated = false;
+
+        if (!this.messageId.length)
+            this.messageId = generateMessageId(domainFromAddress(this.from.rawValue));
+
         Appender!string headerApp;
-        headerApp.put("Content-Type: " ~ getContentType(relatedParts) ~ lineEnd);
+        string ctype = getContentType(alternativeParts);
+        string ctypeHeaderStr = "Content-Type: " ~ ctype;
+
+        if (among(ctype, "multipart/mixed", "multipart/related"))
+        {
+            isMixedOrRelated = true;
+            mainBoundary = randomString(25);
+            ctypeHeaderStr ~= "; boundary=" ~ mainBoundary;
+        }
+        else if (ctype == "multipart/alternative")
+        {
+            mainBoundary = randomString(25);
+            ctypeHeaderStr ~= "; boundary=" ~ mainBoundary;
+        }
+
+        // get content type and boundary if mixed
         headerApp.put("Message-ID: " ~ this.messageId ~ lineEnd);
         headerApp.put("From: " ~ quoteHeaderAddressList(this.from.rawValue) ~ lineEnd);
         headerApp.put("MIME-Version: 1.0" ~ lineEnd);
         headerApp.put("Return-Path: " ~ this.from.addresses[0] ~ lineEnd);
+        headerApp.put(ctypeHeaderStr ~ lineEnd);
 
         // Rest of headers, iterate and quote the content if needed
         foreach(headerName, value; this.headers)
@@ -453,44 +578,49 @@ final class Email
             string encodedValue;
             auto lowName = toLower(headerName);
 
-            if (among(lowName, "from", "to", "cc", "bcc", "resent-from",
-                      "resent-to", "resent-cc", "resent-bcc"))
+            // skip these
+            if (among(lowName, "content-type"))
+            {
+                continue;
+            }
+            // encode these as address lists (encoded name / non encoded adress)
+            else if (among(lowName, "from", "to", "cc", "bcc", "resent-from",
+                           "resent-to", "resent-cc", "resent-bcc"))
             {
                 encodedValue = quoteHeaderAddressList(value.rawValue);
             }
+            // DONT encode these
             else if (among(lowName, "content-type", "content-transfer-encoding", "received",
                            "received-spf", "message-id", "reply-to", "mime-version",
                            "resent-reply-to", "resent-message-id", "dkim-signature",
                            "authentication-results", "original-message-id", "encoding"))
             {
-                // never encode these, even if they've non ascii chars
                 encodedValue = value.rawValue;
             }
+            // encode all the content of these
             else
             {
                 encodedValue = quoteHeader(value.rawValue);
             }
 
-            headerApp.put(format("%s: %s" ~ lineEnd,
-                                 capitalizeHeader(headerName),
-                                 strip(encodedValue)));
+            headerApp.put(format("%s: %s%s",
+                                     capitalizeHeader(headerName),
+                                     strip(encodedValue),
+                                     lineEnd));
         }
-        writeln("\nFull header:"); writeln(headerApp.data);
 
-        // Body: llamar encodeQuotedPrintable sobre el contenido de cada
-        // parte textual. Usar relatedParts si !is null. Generar los boundaries.
-        Appender!string bodyApp;
-
-        // Attachments: read from disk, encode in base64, put into their
-        // parts with their part id and generate an attachment id
+        return headerApp.data;
     }
 
 
     /**
-       If parts are related (one text/html and one text/plain) return
+       If parts are alternative (one text/html and one text/plain) return
        an array with [plain, html], else return null
+
+       FIXME: use levenshteinDistance to determine if the plain and html parts
+       are really alternative
     */
-    private TextPart[] getRelatedPartsIfRelated() const
+    private TextPart[] getAlternativePartsIfAlternative() const
     {
         // if two parts, one text/html and the other text/plain...
         if (this.textParts.length == 2 &&
@@ -498,9 +628,7 @@ final class Email
             among(this.textParts[0].ctype, "text/plain", "text/html") &&
             among(this.textParts[1].ctype, "text/plain", "text/html"))
         {
-            // yep, probably related
-            // FIXME: use std.algorithm.levenshteinDistance to determine if
-            // the parts are really related
+            // one html and one plain, probably alternative
             TextPart[] ret;
             // text plain first, html second
             if (this.textParts[0].ctype == "text/plain")
@@ -519,30 +647,79 @@ final class Email
     }
 
 
-    /** Note: relatedParts could be null if the parts are not related */
-    private string getContentType(out TextPart[] relatedParts)
+    /** Note: alternativeParts could be null if the parts are not alternative */
+    private string getContentType(out TextPart[] alternativeParts)
     {
         string ctype = void;
-        relatedParts = getRelatedPartsIfRelated();
+        alternativeParts = getAlternativePartsIfAlternative();
         if (this.attachments.length)
-        {
             ctype = "multipart/mixed";
-            // but the text parts still could be multipart/alternative if
-            // relatedParts !is null
-        }
         else if (textParts.length == 1)
-        {
             ctype = textParts[0].ctype;
-        }
-        else if (relatedParts !is null)
-        {
+        else if (alternativeParts !is null)
             ctype = "multipart/alternative";
-        }
+        else if (textParts.length > 1)
+            ctype = "multipart/mixed";
         else
             ctype = "text/plain"; // fallback
 
         return ctype;
     }
+
+    private string textPartHeader(
+            in string ctype,
+            in string boundary,
+            in string lineEnd,
+            in string charset = "UTF-8",
+            in TransferEncoding tencoding = TransferEncoding.QuotedPrintable
+    )
+    {
+
+        Appender!string partHeader;
+        auto tencodingName = tencoding == TransferEncoding.QuotedPrintable ?
+                                                        "quoted-printable" :
+                                                        "base64";
+
+        partHeader.put("--" ~ boundary ~ lineEnd);
+        partHeader.put("Content-Type: " ~ ctype ~ "; charset=" ~ charset ~ lineEnd);
+        partHeader.put("Content-Transfer-Encoding: " ~ tencodingName ~ lineEnd);
+        return partHeader.data;
+    }
+
+
+    private string attachmentPartHeader(
+        const ref DbAttachment attach,
+        in string boundary,
+        in string lineEnd
+    )
+    {
+        Appender!string attachHeader;
+
+        string fname_enc = void;
+        if (needsQuoting(attach.filename, QuoteMode.Detect))
+            fname_enc = encodeQuotedPrintable(attach.filename, QuoteMode.Header, lineEnd);
+        else
+            fname_enc = attach.filename;
+
+        attachHeader.put("--" ~ boundary ~ lineEnd);
+        attachHeader.put("Content-Type: " ~ attach.ctype);
+        if (attach.filename.length)
+            attachHeader.put(";" ~ lineEnd ~ "\tname=\"" ~ fname_enc ~ "\"");
+        attachHeader.put(lineEnd);
+
+        attachHeader.put("Content-Disposition: attachment");
+        if (attach.filename.length)
+            attachHeader.put(";" ~ lineEnd ~ "\tfilename=\"" ~ fname_enc ~ "\"");
+        attachHeader.put(lineEnd);
+
+        attachHeader.put("Content-Transfer-Encoding: base64" ~ lineEnd);
+        if (attach.contentId.length)
+            attachHeader.put("Content-ID: " ~ attach.contentId ~ lineEnd);
+        attachHeader.put(lineEnd);
+
+        return attachHeader.data;
+    }
+
 
     // ==========================================================
     // Proxies for the dbDriver functions used outside this class
@@ -552,37 +729,28 @@ final class Email
     {
         return dbDriver.store(this, forceNew, storeAttachs);
     }
-
     static Email get(in string dbId) { return dbDriver.get(dbId); }
-
     static EmailSummary getSummary(in string dbId) { return dbDriver.getSummary(dbId); }
-
     static string getOriginal(in string id) { return dbDriver.getOriginal(id); }
-
     static string messageIdToDbId(in string id) { return dbDriver.messageIdToDbId(id); }
-
     static bool isOwnedBy(in string emailId, in string userName)
     {
         return dbDriver.isOwnedBy(emailId, userName);
     }
-
     static string addAttachment(in string id, in ApiAttachment apiAttach, in string content)
     {
         return dbDriver.addAttachment(id, apiAttach, content);
     }
-
     static void deleteAttachment(in string id, in string attachId)
     {
         dbDriver.deleteAttachment(id, attachId);
     }
-
     // remember to update the conversation that owns this email when calling this,
     // or just call Conversation.setEmailDeleted
     static void setDeleted(in string id, in bool setDel)
     {
         dbDriver.setDeleted(id, setDel);
     }
-
     static void purgeById(in string id)
     {
         dbDriver.purgeById(id);

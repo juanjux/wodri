@@ -133,22 +133,22 @@ final class IncomingEmail
 
 
     void loadFromFile(in string emailPath,
-                               in string attachStore,
-                               in string rawEmailStore="")
+                      in string attachStore,
+                      in string rawEmailStore="")
     {
         loadFromFile(File(emailPath), attachStore, rawEmailStore);
     }
 
     void loadFromFile(File emailFile,
-                               in string attachStore,
-                               in string rawEmailStore = "")
+                      in string attachStore,
+                      in string rawEmailStore = "")
     {
         Appender!string stdinLines;
         string currentLine;
 
         immutable bool inputIsStdInput = (rawEmailStore.length &&
                                           among(emailFile,
-                                          std.stdio.stdin, std.stdio.stderr));
+                                                std.stdio.stdin, std.stdio.stderr));
 
         // === Header ===
         currentLine = emailFile.readln();
@@ -474,7 +474,7 @@ final class IncomingEmail
             attContent = cast(immutable(ubyte)[]) join(lines, this.lineSep);
 
         string origFileName = part.disposition.fields.get("filename", "");
-        if (!origFileName.length) // wild shot, but sometimes it is "name" instead
+        if (!origFileName.length) // wild shot, but sometimes it is (wrongly) "name" instead
             origFileName = part.ctype.fields.get("name", "");
 
         immutable string attachFullPath = randomFileName(attachStore, origFileName.extension);

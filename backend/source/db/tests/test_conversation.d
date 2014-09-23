@@ -255,7 +255,9 @@ version(db_usetestdb)
             assert(!conv.links[1].attachNames.length);
             assert(!conv.links[2].attachNames.length);
             assert(conv.cleanSubject == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
-            assert(conv.links[0].deleted == false);
+            assert(!conv.links[0].deleted);
+            assert(!conv.links[1].deleted);
+            assert(!conv.links[2].deleted);
 
             conv = Conversation.get(convs[2].dbId);
             assert(conv !is null);
@@ -1058,7 +1060,7 @@ version(search_test)
     import std.datetime;
     import std.stdio;
     import std.string;
-    
+
     unittest  // search
     {
         writeln("Testing Conversation.search times");

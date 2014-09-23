@@ -4,19 +4,15 @@ Backend-API:
     Next: contacts API (document)
 
 Backend-Retriever:
-    - Arreglar: esta quoteando los caracteres "=" en los msgids, dentro de una
-    palabra quoteada si habria que quotearlo, pero ese carácter por si mismo no
-    determina que haya que quotear, tiene que ser otro, ver como arreglar (otro
-    flag...) o poner una lista de "no quotear nunca". Ver como lo hacen otros
-    (Mutt y demás).
-    
-    - quoteHeader: unittest
+    - IncomingEmail: add a loadFromString method, loads the string into a
+      StringFile object with a readln and a eof method. Then add a parameter to
+      loadFromFile inputIsString that if true, sets inputIsStdInput to true, then
+      in test_email.d toRFCEmail test add the instantiation of IncomingEmail to
+      the test.
+
     - Change all ocurrences of dbId for id
-    - Email.send():
-        Generate the header["Content-Type"] field and the string body. Use smtp
-        module and the configured smtphost, smtplogin and smtppass, connect to the
-        configured SMTP, send the generated raw email, update the document with
-        sendDate: (date) and remove draft status.
+
+    - Email.send()
 
     - Contact DB and Api objects, contact DB driver.
 
