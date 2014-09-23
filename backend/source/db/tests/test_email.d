@@ -159,40 +159,38 @@ version(db_usetestdb)
     {
         void assertEmailsEqual(Email dbEmail1, Email dbEmail2)
         {
-            assert(dbEmail1.messageId           == dbEmail2.messageId);
-            assert(dbEmail1.from.rawValue       == dbEmail2.from.rawValue);
-            assert(dbEmail1.from.addresses      == dbEmail2.from.addresses);
-            assert(dbEmail1.receivers.rawValue  == dbEmail2.receivers.rawValue);
-            assert(dbEmail1.receivers.addresses == dbEmail2.receivers.addresses);
-            assert(dbEmail1.bodyPeek            == dbEmail2.bodyPeek);
-            assert(dbEmail1.isoDate             == dbEmail2.isoDate);
+            assert(dbEmail1.messageId                 == dbEmail2.messageId);
+            assert(strip(dbEmail1.from.rawValue)      == strip(dbEmail2.from.rawValue));
+            assert(dbEmail1.from.addresses            == dbEmail2.from.addresses);
+            assert(dbEmail1.receivers.addresses       == dbEmail2.receivers.addresses);
+            assert(strip(dbEmail1.receivers.rawValue) ==
+                   strip(dbEmail2.receivers.rawValue));
 
             foreach(name, value; dbEmail1.headers)
             {
-                if (name == "Content-Type")
-                    continue; // boundary is going to be different
-                assert(value == dbEmail2.getHeader(name));
+                if (among(name, "Content-Type", "Received"))
+                    continue; // boundary is going to be different, received multiple
+                auto value2 = dbEmail2.getHeader(name);
+                assert(strip(value.rawValue) == strip(value2.rawValue));
+                assert(value.addresses == value2.addresses);
             }
 
             foreach(idx, ref attach1; dbEmail1.attachments.list)
             {
                 auto attach2 = dbEmail2.attachments.list()[idx];
-                assert(attach1.ctype == attach2.ctype);
-                assert(attach1.filename == attach2.filename);
+                assert(attach1.ctype     == attach2.ctype);
+                assert(attach1.filename  == attach2.filename);
                 assert(attach1.contentId == attach2.contentId);
-                assert(attach1.size == attach2.size);
-                assert(md5Of(readText(attach1.realPath)) ==
-                       md5Of(readText(attach2.realPath)));
+                assert(attach1.size      == attach2.size);
+
+                assert(md5Of(std.file.read(attach1.realPath)) ==
+                       md5Of(std.file.read(attach2.realPath)));
             }
 
             foreach(idx, ref textp; dbEmail1.textParts)
             {
-                writeln(textp);
-                writeln(dbEmail2.textParts[idx]);
-                assert(textp == dbEmail2.textParts[idx]);
+                assert(strip(textp.content) == strip(dbEmail2.textParts[idx].content));
             }
-
-            assert(dbEmail1.size == dbEmail2.size);
         }
 
         recreateTestDb();
@@ -204,25 +202,42 @@ version(db_usetestdb)
 
         dbEmail = getTestDbEmail("testuser", 0, 0);
         auto f = File(tmpFilePath, "w");
-        writeln("XXX print del email: "); writeln(dbEmail.toRFCEmail);
-        f.write(dbEmail.toRFCEmail);
-        f.flush(); f.close();
+        f.write(dbEmail.toRFCEmail); f.flush(); f.close();
         inEmail = new IncomingEmail();
         inEmail.loadFromFile(tmpFilePath, getConfig.absAttachmentStore);
         dbEmail2 = new Email(inEmail);
         assertEmailsEqual(dbEmail, dbEmail2);
 
-        // dbEmail = getTestDbEmail("testuser", 0, 1);
-        // writeln(dbEmail.toRFCEmail);
+        dbEmail = getTestDbEmail("testuser", 0, 1);
+        f = File(tmpFilePath, "w");
+        f.write(dbEmail.toRFCEmail); f.flush(); f.close();
+        inEmail = new IncomingEmail();
+        inEmail.loadFromFile(tmpFilePath, getConfig.absAttachmentStore);
+        dbEmail2 = new Email(inEmail);
+        assertEmailsEqual(dbEmail, dbEmail2);
 
-        // dbEmail = getTestDbEmail("anotherUser", 0, 0);
-        // writeln(dbEmail.toRFCEmail);
+        dbEmail = getTestDbEmail("anotherUser", 0, 0);
+        f = File(tmpFilePath, "w");
+        f.write(dbEmail.toRFCEmail); f.flush(); f.close();
+        inEmail = new IncomingEmail();
+        inEmail.loadFromFile(tmpFilePath, getConfig.absAttachmentStore);
+        dbEmail2 = new Email(inEmail);
+        assertEmailsEqual(dbEmail, dbEmail2);
 
-        // dbEmail = getTestDbEmail("anotherUser", 1, 2);
-        // writeln(dbEmail.toRFCEmail);
+        dbEmail = getTestDbEmail("anotherUser", 1, 2);
+        f = File(tmpFilePath, "w");
+        f.write(dbEmail.toRFCEmail); f.flush(); f.close();
+        inEmail = new IncomingEmail();
+        inEmail.loadFromFile(tmpFilePath, getConfig.absAttachmentStore);
+        dbEmail2 = new Email(inEmail);
+        assertEmailsEqual(dbEmail, dbEmail2);
 
-        // dbEmail = getTestDbEmail("anotherUser", 2, 0);
-        // writeln(dbEmail.toRFCEmail);
+        dbEmail = getTestDbEmail("anotherUser", 2, 0);
+        f = File(tmpFilePath, "w");
+        f.write(dbEmail.toRFCEmail); f.flush(); f.close();
+        inEmail = new IncomingEmail();
+        inEmail.loadFromFile(tmpFilePath, getConfig.absAttachmentStore);
+        dbEmail2 = new Email(inEmail);
     }
 
     version(MongoDriver)

@@ -282,7 +282,7 @@ string quoteHeaderAddressList(string addresses)
 
 
 string encodeQuotedPrintable(string input, QuoteMode mode, string lineEnd = "\n")
-// pure XXX descomentar
+pure
 {
     Appender!string retApp;
     string prevLine;
@@ -290,7 +290,6 @@ string encodeQuotedPrintable(string input, QuoteMode mode, string lineEnd = "\n"
 
     void saveLine(string line, string lineEndInner = lineEnd)
     {
-        writeln("XXX saveLine: ", line);
         // RFC 1521 requires that the line ending in a space or tab must have that trailing
         // character encoded.
         if (line.length > 1 && among(line[$-1], ' ', '\t'))
@@ -300,7 +299,6 @@ string encodeQuotedPrintable(string input, QuoteMode mode, string lineEnd = "\n"
     }
 
     auto tokens = split(input, lineEnd);
-    writeln("XXX tokens: "); writeln(tokens);
     string finalLineEnd = "";
     if (tokens.length && tokens[$-1] == "")
     {
@@ -308,7 +306,6 @@ string encodeQuotedPrintable(string input, QuoteMode mode, string lineEnd = "\n"
         tokens = tokens[0..$-1];
         finalLineEnd = lineEnd;
     }
-    writeln("XXX finalLineEnd: ", finalLineEnd.replace("\r", "R").replace("\n", "N"));
 
     foreach(line; tokens)
     {
@@ -464,8 +461,12 @@ unittest
 
     a = "\n\n\nabc\ndeññálolo\n";
     res1 = encodeQuotedPrintable(a, QuoteMode.Header);
-    writeln("XXX res1: "); writeln(res1.replace("\n","N"));
     assert(res1 == "\n\n\nabc\nde=C3=B1=C3=B1=C3=A1lolo\n");
+    assert(a == decodeQuotedPrintable(res1, true));
+
+    a = "\n\n\nabc\ndeññálolo";
+    res1 = encodeQuotedPrintable(a, QuoteMode.Header);
+    assert(res1 == "\n\n\nabc\nde=C3=B1=C3=B1=C3=A1lolo");
     assert(a == decodeQuotedPrintable(res1, true));
 
     string b = "abc\nsometab\tandsomemore\t\n";

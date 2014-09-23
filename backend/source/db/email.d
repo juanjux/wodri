@@ -482,30 +482,26 @@ final class Email
             auto beforeSpace = isMixedOrRelated ? lineEnd2 : lineEnd;
             emailAppender.put(beforeSpace ~ textPartHeader(alternativeParts[0].ctype,
                                                            alternativeBoundary, lineEnd));
-            emailAppender.put(encodeQuotedPrintable(alternativeParts[0].content,
+            emailAppender.put(encodeQuotedPrintable(stripLeft(alternativeParts[0].content),
                                                               QuoteMode.Body, lineEnd));
 
             // html part: boundary + header + content
-            emailAppender.put(lineEnd2 ~ textPartHeader(alternativeParts[1].ctype,
+            emailAppender.put(lineEnd ~ textPartHeader(alternativeParts[1].ctype,
                                                         alternativeBoundary, lineEnd));
-            emailAppender.put(encodeQuotedPrintable(alternativeParts[1].content,
+            emailAppender.put(encodeQuotedPrintable(stripLeft(alternativeParts[1].content),
                                                               QuoteMode.Body, lineEnd));
 
             // multipart/alternative ending
-            emailAppender.put(lineEnd2 ~ "--" ~ alternativeBoundary ~ "--" ~ lineEnd);
+            emailAppender.put(lineEnd ~ "--" ~ alternativeBoundary ~ "--" ~ lineEnd);
         }
         else
         {
             foreach(ref part; this.textParts)
             {
                 if (isMixedOrRelated) // multipart/mixed boundary and text part header
-                    emailAppender.put(textPartHeader(part.ctype, mainBoundary,
-                                                     lineEnd, lineEnd2));
-                else
-                    emailAppender.put(lineEnd);
-
+                    emailAppender.put(textPartHeader(part.ctype, mainBoundary, lineEnd));
                 emailAppender.put(lineEnd ~ encodeQuotedPrintable(part.content, QuoteMode.Body,
-                                                        lineEnd));
+                                                                  lineEnd));
             }
         }
 
@@ -530,7 +526,9 @@ final class Email
 
         if (isMixedOrRelated) // multipart/mixed ending
             emailAppender.put(lineEnd2 ~ "--" ~ mainBoundary ~ "--" ~ lineEnd);
-        emailAppender.put(lineEnd);
+
+        if (!emailAppender.data.endsWith(lineEnd))
+            emailAppender.put(lineEnd);
 
         return emailAppender.data;
     }
@@ -564,9 +562,9 @@ final class Email
 
         // get content type and boundary if mixed
         headerApp.put("Message-ID: " ~ this.messageId ~ lineEnd);
-        headerApp.put("From: " ~ quoteHeaderAddressList(this.from.rawValue) ~ lineEnd);
+        headerApp.put("From: " ~ quoteHeaderAddressList(strip(this.from.rawValue)) ~ lineEnd);
         headerApp.put("MIME-Version: 1.0" ~ lineEnd);
-        headerApp.put("Return-Path: " ~ this.from.addresses[0] ~ lineEnd);
+        headerApp.put("Return-Path: <" ~ this.from.addresses[0] ~ ">" ~ lineEnd);
         headerApp.put(ctypeHeaderStr ~ lineEnd);
 
         // Rest of headers, iterate and quote the content if needed
@@ -579,15 +577,17 @@ final class Email
             auto lowName = toLower(headerName);
 
             // skip these
-            if (among(lowName, "content-type"))
+            if (among(lowName, "content-type", "return-path", "mime-version",
+                      "from", "message-id"))
             {
                 continue;
             }
             // encode these as address lists (encoded name / non encoded adress)
             else if (among(lowName, "from", "to", "cc", "bcc", "resent-from",
-                           "resent-to", "resent-cc", "resent-bcc"))
+                           "resent-to", "resent-cc", "resent-bcc", "delivered-to",
+                            "delivered-from"))
             {
-                encodedValue = quoteHeaderAddressList(value.rawValue);
+                encodedValue = quoteHeaderAddressList(strip(value.rawValue));
             }
             // DONT encode these
             else if (among(lowName, "content-type", "content-transfer-encoding", "received",
@@ -595,18 +595,18 @@ final class Email
                            "resent-reply-to", "resent-message-id", "dkim-signature",
                            "authentication-results", "original-message-id", "encoding"))
             {
-                encodedValue = value.rawValue;
+                encodedValue = strip(value.rawValue);
             }
             // encode all the content of these
             else
             {
-                encodedValue = quoteHeader(value.rawValue);
+                encodedValue = quoteHeader(strip(value.rawValue));
             }
 
             headerApp.put(format("%s: %s%s",
-                                     capitalizeHeader(headerName),
-                                     strip(encodedValue),
-                                     lineEnd));
+                                 capitalizeHeader(headerName),
+                                 encodedValue,
+                                 lineEnd));
         }
 
         return headerApp.data;
@@ -683,6 +683,8 @@ final class Email
         partHeader.put("--" ~ boundary ~ lineEnd);
         partHeader.put("Content-Type: " ~ ctype ~ "; charset=" ~ charset ~ lineEnd);
         partHeader.put("Content-Transfer-Encoding: " ~ tencodingName ~ lineEnd);
+        partHeader.put(lineEnd);
+
         return partHeader.data;
     }
 
@@ -715,8 +717,8 @@ final class Email
         attachHeader.put("Content-Transfer-Encoding: base64" ~ lineEnd);
         if (attach.contentId.length)
             attachHeader.put("Content-ID: " ~ attach.contentId ~ lineEnd);
-        attachHeader.put(lineEnd);
 
+        attachHeader.put(lineEnd);
         return attachHeader.data;
     }
 
