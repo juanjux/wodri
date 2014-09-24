@@ -35,18 +35,18 @@ version(db_usetestdb)
         auto dbEmail = new Email(apiEmail, "");
         dbEmail.userId = user.id;
         dbEmail.store();
-        assert(dbEmail.dbId.length);
+        assert(dbEmail.id.length);
         assert(dbEmail.messageId.endsWith("@testdatabase.com"));
         assert(!dbEmail.hasHeader("references"));
         assert(dbEmail.textParts.length == 1);
 
         // Test2: Update draft, no reply
-        apiEmail.dbId = dbEmail.dbId;
+        apiEmail.id = dbEmail.id;
         apiEmail.messageId = dbEmail.messageId;
         dbEmail = new Email(apiEmail, "");
         dbEmail.userId = user.id;
         dbEmail.store();
-        assert(dbEmail.dbId == apiEmail.dbId);
+        assert(dbEmail.id == apiEmail.id);
         assert(dbEmail.messageId == apiEmail.messageId);
         assert(!dbEmail.hasHeader("references"));
         assert(dbEmail.textParts.length == 1);
@@ -55,14 +55,14 @@ version(db_usetestdb)
         auto emailRepliedObject = getTestDbEmail("testuser", 0, 1);
         auto emailReferences    = emailRepliedObject.getHeader("references").addresses;
 
-        apiEmail.dbId      = "";
+        apiEmail.id      = "";
         apiEmail.messageId = "";
         apiEmail.bodyPlain = "I cant do html";
 
-        dbEmail = new Email(apiEmail, emailRepliedObject.dbId);
+        dbEmail = new Email(apiEmail, emailRepliedObject.id);
         dbEmail.userId = user.id;
         dbEmail.store();
-        assert(dbEmail.dbId.length);
+        assert(dbEmail.id.length);
         assert(dbEmail.messageId.endsWith("@testdatabase.com"));
         assert(dbEmail.getHeader("references").addresses.length ==
                 emailReferences.length + 1);
@@ -72,13 +72,13 @@ version(db_usetestdb)
         assert(dbEmail.textParts.length == 2);
 
         // Test4: Update draft, reply
-        apiEmail.dbId = dbEmail.dbId;
+        apiEmail.id = dbEmail.id;
         apiEmail.messageId = dbEmail.messageId;
         apiEmail.bodyHtml = "";
-        dbEmail = new Email(apiEmail, emailRepliedObject.dbId);
+        dbEmail = new Email(apiEmail, emailRepliedObject.id);
         dbEmail.userId = user.id;
         dbEmail.store();
-        assert(dbEmail.dbId == apiEmail.dbId);
+        assert(dbEmail.id == apiEmail.id);
         assert(dbEmail.messageId == apiEmail.messageId);
         assert(dbEmail.getHeader("references").addresses.length ==
                 emailReferences.length + 1);
@@ -163,8 +163,7 @@ version(db_usetestdb)
             assert(strip(dbEmail1.from.rawValue)      == strip(dbEmail2.from.rawValue));
             assert(dbEmail1.from.addresses            == dbEmail2.from.addresses);
             assert(dbEmail1.receivers.addresses       == dbEmail2.receivers.addresses);
-            assert(strip(dbEmail1.receivers.rawValue) ==
-                   strip(dbEmail2.receivers.rawValue));
+            assert(strip(dbEmail1.receivers.rawValue) == strip(dbEmail2.receivers.rawValue));
 
             foreach(name, value; dbEmail1.headers)
             {
@@ -172,7 +171,7 @@ version(db_usetestdb)
                     continue; // boundary is going to be different, received multiple
                 auto value2 = dbEmail2.getHeader(name);
                 assert(strip(value.rawValue) == strip(value2.rawValue));
-                assert(value.addresses == value2.addresses);
+                assert(value.addresses       == value2.addresses);
             }
 
             foreach(idx, ref attach1; dbEmail1.attachments.list)
@@ -254,7 +253,7 @@ version(db_usetestdb)
         Email getTestDbEmail(string user, uint convPos, uint emailPos)
         {
             auto convs       = Conversation.getByTag("inbox", USER_TO_ID[user]);
-            auto conv        = Conversation.get(convs[convPos].dbId);
+            auto conv        = Conversation.get(convs[convPos].id);
             auto emailDbId   = conv.links[emailPos].emailDbId;
             auto emailObject = Email.get(emailDbId);
             if (emailObject is null)
@@ -309,10 +308,10 @@ version(db_usetestdb)
 
             auto emailMongo = scoped!DriverEmailMongo();
             auto convs    = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-            auto conv     = Conversation.get(convs[2].dbId);
+            auto conv     = Conversation.get(convs[2].id);
             assert(conv !is null);
             auto summary = emailMongo.getSummary(conv.links[0].emailDbId);
-            assert(summary.dbId == conv.links[0].emailDbId);
+            assert(summary.id == conv.links[0].emailDbId);
             assert(summary.from == " Some Random User <someuser@somedomain.com>");
             assert(summary.isoDate == "2014-01-21T14:32:20Z");
             assert(summary.date == " Tue, 21 Jan 2014 15:32:20 +0100");
@@ -320,10 +319,10 @@ version(db_usetestdb)
             assert(summary.avatarUrl == "");
             assert(summary.attachFileNames == ["C++ Pocket Reference.pdf"]);
 
-            conv = Conversation.get(convs[0].dbId);
+            conv = Conversation.get(convs[0].id);
             assert(conv !is null);
             summary = emailMongo.getSummary(conv.links[0].emailDbId);
-            assert(summary.dbId == conv.links[0].emailDbId);
+            assert(summary.id == conv.links[0].emailDbId);
             assert(summary.from == " SupremacyHosting.com Sales <brian@supremacyhosting.com>");
             assert(summary.isoDate.length);
             assert(summary.date == "");
@@ -340,7 +339,7 @@ version(db_usetestdb)
 
             auto emailMongo = scoped!DriverEmailMongo();
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-            auto conv = Conversation.get(convs[2].dbId);
+            auto conv = Conversation.get(convs[2].id);
             assert(conv !is null);
             auto rawText = emailMongo.getOriginal(conv.links[0].emailDbId);
 
@@ -370,7 +369,7 @@ version(db_usetestdb)
             emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
             assert(emailDoc.attachments.length == 3);
             auto attachDoc = emailDoc.attachments[2];
-            assert(attachId == bsonStr(attachDoc.dbId));
+            assert(attachId == bsonStr(attachDoc.id));
             auto realPath = bsonStr(attachDoc.realPath);
             assert(realPath.exists);
             auto f = File(realPath, "r");
@@ -388,14 +387,14 @@ version(db_usetestdb)
             auto emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
             auto emailDbId = bsonStr(emailDoc._id);
             assert(emailDoc.attachments.length == 2);
-            auto attachId = bsonStr(emailDoc.attachments[0].dbId);
+            auto attachId = bsonStr(emailDoc.attachments[0].id);
             auto attachPath = bsonStr(emailDoc.attachments[0].realPath);
             auto dbMongo = scoped!DriverEmailMongo();
             dbMongo.deleteAttachment(emailDbId, attachId);
 
             emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
             assert(emailDoc.attachments.length == 1);
-            assert(bsonStr(emailDoc.attachments[0].dbId) != attachId);
+            assert(bsonStr(emailDoc.attachments[0].id) != attachId);
             assert(!attachPath.exists);
         }
 
@@ -406,14 +405,14 @@ version(db_usetestdb)
 
             auto emailMongo = scoped!DriverEmailMongo();
             string messageId = "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com";
-            auto dbId = emailMongo.messageIdToDbId(messageId);
+            auto id = emailMongo.messageIdToDbId(messageId);
 
-            emailMongo.setDeleted(dbId, true);
-            auto emailDoc = collection("email").findOne(["_id": dbId]);
+            emailMongo.setDeleted(id, true);
+            auto emailDoc = collection("email").findOne(["_id": id]);
             assert(bsonBool(emailDoc.deleted));
 
-            emailMongo.setDeleted(dbId, false);
-            emailDoc = collection("email").findOne(["_id": dbId]);
+            emailMongo.setDeleted(id, false);
+            emailDoc = collection("email").findOne(["_id": id]);
             assert(!bsonBool(emailDoc.deleted));
         }
 
@@ -471,7 +470,7 @@ version(db_usetestdb)
             assert(emailMongo.getReferencesFromPrevious("doesntexists").length == 0);
 
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
-            auto conv = Conversation.get(convs[0].dbId);
+            auto conv = Conversation.get(convs[0].id);
 
             auto refs = emailMongo.getReferencesFromPrevious(conv.links[1].emailDbId);
             assert(refs.length == 2);
@@ -588,8 +587,8 @@ version(db_usetestdb)
             assert(bsonStr(emailDoc.headers.subject[0].rawValue) ==
                     " Fwd: Se ha evitado un inicio de sesión sospechoso");
             assert(emailDoc.attachments.length == 2);
-            assert(bsonStr(emailDoc.attachments[0].dbId).length);
-            assert(bsonStr(emailDoc.attachments[1].dbId).length);
+            assert(bsonStr(emailDoc.attachments[0].id).length);
+            assert(bsonStr(emailDoc.attachments[1].id).length);
             assert(bsonStr(emailDoc.isodate) == "2013-05-27T05:42:30Z");
             assert(bsonStr(emailDoc.receivers.addresses[0]) == "testuser@testdatabase.com");
             assert(bsonStr(emailDoc.from.addresses[0]) == "someuser@somedomain.com");
@@ -613,17 +612,17 @@ version(db_usetestdb)
             auto apiEmail = getTestApiEmail();
             auto dbEmail = new Email(apiEmail);
             dbEmail.userId = "xxx";
-            auto dbIdFirst = emailMongo.store(dbEmail); // new
-            apiEmail.dbId = dbIdFirst;
+            auto idFirst = emailMongo.store(dbEmail); // new
+            apiEmail.id = idFirst;
             dbEmail = new Email(apiEmail);
             dbEmail.userId = "xxx";
-            auto dbIdSame = emailMongo.store(dbEmail); // no forceInserNew, should have the same id
-            assert(dbIdFirst == dbIdSame);
+            auto idSame = emailMongo.store(dbEmail); // no forceInserNew, should have the same id
+            assert(idFirst == idSame);
 
             dbEmail = new Email(apiEmail);
             dbEmail.userId = "xxx";
-            auto dbIdDifferent = emailMongo.store(dbEmail, Yes.ForceInsertNew);
-            assert(dbIdDifferent != dbIdFirst);
+            auto idDifferent = emailMongo.store(dbEmail, Yes.ForceInsertNew);
+            assert(idDifferent != idFirst);
         }
 
         unittest
@@ -640,13 +639,13 @@ version(db_usetestdb)
             dbEmail.userId = "xxx";
 
             // should not store the attachments:
-            auto dbId = emailMongo.store(dbEmail, No.ForceInsertNew, No.StoreAttachMents);
-            auto emailDoc = collection("email").findOne(["_id": dbId]);
+            auto id = emailMongo.store(dbEmail, No.ForceInsertNew, No.StoreAttachMents);
+            auto emailDoc = collection("email").findOne(["_id": id]);
             assert(emailDoc.attachments.isNull);
 
             // should store the attachments
             emailMongo.store(dbEmail, No.ForceInsertNew, Yes.StoreAttachMents);
-            emailDoc = collection("email").findOne(["_id": dbId]);
+            emailDoc = collection("email").findOne(["_id": id]);
             assert(!emailDoc.attachments.isNull);
             assert(emailDoc.attachments.length == 1);
         }
@@ -663,7 +662,7 @@ version(db_usetestdb)
             assert(noEmail is null);
 
             auto email    = emailMongo.get(emailId);
-            assert(email.dbId.length);
+            assert(email.id.length);
             assert(!email.deleted);
             assert(!email.draft);
             assert(email.from == HeaderValue(" Some User <someuser@somedomain.com>",
@@ -682,12 +681,12 @@ version(db_usetestdb)
             assert(email.attachments.list[0].filename == "google.png");
             assert(email.attachments.list[0].contentId == "<google>");
             assert(email.attachments.list[0].size == 6321L);
-            assert(email.attachments.list[0].dbId.length);
+            assert(email.attachments.list[0].id.length);
             assert(email.attachments.list[1].ctype == "image/jpeg");
             assert(email.attachments.list[1].filename == "profilephoto.jpeg");
             assert(email.attachments.list[1].contentId == "<profilephoto>");
             assert(email.attachments.list[1].size == 1063L);
-            assert(email.attachments.list[1].dbId.length);
+            assert(email.attachments.list[1].id.length);
             assert(email.textParts.length == 2);
             assert(strip(email.textParts[0].content) == "Some text inside the email plain part");
             assert(email.textParts[0].ctype == "text/plain");

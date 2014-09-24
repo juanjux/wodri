@@ -34,7 +34,7 @@ version(anytestdb)
     {
         void emptyTestDb()
         {
-            foreach(string coll; ["conversation", "emailIndexContents", 
+            foreach(string coll; ["conversation", "emailIndexContents",
                                   "email", "domain", "user", "userrule"])
                 collection(coll).remove();
             system(format("rm -f %s/*", getConfig.absAttachmentStore));
@@ -49,7 +49,7 @@ version(anytestdb)
             emptyTestDb();
 
             // Fill the test DB
-            string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend", 
+            string backendTestDataDir_ = buildPath(getConfig().mainDir, "backend",
                                                    "test", "testdb");
             string[string] jsonfile2collection = ["user1.json"     : "user",
                                                   "user2.json"     : "user",
@@ -95,7 +95,7 @@ version(anytestdb)
 }
 
 
-version(db_insertalltest) 
+version(db_insertalltest)
 {
     unittest
     {
@@ -108,7 +108,7 @@ version(db_insertalltest)
 
         writeln("Testing Inserting Everything");
         recreateTestDb();
-        
+
         string backendTestDir  = buildPath(getConfig().mainDir, "backend", "test");
         string origEmailDir    = buildPath(backendTestDir, "emails", "single_emails");
         string rawEmailStore   = buildPath(backendTestDir, "rawemails");
@@ -163,7 +163,7 @@ version(db_insertalltest)
                 sw.stop(); writeln("dbEmail.store(): ", sw.peek().msecs); sw.reset();
 
                 sw.start();
-                auto convId = Conversation.addEmail(dbEmail, ["inbox"], []).dbId;
+                auto convId = Conversation.addEmail(dbEmail, ["inbox"], []).id;
 
                 sw.stop(); writeln("Conversation: ", convId, " time: ", sw.peek().msecs); sw.reset();
 

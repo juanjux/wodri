@@ -10,7 +10,7 @@ import vibe.inet.path: joinPath;
 struct ApiAttachment
 {
     string Url;
-    string dbId;
+    string id;
     string ctype;
     string filename;
     string contentId;
@@ -19,7 +19,7 @@ struct ApiAttachment
 
 final class ApiEmail
 {
-    string dbId;
+    string id;
     string messageId;
     string from;
     string to;
@@ -38,7 +38,7 @@ final class ApiEmail
 
     this(in Email dbEmail)
     {
-        this.dbId      = dbEmail.dbId;
+        this.id      = dbEmail.id;
         this.deleted   = dbEmail.deleted;
         this.draft     = dbEmail.draft;
         this.messageId = dbEmail.messageId;
@@ -55,7 +55,7 @@ final class ApiEmail
         {
             ApiAttachment att;
             att.size      = attach.size;
-            att.dbId      = attach.dbId;
+            att.id      = attach.id;
             att.ctype     = attach.ctype;
             att.filename  = attach.filename;
             att.contentId = attach.contentId;

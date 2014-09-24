@@ -29,7 +29,7 @@ final class DriverConversationMongo : DriverConversationInterface
         assert(!convDoc.links.isNull);
 
         auto ret         = new Conversation();
-        ret.dbId         = bsonStr(convDoc._id);
+        ret.id         = bsonStr(convDoc._id);
         ret.userDbId     = bsonStr(convDoc.userId);
         ret.lastDate     = bsonStr(convDoc.lastDate);
         ret.cleanSubject = bsonStr(convDoc.cleanSubject);
@@ -48,24 +48,24 @@ final class DriverConversationMongo : DriverConversationInterface
 
     version(unittest)
     {
-        static void addTagDb(in string dbId, in string tag)
+        static void addTagDb(in string id, in string tag)
         {
-            assert(dbId.length);
+            assert(id.length);
             assert(tag.length);
 
             auto json = format(`{"$push":{"tags":"%s"}}`, tag);
             auto bson = parseJsonString(json);
-            collection("conversation").update(["_id": dbId], bson);
+            collection("conversation").update(["_id": id], bson);
         }
 
-        static void removeTagDb(in string dbId, in string tag)
+        static void removeTagDb(in string id, in string tag)
         {
-            assert(dbId.length);
+            assert(id.length);
             assert(tag.length);
 
             auto json = format(`{"$pull":{"tags":"%s"}}`, tag);
             auto bson = parseJsonString(json);
-            collection("conversation").update(["_id": dbId], bson);
+            collection("conversation").update(["_id": id], bson);
         }
     }
 
@@ -194,7 +194,7 @@ override:
     void store(Conversation conv)
     {
         collection("conversation").update(
-                ["_id": conv.dbId],
+                ["_id": conv.id],
                 parseJsonString(conv.toJson),
                 UpdateFlags.Upsert
         );
@@ -204,7 +204,7 @@ override:
     /** Note: this will remove the conversation AND purge its emails */
     void remove(Conversation conv)
     {
-        if (!conv.dbId.length)
+        if (!conv.id.length)
         {
             logWarn("DriverConversationMongo.remove: empty DB id, is this conversation stored?");
             return;
@@ -213,7 +213,7 @@ override:
         foreach(const ref link; conv.receivedLinks)
             Email.purgeById(link.emailDbId);
         // remove the conversation from DB
-        collection("conversation").remove(["_id": conv.dbId]);
+        collection("conversation").remove(["_id": conv.id]);
     }
 
 
@@ -224,7 +224,7 @@ override:
     Conversation addEmail(in Email email, in string[] tagsToAdd, in string[] tagsToRemove)
     in
     {
-        assert(email.dbId.length);
+        assert(email.id.length);
         assert(email.userId.length);
     }
     body
@@ -252,7 +252,7 @@ override:
         }
 
         bool wasInConversation = false;
-        if (conv.dbId.length)
+        if (conv.id.length)
         {
             // existing conversation: see if this email msgid is on the conversation links,
             // (can happen if an email referring to this one entered the system before this
@@ -261,7 +261,7 @@ override:
             {
                 if (entry.messageId == messageId)
                 {
-                    entry.emailDbId   = email.dbId;
+                    entry.emailDbId   = email.id;
                     entry.deleted     = email.deleted;
                     wasInConversation = true;
                     foreach(ref attach; email.attachments.list)
@@ -273,13 +273,13 @@ override:
             }
         }
         else
-            conv.dbId = BsonObjectID.generate().toString;
+            conv.id = BsonObjectID.generate().toString;
 
         if (!wasInConversation)
         {
             // get the attachFileNames and add this email to the conversation
-            const emailSummary = Email.getSummary(email.dbId);
-            conv.addLink(messageId, emailSummary.attachFileNames, email.dbId, email.deleted);
+            const emailSummary = Email.getSummary(email.id);
+            conv.addLink(messageId, emailSummary.attachFileNames, email.id, email.deleted);
         }
 
         // update the conversation cleaned subject (last one wins)
@@ -291,9 +291,9 @@ override:
         // update the emailIndexContent reverse link to the Conversation
         // (for madz speed)
         const indexBson = parseJsonString(
-                format(`{"$set": {"convId": "%s"}}`, conv.dbId)
+                format(`{"$set": {"convId": "%s"}}`, conv.id)
         );
-        collection("emailIndexContents").update(["emailDbId": email.dbId], indexBson);
+        collection("emailIndexContents").update(["emailDbId": email.id], indexBson);
         return conv;
     }
 

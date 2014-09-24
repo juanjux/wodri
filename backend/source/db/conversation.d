@@ -34,7 +34,7 @@ final class Conversation
     import db.dbinterface.driverconversationinterface;
     private static DriverConversationInterface dbDriver = null;
 
-    string        dbId;
+    string        id;
     string        userDbId;
     string        lastDate;
     MessageLink[] links;
@@ -128,7 +128,7 @@ final class Conversation
         if (!someReceivedRemaining) // no local emails => remove conversation
         {
             this.remove();
-            this.dbId = "";
+            this.id = "";
         }
     }
 
@@ -144,7 +144,7 @@ final class Conversation
         const matchingEmailAndConvIds = dbDriver.searchEmails(needles, userId,
                                                               dateStart, dateEnd);
 
-        // keep the found conversations+matches indexes, the key is the conversation dbId
+        // keep the found conversations+matches indexes, the key is the conversation id
         SearchResult[string] map;
 
         // For every id, get the conversation (with MessageSummaries loaded)
@@ -165,10 +165,10 @@ final class Conversation
             }
             assert(indexMatching != -1);
 
-            if (conv.dbId in map)
-                map[conv.dbId].matchingEmailsIdx ~= indexMatching;
+            if (conv.id in map)
+                map[conv.id].matchingEmailsIdx ~= indexMatching;
             else
-                map[conv.dbId] = SearchResult(conv, [indexMatching]);
+                map[conv.id] = SearchResult(conv, [indexMatching]);
         }
         return map.values;
     }
@@ -203,7 +203,7 @@ final class Conversation
             "cleanSubject": %s,
             "tags": %s,
             "links": [%s]
-        }`, Json(this.dbId).toString, Json(this.userDbId).toString,
+        }`, Json(this.id).toString, Json(this.userDbId).toString,
             Json(this.lastDate).toString, Json(this.cleanSubject).toString,
             this.m_tags.array, linksApp.data);
     }
@@ -238,7 +238,7 @@ final class Conversation
                 break;
             }
         }
-        return conv.dbId;
+        return conv.id;
     }
 
 
@@ -250,7 +250,7 @@ final class Conversation
         if (conv !is null)
         {
             conv.removeLink(emailDbId);
-            if (conv.dbId.length) // will be 0 if it was removed from the DB
+            if (conv.id.length) // will be 0 if it was removed from the DB
                 conv.store();
         }
     }

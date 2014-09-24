@@ -45,7 +45,7 @@ struct TextPart
 
 final class EmailSummary
 {
-    string dbId;
+    string id;
     string from;
     string isoDate;
     string date;
@@ -72,7 +72,7 @@ final class Email
     import db.dbinterface.driveremailinterface;
     private static DriverEmailInterface dbDriver = null;
 
-    string         dbId;
+    string         id;
     string         userId;
     bool           deleted = false;
     bool           draft = false;
@@ -106,14 +106,14 @@ final class Email
     this(in ApiEmail apiEmail, in string repliedEmailDbId = "")
     {
 
-        immutable isNew   = (apiEmail.dbId.length == 0);
+        immutable isNew   = (apiEmail.id.length == 0);
         immutable isReply = (repliedEmailDbId.length > 0);
         enforce(apiEmail.to.length,
                 "Email from ApiEmail constructor should receive a .to");
         enforce(apiEmail.date.length,
                 "Email from ApiEmail constructor should receive a .date");
-        this.dbId      = isNew ? Email.dbDriver.generateNewId()
-                               : apiEmail.dbId;
+        this.id      = isNew ? Email.dbDriver.generateNewId()
+                               : apiEmail.id;
         this.messageId = isNew ? generateMessageId(domainFromAddress(apiEmail.from))
                                : apiEmail.messageId;
 
@@ -123,7 +123,7 @@ final class Email
             auto references = Email.dbDriver.getReferencesFromPrevious(repliedEmailDbId);
             if (references.length == 0)
             {
-                logWarn("Email.this(ApiEmail) ["~this.dbId~"] was suplied a " ~
+                logWarn("Email.this(ApiEmail) ["~this.id~"] was suplied a " ~
                         "repliedEmailDbId but no email was found with that id: " ~
                         repliedEmailDbId);
             }
@@ -162,7 +162,7 @@ final class Email
     }
 
     /** Load from an IncomingEmail object (making mutable copies of the data members).
-     * dbId will be an empty string until .store() is called */
+     * id will be an empty string until .store() is called */
     this(in IncomingEmail inEmail)
     {
         const msgIdHdr = inEmail.getHeader("message-id");
@@ -731,8 +731,8 @@ final class Email
     {
         return dbDriver.store(this, forceNew, storeAttachs);
     }
-    static Email get(in string dbId) { return dbDriver.get(dbId); }
-    static EmailSummary getSummary(in string dbId) { return dbDriver.getSummary(dbId); }
+    static Email get(in string id) { return dbDriver.get(id); }
+    static EmailSummary getSummary(in string id) { return dbDriver.getSummary(id); }
     static string getOriginal(in string id) { return dbDriver.getOriginal(id); }
     static string messageIdToDbId(in string id) { return dbDriver.messageIdToDbId(id); }
     static bool isOwnedBy(in string emailId, in string userName)

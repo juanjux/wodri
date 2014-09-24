@@ -67,17 +67,17 @@ final class DriverEmailMongo : DriverEmailInterface
 
 override: // interface methods
 
-    Email get(in string dbId)
+    Email get(in string id)
     {
-        immutable emailDoc = findOneById("email", dbId);
+        immutable emailDoc = findOneById("email", id);
         if (emailDoc.isNull || emailDoc.headers.isNull)
         {
-            logWarn(format("Requested email with id %s is null or has null headers", dbId));
+            logWarn(format("Requested email with id %s is null or has null headers", id));
             return null;
         }
 
         auto ret               = new Email();
-        ret.dbId               = dbId;
+        ret.id               = id;
         ret.userId             = bsonStr(emailDoc["userId"]);
         ret.deleted            = bsonBool(emailDoc["deleted"]);
         ret.draft              = bsonBool(emailDoc["draft"]);
@@ -110,7 +110,7 @@ override: // interface methods
             foreach(ref attach; emailDoc.attachments)
             {
                 DbAttachment att;
-                att.dbId      = bsonStr(attach.dbId);
+                att.id      = bsonStr(attach.id);
                 att.ctype     = bsonStrSafe(attach.contentType);
                 att.filename  = bsonStrSafe(attach.fileName);
                 att.contentId = bsonStrSafe(attach.contentId);
@@ -139,20 +139,20 @@ override: // interface methods
     /**
      * Returns a smaller version of the standar email object
      */
-    EmailSummary getSummary(in string dbId)
+    EmailSummary getSummary(in string id)
     in
     {
-        assert(dbId.length);
+        assert(id.length);
     }
     body
     {
         auto res = new EmailSummary();
-        immutable emailDoc = findOneById("email", dbId, "from", "headers", "isodate",
+        immutable emailDoc = findOneById("email", id, "from", "headers", "isodate",
                                          "bodyPeek", "deleted", "draft", "attachments");
 
         if (!emailDoc.isNull)
         {
-            res.dbId            = dbId;
+            res.id            = id;
             res.date            = headerRaw(emailDoc, "date");
             res.from            = bsonStr(emailDoc.from.rawValue);
             res.isoDate         = bsonStr(emailDoc.isodate);
@@ -193,10 +193,10 @@ override: // interface methods
     {
         string attachId;
 
-        if (apiAttach.dbId.length) // dont process attachs with a dbId set
+        if (apiAttach.id.length) // dont process attachs with a id set
         {
             logWarn("addAttachment was called with a non empty attachid."~
-                    " emailId: " ~ emailDbId ~ " attachId: " ~ apiAttach.dbId);
+                    " emailId: " ~ emailDbId ~ " attachId: " ~ apiAttach.id);
             return attachId;
         }
 
@@ -225,7 +225,7 @@ override: // interface methods
         // create the doc and insert into the email.attachments list on DB
         auto dbAttach      = DbAttachment(apiAttach);
         attachId           = BsonObjectID.generate().toString;
-        dbAttach.dbId      = attachId;
+        dbAttach.id      = attachId;
         dbAttach.realPath  = destFilePath;
         dbAttach.size      = attContent.length;
         immutable pushJson = format(`{"$push": {"attachments": %s}}`, dbAttach.toJson);
@@ -256,7 +256,7 @@ override: // interface methods
         bool found = false;
         foreach(ref attachDoc; emailDoc.attachments)
         {
-            if (bsonStrSafe(attachDoc.dbId) == attachmentId)
+            if (bsonStrSafe(attachDoc.id) == attachmentId)
             {
                 found = true;
                 filePath = bsonStrSafe(attachDoc.realPath);
@@ -267,12 +267,12 @@ override: // interface methods
         if (!found)
         {
             logWarn(format("deleteAttachment: email [%s] doesnt have an attachment with " ~
-                           "dbId [%s]", emailDbId, attachmentId));
+                           "id [%s]", emailDbId, attachmentId));
             return;
         }
 
         immutable json = format(
-                `{"$pull": {"attachments": {"dbId": %s}}}`, Json(attachmentId).toString
+                `{"$pull": {"attachments": {"id": %s}}}`, Json(attachmentId).toString
         );
         collection("email").update(["_id": emailDbId], parseJsonString(json));
 
@@ -282,9 +282,9 @@ override: // interface methods
 
 
     /** Returns the raw email as string */
-    string getOriginal(in string dbId)
+    string getOriginal(in string id)
     {
-        immutable emailDoc = findOneById("email", dbId, "rawEmailPath");
+        immutable emailDoc = findOneById("email", id, "rawEmailPath");
         if (!emailDoc.isNull && !emailDoc.rawEmailPath.isNull)
         {
             const rawPath = bsonStr(emailDoc.rawEmailPath);
@@ -304,15 +304,15 @@ override: // interface methods
     /**
      * Update the email DB record/document and set the deleted field to setDel
      */
-    void setDeleted(in string dbId, in bool setDel)
+    void setDeleted(in string id, in bool setDel)
     {
 
         // Get the email from the DB, check the needed deleted and userId fields
-        immutable emailDoc = findOneById("email", dbId, "deleted");
+        immutable emailDoc = findOneById("email", id, "deleted");
         if (emailDoc.isNull || emailDoc.deleted.isNull)
         {
             logWarn(format("setDeleted: Trying to set deleted (%s) of email with " ~
-                           "id (%s) not in DB or with missing deleted field", setDel, dbId));
+                           "id (%s) not in DB or with missing deleted field", setDel, id));
             return;
         }
 
@@ -320,13 +320,13 @@ override: // interface methods
         if (dbDeleted == setDel)
         {
             logWarn(format("setDeleted: Trying to set deleted to (%s) but email "~
-                           "with id (%s) already was in that state", setDel, dbId));
+                           "with id (%s) already was in that state", setDel, id));
             return;
         }
 
         // Update the document
         immutable json = format(`{"$set": {"deleted": %s}}`, setDel);
-        collection("email").update(["_id": dbId], parseJsonString(json));
+        collection("email").update(["_id": id], parseJsonString(json));
     }
 
 
@@ -335,14 +335,14 @@ override: // interface methods
      * with this emailId as is its only link it will be removed too. The attachments
      * and the rawEmail files will be removed too.
      */
-    void purgeById(in string dbId)
+    void purgeById(in string id)
     {
 
-        immutable emailDoc = findOneById("email", dbId, "_id", "attachments", "rawEmailPath");
+        immutable emailDoc = findOneById("email", id, "_id", "attachments", "rawEmailPath");
         if (emailDoc.isNull)
         {
             logWarn(format("DriverEmailMongo.purgeById: Trying to remove email with id (%s) "~
-                           " not in DB", dbId));
+                           " not in DB", id));
             return;
         }
         immutable emailId = bsonStr(emailDoc._id);
@@ -367,11 +367,11 @@ override: // interface methods
     void storeTextIndex(in Email email)
     in
     {
-        assert(email.dbId.length);
+        assert(email.id.length);
     }
     body
     {
-        if (!email.dbId.length)
+        if (!email.id.length)
         {
             logError("Email.storeTextIndex: trying to store an email index without email id");
             return;
@@ -392,12 +392,12 @@ override: // interface methods
         }
 
         immutable opData = ["text": headerIndexText.data ~ "\n\n" ~ maybeText,
-                            "emailDbId": email.dbId,
+                            "emailDbId": email.id,
                             "userId": email.userId,
                             "isoDate": email.isoDate];
 
         collection("emailIndexContents").update(
-                ["emailDbId": email.dbId], opData, UpdateFlags.Upsert
+                ["emailDbId": email.id], opData, UpdateFlags.Upsert
         );
     }
 
@@ -421,10 +421,10 @@ override: // interface methods
      * the references for the caller, including the previous email references and
      * the previous email msgid appended
      */
-    string[] getReferencesFromPrevious(in string dbId)
+    string[] getReferencesFromPrevious(in string id)
     {
         string[] references;
-        immutable res = findOneById("email", dbId, "headers", "message-id");
+        immutable res = findOneById("email", id, "headers", "message-id");
         if (!res.isNull)
         {
             string[] inheritedRefs;
@@ -454,8 +454,8 @@ override: // interface methods
         immutable rawHeadersStr    = email.headersToJson();
         immutable textPartsJsonStr = email.textPartsToJson();
 
-        if (forceInsertNew || !email.dbId.length)
-            email.dbId = BsonObjectID.generate().toString;
+        if (forceInsertNew || !email.id.length)
+            email.id = BsonObjectID.generate().toString;
 
         Appender!string emailInsertJson;
         emailInsertJson.put(`{"$set": {`);
@@ -489,7 +489,7 @@ override: // interface methods
         ));
 
         if (forceInsertNew)
-            emailInsertJson.put(format(`"_id": %s,`, Json(email.dbId).toString));
+            emailInsertJson.put(format(`"_id": %s,`, Json(email.id).toString));
 
         if (storeAttachMents)
         {
@@ -502,13 +502,13 @@ override: // interface methods
         //writeln(emailInsertJson.data);
 
         const bsonData = parseJsonString(emailInsertJson.data);
-        collection("email").update(["_id": email.dbId], bsonData, UpdateFlags.Upsert);
+        collection("email").update(["_id": email.id], bsonData, UpdateFlags.Upsert);
 
         // store the index document for Mongo's full text search engine
         if (getConfig().storeTextIndex)
             storeTextIndex(email);
 
-        return email.dbId;
+        return email.id;
     }
 }
 } // end version(MongoDriver)

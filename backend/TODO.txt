@@ -4,14 +4,6 @@ Backend-API:
     Next: contacts API (document)
 
 Backend-Retriever:
-    - IncomingEmail: add a loadFromString method, loads the string into a
-      StringFile object with a readln and a eof method. Then add a parameter to
-      loadFromFile inputIsString that if true, sets inputIsStdInput to true, then
-      in test_email.d toRFCEmail test add the instantiation of IncomingEmail to
-      the test.
-
-    - Change all ocurrences of dbId for id
-
     - Email.send()
 
     - Contact DB and Api objects, contact DB driver.

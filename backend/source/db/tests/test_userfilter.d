@@ -35,7 +35,7 @@ version(db_usetestdb)
             dbEmail.destinationAddress = "foo@foo.com";
             dbEmail.userId = "fakeuserid";
             // a little kludge so I dont have to store this email to get an id
-            dbEmail.dbId = Email.messageIdToDbId(dbEmail.messageId);
+            dbEmail.id = Email.messageIdToDbId(dbEmail.messageId);
             auto filter   = scoped!UserFilter(match, action);
             tagsToAdd = [];
             tagsToRemove = [];

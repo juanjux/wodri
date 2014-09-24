@@ -13,7 +13,7 @@ struct DbAttachment
 {
     Attachment attachment;
     alias attachment this;
-    string dbId;
+    string id;
 
     this(Attachment attach)
     {
@@ -22,7 +22,7 @@ struct DbAttachment
 
     this (ApiAttachment apiAttach)
     {
-        this.dbId                 = apiAttach.dbId;
+        this.id                 = apiAttach.id;
         this.attachment.ctype     = apiAttach.ctype;
         this.attachment.filename  = apiAttach.filename;
         this.attachment.contentId = apiAttach.contentId;
@@ -37,7 +37,7 @@ struct DbAttachment
         Appender!string jsonAppender;
         jsonAppender.put(`{"contentType": `   ~ Json(this.ctype).toString     ~ `,` ~
                          ` "realPath": `      ~ Json(this.realPath).toString  ~ `,` ~
-                         ` "dbId": `          ~ Json(this.dbId).toString      ~ `,` ~
+                         ` "id": `          ~ Json(this.id).toString      ~ `,` ~
                          ` "size": `          ~ Json(this.size).toString      ~ `,`);
         if (this.contentId.length)
             jsonAppender.put(` "contentId": ` ~ Json(this.contentId).toString ~ `,`);
@@ -77,12 +77,12 @@ struct AttachContainer
     }
 
 
-    const(DbAttachment) add(T)(const ref T attach, in string dbId="") 
+    const(DbAttachment) add(T)(const ref T attach, in string id="")
     if (is(T: ApiAttachment) || is(T: Attachment))
     {
         auto dbattach = DbAttachment(attach);
-        if (dbId.length)
-            dbattach.dbId = dbId;
+        if (id.length)
+            dbattach.id = id;
         this.m_attachs ~= dbattach;
         return this.m_attachs[$-1];
     }
@@ -102,4 +102,3 @@ struct AttachContainer
         return jsonAppender.data;
     }
 }
-

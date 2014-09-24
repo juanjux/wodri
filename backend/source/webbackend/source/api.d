@@ -172,14 +172,14 @@ override:
                               addrUser.loginName, authUser.loginName);
             dbEmail.userId = addrUser.id;
 
-            auto insertNew = draftContent.dbId.length == 0 ? Yes.ForceInsertNew
+            auto insertNew = draftContent.id.length == 0 ? Yes.ForceInsertNew
                                                            : No.ForceInsertNew;
             dbEmail.draft = true;
             dbEmail.store(insertNew, No.StoreAttachMents);
 
             if (insertNew)
                 Conversation.addEmail(dbEmail, [], []);
-            return dbEmail.dbId;
+            return dbEmail.id;
         }
 
 

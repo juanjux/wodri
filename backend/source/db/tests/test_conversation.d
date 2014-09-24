@@ -87,7 +87,7 @@ version(db_usetestdb)
         conv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
         assert(conv.links.length == 2);
         assert(conv.receivedLinks.length == 2);
-        auto convId = conv.dbId;
+        auto convId = conv.id;
         foreach(ref link; conv.receivedLinks)
             link.deleted = true;
         conv.store();
@@ -170,14 +170,14 @@ version(db_usetestdb)
             auto conv = Conversation.getByReferences(user1.id,
                     ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
             assert(conv !is null);
-            assert(conv.dbId.length);
-            assert(Conversation.isOwnedBy(conv.dbId, user1.loginName));
+            assert(conv.id.length);
+            assert(Conversation.isOwnedBy(conv.id, user1.loginName));
 
             conv = Conversation.getByReferences(user2.id,
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
             assert(conv !is null);
-            assert(conv.dbId.length);
-            assert(Conversation.isOwnedBy(conv.dbId, user2.loginName));
+            assert(conv.id.length);
+            assert(Conversation.isOwnedBy(conv.id, user2.loginName));
         }
 
         unittest // searchEmails
@@ -234,7 +234,7 @@ version(db_usetestdb)
 
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
             assert(convs.length == 1);
-            auto conv  = Conversation.get(convs[0].dbId);
+            auto conv  = Conversation.get(convs[0].id);
             assert(conv !is null);
             assert(conv.lastDate.length); // this email date is set to NOW
             assert(conv.hasTag("inbox"));
@@ -245,7 +245,7 @@ version(db_usetestdb)
             assert(conv.links[0].deleted == false);
 
             convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-            conv = Conversation.get(convs[1].dbId);
+            conv = Conversation.get(convs[1].id);
             assert(conv !is null);
             assert(conv.lastDate == "2014-06-10T12:51:10Z");
             assert(conv.hasTag("inbox"));
@@ -259,7 +259,7 @@ version(db_usetestdb)
             assert(!conv.links[1].deleted);
             assert(!conv.links[2].deleted);
 
-            conv = Conversation.get(convs[2].dbId);
+            conv = Conversation.get(convs[2].id);
             assert(conv !is null);
             assert(conv.lastDate == "2014-01-21T14:32:20Z");
             assert(conv.hasTag("inbox"));
@@ -283,7 +283,7 @@ version(db_usetestdb)
 
             auto conv2 = Conversation.getByEmailId(conv.links[0].emailDbId);
             assert(conv2 !is null);
-            assert(conv.dbId == conv2.dbId);
+            assert(conv.id == conv2.id);
 
             auto conv3 = Conversation.getByEmailId("doesntexist");
             assert(conv3 is null);
@@ -295,15 +295,15 @@ version(db_usetestdb)
             recreateTestDb();
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
             assert(convs.length);
-            auto dbId = convs[0].dbId;
-            DriverConversationMongo.addTagDb(dbId, "testTag");
-            auto conv = Conversation.get(dbId);
+            auto id = convs[0].id;
+            DriverConversationMongo.addTagDb(id, "testTag");
+            auto conv = Conversation.get(id);
             assert(conv !is null);
             assert(conv.hasTag("testtag"));
 
             writeln("Testing DriverConversationMongo.removeTagDb");
-            DriverConversationMongo.removeTagDb(dbId, "testTag");
-            conv = Conversation.get(dbId);
+            DriverConversationMongo.removeTagDb(id, "testTag");
+            conv = Conversation.get(id);
             assert(!conv.hasTag("testtag"));
         }
 
@@ -313,7 +313,7 @@ version(db_usetestdb)
             recreateTestDb();
             auto convs = Conversation.getByTag( "inbox", USER_TO_ID["anotherUser"]);
             assert(convs.length == 3);
-            const id = convs[0].dbId;
+            const id = convs[0].id;
             string[] linkIds;
             foreach(ref link; convs[0].links)
                 linkIds ~= link.emailDbId.idup;
@@ -321,7 +321,7 @@ version(db_usetestdb)
             convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
             assert(convs.length == 2);
             foreach(conv; convs)
-                assert(conv.dbId != id);
+                assert(conv.id != id);
             foreach(ref linkId; linkIds)
             {
                 auto email = Email.get(linkId);
@@ -340,26 +340,26 @@ version(db_usetestdb)
 
             auto convs2 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 2, 0);
             assert(convs2.length == 2);
-            assert(convs2[0].dbId == convs[0].dbId);
-            assert(convs2[1].dbId == convs[1].dbId);
+            assert(convs2[0].id == convs[0].id);
+            assert(convs2[1].id == convs[1].id);
             assert(convs2[0].links[0].deleted == false);
             assert(convs2[1].links[0].deleted == false);
 
             auto convs3 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 2, 1);
             assert(convs3.length == 1);
-            assert(convs3[0].dbId == convs[2].dbId);
+            assert(convs3[0].id == convs[2].id);
 
             auto convs4 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 1000, 0);
-            assert(convs4[0].dbId == convs[0].dbId);
-            assert(convs4[1].dbId == convs[1].dbId);
-            assert(convs4[2].dbId == convs[2].dbId);
+            assert(convs4[0].id == convs[0].id);
+            assert(convs4[1].id == convs[1].id);
+            assert(convs4[2].id == convs[2].id);
             assert(convs4[0].links[0].deleted == false);
             assert(convs4[1].links[0].deleted == false);
             assert(convs4[2].links[0].deleted == false);
 
             // check that it doesnt returns the deleted convs
             auto len1 = convs4.length;
-            DriverConversationMongo.addTagDb(convs4[0].dbId, "deleted");
+            DriverConversationMongo.addTagDb(convs4[0].id, "deleted");
             convs4 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 1000, 0);
             assert(convs4.length == len1-1);
             // except when using Yes.WithDeleted
@@ -383,9 +383,9 @@ version(db_usetestdb)
                 "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com";
 
             auto conv = Conversation.getByReferences(user1id, [msgId1]);
-            auto dbid1 = conv.dbId;
+            auto dbid1 = conv.id;
             assert(conv !is null);
-            assert(conv.dbId.length);
+            assert(conv.id.length);
             assert(conv.lastDate == "2013-05-27T05:42:30Z");
             assert(conv.tagsArray == ["inbox"]);
             assert(conv.links.length == 2);
@@ -396,11 +396,11 @@ version(db_usetestdb)
             assert(conv.links[1].deleted == false);
 
             conv = Conversation.getByReferences(user1id, [msgId2]);
-            auto dbid2 = conv.dbId;
+            auto dbid2 = conv.id;
             assert(conv !is null);
             assert(dbid1 == dbid2);
 
-            DriverConversationMongo.addTagDb(conv.dbId, "deleted");
+            DriverConversationMongo.addTagDb(conv.id, "deleted");
             // check that it doesnt returns the deleted convs
             conv = Conversation.getByReferences(user1id, [msgId2]);
             assert(conv is null);
@@ -420,20 +420,20 @@ version(db_usetestdb)
             convs[0].addTag("newtag");
             string[] attachNames = ["one", "two"];
             convs[0].addLink("someMessageId", attachNames);
-            auto oldDbId = convs[0].dbId;
+            auto oldDbId = convs[0].id;
             convs[0].store();
 
             auto convs2 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
             assert(convs2.length == 3);
-            assert(convs2[0].dbId == oldDbId);
+            assert(convs2[0].id == oldDbId);
             assert(convs2[0].hasTag("inbox"));
             assert(convs2[0].hasTag("newtag"));
             assert(convs2[0].numTags == 2);
             assert(convs2[0].links[1].messageId == "someMessageId");
             assert(convs2[0].links[1].attachNames == attachNames);
 
-            // create new (new dbId)
-            convs2[0].dbId = BsonObjectID.generate().toString;
+            // create new (new id)
+            convs2[0].id = BsonObjectID.generate().toString;
             convs2[0].store();
             auto convs3 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
             assert(convs3.length == 4);
@@ -441,7 +441,7 @@ version(db_usetestdb)
             bool found = false;
             foreach(conv; convs3)
             {
-                if (conv.dbId == convs2[0].dbId)
+                if (conv.id == convs2[0].id)
                 {
                     found = true;
                     assert(conv.userDbId == convs2[0].userDbId);
@@ -472,7 +472,7 @@ version(db_usetestdb)
 
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
             auto singleMailConv = convs[0];
-            auto singleConvId   = singleMailConv.dbId;
+            auto singleConvId   = singleMailConv.id;
             auto singleMailId   = singleMailConv.links[0].emailDbId;
 
             // since this is a single mail conversation, it should be deleted when the single
@@ -486,7 +486,7 @@ version(db_usetestdb)
             // conversation with more links, but only one is actually in DB,
             // it should be removed too
             auto fakeMultiConv = convs[1];
-            auto fakeMultiConvId = fakeMultiConv.dbId;
+            auto fakeMultiConvId = fakeMultiConv.id;
             auto fakeMultiConvEmailId = fakeMultiConv.links[2].emailDbId;
             Conversation.purgeLink(fakeMultiConvEmailId);
             emailDoc = collection("email").findOne(["_id": fakeMultiConvEmailId]);
@@ -497,7 +497,7 @@ version(db_usetestdb)
             // conversation with more emails in the DB, the link of the email to
             // remove should be deleted but the conversation should be keept in DB
             auto multiConv = Conversation.getByTag("inbox", USER_TO_ID["testuser"])[0];
-            auto multiConvId = multiConv.dbId;
+            auto multiConvId = multiConv.id;
             auto multiConvEmailId = multiConv.links[0].emailDbId;
             Conversation.purgeLink(multiConvEmailId);
             emailDoc = collection("email").findOne(["_id": multiConvEmailId]);
@@ -541,7 +541,7 @@ version(db_usetestdb)
             dbEmail.setOwner(dbEmail.localReceivers()[0]);
             assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
             auto emailId = dbEmail.store();
-            auto convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
+            auto convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).id;
             auto convDoc = findOneById("conversation", convId);
 
             assert(!convDoc.isNull);
@@ -559,7 +559,7 @@ version(db_usetestdb)
 
             auto convObject = Conversation.get(convId);
             assert(convObject !is null);
-            assert(convObject.dbId     == convId);
+            assert(convObject.id     == convId);
             assert(convObject.userDbId == user.id);
             assert(convObject.lastDate == bsonStr(convDoc.lastDate));
             assert(convObject.hasTags(tagsToAdd));
@@ -583,7 +583,7 @@ version(db_usetestdb)
             dbEmail.setOwner(dbEmail.localReceivers()[0]);
             assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
             emailId = dbEmail.store();
-            convId = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
+            convId = Conversation.addEmail(dbEmail, tagsToAdd, []).id;
             convDoc = findOneById("conversation", convId);
             assert(!convDoc.isNull);
             assert(bsonStr(convDoc.userId) == user.id);
@@ -597,7 +597,7 @@ version(db_usetestdb)
 
             convObject = Conversation.get(convId);
             assert(convObject !is null);
-            assert(convObject.dbId == convId);
+            assert(convObject.id == convId);
             assert(convObject.userDbId == user.id);
             assert(convObject.lastDate == bsonStr(convDoc.lastDate));
             assert(convObject.hasTags(tagsToAdd));
@@ -619,7 +619,7 @@ version(db_usetestdb)
             dbEmail.setOwner(dbEmail.localReceivers()[0]);
             assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
             emailId = dbEmail.store();
-            convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
+            convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).id;
             convDoc = findOneById("conversation", convId);
 
             assert(!convDoc.isNull);
@@ -634,7 +634,7 @@ version(db_usetestdb)
 
             convObject = Conversation.get(convId);
             assert(convObject !is null);
-            assert(convObject.dbId == convId);
+            assert(convObject.id == convId);
             assert(convObject.userDbId == user.id);
             assert(convObject.lastDate == bsonStr(convDoc.lastDate));
             assert(convObject.hasTags(tagsToAdd));
@@ -654,7 +654,7 @@ version(db_usetestdb)
 
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
             assert(convs.length == 1);
-            auto conv  = Conversation.get(convs[0].dbId);
+            auto conv  = Conversation.get(convs[0].id);
             assert(conv !is null);
             assert(conv.lastDate.length); // this email date is set to NOW
             assert(conv.hasTag("inbox"));
@@ -665,7 +665,7 @@ version(db_usetestdb)
             assert(conv.links[0].deleted == false);
 
             convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
-            conv = Conversation.get(convs[1].dbId);
+            conv = Conversation.get(convs[1].id);
             assert(conv !is null);
             assert(conv.lastDate == "2014-06-10T12:51:10Z");
             assert(conv.hasTag("inbox"));
@@ -677,7 +677,7 @@ version(db_usetestdb)
             assert(conv.cleanSubject == " Fwd: Hello My Dearest, please I need your help! POK TEST\n");
             assert(conv.links[0].deleted == false);
 
-            conv = Conversation.get(convs[2].dbId);
+            conv = Conversation.get(convs[2].id);
             assert(conv !is null);
             assert(conv.lastDate == "2014-01-21T14:32:20Z");
             assert(conv.hasTag("inbox"));
@@ -701,26 +701,26 @@ version(db_usetestdb)
 
             auto convs2 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 2, 0);
             assert(convs2.length == 2);
-            assert(convs2[0].dbId == convs[0].dbId);
-            assert(convs2[1].dbId == convs[1].dbId);
+            assert(convs2[0].id == convs[0].id);
+            assert(convs2[1].id == convs[1].id);
             assert(convs2[0].links[0].deleted == false);
             assert(convs2[1].links[0].deleted == false);
 
             auto convs3 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 2, 1);
             assert(convs3.length == 1);
-            assert(convs3[0].dbId == convs[2].dbId);
+            assert(convs3[0].id == convs[2].id);
 
             auto convs4 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 1000, 0);
-            assert(convs4[0].dbId == convs[0].dbId);
-            assert(convs4[1].dbId == convs[1].dbId);
-            assert(convs4[2].dbId == convs[2].dbId);
+            assert(convs4[0].id == convs[0].id);
+            assert(convs4[1].id == convs[1].id);
+            assert(convs4[2].id == convs[2].id);
             assert(convs4[0].links[0].deleted == false);
             assert(convs4[1].links[0].deleted == false);
             assert(convs4[2].links[0].deleted == false);
 
             // check that it doesnt returns the deleted convs
             auto len1 = convs4.length;
-            DriverConversationMongo.addTagDb(convs4[0].dbId, "deleted");
+            DriverConversationMongo.addTagDb(convs4[0].id, "deleted");
             convs4 = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"], 1000, 0);
             assert(convs4.length == len1-1);
             // except when using Yes.WithDeleted
@@ -741,7 +741,7 @@ version(db_usetestdb)
             auto conv = Conversation.getByReferences(user1id,
                     ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
             assert(conv !is null);
-            assert(conv.dbId.length);
+            assert(conv.id.length);
             assert(conv.lastDate == "2013-05-27T05:42:30Z");
             assert(conv.tagsArray == ["inbox"]);
             assert(conv.links.length == 2);
@@ -755,7 +755,7 @@ version(db_usetestdb)
 
             conv = Conversation.getByReferences(user2id, ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
             assert(conv !is null);
-            assert(conv.dbId.length);
+            assert(conv.id.length);
             assert(conv.lastDate == "2014-01-21T14:32:20Z");
             assert(conv.tagsArray == ["inbox"]);
             assert(conv.links.length == 1);
@@ -763,7 +763,7 @@ version(db_usetestdb)
             assert(conv.links[0].emailDbId.length);
             assert(conv.links[0].deleted == false);
 
-            DriverConversationMongo.addTagDb(conv.dbId, "deleted");
+            DriverConversationMongo.addTagDb(conv.id, "deleted");
             // check that it doesnt returns the deleted convs
             conv = Conversation.getByReferences(user2id,
                     ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
@@ -786,7 +786,7 @@ version(db_usetestdb)
 
             auto conv2 = Conversation.getByEmailId(conv.links[0].emailDbId);
             assert(conv2 !is null);
-            assert(conv.dbId == conv2.dbId);
+            assert(conv.id == conv2.id);
 
             auto conv3 = Conversation.getByEmailId("doesntexist");
             assert(conv3 is null);
@@ -799,15 +799,15 @@ version(db_usetestdb)
             recreateTestDb();
             auto convs = Conversation.getByTag("inbox", USER_TO_ID["testuser"]);
             assert(convs.length);
-            auto dbId = convs[0].dbId;
-            DriverConversationMongo.addTagDb(dbId, "testTag");
-            auto conv = Conversation.get(dbId);
+            auto id = convs[0].id;
+            DriverConversationMongo.addTagDb(id, "testTag");
+            auto conv = Conversation.get(id);
             assert(conv !is null);
             assert(conv.hasTag("testtag"));
 
             writeln("Testing DriverConversationMongo.removeTagDb");
-            DriverConversationMongo.removeTagDb(dbId, "testTag");
-            conv = Conversation.get(dbId);
+            DriverConversationMongo.removeTagDb(id, "testTag");
+            conv = Conversation.get(id);
             assert(!conv.hasTag("testtag"));
         }
 
@@ -817,12 +817,12 @@ version(db_usetestdb)
             recreateTestDb();
             auto convs = Conversation.getByTag( "inbox", USER_TO_ID["anotherUser"]);
             assert(convs.length == 3);
-            const id = convs[0].dbId;
+            const id = convs[0].id;
             convs[0].remove();
             convs = Conversation.getByTag("inbox", USER_TO_ID["anotherUser"]);
             assert(convs.length == 2);
             foreach(conv; convs)
-                assert(conv.dbId != id);
+                assert(conv.id != id);
         }
 
         unittest // addEmail
@@ -856,7 +856,7 @@ version(db_usetestdb)
             dbEmail.setOwner(dbEmail.localReceivers()[0]);
             assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
             auto emailId = dbEmail.store();
-            auto convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
+            auto convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).id;
             auto convDoc = findOneById("conversation", convId);
 
             assert(!convDoc.isNull);
@@ -874,7 +874,7 @@ version(db_usetestdb)
 
             auto convObject = Conversation.get(convId);
             assert(convObject !is null);
-            assert(convObject.dbId     == convId);
+            assert(convObject.id     == convId);
             assert(convObject.userDbId == user.id);
             assert(convObject.lastDate == bsonStr(convDoc.lastDate));
             assert(convObject.hasTags(tagsToAdd));
@@ -898,7 +898,7 @@ version(db_usetestdb)
             dbEmail.setOwner(dbEmail.localReceivers()[0]);
             assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
             emailId = dbEmail.store();
-            convId = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
+            convId = Conversation.addEmail(dbEmail, tagsToAdd, []).id;
             convDoc = findOneById("conversation", convId);
             assert(!convDoc.isNull);
             assert(bsonStr(convDoc.userId) == user.id);
@@ -912,7 +912,7 @@ version(db_usetestdb)
 
             convObject = Conversation.get(convId);
             assert(convObject !is null);
-            assert(convObject.dbId == convId);
+            assert(convObject.id == convId);
             assert(convObject.userDbId == user.id);
             assert(convObject.lastDate == bsonStr(convDoc.lastDate));
             assert(convObject.hasTags(tagsToAdd));
@@ -934,7 +934,7 @@ version(db_usetestdb)
             dbEmail.setOwner(dbEmail.localReceivers()[0]);
             assert(dbEmail.destinationAddress == "anotherUser@testdatabase.com");
             emailId = dbEmail.store();
-            convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).dbId;
+            convId  = Conversation.addEmail(dbEmail, tagsToAdd, []).id;
             convDoc = findOneById("conversation", convId);
 
             assert(!convDoc.isNull);
@@ -949,7 +949,7 @@ version(db_usetestdb)
 
             convObject = Conversation.get(convId);
             assert(convObject !is null);
-            assert(convObject.dbId == convId);
+            assert(convObject.id == convId);
             assert(convObject.userDbId == user.id);
             assert(convObject.lastDate == bsonStr(convDoc.lastDate));
             assert(convObject.hasTags(tagsToAdd));
@@ -993,14 +993,14 @@ version(db_usetestdb)
             auto conv = Conversation.getByReferences(user1.id,
                     ["AANLkTi=KRf9FL0EqQ0AVm=pA3DCBgiXYR=vnECs1gUMe@mail.gmail.com"]);
             assert(conv !is null);
-            assert(conv.dbId.length);
-            assert(Conversation.isOwnedBy(conv.dbId, user1.loginName));
+            assert(conv.id.length);
+            assert(Conversation.isOwnedBy(conv.id, user1.loginName));
 
             conv = Conversation.getByReferences(user2.id,
                 ["CAGA-+RThgLfRakYHjW5Egq9xkctTwwqukHgUKxs1y_yoDZCM8w@mail.gmail.com"]);
             assert(conv !is null);
-            assert(conv.dbId.length);
-            assert(Conversation.isOwnedBy(conv.dbId, user2.loginName));
+            assert(conv.id.length);
+            assert(Conversation.isOwnedBy(conv.id, user2.loginName));
         }
 
         unittest // searchEmails

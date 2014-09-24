@@ -10,7 +10,7 @@ interface DriverEmailInterface
 {
     Email get(in string id);
 
-    EmailSummary getSummary(in string dbId);
+    EmailSummary getSummary(in string id);
 
     string generateNewId();
 
@@ -34,15 +34,15 @@ interface DriverEmailInterface
             in string attachmentId
     );
 
-    string getOriginal(in string dbId);
+    string getOriginal(in string id);
 
-    void setDeleted(in string dbId, in bool setDel);
+    void setDeleted(in string id, in bool setDel);
 
-    void purgeById(in string dbId);
+    void purgeById(in string id);
 
     void storeTextIndex(in Email email);
 
     string messageIdToDbId(in string messageId);
 
-    string[] getReferencesFromPrevious(in string dbId);
+    string[] getReferencesFromPrevious(in string id);
 }

@@ -16,7 +16,7 @@ auto NAME_CLEAN_REGEX = ctRegex!(r"[<>]", "g");
 
 final class ApiConversationSummary
 {
-    string         dbId;
+    string         id;
     ulong          numMessages;
     string         lastDate;
     string         subject;
@@ -26,7 +26,7 @@ final class ApiConversationSummary
 
     this (in Conversation conv, in bool withDeleted = false)
     {
-        this.dbId     = conv.dbId;
+        this.id     = conv.id;
         this.lastDate = conv.lastDate;
         this.tags     = conv.tagsArray;
         this.subject  = conv.cleanSubject;
