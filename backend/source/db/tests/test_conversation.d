@@ -371,8 +371,6 @@ version(db_usetestdb)
 
         unittest // getByReferences
         {
-            // XXX CAMBIAR para tomar distintas conversaciones, los dos
-            // msgid que hay son de la misma
             writeln("Testing DriverConversationMongo.getByReferences");
             recreateTestDb();
             immutable user1id = USER_TO_ID["testuser"];

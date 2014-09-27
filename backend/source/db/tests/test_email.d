@@ -8,7 +8,6 @@ version(db_usetestdb)
     import db.email;
     import db.user;
     import retriever.incomingemail;
-    import std.digest.md;
     import std.range;
     import std.stdio;
     import std.string;
@@ -157,41 +156,6 @@ version(db_usetestdb)
 
     unittest // toRFCEmail
     {
-        void assertEmailsEqual(Email dbEmail1, Email dbEmail2)
-        {
-            assert(dbEmail1.messageId                 == dbEmail2.messageId);
-            assert(strip(dbEmail1.from.rawValue)      == strip(dbEmail2.from.rawValue));
-            assert(dbEmail1.from.addresses            == dbEmail2.from.addresses);
-            assert(dbEmail1.receivers.addresses       == dbEmail2.receivers.addresses);
-            assert(strip(dbEmail1.receivers.rawValue) == strip(dbEmail2.receivers.rawValue));
-
-            foreach(name, value; dbEmail1.headers)
-            {
-                if (among(name, "Content-Type", "Received"))
-                    continue; // boundary is going to be different, received multiple
-                auto value2 = dbEmail2.getHeader(name);
-                assert(strip(value.rawValue) == strip(value2.rawValue));
-                assert(value.addresses       == value2.addresses);
-            }
-
-            foreach(idx, ref attach1; dbEmail1.attachments.list)
-            {
-                auto attach2 = dbEmail2.attachments.list()[idx];
-                assert(attach1.ctype     == attach2.ctype);
-                assert(attach1.filename  == attach2.filename);
-                assert(attach1.contentId == attach2.contentId);
-                assert(attach1.size      == attach2.size);
-
-                assert(md5Of(std.file.read(attach1.realPath)) ==
-                       md5Of(std.file.read(attach2.realPath)));
-            }
-
-            foreach(idx, ref textp; dbEmail1.textParts)
-            {
-                assert(strip(textp.content) == strip(dbEmail2.textParts[idx].content));
-            }
-        }
-
         recreateTestDb();
         writeln("Testing Email.toRFCEmail");
         Email dbEmail = null;

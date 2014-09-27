@@ -24,9 +24,6 @@ Backend-Retriever:
       filters of the test DB apply correctly, check searches with the indexer, et
       cetera.
 
-    - Sent the new changes in characterencodings.d to Ruppe
-    (add encodeQuotedPrintable).
-
     - When adding or removing links from a conversation, update
       conversation.lastDate.
 
@@ -40,7 +37,7 @@ Contacts:
     - Use it for getting the shortnames in the ConversationSummary object.
 
 All:
-    - Write more dirty tests, most of them are clean
+    - Write more dirty tests, most of them are clean / happy path
 
     - Run dub with code converage option
 
@@ -50,10 +47,12 @@ All:
       (GridFS?) Check is some email of my collection is bigger than 16MB without
       attachments (=> no)
 
+
 Installation/Configuration system:
     - make it almost-dumb-proof with a script-wizard (or web page) to:
       - check versions
-      - install and configure he Linux packages (postfix, mongo, dub, D compiler,
+      - install and configure dependencies (postfix, mongo, dub, D compiler,
         etc)
       - configure the mail system domain (ask for passwords, initial users, etc)
       - test the mail system
+      - DNS configuration assistant with recipes for Amazon, Linode, etc.

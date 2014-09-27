@@ -1,6 +1,7 @@
 module common.utils;
 
 import arsd.characterencodings;
+import core.exception: AssertError;
 import std.algorithm;
 import std.ascii;
 import std.conv;
@@ -263,21 +264,27 @@ pure
 string quoteHeaderAddressList(string addresses)
 {
     Appender!string resApp;
-    auto c = match(addresses, EMAIL_REGEX2);
-    bool addSpace = false;
-    if (c.pre.length)
+    try
     {
-        resApp.put(quoteHeader(strip(c.pre)) ~ " ");
+        auto c = match(addresses, EMAIL_REGEX2);
+        bool addSpace = false;
+        if (c.pre.length)
+        {
+            resApp.put(quoteHeader(strip(c.pre)) ~ " ");
+        }
+        if (c.hit.length)
+        {
+            resApp.put(c.hit);
+        }
+        if (strip(c.post).length)
+        {
+            resApp.put(quoteHeaderAddressList(c.post));
+        }
+        return resApp.data;
+    } catch (AssertError) {
+        logWarn("Warning, could not regexp-parse address list: ", addresses);
+        return addresses;
     }
-    if (c.hit.length)
-    {
-        resApp.put(c.hit);
-    }
-    if (strip(c.post).length)
-    {
-        resApp.put(quoteHeaderAddressList(c.post));
-    }
-    return resApp.data;
 }
 
 

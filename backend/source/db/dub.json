@@ -10,6 +10,7 @@
                             "../webbackend/source/app.d",
                             "../webbackend/source/api.d",
                             "../webbackend/test.d",
+                            "../webbackend/public/*",
                             "../webbackend/source/test.d"],
     "dependencies": { "vibe-d": "~master",
                       "dauth": ">=0.6.1",

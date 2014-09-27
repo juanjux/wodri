@@ -430,20 +430,10 @@ final class Email
     }
 
 
-    // XXX tests:
-    // 1. Alternative no attach
-    // 2. Alternative + non related attach
-    // 3. Attach no parts
-    // 4. 2 attachs, no parts
-    // 5. Single text plain part
-    // 6. Single text html part
-    // 7. No attachs, no text parts (empty)
-    // 8. Related, alternative inside with related attachs
-    // Parse the result with IncomingEmail to check
     string toRFCEmail(in string lineEnd = "\r\n")
     in
     {
-        assert(this.from.addresses.length);
+        assert(this.from.rawValue.length);
         assert(lineEnd.length);
     }
     body
@@ -559,12 +549,20 @@ final class Email
             mainBoundary = randomString(25);
             ctypeHeaderStr ~= "; boundary=" ~ mainBoundary;
         }
+        else if (among(ctype, "text/plain", "text/html"))
+        {
+            ctypeHeaderStr ~= "; charset=UTF-8";
+            headerApp.put("Content-Transfer-Encoding: quoted-printable" ~ lineEnd);
+        }
 
         // get content type and boundary if mixed
         headerApp.put("Message-ID: " ~ this.messageId ~ lineEnd);
         headerApp.put("From: " ~ quoteHeaderAddressList(strip(this.from.rawValue)) ~ lineEnd);
         headerApp.put("MIME-Version: 1.0" ~ lineEnd);
-        headerApp.put("Return-Path: <" ~ this.from.addresses[0] ~ ">" ~ lineEnd);
+        if (this.from.addresses.length)
+            headerApp.put("Return-Path: <" ~ this.from.addresses[0] ~ ">" ~ lineEnd);
+        else
+            logWarn("No From address in the email when generating RFC output");
         headerApp.put(ctypeHeaderStr ~ lineEnd);
 
         // Rest of headers, iterate and quote the content if needed
@@ -578,7 +576,7 @@ final class Email
 
             // skip these
             if (among(lowName, "content-type", "return-path", "mime-version",
-                      "from", "message-id"))
+                      "from", "message-id", "content-transfer-encoding"))
             {
                 continue;
             }
@@ -587,10 +585,14 @@ final class Email
                            "resent-to", "resent-cc", "resent-bcc", "delivered-to",
                             "delivered-from"))
             {
-                encodedValue = quoteHeaderAddressList(strip(value.rawValue));
+                string stripValue = strip(value.rawValue);
+                if (stripValue.length && !toLower(stripValue).startsWith("undisclosed-recipients"))
+                    encodedValue = quoteHeaderAddressList(value.rawValue);
+                else
+                    encodedValue = value.rawValue;
             }
             // DONT encode these
-            else if (among(lowName, "content-type", "content-transfer-encoding", "received",
+            else if (among(lowName, "content-type", "received",
                            "received-spf", "message-id", "reply-to", "mime-version",
                            "resent-reply-to", "resent-message-id", "dkim-signature",
                            "authentication-results", "original-message-id", "encoding"))
@@ -603,10 +605,13 @@ final class Email
                 encodedValue = quoteHeader(strip(value.rawValue));
             }
 
-            headerApp.put(format("%s: %s%s",
-                                 capitalizeHeader(headerName),
-                                 encodedValue,
-                                 lineEnd));
+            if (encodedValue.length)
+            {
+                headerApp.put(format("%s: %s%s",
+                                     capitalizeHeader(headerName),
+                                     encodedValue,
+                                     lineEnd));
+            }
         }
 
         return headerApp.data;

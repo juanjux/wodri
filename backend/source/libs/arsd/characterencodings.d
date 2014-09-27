@@ -285,7 +285,7 @@ string decodeEncodedWord(string data, bool headerVariant = false) {
         data = data[questionMark + 2 .. $];
 
         delimiter = data.indexOf("=?");
-        if (delimiter == 1 && (data[0] == ' ' || data[0] == '\n') || 
+        if (delimiter == 1 && (data[0] == ' ' || data[0] == '\n') ||
             delimiter == 3 && data[0..2] == "\n " ||
             delimiter == 3 && data[0..2] == "\r\n" ||
             delimiter == 4 && data[0..3] == "\r\n ") {
@@ -326,7 +326,7 @@ immutable(ubyte)[] decodeQuotedPrintable(string text, bool headerVariant = false
                     state++;
                     hexByte = 0;
                   // RFC2047 4.2.2: a _ may be used to represent a space on headers
-                } else if (headerVariant && b == '_') { 
+                } else if (headerVariant && b == '_') {
                     ret ~= ' ';
                 }
                   else {
@@ -334,7 +334,7 @@ immutable(ubyte)[] decodeQuotedPrintable(string text, bool headerVariant = false
                 }
             break;
             case 1:
-                if(b == '\r') 
+                if(b == '\r')
                     continue;
                 else if(b == '\n') {
                     state = 0;
@@ -630,4 +630,3 @@ immutable dchar[] Windows_1251 = [
     'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п',
     'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч',
     'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я'];
-
