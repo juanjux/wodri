@@ -10,8 +10,8 @@
     "buildRequirements": ["requireBoundsCheck"],
     "dependencies": {
         "vibe-d": "~master",
-		"dauth": ">=0.6.1"
-    },
+		"dauth": ">=0.6.1",
+        "smtp"  : ">=0.2.0"},
     "versions": ["VibeDefaultMain", "db_usetestdb", "MongoDriver"],
     "configurations": [
         {
@@ -22,7 +22,7 @@
         },
         {
             "name": "curltest",
-            "versions": ["db_usetestdb"],
+            "versions": ["VibeDefaultMain", "db_usetestdb", "MongoDriver"],
             "targetName": "test",
             "targetType": "executable",
             "platforms": ["posix"],

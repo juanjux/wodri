@@ -31,8 +31,10 @@ override:
         {
             string[] missingKeys = [];
             foreach(key; keys)
+            {
                 if (dbConfig[key].isNull)
                     missingKeys ~= key;
+            }
 
             if (missingKeys.length)
             {
@@ -44,7 +46,7 @@ override:
         }
 
         checkNotNull(["mainDir", "apiDomain", "smtpServer", "smtpUser", "smtpPass",
-                "smtpEncription", "smtpPort", "rawEmailStore", "attachmentStore", "salt",
+                "smtpEncryption", "smtpPort", "rawEmailStore", "attachmentStore", "salt",
                 "incomingMessageLimit", "storeTextIndex", "bodyPeekLength",
                 "URLAttachmentPath", "URLStaticPath"]);
 
@@ -53,7 +55,7 @@ override:
         config.smtpServer           = bsonStr(dbConfig.smtpServer);
         config.smtpUser             = bsonStr(dbConfig.smtpUser);
         config.smtpPass             = bsonStr(dbConfig.smtpPass);
-        config.smtpEncription       = to!uint(bsonNumber(dbConfig.smtpEncription));
+        config.smtpEncryption       = to!uint(bsonNumber(dbConfig.smtpEncryption));
         config.smtpPort             = to!ulong(bsonNumber(dbConfig.smtpPort));
         config.salt                 = bsonStr(dbConfig.salt);
         auto dbPath                   = bsonStr(dbConfig.rawEmailStore);
@@ -79,6 +81,7 @@ override:
     {
         import vibe.data.json;
 
+        import std.stdio; // XXX quitar
         collection("settings").remove();
         string settingsJsonStr = format(`
         {
@@ -91,7 +94,7 @@ override:
                 "storeTextIndex"       : true,
                 "module"               : "retriever",
                 "rawEmailStore"        : "backend/test/rawemails",
-                "smtpEncription"       : 0,
+                "smtpEncryption"       : 0,
                 "smtpPass"             : "smtpPass",
                 "smtpPort"             : 25,
                 "smtpServer"           : "localhost",

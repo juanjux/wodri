@@ -26,7 +26,7 @@ struct RetrieverConfig
     ulong  incomingMessageLimit;
     bool   storeTextIndex;
     string smtpServer;
-    uint   smtpEncription;
+    uint   smtpEncryption;
     ulong  smtpPort;
     string smtpUser;
     string smtpPass;
@@ -59,12 +59,12 @@ shared static this()
     }
     enforce(g_driverInterface !is null, "Configure a DB backend");
 
-    g_retrieverConfig = g_driverInterface.getConfig();
-
     version(anytestdb)
     {
         g_driverInterface.insertTestSettings();
     }
+
+    g_retrieverConfig = g_driverInterface.getConfig();
 }
 
 ref immutable(RetrieverConfig) getConfig() { return g_retrieverConfig; }

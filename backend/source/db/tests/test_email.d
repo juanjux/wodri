@@ -3,35 +3,37 @@ module db.tests.test_email;
 version(db_test)
 version(db_usetestdb)
 {
-    import db.test_support;
     import db.conversation;
     import db.email;
+    import db.test_support;
     import db.user;
     import retriever.incomingemail;
+    import std.algorithm;
+    import std.digest.digest;
+    import std.digest.md;
+    import std.file;
     import std.range;
     import std.stdio;
     import std.string;
     import std.typecons;
-    import std.file;
-    import std.algorithm;
     import webbackend.apiemail;
 
     unittest  // this(ApiEmail)
     {
         writeln("Testing Email.this(ApiEmail)");
-        auto user = User.getFromAddress("anotherUser@testdatabase.com");
-        auto apiEmail    = new ApiEmail;
-        apiEmail.from    = "anotherUser@testdatabase.com";
-        apiEmail.to      = "juanjux@gmail.com";
-        apiEmail.subject = "draft subject 1";
-        apiEmail.isoDate = "2014-08-20T15:47:06Z";
-        apiEmail.date    = "Wed, 20 Aug 2014 15:47:06 +02:00";
-        apiEmail.deleted = false;
-        apiEmail.draft   = true;
-        apiEmail.bodyHtml="<strong>I can do html like the cool boys!</strong>";
+        auto user         = User.getFromAddress("anotherUser@testdatabase.com");
+        auto apiEmail     = new ApiEmail;
+        apiEmail.from     = "anotherUser@testdatabase.com";
+        apiEmail.to       = "juanjux@gmail.com";
+        apiEmail.subject  = "draft subject 1";
+        apiEmail.isoDate  = "2014-08-20T15:47:06Z";
+        apiEmail.date     = "Wed, 20 Aug 2014 15:47:06 +02:00";
+        apiEmail.deleted  = false;
+        apiEmail.draft    = true;
+        apiEmail.bodyHtml = "<strong>I can do html like the cool boys!</strong>";
 
         // Test1: New draft, no reply
-        auto dbEmail = new Email(apiEmail, "");
+        auto dbEmail   = new Email(apiEmail, "");
         dbEmail.userId = user.id;
         dbEmail.store();
         assert(dbEmail.id.length);
@@ -54,11 +56,11 @@ version(db_usetestdb)
         auto emailRepliedObject = getTestDbEmail("testuser", 0, 1);
         auto emailReferences    = emailRepliedObject.getHeader("references").addresses;
 
-        apiEmail.id      = "";
+        apiEmail.id        = "";
         apiEmail.messageId = "";
         apiEmail.bodyPlain = "I cant do html";
 
-        dbEmail = new Email(apiEmail, emailRepliedObject.id);
+        dbEmail        = new Email(apiEmail, emailRepliedObject.id);
         dbEmail.userId = user.id;
         dbEmail.store();
         assert(dbEmail.id.length);
@@ -554,7 +556,7 @@ version(db_usetestdb)
             assert(bsonStr(emailDoc.attachments[0].id).length);
             assert(bsonStr(emailDoc.attachments[1].id).length);
             assert(bsonStr(emailDoc.isodate) == "2013-05-27T05:42:30Z");
-            assert(bsonStr(emailDoc.receivers.addresses[0]) == "testuser@testdatabase.com");
+            assert(bsonStrArray(emailDoc.receivers) == ["testuser@testdatabase.com"]);
             assert(bsonStr(emailDoc.from.addresses[0]) == "someuser@somedomain.com");
             assert(emailDoc.textParts.length == 2);
             assert(bsonStr(emailDoc.bodyPeek) == "Some text inside the email plain part");
@@ -637,8 +639,7 @@ version(db_usetestdb)
             assert(email.destinationAddress == "testuser@testdatabase.com");
             assert(email.messageId ==
                     "CAAfONcs2L4Y68aPxihL9Hk0PnuapXgKr0ZGP6z4HjPLqOv+PWg@mail.gmail.com");
-            assert(email.receivers == HeaderValue(" Test User1 <testuser@testdatabase.com>",
-                                                  ["testuser@testdatabase.com"]));
+            assert(email.receivers == ["testuser@testdatabase.com"]);
             assert(email.rawEmailPath.length);
             assert(email.attachments.length == 2);
             assert(email.attachments.list[0].ctype == "image/png");

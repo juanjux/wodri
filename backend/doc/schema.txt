@@ -21,7 +21,7 @@ to the "maindir" setting. The incomingMessageLimit is in bytes.
 
 {
         "_id" : "5399793904ac3d27431d0669",
-        "smtpEncription" : 0,
+        "smtpEncryption" : 0,
         "module" : "retriever",
         "incomingMessageLimit" : 15728640,
         "smtpUser" : "smtpUser",
@@ -83,7 +83,7 @@ EMAIL
 An email. Only the fields that would be displayed on the frontend gui and some
 support fields are stored on the database. A copy of the original email is kept on
 the filesystem if the user wants to see the original email (could also be used for
-a database recovery process).  
+a database recovery process).
 
 Note: email["headers"] will contain all the headers except "Message-ID" and "From"
 because they're outside the headers subdoc (for easier indexing by MongoDB). A
@@ -93,7 +93,7 @@ times; each list item was an additional header entry in the original email.
 The "destinationAddress" field indicates the destination this email was really
 directed to (an email address can have several destination emails in our system,
 even several to the same user, but every copy as rececived from an external SMTP
-server is directed to a single address). It will be empty for emails generated and sent 
+server is directed to a single address). It will be empty for emails generated and sent
 from the system.
 
 
@@ -175,5 +175,3 @@ Tags are stored in conversations.
     ],
     "userId": "<user id>"
 }
-
-

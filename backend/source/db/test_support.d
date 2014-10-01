@@ -100,11 +100,10 @@ void assertEmailsEqual(Email dbEmail1,
                        Email dbEmail2,
                        Flag!"CompareBody" comparebody = Yes.CompareBody)
 {
-    assert(dbEmail1.messageId                 == dbEmail2.messageId);
-    assert(strip(dbEmail1.from.rawValue)      == strip(dbEmail2.from.rawValue));
-    assert(dbEmail1.from.addresses            == dbEmail2.from.addresses);
-    assert(dbEmail1.receivers.addresses       == dbEmail2.receivers.addresses);
-    assert(strip(dbEmail1.receivers.rawValue) == strip(dbEmail2.receivers.rawValue));
+    assert(dbEmail1.messageId            == dbEmail2.messageId);
+    assert(strip(dbEmail1.from.rawValue) == strip(dbEmail2.from.rawValue));
+    assert(dbEmail1.from.addresses       == dbEmail2.from.addresses);
+    assert(dbEmail1.receivers            == dbEmail2.receivers);
 
     foreach(name, value; dbEmail1.headers)
     {

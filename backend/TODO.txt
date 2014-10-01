@@ -1,14 +1,25 @@
 Backend-API:
     - POST /message/:id/send
+      + Revisar los XXX
+      + Poner el draft a false.
 
-    Next: contacts API (document)
+    - Move to my server, test sending using Amazon SES with the wodri.com domain
 
 Backend-Retriever:
-    - Email.send()
+    - Test send():
+      + Write unittest
+      + Configure Postfix (allow Auth and without Auth)
+      + Send with and without auth
+      + Send with and without TLS
 
-    - Contact DB and Api objects, contact DB driver.
+    - Email document: add a "actionLog" to every email to record sending failures.
+
+    - Investigate an implement the DKIM and other security checks, see page on my
+      bookmarks, try it on my server.
 
     Later:
+    - Contact DB and Api objects, contact DB driver.
+
     - general hunting of XXX and FIXMEs
 
     - Use log to log more warnings, specially on db.*

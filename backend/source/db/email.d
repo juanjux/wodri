@@ -42,6 +42,14 @@ struct TextPart
     }
 }
 
+class SmtpAuthException : Exception
+{
+    this(string message = "", string file = __FILE__, size_t line = __LINE__, Exception next = null)
+    {
+        super(message, file, line, next);
+    }
+}
+
 
 final class EmailSummary
 {
@@ -80,7 +88,7 @@ final class Email
     string         destinationAddress;
     string         messageId;
     HeaderValue    from;
-    HeaderValue    receivers;
+    string[]       receivers;
     AttachContainer attachments;
     alias attachments this;
     string         rawEmailPath;
@@ -207,7 +215,7 @@ final class Email
     {
         if (!this.bodyPeek.length)
             extractBodyPeek();
-        if (!this.receivers.addresses.length)
+        if (!this.receivers.length)
             loadReceivers();
     }
 
@@ -261,21 +269,29 @@ final class Email
 
     private void loadReceivers()
     {
-        // Some emails doesnt have a "To:" header but a "Delivered-To:". Really!
-        string realReceiverField;
-        if (hasHeader("to"))
-            realReceiverField = "to";
-        else if (hasHeader("bcc"))
-            realReceiverField = "bcc";
-        else if (hasHeader("delivered-to"))
-            realReceiverField = "delivered-to";
-        else
+        bool hasTo = false;
+        foreach(ref field; ["to", "cc", "bcc", "delivered-to"])
+        {
+            if (hasHeader(field))
+            {
+                if (among(field, "to", "delivered-to"))
+                {
+                    if (hasTo)
+                        continue;
+                    else
+                        hasTo = true;
+                }
+                auto fieldHv = getHeader(field);
+                if (fieldHv.addresses.length)
+                    this.receivers ~= fieldHv.addresses;
+            }
+        }
+        if (!this.receivers.length)
         {
             auto err = "Email doesnt have any receiver field set (to, cc, bcc, etc)";
             logError(err);
             return;
         }
-        this.receivers = getHeader(realReceiverField);
     }
 
 
@@ -420,13 +436,95 @@ final class Email
         string[] localAddresses;
 
         foreach(headerName; ["to", "cc", "bcc", "delivered-to"])
+        {
             allAddresses ~= getHeader(headerName).addresses;
+        }
 
         foreach(addr; allAddresses)
+        {
             if (User.addressIsLocal(addr))
                 localAddresses ~= addr;
+        }
 
         return localAddresses;
+    }
+
+
+    void send()
+    in
+    {
+        assert(this.from.addresses.length);
+        assert(this.receivers.length);
+    }
+    body
+    {
+        import smtp.client;
+        import smtp.ssl;
+        import smtp.reply;
+
+        auto config = getConfig();
+        auto client = scoped!SmtpClient(config.smtpServer, to!ushort(config.smtpPort));
+
+        if (!client.connect().success)
+        {
+            logError("Could not connect to SMTP server at address ", config.smtpServer,
+                     " and port ", config.smtpPort);
+            return;
+        }
+
+        scope(exit)
+        {
+            client.quit();
+            client.disconnect();
+        }
+
+        client.ehlo();
+
+        SmtpReply reply = void;
+        if (config.smtpEncryption)
+        {
+            reply = client.starttls();
+            if (!client.secure)
+            {
+                logError("Sending Email to SMTP, could not start TLS: "
+                         ~ reply.toString);
+                return;
+            }
+        }
+
+        client.mail(this.from.addresses[0]);
+        foreach(ref dest; this.receivers)
+            client.rcpt(dest);
+        client.data();
+
+        // auth
+        if (config.smtpUser.length)
+        {
+            try
+            {
+                reply = client.auth(SmtpAuthType.PLAIN);
+                if (!reply.success)
+                    throw new SmtpAuthException();
+                reply = client.authPlain(config.smtpUser, config.smtpPass);
+                if (!reply.success)
+                    throw new SmtpAuthException();
+            } catch (SmtpAuthException e) {
+                logError("Error authenticating to SMTP: " ~ reply.toString);
+                return;
+            }
+        }
+
+        // send
+        reply = client.dataBody(toRFCEmail());
+
+        if (!reply.success)
+        {
+            logError("Sending Email to SMTP: " ~ reply.toString);
+            return;
+        }
+
+        this.draft = false;
+        store();
     }
 
 

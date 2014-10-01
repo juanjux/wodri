@@ -86,8 +86,7 @@ override: // interface methods
         ret.messageId          = bsonStr(emailDoc["message-id"]);
         ret.from               = HeaderValue(bsonStrSafe(emailDoc["from"].rawValue),
                                              bsonStrArraySafe(emailDoc["from"].addresses));
-        ret.receivers          = HeaderValue(bsonStr(emailDoc["receivers"].rawValue),
-                                             bsonStrArray(emailDoc["receivers"].addresses));
+        ret.receivers          = bsonStrArray(emailDoc["receivers"]);
         ret.rawEmailPath       = bsonStrSafe(emailDoc["rawEmailPath"]);
         ret.bodyPeek           = bsonStrSafe(emailDoc["bodyPeek"]);
         ret.isoDate            = bsonStr(emailDoc["isodate"]);
@@ -469,7 +468,7 @@ override: // interface methods
               `"message-id": %s,`    ~
               `"isodate": %s,`      ~
               `"from": { "rawValue": %s, "addresses": %s },` ~
-              `"receivers": { "rawValue": %s, "addresses": %s },`   ~
+              `"receivers": %s,`   ~
               `"headers": %s, `    ~
               `"textParts": [ %s ], ` ~
               `"bodyPeek": %s, `,
@@ -482,7 +481,7 @@ override: // interface methods
                 Json(email.messageId).toString,
                 Json(email.isoDate).toString,
                 Json(email.from.rawValue).toString,      email.from.addresses,
-                Json(email.receivers.rawValue).toString, email.receivers.addresses,
+                email.receivers,
                 rawHeadersStr,
                 textPartsJsonStr,
                 Json(email.bodyPeek).toString,

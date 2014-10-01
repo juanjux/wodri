@@ -18,7 +18,8 @@
     "version": "0.0.1",
     "name": "testdb",
     "buildRequirements": ["requireBoundsCheck"],
-    "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing", "MongoDriver"],
+    "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing",
+                 "MongoDriver", "ssl_no_ssl2"],
     "subConfigurations": {"smtp": "ssl"},
 
     "configurations": [

@@ -84,11 +84,11 @@ void deleteEmail(string id, bool purge=false)
 }
 
 
-string emailJson(string dbId, string messageId)
+string emailJson(string id, string messageId)
 {
     auto json = format(
             `{
-            "dbId": "%s",
+            "id": "%s",
             "messageId": "%s",
             "from": "anotherUser@testdatabase.com",
             "to": "juanjux@gmail.com",
@@ -104,7 +104,7 @@ string emailJson(string dbId, string messageId)
             "attachments": [
                 {
                     "Url": "/attachments/somecode.jpg",
-                    "dbId": "",
+                    "id": "",
                     "ctype": "image/jpeg",
                     "filename": "somecode.jpg",
                     "contentId": "somecontentid",
@@ -112,7 +112,7 @@ string emailJson(string dbId, string messageId)
                 }
             ]
             }`,
-            dbId, messageId);
+            id, messageId);
     return json;
 }
 
@@ -199,7 +199,7 @@ JSONValue addAttachment(string emailId)
     string base64Content = "aGVsbG8gd29ybGQ="; // "hello world"
     auto postData = format(`{"attachment":`~
                           `{"Url": "",`~
-                          `"dbId": "",`~
+                          `"id": "",`~
                           `"ctype": "text/plain",`~
                           `"filename": "test.txt",`~
                           `"contentId": "somecontentid",`~
@@ -229,9 +229,9 @@ void testGetConversation()
     recreateTestDb();
     USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto convId1  = conversations[0]["dbId"].str;
-    auto convId2  = conversations[1]["dbId"].str;
-    auto convId3  = conversations[2]["dbId"].str;
+    auto convId1  = conversations[0]["id"].str;
+    auto convId2  = conversations[1]["id"].str;
+    auto convId3  = conversations[2]["id"].str;
     enforce(convId1.length);
 
     auto conversation  = getConversationById(convId2);
@@ -245,12 +245,12 @@ void testGetConversation()
     // delete email, check that the returned email summaries have that email.deleted=true
     USER = "testuser";
     conversations = getConversations("inbox", 20, 0, false);
-    auto twoEmailsConvId = conversations[0]["dbId"].str;
+    auto twoEmailsConvId = conversations[0]["id"].str;
     auto conversationSingleEmail = getConversationById(twoEmailsConvId);
     enforce(conversationSingleEmail["summaries"].array.length == 2);
 
     // delete the first email of this conversation
-    deleteEmail(conversationSingleEmail["summaries"].array[0]["dbId"].str, false);
+    deleteEmail(conversationSingleEmail["summaries"].array[0]["id"].str, false);
     auto conversationSingleEmailReload = getConversationById(twoEmailsConvId);
     // first should be deleted, second shouldn't
     enforce(conversationSingleEmailReload["summaries"].array[0]["deleted"].type ==
@@ -275,7 +275,7 @@ void testGetTagConversations()
     enforce(strip(conversations[0]["subject"].str) == "Tired of Your Hosting Company?");
     enforce(strip(conversations[1]["subject"].str) == "Fwd: Hello My Dearest, please I need your help! POK TEST");
     enforce(strip(conversations[2]["subject"].str) == "Attachment test");
-    auto convId0 = conversations[0]["dbId"].str;
+    auto convId0 = conversations[0]["id"].str;
 
     enforce(conversations[0]["numMessages"].integer == 1 &&
            conversations[1]["numMessages"].integer == 3 &&
@@ -298,7 +298,7 @@ void testGetTagConversations()
 
     USER = "testuser";
     auto conversations2 = getConversations("inbox", 20, 0);
-    enforce(convId0 != conversations2[0]["dbId"].str);
+    enforce(convId0 != conversations2[0]["id"].str);
 }
 
 
@@ -308,7 +308,7 @@ void testConversationAddTag()
     recreateTestDb();
     USER = "testuser";
     auto conversations = getConversations("inbox", 20, 0, false);
-    auto convId = conversations[0]["dbId"].str;
+    auto convId = conversations[0]["id"].str;
     addTag(convId, "newtag");
     auto conv = getConversationById(convId);
     enforce(jsonToArray(conv["tags"]) == ["inbox", "newtag"]);
@@ -338,7 +338,7 @@ void testConversationRemoveTag()
     recreateTestDb();
     USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto convId = conversations[0]["dbId"].str;
+    auto convId = conversations[0]["id"].str;
     removeTag(convId, "inbox");
     auto conv = getConversationById(convId);
     enforce(jsonToArray(conv["tags"]).length == 0);
@@ -365,9 +365,9 @@ void testGetEmail()
 
     USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto singleConversation = getConversationById(conversations[0]["dbId"].str);
-    auto email = getEmail(singleConversation["summaries"][0]["dbId"].str);
-    enforce(email["dbId"].str == singleConversation["summaries"][0]["dbId"].str);
+    auto singleConversation = getConversationById(conversations[0]["id"].str);
+    auto email = getEmail(singleConversation["summaries"][0]["id"].str);
+    enforce(email["id"].str == singleConversation["summaries"][0]["id"].str);
     enforce(strip(email["from"].str) ==  "SupremacyHosting.com Sales <brian@supremacyhosting.com>");
     enforce(strip(email["subject"].str) == "Tired of Your Hosting Company?");
     enforce(strip(email["to"].str) == "<anotherUser@anotherdomain.com>");
@@ -379,9 +379,9 @@ void testGetEmail()
 
     USER = "testuser";
     conversations = getConversations("inbox", 20, 0, false);
-    singleConversation = getConversationById(conversations[0]["dbId"].str);
-    email = getEmail(singleConversation["summaries"][0]["dbId"].str, No.GetRaw);
-    enforce(email["dbId"].str == singleConversation["summaries"][0]["dbId"].str);
+    singleConversation = getConversationById(conversations[0]["id"].str);
+    email = getEmail(singleConversation["summaries"][0]["id"].str, No.GetRaw);
+    enforce(email["id"].str == singleConversation["summaries"][0]["id"].str);
     enforce(strip(email["from"].str) ==  "Test Sender <someuser@insomedomain.com>");
     enforce(strip(email["subject"].str) == "some subject \"and quotes\" and noquotes");
     enforce(strip(email["to"].str) == "Test User2 <testuser@testdatabase.com>");
@@ -391,8 +391,8 @@ void testGetEmail()
     enforce(toHexString(md5Of(email["bodyHtml"].str)) == "710774126557E2D8219DCE10761B5838");
     enforce(email["attachments"].array.length == 0);
 
-    email = getEmail(singleConversation["summaries"][1]["dbId"].str, No.GetRaw);
-    enforce(email["dbId"].str == singleConversation["summaries"][1]["dbId"].str);
+    email = getEmail(singleConversation["summaries"][1]["id"].str, No.GetRaw);
+    enforce(email["id"].str == singleConversation["summaries"][1]["id"].str);
     enforce(strip(email["from"].str) ==  "Some User <someuser@somedomain.com>");
     enforce(strip(email["subject"].str) == "Fwd: Se ha evitado un inicio de sesión sospechoso");
     enforce(strip(email["to"].str) == "Test User1 <testuser@testdatabase.com>");
@@ -418,7 +418,7 @@ void testGetEmail()
 
     // check auth
     USER = "anotherUser";
-    email = getEmail(singleConversation["summaries"][1]["dbId"].str, No.GetRaw);
+    email = getEmail(singleConversation["summaries"][1]["id"].str, No.GetRaw);
     enforce(email.type == JSON_TYPE.NULL);
 }
 
@@ -428,15 +428,15 @@ void testGetRawEmail()
     recreateTestDb();
     USER = "testuser";
     auto conversations = getConversations("inbox", 20, 0, false);
-    auto singleConversation = getConversationById(conversations[0]["dbId"].str);
-    auto rawText = getEmail(singleConversation["summaries"][1]["dbId"].str, Yes.GetRaw).str;
+    auto singleConversation = getConversationById(conversations[0]["id"].str);
+    auto rawText = getEmail(singleConversation["summaries"][1]["id"].str, Yes.GetRaw).str;
     // if this fails, check first the you didn't clean the messeges (rerun test_db.sh)
     enforce(toHexString(md5Of(rawText)) == "55E0B6D2FCA0C06A886C965DC24D1EBE");
     enforce(rawText.length == 22516);
 
     // check auth
     USER = "anotherUser";
-    string noUserRet = getEmail(singleConversation["summaries"][1]["dbId"].str, Yes.GetRaw).str;
+    string noUserRet = getEmail(singleConversation["summaries"][1]["id"].str, Yes.GetRaw).str;
     enforce(!noUserRet.length);
 }
 
@@ -447,8 +447,8 @@ void testDeleteEmail()
     recreateTestDb();
     USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto singleConversation = getConversationById(conversations[0]["dbId"].str);
-    auto emailId = singleConversation["summaries"][0]["dbId"].str;
+    auto singleConversation = getConversationById(conversations[0]["id"].str);
+    auto emailId = singleConversation["summaries"][0]["id"].str;
     auto email = getEmail(emailId);
     deleteEmail(emailId);
     auto reloadedEmail = getEmail(emailId);
@@ -457,8 +457,8 @@ void testDeleteEmail()
     // check auth
     recreateTestDb();
     conversations = getConversations("inbox", 20, 0);
-    singleConversation = getConversationById(conversations[0]["dbId"].str);
-    emailId = singleConversation["summaries"][0]["dbId"].str;
+    singleConversation = getConversationById(conversations[0]["id"].str);
+    emailId = singleConversation["summaries"][0]["id"].str;
     email = getEmail(emailId);
     USER = "testuser";
     deleteEmail(emailId);
@@ -475,9 +475,9 @@ void testPurgeEmail()
 
     USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto singleConversationId = conversations[0]["dbId"].str;
+    auto singleConversationId = conversations[0]["id"].str;
     auto singleConversation = getConversationById(singleConversationId);
-    auto emailId = singleConversation["summaries"][0]["dbId"].str;
+    auto emailId = singleConversation["summaries"][0]["id"].str;
     deleteEmail(emailId, true);
     auto reloadedEmail = getEmail(emailId);
     enforce(reloadedEmail.type == JSON_TYPE.NULL);
@@ -491,9 +491,9 @@ void testPurgeEmail()
     // too
     recreateTestDb();
     conversations = getConversations("inbox", 20, 0);
-    auto fakeMultiConversationId = conversations[2]["dbId"].str;
+    auto fakeMultiConversationId = conversations[2]["id"].str;
     auto fakeMultiConversation = getConversationById(fakeMultiConversationId);
-    emailId = fakeMultiConversation["summaries"][0]["dbId"].str;
+    emailId = fakeMultiConversation["summaries"][0]["id"].str;
     deleteEmail(emailId, true);
     reloadedEmail = getEmail(emailId);
     enforce(reloadedEmail.type == JSON_TYPE.NULL);
@@ -506,9 +506,9 @@ void testPurgeEmail()
     recreateTestDb();
     USER = "testuser";
     conversations = getConversations("inbox", 20, 0);
-    auto multiConversationId = conversations[0]["dbId"].str;
+    auto multiConversationId = conversations[0]["id"].str;
     auto multiConversation = getConversationById(multiConversationId);
-    emailId = multiConversation["summaries"][0]["dbId"].str;
+    emailId = multiConversation["summaries"][0]["id"].str;
     deleteEmail(emailId, true);
     reloadedEmail = getEmail(emailId);
     enforce(reloadedEmail.type == JSON_TYPE.NULL);
@@ -516,14 +516,14 @@ void testPurgeEmail()
     auto reloadedMultiConversation = getConversationById(multiConversationId);
     enforce(reloadedMultiConversation.type != JSON_TYPE.NULL);
     enforce(reloadedMultiConversation["summaries"].array.length == 1);
-    enforce(reloadedMultiConversation["summaries"].array[0]["dbId"].str != emailId);
+    enforce(reloadedMultiConversation["summaries"].array[0]["id"].str != emailId);
 
     // check auth
     USER = "testuser";
     conversations = getConversations("inbox", 20, 0);
-    multiConversationId = conversations[0]["dbId"].str;
+    multiConversationId = conversations[0]["id"].str;
     multiConversation = getConversationById(multiConversationId);
-    emailId = multiConversation["summaries"][0]["dbId"].str;
+    emailId = multiConversation["summaries"][0]["id"].str;
     USER = "anotherUser";
     deleteEmail(emailId, true);
     USER = "testuser";
@@ -538,20 +538,20 @@ void testDeleteConversation()
     recreateTestDb();
     USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto convId = conversations[0]["dbId"].str;
+    auto convId = conversations[0]["id"].str;
     auto conv = getConversationById(convId);
     deleteConversation(convId);
     auto reloadedConv = getConversationById(convId);
     enforce(reloadedConv["tags"].array[0].str == "deleted");
     enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
-    auto email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
+    auto email = getEmail(reloadedConv["summaries"].array[0]["id"].str);
     enforce(email["deleted"].type == JSON_TYPE.TRUE);
 
     // check auth
     recreateTestDb();
     USER = "anotherUser";
     conversations = getConversations("inbox", 20, 0);
-    convId = conversations[0]["dbId"].str;
+    convId = conversations[0]["id"].str;
     conv = getConversationById(convId);
     USER = "testuser";
     deleteConversation(convId);
@@ -567,13 +567,13 @@ void testPurgeConversation()
     recreateTestDb();
     USER = "testuser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto convId = conversations[0]["dbId"].str;
+    auto convId = conversations[0]["id"].str;
     auto conv = getConversationById(convId);
     deleteConversation(convId, true);
     auto reloadedConv = getConversationById(convId);
     enforce(reloadedConv.type == JSON_TYPE.NULL);
-    auto email1 = getEmail(conv["summaries"].array[0]["dbId"].str);
-    auto email2 = getEmail(conv["summaries"].array[1]["dbId"].str);
+    auto email1 = getEmail(conv["summaries"].array[0]["id"].str);
+    auto email2 = getEmail(conv["summaries"].array[1]["id"].str);
     enforce(email1.type == JSON_TYPE.NULL);
     enforce(email2.type == JSON_TYPE.NULL);
 
@@ -581,7 +581,7 @@ void testPurgeConversation()
     recreateTestDb();
     USER = "testuser";
     conversations = getConversations("inbox", 20, 0);
-    convId = conversations[0]["dbId"].str;
+    convId = conversations[0]["id"].str;
     conv = getConversationById(convId);
     USER = "anotherUser";
     deleteConversation(convId, true);
@@ -597,13 +597,13 @@ void testUndeleteConversation()
     recreateTestDb();
     USER = "anotherUser";
     auto conversations = getConversations("inbox", 20, 0);
-    auto convId = conversations[1]["dbId"].str;
+    auto convId = conversations[1]["id"].str;
     auto conv = getConversationById(convId);
     deleteConversation(convId);
     auto reloadedConv = getConversationById(convId);
     enforce(reloadedConv["tags"].array[0].str == "deleted");
     enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
-    auto email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
+    auto email = getEmail(reloadedConv["summaries"].array[0]["id"].str);
     enforce(email["deleted"].type == JSON_TYPE.TRUE);
 
     callCurl2(
@@ -616,14 +616,14 @@ void testUndeleteConversation()
     reloadedConv = getConversationById(convId);
     enforce(reloadedConv["tags"].jsonToArray == ["inbox"]);
     enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.FALSE);
-    email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
+    email = getEmail(reloadedConv["summaries"].array[0]["id"].str);
     enforce(email["deleted"].type == JSON_TYPE.FALSE);
 
     // test auth
     recreateTestDb();
     USER = "anotherUser";
     conversations = getConversations("inbox", 20, 0);
-    convId = conversations[1]["dbId"].str;
+    convId = conversations[1]["id"].str;
     conv = getConversationById(convId);
     deleteConversation(convId);
     reloadedConv = getConversationById(convId);
@@ -640,7 +640,7 @@ void testUndeleteConversation()
     reloadedConv = getConversationById(convId);
     enforce(reloadedConv["tags"].jsonToArray == ["deleted", "inbox"]);
     enforce(reloadedConv["summaries"].array[0]["deleted"].type == JSON_TYPE.TRUE);
-    email = getEmail(reloadedConv["summaries"].array[0]["dbId"].str);
+    email = getEmail(reloadedConv["summaries"].array[0]["id"].str);
     enforce(email["deleted"].type == JSON_TYPE.TRUE);
 }
 
@@ -650,9 +650,9 @@ void testUnDeleteEmail()
     writeln("\nTesting PUT /message/:id/undo/delete");
     recreateTestDb();
     USER = "anotherUser";
-    auto convId = getConversations("inbox", 20, 0)[1]["dbId"].str;
+    auto convId = getConversations("inbox", 20, 0)[1]["id"].str;
     auto conv = getConversationById(convId);
-    auto emailId = conv["summaries"][0]["dbId"].str;
+    auto emailId = conv["summaries"][0]["id"].str;
     deleteEmail(emailId);
     callCurl2(
             "message",
@@ -667,9 +667,9 @@ void testUnDeleteEmail()
     // check auth
     recreateTestDb();
     USER = "anotherUser";
-    convId = getConversations("inbox", 20, 0)[1]["dbId"].str;
+    convId = getConversations("inbox", 20, 0)[1]["id"].str;
     conv = getConversationById(convId);
-    emailId = conv["summaries"][0]["dbId"].str;
+    emailId = conv["summaries"][0]["id"].str;
     deleteEmail(emailId);
 
     USER = "testuser";
@@ -702,7 +702,7 @@ void testSearch()
     enforce(searchRes["conversations"].array.length == 1);
     enforce(searchRes["totalResultCount"].integer == 2);
     enforce(searchRes["startIndex"].integer == 0);
-    enforce(first["dbId"].str == searchRes["conversations"].array[0]["dbId"].str);
+    enforce(first["id"].str == searchRes["conversations"].array[0]["id"].str);
 
     searchRes = search(["some"], "", "", 0, 0, 0);
     enforce(searchRes["conversations"].array.length == 0);
@@ -764,7 +764,7 @@ void testUpsertDraft()
     auto email = emailJson("", "");
     auto newId = upsertDraft(email, "").str;
     JSONValue dbEmail = getEmail(newId);
-    enforce(dbEmail["dbId"].str == newId);
+    enforce(dbEmail["id"].str == newId);
     enforce(dbEmail["attachments"].array.length == 0);
     auto msgId = dbEmail["messageId"].str;
     enforce(msgId.endsWith("@testdatabase.com"));
@@ -774,19 +774,19 @@ void testUpsertDraft()
     auto sameId = upsertDraft(email, "").str;
     enforce(sameId == newId);
     dbEmail = getEmail(sameId);
-    enforce(dbEmail["dbId"].str == sameId);
+    enforce(dbEmail["id"].str == sameId);
 
     // Test3: New draft, reply
     auto conversations = getConversations("inbox", 20, 0);
-    auto convId1 = conversations[0]["dbId"].str;
+    auto convId1 = conversations[0]["id"].str;
     auto conversation = getConversationById(convId1);
-    auto emailId = conversation["summaries"][0]["dbId"].str;
+    auto emailId = conversation["summaries"][0]["id"].str;
 
     email = emailJson("", "");
     auto newReplyId = upsertDraft(email, emailId).str;
     enforce(newReplyId != newId);
     dbEmail = getEmail(newReplyId);
-    enforce(dbEmail["dbId"].str == newReplyId);
+    enforce(dbEmail["id"].str == newReplyId);
     msgId = dbEmail["messageId"].str;
     enforce(msgId.endsWith("@testdatabase.com"));
 
@@ -795,7 +795,7 @@ void testUpsertDraft()
     auto updateReplyId = upsertDraft(email, emailId).str;
     enforce(updateReplyId == newReplyId);
     dbEmail = getEmail(updateReplyId);
-    enforce(dbEmail["dbId"].str == updateReplyId);
+    enforce(dbEmail["id"].str == updateReplyId);
     msgId = dbEmail["messageId"].str;
     enforce(msgId.endsWith("@testdatabase.com"));
 
@@ -811,22 +811,22 @@ void testAddAttach()
     writeln("\nTesting PUT /email/:id/attachment/");
     recreateTestDb();
     USER = "anotherUser";
-    auto convId = getConversations("inbox", 20, 0)[2]["dbId"].str;
+    auto convId = getConversations("inbox", 20, 0)[2]["id"].str;
     auto conv = getConversationById(convId);
-    auto emailId = conv["summaries"][0]["dbId"].str;
+    auto emailId = conv["summaries"][0]["id"].str;
 
     auto emailDocPrev = getEmail(emailId);
     enforce(emailDocPrev["attachments"].array.length == 1);
-    auto attachId = addAttachment(emailDocPrev["dbId"].str).str;
+    auto attachId = addAttachment(emailDocPrev["id"].str).str;
 
     auto emailDocPost = getEmail(emailId);
     enforce(emailDocPost["attachments"].array.length == 2);
     auto testAttach = emailDocPost["attachments"].array[1];
-    enforce(testAttach["dbId"].str == attachId);
+    enforce(testAttach["id"].str == attachId);
     enforce(testAttach["contentId"].str == "somecontentid");
     enforce(testAttach["filename"].str == "test.txt");
     enforce(testAttach["size"].integer == 11);
-    enforce(testAttach["dbId"].str.length);
+    enforce(testAttach["id"].str.length);
     auto url = testAttach["Url"].str[1..$];
     auto filePath = absolutePath(buildNormalizedPath(
                 __FILE__.dirName,
@@ -838,7 +838,7 @@ void testAddAttach()
 
     // test auth
     USER = "testuser";
-    attachId = addAttachment(emailDocPrev["dbId"].str).str;
+    attachId = addAttachment(emailDocPrev["id"].str).str;
     enforce(!attachId.length);
 }
 
@@ -849,13 +849,13 @@ void testRemoveAttach()
     recreateTestDb();
     USER = "anotherUser";
 
-    auto convId = getConversations("inbox", 20, 0)[2]["dbId"].str;
+    auto convId = getConversations("inbox", 20, 0)[2]["id"].str;
     auto conv = getConversationById(convId);
-    auto emailId = conv["summaries"][0]["dbId"].str;
+    auto emailId = conv["summaries"][0]["id"].str;
     auto emailDocPrev = getEmail(emailId);
     enforce(emailDocPrev["attachments"].array.length == 1);
 
-    auto attachId = addAttachment(emailDocPrev["dbId"].str).str;
+    auto attachId = addAttachment(emailDocPrev["id"].str).str;
     auto emailDocPre = getEmail(emailId);
     enforce(emailDocPre["attachments"].array.length == 2);
     auto url = emailDocPre["attachments"].array[1]["Url"].str[1..$];
@@ -869,17 +869,17 @@ void testRemoveAttach()
     deleteAttachment(emailId, attachId);
     auto emailDocPost = getEmail(emailId);
     enforce(emailDocPost["attachments"].array.length == 1);
-    enforce(emailDocPost["attachments"].array[0]["dbId"].str != attachId);
+    enforce(emailDocPost["attachments"].array[0]["id"].str != attachId);
     enforce(!filePath.exists);
 
     // check auth
-    auto attachId2 = emailDocPost["attachments"].array[0]["dbId"].str;
+    auto attachId2 = emailDocPost["attachments"].array[0]["id"].str;
     USER = "testuser";
     deleteAttachment(emailId, attachId2);
     USER = "anotherUser";
     emailDocPost = getEmail(emailId);
     enforce(emailDocPost["attachments"].array.length == 1);
-    enforce(emailDocPost["attachments"].array[0]["dbId"].str == attachId2);
+    enforce(emailDocPost["attachments"].array[0]["id"].str == attachId2);
 }
 
 

@@ -222,23 +222,13 @@ override:
 
     void send(string userName, string id)
     {
+        import smtp.client;
+
         if (!Email.isOwnedBy(id, userName))
             return;
 
         auto email = Email.get(id);
         email.send();
-        // 1. Get the Email (not the ApiEmail)
-        // 2. Generate the header string from Email.headers (minus Content-Type, plus
-        // Message-Id), check From:, To: etc.
-        // 3. Collapse the text parts into one or two single plain/html parts
-        // 4. Get the Content-Type:
-        //     attachments? => multipart/mixed
-        //     two text parts? => multipart/alternative
-        //     only one text part and is HTML? => text/html
-        //     else: text/plain
-        // 5. Create the multipart body including attachments if needed
-        // 6. Connect to the configured SMTP server and sent the email (using the SMTP
-        // module dependency from DUB.)
     }
 }
 
