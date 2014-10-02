@@ -16,7 +16,8 @@
     "version": "0.0.1",
     "name": "retriever",
     "buildRequirements": ["requireBoundsCheck"],
-    "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing", "MongoDriver"],
+    "versions": ["VibeCustomMain", "VibeDisableCommandLineParsing",
+                 "ssl_no_ssl2", "MongoDriver"],
     "subConfigurations": {"smtp": "ssl"},
     "dflags": ["-inline"],
 

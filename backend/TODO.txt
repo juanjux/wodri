@@ -7,14 +7,13 @@ Backend-API:
 
 Backend-Retriever:
     - Test send():
-      + Write unittest
-      + Configure Postfix (allow Auth and without Auth)
-      + Send with and without auth
-      + Send with and without TLS
+      + Test with Auth
+      + Mock the smtp.client object
 
-    - Email document: add a "actionLog" to every email to record sending failures.
+    - Email document: add a "actionLog" to every email to record sending failures
+      and (sent on [date] to [recipient]).
 
-    - Investigate an implement the DKIM and other security checks, see page on my
+    - Investigate an implement the DKIM and SPF, see page on my
       bookmarks, try it on my server.
 
     Later:

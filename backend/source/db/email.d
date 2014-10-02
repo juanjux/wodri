@@ -4,6 +4,7 @@ import common.utils;
 import db.attachcontainer;
 import db.config;
 import retriever.incomingemail;
+import smtp.reply;
 import std.algorithm: among;
 import std.base64;
 import std.file;
@@ -450,7 +451,7 @@ final class Email
     }
 
 
-    void send()
+    SmtpReply send()
     in
     {
         assert(this.from.addresses.length);
@@ -458,18 +459,23 @@ final class Email
     }
     body
     {
+        import std.stdio; // XXX
         import smtp.client;
         import smtp.ssl;
-        import smtp.reply;
 
+        if (hasHeader("delivered-to"))
+            this.headers.remove("delivered-to");
+
+        SmtpReply reply = void;
         auto config = getConfig();
         auto client = scoped!SmtpClient(config.smtpServer, to!ushort(config.smtpPort));
 
-        if (!client.connect().success)
+        reply = client.connect();
+        if (!reply.success)
         {
             logError("Could not connect to SMTP server at address ", config.smtpServer,
                      " and port ", config.smtpPort);
-            return;
+            return reply;
         }
 
         scope(exit)
@@ -480,7 +486,6 @@ final class Email
 
         client.ehlo();
 
-        SmtpReply reply = void;
         if (config.smtpEncryption)
         {
             reply = client.starttls();
@@ -488,14 +493,9 @@ final class Email
             {
                 logError("Sending Email to SMTP, could not start TLS: "
                          ~ reply.toString);
-                return;
+                return reply;
             }
         }
-
-        client.mail(this.from.addresses[0]);
-        foreach(ref dest; this.receivers)
-            client.rcpt(dest);
-        client.data();
 
         // auth
         if (config.smtpUser.length)
@@ -505,30 +505,40 @@ final class Email
                 reply = client.auth(SmtpAuthType.PLAIN);
                 if (!reply.success)
                     throw new SmtpAuthException();
+
                 reply = client.authPlain(config.smtpUser, config.smtpPass);
                 if (!reply.success)
                     throw new SmtpAuthException();
             } catch (SmtpAuthException e) {
                 logError("Error authenticating to SMTP: " ~ reply.toString);
-                return;
+                return reply;
             }
         }
 
-        // send
-        reply = client.dataBody(toRFCEmail());
+        client.mail(this.from.addresses[0]);
+        foreach(ref dest; this.receivers)
+            client.rcpt(dest);
 
+        // send
+        client.data();
+        reply = client.dataBody(toRFCEmail("\r\n", Yes.NewMsgId));
         if (!reply.success)
         {
             logError("Sending Email to SMTP: " ~ reply.toString);
-            return;
+            return reply;
         }
 
-        this.draft = false;
-        store();
+        // XXX log sending or error and store
+        if (this.draft)
+        {
+            this.draft = false;
+            store();
+        }
+        return reply;
     }
 
 
-    string toRFCEmail(in string lineEnd = "\r\n")
+    string toRFCEmail(in string lineEnd = "\r\n", in Flag!"NewMsgId" newMsgId = No.NewMsgId)
     in
     {
         assert(this.from.rawValue.length);
@@ -543,7 +553,7 @@ final class Email
 
         // Header
         emailAppender.put(generateRFCHeader(lineEnd, isMixedOrRelated, mainBoundary,
-                                            alternativeParts));
+                                            alternativeParts, newMsgId));
 
         // Body
         if (isMixedOrRelated)
@@ -625,11 +635,12 @@ final class Email
     private string generateRFCHeader(in string lineEnd,
                                      out bool isMixedOrRelated,
                                      out string mainBoundary,
-                                     out TextPart[] alternativeParts)
+                                     out TextPart[] alternativeParts,
+                                     in Flag!"NewMsgId" newMsgId = No.NewMsgId)
     {
         isMixedOrRelated = false;
 
-        if (!this.messageId.length)
+        if (newMsgId)
             this.messageId = generateMessageId(domainFromAddress(this.from.rawValue));
 
         Appender!string headerApp;

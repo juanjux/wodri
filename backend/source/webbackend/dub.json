@@ -12,7 +12,8 @@
         "vibe-d": "~master",
 		"dauth": ">=0.6.1",
         "smtp"  : ">=0.2.0"},
-    "versions": ["VibeDefaultMain", "db_usetestdb", "MongoDriver"],
+    "versions": ["VibeDefaultMain", "db_usetestdb", "MongoDriver",
+                 "ssl_no_ssl2"],
     "configurations": [
         {
             "name": "default",

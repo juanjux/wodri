@@ -17,18 +17,18 @@ shared static this()
     immutable config = getConfig();
     auto router = new URLRouter;
 
-    // Log
+    // log
     setLogFile(buildPath(config.mainDir, "backend", "log", "webbackend.log"),
                LogLevel.info);
     //setLogLevel(LogLevel.debugV);
 
-    // Auth
+    // auth
     router.any("*", performBasicAuth("Site Realm", toDelegate(&checkAuth)));
     // /attachment/[fileName]
     router.get(joinPath(ensureStartSlash(config.URLAttachmentPath), "*"),
                serveStaticFiles(removeStartSlash(config.URLStaticPath)));
 
-    // /conv/*
+    // API objects
     router.registerRestInterface(new MessageImpl);
     router.registerRestInterface(new SearchImpl);
     router.registerRestInterface(new ConvImpl);

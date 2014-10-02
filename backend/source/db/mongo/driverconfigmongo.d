@@ -58,13 +58,13 @@ override:
         config.smtpEncryption       = to!uint(bsonNumber(dbConfig.smtpEncryption));
         config.smtpPort             = to!ulong(bsonNumber(dbConfig.smtpPort));
         config.salt                 = bsonStr(dbConfig.salt);
-        auto dbPath                   = bsonStr(dbConfig.rawEmailStore);
+        auto dbPath                 = bsonStr(dbConfig.rawEmailStore);
         // If the db path starts with '/' interpret it as absolute
         config.rawEmailStore        = dbPath.startsWith(dirSeparator)?
                                                                dbPath:
                                                                buildPath(config.mainDir,
                                                                          dbPath);
-        auto attachPath               = bsonStr(dbConfig.attachmentStore);
+        auto attachPath             = bsonStr(dbConfig.attachmentStore);
         config.attachmentStore      = attachPath.startsWith(dirSeparator)?
                                                                    attachPath:
                                                                    buildPath(config.mainDir,
@@ -94,11 +94,11 @@ override:
                 "storeTextIndex"       : true,
                 "module"               : "retriever",
                 "rawEmailStore"        : "backend/test/rawemails",
-                "smtpEncryption"       : 0,
-                "smtpPass"             : "smtpPass",
+                "smtpEncryption"       : 1,
+                "smtpUser"             : "",
+                "smtpPass"             : "",
                 "smtpPort"             : 25,
                 "smtpServer"           : "localhost",
-                "smtpUser"             : "smtpUser",
                 "bodyPeekLength"       : 100,
                 "URLAttachmentPath"    : "attachment",
                 "URLStaticPath"        : "public",

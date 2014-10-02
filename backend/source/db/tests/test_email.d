@@ -205,6 +205,32 @@ version(db_usetestdb)
         dbEmail2 = new Email(inEmail);
     }
 
+
+    // Running smtp-sink or something like that is adviced before running the tests...
+    unittest // send
+    {
+        recreateTestDb();
+        writeln("Testing Email.send(real SMTP)");
+
+        auto dbEmail = getTestDbEmail("testuser", 0, 0);
+        dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
+        dbEmail.receivers = ["juanjux@gmail.com"];
+        dbEmail.draft = true;
+        assert(dbEmail.send().success);
+
+        dbEmail = getTestDbEmail("testuser", 0, 1);
+        dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
+        dbEmail.receivers = ["juanjux@gmail.com"];
+        dbEmail.draft = true;
+        assert(dbEmail.send().success);
+
+        dbEmail = getTestDbEmail("testuser", 0, 1);
+        dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
+        dbEmail.receivers = ["juanjux@gmail.com"];
+        dbEmail.draft = true;
+        assert(dbEmail.send().success);
+    }
+
     version(MongoDriver)
     {
         import db.mongo.mongo;
