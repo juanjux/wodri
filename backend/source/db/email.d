@@ -1,3 +1,17 @@
+/*
+    Copyright (C) 2014-2015  Juan Jose Alvarez Martinez <juanjo@juanjoalvarez.net>
+
+    This file is part of Wodri. Wodri is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License version 3 as published by the
+    Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License along with this
+    program. If not, see <http://www.gnu.org/licenses/>.
+*/
 module db.email;
 
 import common.utils;
@@ -160,7 +174,6 @@ final class Email
         this.from    = field2HeaderValue(apiEmail.from);
         this.isoDate = apiEmail.isoDate;
         this.deleted = apiEmail.deleted;
-        this.sendStatus = apiEmail.sendStatus;
         this.headers.addField("to",      field2HeaderValue(apiEmail.to));
         this.headers.addField("date",    HeaderValue(apiEmail.date));
         this.headers.addField("subject", HeaderValue(apiEmail.subject));
@@ -471,7 +484,6 @@ final class Email
     }
     body
     {
-
         void logSendFailure(in string logText)
         {
             logError("Send[" ~ to!string(this.id) ~ "]: " ~ logText);

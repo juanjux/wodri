@@ -1,3 +1,17 @@
+/*
+    Copyright (C) 2014-2015  Juan Jose Alvarez Martinez <juanjo@juanjoalvarez.net>
+
+    This file is part of Wodri. Wodri is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License version 3 as published by the
+    Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License along with this
+    program. If not, see <http://www.gnu.org/licenses/>.
+*/
 module db.mongo.mongo;
 
 version(MongoDriver)
@@ -28,9 +42,9 @@ version(search_test)      version = db_usebigdb;
 
 private MongoDatabase g_mongoDB;
 
-T bsonSafe(T)(const Bson bson) 
-{ 
-    return bson.isNull ? T.init : deserializeBson!T(bson); 
+T bsonSafe(T)(const Bson bson)
+{
+    return bson.isNull ? T.init : deserializeBson!T(bson);
 }
 
 alias bsonStr          = deserializeBson!string;
@@ -53,7 +67,7 @@ double bsonNumber(const Bson input)
         case Bson.Type.long_:
             return to!double(deserializeBson!long(input));
         default:
-            auto err = format("Bson input is not of numeric type but: %s", 
+            auto err = format("Bson input is not of numeric type but: %s",
                               input.type);
             logError(err);
             throw new Exception(err);

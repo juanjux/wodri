@@ -1,3 +1,17 @@
+/*
+    Copyright (C) 2014-2015  Juan Jose Alvarez Martinez <juanjo@juanjoalvarez.net>
+
+    This file is part of Wodri. Wodri is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License version 3 as published by the
+    Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License along with this
+    program. If not, see <http://www.gnu.org/licenses/>.
+*/
 module db.mongo.driveremailmongo;
 
 version(MongoDriver)
@@ -94,11 +108,11 @@ override: // interface methods
 
         switch(bsonStr(emailDoc["sendStatus"]))
         {
-            case "PENDING"  : ret.sendStatus = SendStatus.PENDING;  break;
-            case "RETRYING" : ret.sendStatus = SendStatus.RETRYING; break;
-            case "FAILED"   : ret.sendStatus = SendStatus.FAILED;   break;
-            case "SENT"     : ret.sendStatus = SendStatus.SENT;     break;
-            default         : ret.sendStatus = SendStatus.NA;       break;
+            case "PENDING" : ret.sendStatus = SendStatus.PENDING;  break;
+            case "RETRYING": ret.sendStatus = SendStatus.RETRYING; break;
+            case "FAILED"  : ret.sendStatus = SendStatus.FAILED;   break;
+            case "SENT"    : ret.sendStatus = SendStatus.SENT;     break;
+            default        : ret.sendStatus = SendStatus.NA;       break;
         }
 
         foreach(ref docHeader; emailDoc.headers)
@@ -471,7 +485,7 @@ override: // interface methods
         emailInsertJson.put(format(
               `"deleted": %s,` ~
               `"sendStatus": "%s",` ~
-              `"sendRetries": %s,` ~
+              `"sendRetries": %d,` ~
               `"draft": %s,` ~
               `"userId": "%s",` ~
               `"destinationAddress": %s,` ~

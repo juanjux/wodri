@@ -1,4 +1,18 @@
 #!/usr/bin/env rdmd
+/*
+    Copyright (C) 2014-2015  Juan Jose Alvarez Martinez <juanjo@juanjoalvarez.net>
+
+    This file is part of Wodri. Wodri is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License version 3 as published by the
+    Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License along with this
+    program. If not, see <http://www.gnu.org/licenses/>.
+*/
 import core.thread;
 import std.algorithm;
 import std.array;
@@ -108,7 +122,7 @@ string emailJson(string id, string messageId)
                     "ctype": "image/jpeg",
                     "filename": "somecode.jpg",
                     "contentId": "somecontentid",
-                    "size": 1000,
+                    "size": 1000
                 }
             ]
             }`,
@@ -122,9 +136,8 @@ JSONValue upsertDraft(string apiEmailJson, string replyDbId)
     auto json = format(
     `{
         "draftContent": %s,
-        "replyDbId": "%s",
+        "replyDbId": "%s"
      }`, apiEmailJson, replyDbId);
-
     return parseJSON(callCurl2("message", "", emptyDict, "POST", json));
 }
 
