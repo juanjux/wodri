@@ -1,22 +1,13 @@
 Backend-API:
     - POST /message/:id/send
-      + Revisar los XXX
-      + Poner el draft a false.
-
-    - Move to my server, test sending using Amazon SES with the wodri.com domain
 
 Backend-Retriever:
-    - Test send():
-      + Test with Auth
-      + Mock the smtp.client object
-
-    - Email document: add a "actionLog" to every email to record sending failures
-      and (sent on [date] to [recipient]).
-
     - Investigate an implement the DKIM and SPF, see page on my
       bookmarks, try it on my server.
 
     Later:
+    - Mock the smtp.client object and reenable the send() test
+
     - Contact DB and Api objects, contact DB driver.
 
     - general hunting of XXX and FIXMEs

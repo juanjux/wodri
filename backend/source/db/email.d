@@ -31,6 +31,15 @@ enum TransferEncoding
     Base64
 }
 
+enum SendStatus
+{
+    NA,
+    PENDING,
+    RETRYING,
+    FAILED,
+    SENT
+}
+
 struct TextPart
 {
     string ctype;
@@ -85,6 +94,8 @@ final class Email
     string         userId;
     bool           deleted = false;
     bool           draft = false;
+    SendStatus     sendStatus = SendStatus.NA;
+    uint           sendRetries = 0;
     string[]       forwardedTo;
     string         destinationAddress;
     string         messageId;
@@ -149,6 +160,7 @@ final class Email
         this.from    = field2HeaderValue(apiEmail.from);
         this.isoDate = apiEmail.isoDate;
         this.deleted = apiEmail.deleted;
+        this.sendStatus = apiEmail.sendStatus;
         this.headers.addField("to",      field2HeaderValue(apiEmail.to));
         this.headers.addField("date",    HeaderValue(apiEmail.date));
         this.headers.addField("subject", HeaderValue(apiEmail.subject));
@@ -459,7 +471,14 @@ final class Email
     }
     body
     {
-        import std.stdio; // XXX
+
+        void logSendFailure(in string logText)
+        {
+            logError("Send[" ~ to!string(this.id) ~ "]: " ~ logText);
+            ++this.sendRetries;
+            this.sendStatus = SendStatus.RETRYING;
+        }
+
         import smtp.client;
         import smtp.ssl;
 
@@ -473,8 +492,8 @@ final class Email
         reply = client.connect();
         if (!reply.success)
         {
-            logError("Could not connect to SMTP server at address ", config.smtpServer,
-                     " and port ", config.smtpPort);
+            logSendFailure("Could not connect to SMTP server at address "
+                           ~ config.smtpServer ~ " and port " ~ to!string(config.smtpPort));
             return reply;
         }
 
@@ -491,13 +510,17 @@ final class Email
             reply = client.starttls();
             if (!client.secure)
             {
-                logError("Sending Email to SMTP, could not start TLS: "
-                         ~ reply.toString);
+                logSendFailure("Sending Email to SMTP, could not start TLS: "
+                               ~ reply.toString);
                 return reply;
             }
+            logInfo("TLS Encryption successfully enabled for sending to SMTP");
         }
 
-        // auth
+        // auth: not yet implemented, if you need to relay to an smtp with auth configure
+        // postfix to do the relay and auth like:
+        // http://docs.aws.amazon.com/ses/latest/DeveloperGuide/postfix.html
+        /*
         if (config.smtpUser.length)
         {
             try
@@ -509,11 +532,13 @@ final class Email
                 reply = client.authPlain(config.smtpUser, config.smtpPass);
                 if (!reply.success)
                     throw new SmtpAuthException();
+                logInfo("SMTP Authentication completed");
             } catch (SmtpAuthException e) {
                 logError("Error authenticating to SMTP: " ~ reply.toString);
                 return reply;
             }
         }
+        */
 
         client.mail(this.from.addresses[0]);
         foreach(ref dest; this.receivers)
@@ -524,16 +549,17 @@ final class Email
         reply = client.dataBody(toRFCEmail("\r\n", Yes.NewMsgId));
         if (!reply.success)
         {
-            logError("Sending Email to SMTP: " ~ reply.toString);
+            logSendFailure("Sending Email to SMTP: " ~ reply.toString);
             return reply;
         }
 
-        // XXX log sending or error and store
         if (this.draft)
         {
             this.draft = false;
             store();
         }
+
+        this.sendStatus = SendStatus.SENT;
         return reply;
     }
 

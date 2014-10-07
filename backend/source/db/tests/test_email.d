@@ -42,10 +42,10 @@ version(db_usetestdb)
         assert(dbEmail.textParts.length == 1);
 
         // Test2: Update draft, no reply
-        apiEmail.id = dbEmail.id;
+        apiEmail.id        = dbEmail.id;
         apiEmail.messageId = dbEmail.messageId;
-        dbEmail = new Email(apiEmail, "");
-        dbEmail.userId = user.id;
+        dbEmail            = new Email(apiEmail, "");
+        dbEmail.userId     = user.id;
         dbEmail.store();
         assert(dbEmail.id == apiEmail.id);
         assert(dbEmail.messageId == apiEmail.messageId);
@@ -206,30 +206,29 @@ version(db_usetestdb)
     }
 
 
-    // Running smtp-sink or something like that is adviced before running the tests...
-    unittest // send
-    {
-        recreateTestDb();
-        writeln("Testing Email.send(real SMTP)");
+    // unittest // send
+    // {
+    //     recreateTestDb();
+    //     writeln("Testing Email.send(real SMTP)");
 
-        auto dbEmail = getTestDbEmail("testuser", 0, 0);
-        dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
-        dbEmail.receivers = ["juanjux@gmail.com"];
-        dbEmail.draft = true;
-        assert(dbEmail.send().success);
+    //     auto dbEmail = getTestDbEmail("testuser", 0, 0);
+    //     dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
+    //     dbEmail.receivers = ["juanjux@gmail.com"];
+    //     dbEmail.draft = true;
+    //     assert(dbEmail.send().success);
 
-        dbEmail = getTestDbEmail("testuser", 0, 1);
-        dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
-        dbEmail.receivers = ["juanjux@gmail.com"];
-        dbEmail.draft = true;
-        assert(dbEmail.send().success);
+    //     dbEmail = getTestDbEmail("testuser", 0, 1);
+    //     dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
+    //     dbEmail.receivers = ["juanjux@gmail.com"];
+    //     dbEmail.draft = true;
+    //     assert(dbEmail.send().success);
 
-        dbEmail = getTestDbEmail("testuser", 0, 1);
-        dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
-        dbEmail.receivers = ["juanjux@gmail.com"];
-        dbEmail.draft = true;
-        assert(dbEmail.send().success);
-    }
+    //     dbEmail = getTestDbEmail("testuser", 0, 1);
+    //     dbEmail.from = HeaderValue(" <juanjux@juanjux.mooo.com>", ["juanjux@juanjux.mooo.com"]);
+    //     dbEmail.receivers = ["juanjux@gmail.com"];
+    //     dbEmail.draft = true;
+    //     assert(dbEmail.send().success);
+    // }
 
     version(MongoDriver)
     {
@@ -640,6 +639,25 @@ version(db_usetestdb)
             emailDoc = collection("email").findOne(["_id": id]);
             assert(!emailDoc.attachments.isNull);
             assert(emailDoc.attachments.length == 1);
+        }
+
+        unittest // sendRetries && sendStatus store and retrieval
+        {
+            writeln("Testing Email sendRetries && sendStatus store and retrieval");
+            recreateTestDb();
+            auto emailMongo = scoped!DriverEmailMongo();
+            auto emailDoc = DriverEmailMongo.getEmailCursorAtPosition(0).front;
+            auto emailId = bsonStr(emailDoc._id);
+            auto dbEmail = emailMongo.get(emailId);
+            assert(dbEmail.sendStatus == SendStatus.NA);
+            assert(dbEmail.sendRetries == 0);
+            dbEmail.sendStatus = SendStatus.SENT;
+            dbEmail.sendRetries = 10;
+            dbEmail.store();
+
+            auto dbEmail2 = emailMongo.get(emailId);
+            assert(dbEmail2.sendStatus == SendStatus.SENT);
+            assert(dbEmail2.sendRetries == 10);
         }
 
         unittest // get

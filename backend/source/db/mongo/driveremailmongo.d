@@ -77,10 +77,11 @@ override: // interface methods
         }
 
         auto ret               = new Email();
-        ret.id               = id;
+        ret.id                 = id;
         ret.userId             = bsonStr(emailDoc["userId"]);
         ret.deleted            = bsonBool(emailDoc["deleted"]);
         ret.draft              = bsonBool(emailDoc["draft"]);
+        ret.sendRetries        = to!uint(bsonNumber(emailDoc["sendRetries"]));
         ret.forwardedTo        = bsonStrArraySafe(emailDoc["forwardedTo"]);
         ret.destinationAddress = bsonStr(emailDoc["destinationAddress"]);
         ret.messageId          = bsonStr(emailDoc["message-id"]);
@@ -90,6 +91,15 @@ override: // interface methods
         ret.rawEmailPath       = bsonStrSafe(emailDoc["rawEmailPath"]);
         ret.bodyPeek           = bsonStrSafe(emailDoc["bodyPeek"]);
         ret.isoDate            = bsonStr(emailDoc["isodate"]);
+
+        switch(bsonStr(emailDoc["sendStatus"]))
+        {
+            case "PENDING"  : ret.sendStatus = SendStatus.PENDING;  break;
+            case "RETRYING" : ret.sendStatus = SendStatus.RETRYING; break;
+            case "FAILED"   : ret.sendStatus = SendStatus.FAILED;   break;
+            case "SENT"     : ret.sendStatus = SendStatus.SENT;     break;
+            default         : ret.sendStatus = SendStatus.NA;       break;
+        }
 
         foreach(ref docHeader; emailDoc.headers)
         {
@@ -460,6 +470,8 @@ override: // interface methods
         emailInsertJson.put(`{"$set": {`);
         emailInsertJson.put(format(
               `"deleted": %s,` ~
+              `"sendStatus": "%s",` ~
+              `"sendRetries": %s,` ~
               `"draft": %s,` ~
               `"userId": "%s",` ~
               `"destinationAddress": %s,` ~
@@ -473,6 +485,8 @@ override: // interface methods
               `"textParts": [ %s ], ` ~
               `"bodyPeek": %s, `,
                 email.deleted,
+                to!string(email.sendStatus),
+                email.sendRetries,
                 email.draft,
                 email.userId,
                 Json(email.destinationAddress).toString,
