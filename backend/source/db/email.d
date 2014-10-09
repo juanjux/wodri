@@ -723,7 +723,7 @@ final class Email
 
             // skip these
             if (among(lowName, "content-type", "return-path", "mime-version",
-                      "from", "message-id", "content-transfer-encoding"))
+                      "dkim-signature", "from", "message-id", "content-transfer-encoding"))
             {
                 continue;
             }
@@ -741,8 +741,8 @@ final class Email
             // DONT encode these
             else if (among(lowName, "content-type", "received",
                            "received-spf", "message-id", "reply-to", "mime-version",
-                           "resent-reply-to", "resent-message-id", "dkim-signature",
-                           "authentication-results", "original-message-id", "encoding"))
+                           "resent-reply-to", "resent-message-id", "authentication-results",
+                           "original-message-id", "encoding"))
             {
                 encodedValue = strip(value.rawValue);
             }

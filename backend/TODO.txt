@@ -1,5 +1,5 @@
 Backend-API:
-    - POST /message/:id/send
+    - CurlTest: /message/:id/send
 
 Backend-Retriever:
     - Investigate an implement the DKIM and SPF, see page on my

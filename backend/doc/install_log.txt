@@ -57,7 +57,7 @@ POSTFIX & SPAMASSASSIN:
 
     - Edit /etc/postfix/master.cf add at the end:
           spamassassin unix -     n       n       -       -       pipe
-                user=spamd argv=/usr/bin/spamc -f -e  
+                user=spamd argv=/usr/bin/spamc -f -e
                         /usr/sbin/sendmail -oi -f ${sender} ${recipient}
 
 MONGODB:
@@ -75,14 +75,14 @@ MONGODB:
     - mkdir WEBMAILDIR/backend/mongodb/log
     - sudo chown -R mongodb:nogroup WEBMAILDIR/backend/mongodb
 
-    (Note: on your distribution mongodb could be running under a different user/group, if 
+    (Note: on your distribution mongodb could be running under a different user/group, if
     in doubt: ls -l the original data and log dirs of mongo and check the permission)
 
     - Run the mongo command and run these commands changing WEBMAILDIR for the
       full path to real directory and SOMESALT for some random string:
 
       use webmail
-      myuser = 
+      myuser =
       {
               "loginName": "MYLOGINNAME",
               "name": "MYNAME",
@@ -90,11 +90,11 @@ MONGODB:
               "admin": true,
               "adresses": ["juanjux@juanjux.mooo.com", "juanjo.alvarez@juanjux.mooo.com"],
       }
-      db.users.insert(myuser)  
+      db.users.insert(myuser)
       userid = db.users.find().next()._id
 
-      mydomain = 
-      {   
+      mydomain =
+      {
               "name": "MYDOMAIN",
               "postMaster": userid,
               "defaultUser": userid,
@@ -103,7 +103,7 @@ MONGODB:
      db.domain.insert(mydomain)
      domainid = db.domain.find().next()._id
 
-     retriever_config = 
+     retriever_config =
      {
                "module" : "retriever",
                "mainDir" : "/home/juanjux/webmail",
@@ -129,7 +129,7 @@ MONGODB:
         use testwebmail_all
         db.emailIndexContents.ensureIndex({text: "text"}, {default_language: "none"})
 
-   
+
 CONFIG DIRECTORY AND MONGO DB USER
     - sudo mkdir /etc/webmail
     - sudo chown USUARIO:GRUPO /etc/webmail
@@ -166,9 +166,61 @@ PATHS
 
       ln -s /var/www/SERVICEDIR/store/attachments /var/www/SERVICEDIR/backend/source/webbackend/public/attachment
 
-  TODO XXX
+
+DKIM
+    - Run these commands:
+        # apt-get install opendkim opendkim-tools
+        # mkdir -pv /etc/opendkim/
+        # cd /etc/opendkim/
+        # opendkim-genkey -r -h rsa-sha256 -d your.domain.com -s mail
+        # mv -v mail.private mail
+        # cat mail.txt => put it as TXT DNS record
+
+    - Edit /etc/opendkim/KeyTable and put:
+    your.domain.com your.domain.com:mail:/etc/opendkim/mail
+
+    - Edit /etc/opendkim/SigningTable
+    *@your.domain.com your.domain.com
+
+    - Edit /etc/opendkim/TrustedHosts
+    127.0.0.1
+
+    - Edit /etc /opendkim.conf:
+        Canonicalization        relaxed/relaxed
+        ExternalIgnoreList      refile:/etc/opendkim/TrustedHosts
+        InternalHosts           refile:/etc/opendkim/TrustedHosts
+        KeyTable                refile:/etc/opendkim/KeyTable
+        LogWhy                  Yes
+        MinimumKeyBits          1024
+        Mode                    sv
+        PidFile                 /var/run/opendkim/opendkim.pid
+        SigningTable            refile:/etc/opendkim/SigningTable
+        Socket                  inet:8891@localhost
+        Syslog                  Yes
+        SyslogSuccess           Yes
+        TemporaryDirectory      /var/tmp
+        UMask                   022
+        UserID                  opendkim:opendkim
+
+    - Run these commands:
+        chown -Rv opendkim:opendkim /etc/opendkim
+        chmod go-rwx /etc/opendkim/*
+
+    - Configure Postfix, add this to /etc/postfix/main.cf:
+        smtpd_milters           = inet:127.0.0.1:8891
+        non_smtpd_milters       = $smtpd_milters
+        milter_default_action   = accept
+
+    - Restart dkim and postfix:
+        service opendkim restart
+        service postfix restart
+
+TODO XXX
 
 - Eliminar todos los procesos de Postfix que sean innecesarios
 - Ver que más opciones de configuración tiene Postfix que puedan interesar (seguridad, etc)
 - Pensar tests involucrando Postfix y el retriever
-- Ver que hay que hacer para que gmail y otros acepten los emails salientes, SPK? DKIM?
+- SPF y PTR
+
+Email services
+  - PostMark
