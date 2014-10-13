@@ -1,8 +1,9 @@
 DMD & Vibed
     - Install DMD from DigitalMars (Ubuntu package)
     - Download dub
-    - dub init vibed
-    - dub fetch libevent2
+    - cd ~wodri/backend/source/db
+    - dub upgrade (to fetch dependencies)
+    - dub fetch libevent
 
 LIBSCRYPT
     - sudo apt-get install libscrypt0 libscrypt-dev

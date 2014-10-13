@@ -95,12 +95,12 @@ override:
     {
         import vibe.data.json;
 
-        import std.stdio; // XXX quitar
         collection("settings").remove();
+        auto homeDir = expandTilde("~/wodri");
         string settingsJsonStr = format(`
         {
                 "_id"                  : "5399793904ac3d27431d0669",
-                "mainDir"              : "/home/juanjux/wodri",
+                "mainDir"              : "%s",
                 "apiDomain"            : "juanjux.mooo.com",
                 "salt"                 : "someSalt",
                 "attachmentStore"      : "backend/test/attachments",
@@ -116,7 +116,7 @@ override:
                 "bodyPeekLength"       : 100,
                 "URLAttachmentPath"    : "attachment",
                 "URLStaticPath"        : "public",
-        }`);
+        }`, homeDir);
         collection("settings").insert(parseJsonString(settingsJsonStr));
     }
 }

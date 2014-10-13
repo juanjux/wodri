@@ -234,12 +234,19 @@ final class IncomingEmail
         // (the user of the class is responsible for deleting the original)
         if (rawEmailStore.length)
         {
+            if (!rawEmailStore.exists)
+            {
+                mkdirRecurse(rawEmailStore);
+            }
             auto destFilePath = randomFileName(rawEmailStore);
             if (inputIsStdInput)
+            {
                 File(destFilePath, "w").write(stdinLines.data);
+            }
             else
+            {
                 copy(emailFile.name, destFilePath);
-
+            }
             m_rawEmailPath = destFilePath;
         }
     }
@@ -492,6 +499,10 @@ final class IncomingEmail
             origFileName = part.ctype.fields.get("name", "");
 
         immutable string attachFullPath = randomFileName(attachStore, origFileName.extension);
+        if (!attachStore.exists)
+        {
+            mkdirRecurse(attachStore);
+        }
         File(attachFullPath, "w").rawWrite(attContent);
 
         Attachment att;

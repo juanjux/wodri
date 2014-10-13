@@ -62,6 +62,7 @@ version(anytestdb)
             import db.conversation;
             import db.user;
             import db.email;
+            import std.stdio;
             emptyTestDb();
 
             // Fill the test DB

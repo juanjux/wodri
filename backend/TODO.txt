@@ -2,8 +2,16 @@ Backend-API:
     - CurlTest: /message/:id/send
 
 Backend-Retriever:
-    - Investigate an implement the DKIM and SPF, see page on my
-      bookmarks, try it on my server.
+
+    - Real server move:
+      + Install Postfix, configure
+      + Install DKIM, configure and configure Postfix to use it
+      + Set SPF on my domain
+      + Settings => eval the move to a file
+      + Settings => change apiDomain
+      + testdb/* => change testdatabase.com and anotherdomain.com domains to
+        wodri.com and alt.wodri.com
+      + db => User => change the addresses to @wodri.com & @alt.wodri.com
 
     Later:
     - Mock the smtp.client object and reenable the send() test
